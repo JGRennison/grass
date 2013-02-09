@@ -1,0 +1,131 @@
+﻿//  grass - Generic Rail And Signalling Simulator
+//
+//  WEBSITE: http://grss.sourceforge.net
+//
+//  NOTE: This software is licensed under the GPL. See: COPYING-GPL.txt
+//
+//  This program  is distributed in the  hope that it will  be useful, but
+//  WITHOUT   ANY  WARRANTY;   without  even   the  implied   warranty  of
+//  MERCHANTABILITY  or FITNESS  FOR A  PARTICULAR PURPOSE.   See  the GNU
+//  General Public License for more details.
+//
+//  Jonathan Rennison (or anybody else) is in no way responsible, or liable
+//  for this program or its use in relation to users, 3rd parties or to any
+//  persons in any way whatsoever.
+//
+//  You  should have  received a  copy of  the GNU  General Public
+//  License along  with this program; if  not, write to  the Free Software
+//  Foundation, Inc.,  59 Temple Place,  Suite 330, Boston,  MA 02111-1307
+//  USA
+//
+//  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
+//==========================================================================
+
+#ifndef INC_TRAIN_ALREADY
+#define INC_TRAIN_ALREADY
+
+#include "track.h"
+#include "timetable.h"
+#include <list>
+
+class lookahead_item {
+	unsigned int speed;
+	unsigned int start_offset;
+};
+
+class lookahead_set {
+
+	std::list<lookahead_item> items;
+};
+
+struct vehicle_class {
+	std::string name;
+	unsigned int length;		// mm
+	unsigned int max_speed;		// mm/s (μm/ms)
+	unsigned int tractive_force;	// kg μm/(ms^2) --> N
+	unsigned int tractive_power;	// 1000 * N mm/s --> W
+	unsigned int braking_force;	// N
+	unsigned int nominal_rail_traction_limit;	// N
+	unsigned int cumul_drag_const;	// N
+	unsigned int cumul_drag_v;	// N/(m/s)
+	unsigned int cumul_drag_v2;	// N/(m/s)^2
+	unsigned int face_drag_v2;	// N/(m/s)^2
+	unsigned int fullmass;		// kg
+	unsigned int emptymass;		// kg
+	std::forward_list<traction_type> tractions;
+};
+
+/* sample values:
+ * v -> 50 m/s --> 50000 mm/s
+ * A -> 8000 N
+ * B -> 100 N/(m/s) --> 100 mN/(mm/s)
+ * C -> 10 N/(m/s)^2 ->- 0.00001 N/(mm/s)^2 --> 10 μN/(mm/s)^2
+ */
+
+struct train_unit {
+	vehicle_class *vehtype;
+	unsigned int veh_multiplier;
+	unsigned int segment_total_mass;
+	unsigned int stflags;
+	enum {
+		STF_REV		= 1<<0,
+	};
+};
+
+struct train_track_speed_limit_item {
+	unsigned int speed;
+	unsigned int count;
+	train_track_speed_limit_item(unsigned int speed_, unsigned int count_) : speed(speed_), count(count_) { }
+};
+
+class train {
+	unsigned int tflags;
+	enum {
+		TF_CONSISTREVDIR	= 1<<0,
+	};
+
+	std::list<train_unit> train_segments;
+	std::forward_list<traction_type> active_tractions;
+	speed_class *vehspeedclass;
+	std::forward_list<train_track_speed_limit_item> covered_track_speed_limits;
+
+	lookahead_set lookahead;
+
+	unsigned int total_length;
+	unsigned int veh_max_speed;
+	unsigned int current_max_speed;
+	unsigned int total_tractive_force;
+	unsigned int total_tractive_power;
+	unsigned int total_braking_force;
+	//unsigned int total_rail_traction_limit;
+	unsigned int total_drag_const;
+	unsigned int total_drag_v;
+	unsigned int total_drag_v2;
+	unsigned int total_mass;
+	unsigned int target_braking_deceleration; 	// m/s^2 << 8
+
+	track_location head_pos;
+	track_location tail_pos;
+	int head_relative_height;
+	int tail_relative_height;
+
+	unsigned int current_speed;
+	std::string headcode;
+	timetable currenttimetable;
+
+	public:
+	void TrainMoveStep(unsigned int ms);
+	void CalculateTrainMotionProperties();
+	void AddCoveredTrackSpeedLimit(unsigned int speed);
+	void RemoveCoveredTrackSpeedLimit(unsigned int speed);
+	void CalculateCoveredTrackSpeedLimit();
+	void ReverseDirection();
+	inline void RefreshLookahead() { };
+	void RefreshCoveredTrackSpeedLimits();
+	void DropTrainIntoPosition(const track_location &position);
+	void UprootTrain();
+	inline unsigned int GetMaxVehSpeed() const { return veh_max_speed; }
+	inline const speed_class * GetVehSpeedClass() const { return vehspeedclass; }
+};
+
+#endif
