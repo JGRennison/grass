@@ -48,6 +48,7 @@ SRCCFLAGS=-IC:/SourceCode/Libraries/wxWidgets2.8/include
 HDEPS:=
 EXECPREFIX:=
 PATHSEP:=\\
+MKDIR:=mkdir
 
 ifdef x64
 SIZEPOSTFIX:=64
@@ -76,6 +77,7 @@ GCC_MINOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f2)
 ARCH:=$(shell test $(GCC_MAJOR) -gt 4 -o \( $(GCC_MAJOR) -eq 4 -a $(GCC_MINOR) -ge 2 \) && echo native)
 EXECPREFIX:=./
 PATHSEP:=/
+MKDIR:=mkdir -p
 
 wxconf:=$(shell wx-config --selected-config)
 ifeq (gtk, $(findstring gtk,$(wxconf)))
@@ -139,7 +141,7 @@ $(TSOBJDIR)/%.o: source/src/%.cpp
 $(ALL_OBJS): | $(DIRS)
 
 $(DIRS):
-	-mkdir $(subst /,$(PATHSEP),$@)
+	-$(MKDIR) $(subst /,$(PATHSEP),$@)
 
 INC_TC:=source/include/trackcircuit.h
 TRACTIONTYPE_INC:=source/include/tractiontype.h
