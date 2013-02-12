@@ -21,7 +21,7 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "../include/wxcommon.h"
+#include "wxcommon.h"
 #include <wx/string.h>
 
 bool cmdlineproc(wxChar ** argv, int argc);

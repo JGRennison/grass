@@ -21,6 +21,9 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
+#ifndef INC_UTIL_ALREADY
+#define INC_UTIL_ALREADY
+
 //adapted from http://forums.devshed.com/showpost.php?p=2678621&postcount=9
 //Newton-Raphson
 template <typename I> I fast_isqrt( I n ){
@@ -37,3 +40,5 @@ template <typename I> I fast_isqrt( I n ){
 
 	return p;
 }
+
+#endif

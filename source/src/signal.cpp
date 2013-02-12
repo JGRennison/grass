@@ -21,8 +21,8 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "../include/common.h"
-#include "../include/signal.h"
+#include "common.h"
+#include "signal.h"
 
 #include <cassert>
 
@@ -68,4 +68,47 @@ unsigned int genericsignal::GetSignalFlags() const {
 unsigned int genericsignal::SetSignalFlagsMasked(unsigned int set_flags, unsigned int mask_flags) {
 	sflags = (sflags & (~mask_flags)) | set_flags;
 	return sflags;
+}
+
+bool autosignal::PostLayoutInit(error_collection &ec) {
+	bool continue_initing = genericsignal::PostLayoutInit(ec);
+	if(continue_initing) {
+		signal_route.start = vartrack_target_ptr<routingpoint>(this, TDIR_FORWARD);
+
+		auto func = [&](const route_recording_list &route_pieces, const track_target_ptr &piece) {
+			unsigned int pieceflags = piece.track->GetFlags(piece.direction);
+			if(pieceflags & GTF_ROUTINGPOINT) {
+				routingpoint *target_routing_piece = dynamic_cast<routingpoint *>(piece.track);
+				if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(piece.direction) & RPRT_ROUTEEND) {
+					if(! (target_routing_piece->GetSetRouteTypes(piece.direction) & (RPRT_ROUTEEND | RPRT_SHUNTEND | RPRT_VIA))) {
+						signal_route.pieces = route_pieces;
+						signal_route.end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
+						return true;
+					}
+				}
+				//err = GTL_SIGNAL_ROUTING;
+				continue_initing = false;
+				return true;
+			}
+			if(pieceflags & GTF_ROUTESET) {
+				//err = GTL_SIGNAL_ROUTING;
+				continue_initing = false;
+				return true;
+			}
+			return false;
+		};
+
+		signal_route.pieces.clear();
+		unsigned int error_flags = 0;
+		TrackScan(100, 0, GetConnectingPieceByIndex(TDIR_FORWARD, 0), signal_route.pieces, error_flags, func);
+		
+		if(error_flags != 0) {
+			continue_initing = false;
+		}
+	}
+	return continue_initing;
+}
+
+unsigned int autosignal::GetFlags(DIRTYPE direction) const {
+	return GTF_ROUTINGPOINT;
 }

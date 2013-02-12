@@ -21,10 +21,10 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "../include/common.h"
-#include "../include/wxcommon.h"
-#include "../include/SimpleOpt.h"
-#include "../include/cmdline.h"
+#include "common.h"
+#include "wxcommon.h"
+#include "SimpleOpt.h"
+#include "cmdline.h"
 //#define CATCH_CONFIG_RUNNER
 //#include "../include/test.h"
 #include <wx/string.h>

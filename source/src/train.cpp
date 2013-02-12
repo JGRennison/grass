@@ -21,12 +21,12 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "../include/common.h"
-#include "../include/util.h"
-#include "../include/param.h"
-#include "../include/track.h"
-#include "../include/train.h"
-#include "../include/traverse.h"
+#include "common.h"
+#include "util.h"
+#include "param.h"
+#include "track.h"
+#include "train.h"
+#include "traverse.h"
 
 #include <cassert>
 

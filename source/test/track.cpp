@@ -21,13 +21,14 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "../include/catch.hpp"
-#include "../include/track.h"
-#include "../include/train.h"
-#include "../include/traverse.h"
+#include "catch.hpp"
+#include "track.h"
+#include "train.h"
+#include "traverse.h"
 
 struct test_fixture_1 {
 	trackseg track1, track2;
+	error_collection ec;
 	test_fixture_1() {
 		track1.SetLength(50000);
 		track1.SetElevationDelta(-100);
@@ -35,13 +36,14 @@ struct test_fixture_1 {
 		track2.SetLength(100000);
 		track2.SetElevationDelta(+50);
 		track2.SetName("T2");
-		track1.FullConnect(TDIR_REVERSE, track_target_ptr(&track2, TDIR_FORWARD));
+		track1.FullConnect(TDIR_REVERSE, track_target_ptr(&track2, TDIR_FORWARD), ec);
 	}
 };
 
 struct test_fixture_2 {
 	trackseg track1, track2, track3;
 	points pt1;
+	error_collection ec;
 	test_fixture_2() {
 		track1.SetLength(50000);
 		track1.SetElevationDelta(-100);
@@ -52,9 +54,9 @@ struct test_fixture_2 {
 		track3.SetLength(200000);
 		track3.SetElevationDelta(-50);
 		track3.SetName("T3");
-		track1.FullConnect(TDIR_REVERSE, track_target_ptr(&pt1, TDIR_PTS_FACE));
-		track2.FullConnect(TDIR_FORWARD, track_target_ptr(&pt1, TDIR_PTS_NORMAL));
-		track3.FullConnect(TDIR_FORWARD, track_target_ptr(&pt1, TDIR_PTS_REVERSE));
+		track1.FullConnect(TDIR_REVERSE, track_target_ptr(&pt1, TDIR_PTS_FACE), ec);
+		track2.FullConnect(TDIR_FORWARD, track_target_ptr(&pt1, TDIR_PTS_NORMAL), ec);
+		track3.FullConnect(TDIR_FORWARD, track_target_ptr(&pt1, TDIR_PTS_REVERSE), ec);
 		pt1.SetName("P1");
 	}
 };

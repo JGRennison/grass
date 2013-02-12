@@ -30,10 +30,13 @@
 
 #include "trackcircuit.h"
 #include "tractiontype.h"
+#include "error.h"
 
 struct speed_class;
 class train;
-struct track_target_ptr;
+class generictrack;
+template <typename T> struct vartrack_target_ptr;
+typedef vartrack_target_ptr<generictrack> track_target_ptr;
 class track_location;
 
 struct speed_restriction {
@@ -86,8 +89,8 @@ class generictrack {
 	virtual unsigned int GetMaxConnectingPieces(DIRTYPE direction) const = 0;
 	virtual const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const = 0;
 
-	bool FullConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
-	
+	bool FullConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec);
+
 	virtual std::string GetTypeName() const { return "Generic Track"; }
 
 	virtual std::string GetName() const { return name; }
@@ -99,20 +102,22 @@ class generictrack {
 	virtual generictrack & SetElevationDelta(unsigned int elevationdelta);
 	virtual generictrack & SetTrackCircuit(track_circuit *tc);
 
+	virtual bool PostLayoutInit(error_collection &ec) { return true; }	//return false to discontinue initing piece
+
 	enum {
 		GTF_ROUTESET	= 1<<0,
 		GTF_ROUTETHISDIR= 1<<1,
 		GTF_ROUTEFORK	= 1<<2,
-		GTF_ROUTEMARKER	= 1<<3,
+		GTF_ROUTINGPOINT= 1<<3,
 	};
-	
+
 	protected:
 	virtual bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) = 0;
 	static bool TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target);
 };
 
-struct track_target_ptr {
-	generictrack *track;
+template <typename T> struct vartrack_target_ptr {
+	T *track;
 	DIRTYPE direction;
 	inline bool IsValid() const { return track; }
 	inline void ReverseDirection() {
@@ -122,34 +127,33 @@ struct track_target_ptr {
 		track = 0;
 		direction = TDIR_NULL;
 	}
-	track_target_ptr() { Reset(); }
-	track_target_ptr(generictrack *track_, DIRTYPE direction_) : track(track_), direction(direction_) { }
-	track_target_ptr(const track_target_ptr &in) : track(in.track), direction(in.direction) { }
-	inline bool operator==(const track_target_ptr &other) const {
+	vartrack_target_ptr() { Reset(); }
+	vartrack_target_ptr(T *track_, DIRTYPE direction_) : track(track_), direction(direction_) { }
+	vartrack_target_ptr(const vartrack_target_ptr &in) : track(in.track), direction(in.direction) { }
+	inline bool operator==(const vartrack_target_ptr &other) const {
 		return track == other.track && direction == other.direction;
 	}
-	inline bool operator!=(const track_target_ptr &other) const {
+	inline bool operator!=(const vartrack_target_ptr &other) const {
 		return !(*this == other);
 	}
-	const track_target_ptr &GetConnectingPiece() const;
+	inline void operator=(const vartrack_target_ptr &other) {
+		track = other.track;
+		direction = other.direction;
+	}
+	const vartrack_target_ptr &GetConnectingPiece() const;
 };
 
 extern const track_location empty_track_location;
 extern const track_target_ptr empty_track_target;
 
-inline const track_target_ptr &track_target_ptr::GetConnectingPiece() const {
+template<> inline const vartrack_target_ptr<generictrack> &vartrack_target_ptr<generictrack>::GetConnectingPiece() const {
 	return track ? track->GetConnectingPiece(direction) : empty_track_target;
-}
-
-inline bool generictrack::FullConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
-	if(!HalfConnect(this_entrance_direction, target_entrance)) return false;
-	return target_entrance.track->HalfConnect(target_entrance.direction, track_target_ptr(this, this_entrance_direction));
 }
 
 class track_location {
 	track_target_ptr trackpiece;
 	unsigned int offset;
-	
+
 	public:
 	inline bool IsValid() const { return trackpiece.IsValid(); }
 	inline void ReverseDirection() {
@@ -186,7 +190,7 @@ class track_location {
 	inline bool operator!=(const track_location &other) const  {
 		return !(*this == other);
 	}
-	
+
 	track_location() : trackpiece(), offset(0) { }
 	track_location(const track_target_ptr &targ) {
 		SetTargetStartLocation(targ);
@@ -222,14 +226,14 @@ class trackseg : public generictrack {
 
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
-	
+
 	virtual std::string GetTypeName() const { return "Track Segment"; }
-	
+
 	trackseg & SetLength(unsigned int length);
 	trackseg & AddSpeedRestriction(speed_restriction sr);
 	trackseg & SetElevationDelta(unsigned int elevationdelta);
 	trackseg & SetTrackCircuit(track_circuit *tc);
-	
+
 	protected:
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
 };
@@ -247,7 +251,7 @@ class genericpoints : public genericzlentrack {
 	public:
 	void TrainEnter(DIRTYPE direction, train *t);
 	void TrainLeave(DIRTYPE direction, train *t);
-	
+
 	virtual std::string GetTypeName() const { return "Generic Points"; }
 };
 
@@ -265,7 +269,7 @@ class points : public genericpoints {
 		PTF_REMINDER	= 1<<3,
 		PTF_FAILED	= 1<<4,
 	};
-	
+
 	points() : pflags(0) { }
 
 	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
@@ -274,12 +278,12 @@ class points : public genericpoints {
 
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
-	
+
 	virtual std::string GetTypeName() const { return "Points"; }
-	
+
 	virtual unsigned int GetPointFlags() const;
 	virtual unsigned int SetPointFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
-	
+
 	protected:
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
 };

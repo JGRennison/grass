@@ -21,6 +21,9 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
+#ifndef INC_TRAVERSE_ALREADY
+#define INC_TRAVERSE_ALREADY
+
 #include "track.h"
 #include <functional>
 #include <deque>
@@ -40,4 +43,8 @@ struct route_recording_item {
 	route_recording_item(const track_target_ptr &loc, unsigned int index) : location(loc), connection_index(index) { }
 };
 
-void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, std::deque<route_recording_item> &route_pieces, unsigned int &error_flags, std::function<bool(const std::deque<route_recording_item> &route_pieces, const track_target_ptr &piece)> step_func);
+typedef std::deque<route_recording_item> route_recording_list;
+
+void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, unsigned int &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece)> step_func);
+
+#endif

@@ -21,5 +21,32 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#define CATCH_CONFIG_MAIN
-#include "catch.hpp"
+#include "world.h"
+
+void world::ConnectTrack(generictrack *track1, DIRTYPE dir1, std::string name2, DIRTYPE dir2, error_collection &ec) {
+	auto target_it = all_pieces.find(name2);
+	if(target_it == all_pieces.end()) {
+		connection_forward_declarations.emplace_back(track1, dir1, name2, dir2);
+	}
+	else {
+		track1->FullConnect(dir1, track_target_ptr(target_it->second.get(), dir2), ec);
+	}
+}
+
+void world::ConnectAllPiecesInit(error_collection &ec) {
+	for(auto it = connection_forward_declarations.begin(); it != connection_forward_declarations.end(); ++it) {
+		auto target_it = all_pieces.find(it->name2);
+		if(target_it == all_pieces.end()) {
+			//error
+		}
+		else {
+			it->track1->FullConnect(it->dir1, track_target_ptr(target_it->second.get(), it->dir2), ec);
+		}
+	}
+}
+
+void world::PostLayoutInit(error_collection &ec) {
+	for(auto it = all_pieces.begin(); it != all_pieces.end(); ++it) {
+		it->second->PostLayoutInit(ec);
+	}
+}

@@ -21,7 +21,7 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "../include/trackcircuit.h"
+#include "trackcircuit.h"
 
 void track_circuit::TrainEnter(train *t) {
 	

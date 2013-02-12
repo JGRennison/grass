@@ -21,9 +21,38 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "../include/track.h"
+#ifndef INC_SIGNAL_ALREADY
+#define INC_SIGNAL_ALREADY
 
-class genericsignal : public genericzlentrack {
+#include "track.h"
+#include "traverse.h"
+
+class routingpoint : public genericzlentrack {
+
+	public:
+	enum {
+		RPRT_SHUNTSTART		= 1<<0,
+		RPRT_SHUNTEND		= 1<<1,
+		RPRT_ROUTESTART		= 1<<2,
+		RPRT_ROUTEEND		= 1<<3,
+		RPRT_VIA		= 1<<4,
+	};
+	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction) = 0;
+	virtual unsigned int GetSetRouteTypes(DIRTYPE direction) = 0;
+
+	virtual std::string GetTypeName() const { return "Track Routing Point"; }
+};
+
+typedef std::deque<routingpoint *> via_list;
+
+struct route {
+	vartrack_target_ptr<routingpoint> start;
+	route_recording_list pieces;
+	vartrack_target_ptr<routingpoint> end;
+	via_list vias;
+};
+
+class genericsignal : public routingpoint {
 	track_target_ptr prev;
 	track_target_ptr next;
 	unsigned int sflags;
@@ -37,10 +66,27 @@ class genericsignal : public genericzlentrack {
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
 
-	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
-	
 	virtual std::string GetTypeName() const { return "Generic Signal"; }
-	
+
 	virtual unsigned int GetSignalFlags() const;
 	virtual unsigned int SetSignalFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
+
+	protected:
+	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
 };
+
+class autosignal : public genericsignal {
+	route signal_route;
+
+	public:
+	bool PostLayoutInit(error_collection &ec);
+	unsigned int GetFlags(DIRTYPE direction) const;
+	virtual std::string GetTypeName() const { return "Automatic Signal"; }
+};
+
+class routesignal : public genericsignal {
+	public:
+	virtual std::string GetTypeName() const { return "Route Signal"; }
+};
+
+#endif

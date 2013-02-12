@@ -44,7 +44,7 @@ SRCLIBS32=-lwxmsw28u_richtext -lwxmsw28u_aui -lwxbase28u_xml -lwxexpat -lwxmsw28
 SRCLIBS64=
 GCC32=i686-w64-mingw32-g++
 GCC64=x86_64-w64-mingw32-g++
-SRCCFLAGS=-IC:/SourceCode/Libraries/wxWidgets2.8/include
+SRCCFLAGS=-isystem C:/SourceCode/Libraries/wxWidgets2.8/include
 HDEPS:=
 EXECPREFIX:=
 PATHSEP:=\\
@@ -55,7 +55,7 @@ SIZEPOSTFIX:=64
 OBJDIR+=$(SIZEPOSTFIX)
 GCC:=$(GCC64)
 SRCLIBS:=$(SRCLIBS64)
-CFLAGS2:=-mcx16
+CFLAGS+=-mcx16
 PACKER:=mpress -s
 else
 GCC:=$(GCC32)
@@ -71,7 +71,6 @@ LIBS:=-lpcre -lrt
 SRCLIBS:=`wx-config --libs`
 SRCCFLAGS:= `wx-config --cxxflags`
 PACKER:=upx -9
-#HDEPS:=
 GCC_MAJOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f1)
 GCC_MINOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f2)
 ARCH:=$(shell test $(GCC_MAJOR) -gt 4 -o \( $(GCC_MAJOR) -eq 4 -a $(GCC_MINOR) -ge 2 \) && echo native)
@@ -86,6 +85,8 @@ MCFLAGS+=`pkg-config --cflags glib-2.0`
 endif
 
 endif
+
+CFLAGS += -iquote source/include
 
 OUTNAME:=$(OUTNAME)$(SIZEPOSTFIX)$(DEBUGPOSTFIX)
 
@@ -128,48 +129,31 @@ $(OUTNAME)$(SUFFIX): $(OBJS)
 $(TESTOUTNAME)$(SUFFIX): $(TEST_OBJS)
 	$(GCC) $(TEST_OBJS) $(TS_OBJS) -o $(TESTOUTNAME)$(SUFFIX) $(LIBS) $(AFLAGS) $(GFLAGS)
 	$(EXECPREFIX)$(TESTOUTNAME)$(SUFFIX)
+	
+MAKEDEPS = -MMD -MP -MT '$@ $(@:.o=.d)'
 
 $(OBJDIR)/%.o: source/src/%.cpp
-	$(GCC) -c $< -o $@ $(CFLAGS) $(SRCCFLAGS) $(CFLAGS2) $(CXXFLAGS) $(SRCCXXFLAGS) $(GFLAGS)
+	$(GCC) -c $< -o $@ $(CFLAGS) $(SRCCFLAGS) $(CXXFLAGS) $(SRCCXXFLAGS) $(GFLAGS) $(MAKEDEPS)
 
 $(TESTOBJDIR)/%.o: source/test/%.cpp
-	$(GCC) -c $< -o $@ $(CFLAGS) $(CFLAGS2) $(CXXFLAGS) $(GFLAGS)
+	$(GCC) -c $< -o $@ $(CFLAGS) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
 
 $(TSOBJDIR)/%.o: source/src/%.cpp
-	$(GCC) -c $< -o $@ $(CFLAGS) $(CFLAGS2) $(CXXFLAGS) $(GFLAGS)
+	$(GCC) -c $< -o $@ $(CFLAGS) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
 
 $(ALL_OBJS): | $(DIRS)
 
 $(DIRS):
 	-$(MKDIR) $(subst /,$(PATHSEP),$@)
 
-INC_TC:=source/include/trackcircuit.h
-TRACTIONTYPE_INC:=source/include/tractiontype.h
-INC_TRACK:=source/include/track.h $(INC_TC) $(TRACTIONTYPE_INC)
-INC_TIMETABLE:=source/include/timetable.h
-INC_TRAIN:=source/include/train.h $(INC_TRACK) $(INC_TIMETABLE)
-INC_TRAVERSE:=source/include/traverse.h $(INC_TRACK)
-INC_SIGNAL:=source/include/signal.h $(INC_TRACK)
-
-DEPDIRS:=$(OBJDIR) $(TESTOBJDIR) $(TSOBJDIR)
-$(addsuffix /track.o,$(DEPDIRS)): $(INC_TRACK)
-$(addsuffix /train.o,$(DEPDIRS)): $(INC_TRAIN) source/include/util.h $(INC_TRAVERSE)
-$(addsuffix /traverse.o,$(DEPDIRS)): $(INC_TRAVERSE)
-$(addsuffix /signal.o,$(DEPDIRS)): $(INC_SIGNAL)
-
-$(addsuffix /trackcircuit.o,$(DEPDIRS)): $(INC_TC)
-$(addsuffix /cmdline.o,$(DEPDIRS)): source/include/cmdline.h source/include/SimpleOpt.h
-$(OBJDIR)/main.o: source/include/main.h source/include/cmdline.h source/include/wxcommon.h
-$(OBJDIR)/cmdline.o: source/include/wxcommon.h
-
-$(TS_OBJS) $(OBJS): source/include/common.h
-
 $(TESTOUTNAME)$(SUFFIX): $(TS_OBJS)
+
+-include $(ALL_OBJS:.o=.d)
 
 .PHONY: clean install uninstall all main test
 
 clean:
-	rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.ii) $(ALL_OBJS:.o=.lst) $(ALL_OBJS:.o=.s) $(OUTNAME)$(SUFFIX) $(OUTNAME)_debug$(SUFFIX) $(TESTOUTNAME)$(SUFFIX) $(TESTOUTNAME)_debug$(SUFFIX)
+	rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.ii) $(ALL_OBJS:.o=.lst) $(ALL_OBJS:.o=.d) $(ALL_OBJS:.o=.s) $(OUTNAME)$(SUFFIX) $(OUTNAME)_debug$(SUFFIX) $(TESTOUTNAME)$(SUFFIX) $(TESTOUTNAME)_debug$(SUFFIX)
 
 install:
 ifeq "$(PLATFORM)" "WIN"

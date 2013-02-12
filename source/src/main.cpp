@@ -22,10 +22,10 @@
 //==========================================================================
 
 #include <cstdio>
-#include "../include/common.h"
-#include "../include/wxcommon.h"
-#include "../include/main.h"
-#include "../include/cmdline.h"
+#include "common.h"
+#include "wxcommon.h"
+#include "main.h"
+#include "cmdline.h"
 
 IMPLEMENT_APP(grassapp)
 

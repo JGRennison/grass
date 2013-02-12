@@ -21,5 +21,31 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#define CATCH_CONFIG_MAIN
-#include "catch.hpp"
+#ifndef INC_WORLD_ALREADY
+#define INC_WORLD_ALREADY
+
+#include "track.h"
+#include <unordered_map>
+#include <deque>
+
+struct connection_forward_declaration {
+	generictrack *track1;
+	DIRTYPE dir1;
+	std::string name2;
+	DIRTYPE dir2;
+	connection_forward_declaration(generictrack *t1, DIRTYPE d1, const std::string &n2, DIRTYPE d2) : track1(t1), dir1(d1), name2(n2), dir2(d2) { }
+};
+
+class world {
+	
+	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
+	std::deque<connection_forward_declaration> connection_forward_declarations;
+	
+	public:
+	void AddTrack(std::unique_ptr<generictrack> &&piece, error_collection &ec);
+	void ConnectTrack(generictrack *track1, DIRTYPE dir1, std::string name2, DIRTYPE dir2, error_collection &ec);
+	void ConnectAllPiecesInit(error_collection &ec);
+	void PostLayoutInit(error_collection &ec);
+};
+
+#endif

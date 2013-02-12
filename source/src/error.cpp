@@ -21,5 +21,8 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#define CATCH_CONFIG_MAIN
-#include "catch.hpp"
+#include "error.h"
+
+void error_collection::RegisterError(std::unique_ptr<error_obj> &&err) {
+	errors.emplace_back(std::move(err));
+}

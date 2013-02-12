@@ -21,5 +21,22 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#define CATCH_CONFIG_MAIN
-#include "catch.hpp"
+#ifndef INC_ERROR_ALREADY
+#define INC_ERROR_ALREADY
+
+#include <memory>
+#include <list>
+
+class error_obj {
+	public:
+	virtual ~error_obj() { }
+};
+
+class error_collection {
+	std::list<std::unique_ptr<error_obj> > errors;
+	
+	public:
+	void RegisterError(std::unique_ptr<error_obj> &&err);
+};
+
+#endif

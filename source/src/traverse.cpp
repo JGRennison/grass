@@ -21,12 +21,12 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "../include/traverse.h"
+#include "traverse.h"
 
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/, std::function<void (track_location & /*old*/, track_location & /*new*/)> func) {
 
 	if(elevationdelta) *elevationdelta = 0;
-	
+
 	if(!track.IsValid()) return displacement;
 
 	while(displacement > 0) {
@@ -57,7 +57,7 @@ unsigned int AdvanceDisplacement(unsigned int displacement, track_location &trac
 	return 0;
 }
 
-void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, std::deque<route_recording_item> &route_pieces, unsigned int &error_flags, std::function<bool(const std::deque<route_recording_item> &route_pieces, const track_target_ptr &piece)> step_func) {
+void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, unsigned int &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece)> step_func) {
 	while(true) {
 		if(!start_track.IsValid()) {
 			error_flags |= TSEF_OUTOFTRACK;
@@ -74,7 +74,7 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 			}
 			else junction_max--;
 		}
-		
+
 		if(step_func(route_pieces, start_track)) return;
 
 		unsigned int max_exit_pieces = start_track.track->GetMaxConnectingPieces(start_track.direction);
@@ -82,9 +82,9 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 			error_flags |= TSEF_OUTOFTRACK;
 			return;
 		}
-		
+
 		max_pieces--;
-		
+
 		if(max_exit_pieces >= 2) {
 			for(unsigned int i=1; i < max_exit_pieces; i++) {
 				unsigned int route_pieces_size = route_pieces.size();
@@ -96,5 +96,5 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 		route_pieces.emplace_back(start_track, 0);
 		start_track = start_track.track->GetConnectingPieceByIndex(start_track.direction, 0);
 	}
-	
+
 }

@@ -21,9 +21,9 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "../include/common.h"
-#include "../include/track.h"
-#include "../include/train.h"
+#include "common.h"
+#include "track.h"
+#include "train.h"
 
 #include <cassert>
 
@@ -79,12 +79,21 @@ int generictrack::GetPartialElevationDelta(DIRTYPE direction, unsigned int displ
 
 bool generictrack::TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target) {
 	if(piece_var.IsValid() && piece_var != new_target) {
-		assert(false);
 		return false;
 	}
 	else {
 		piece_var = new_target;
 		return true;
+	}
+}
+
+bool generictrack::FullConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec) {
+	if(HalfConnect(this_entrance_direction, target_entrance) && target_entrance.track->HalfConnect(target_entrance.direction, track_target_ptr(this, this_entrance_direction))) {
+		return true;
+	}
+	else {
+		//produce error obj
+		return false;
 	}
 }
 
@@ -245,9 +254,9 @@ void genericpoints::TrainLeave(DIRTYPE direction, train *t) { }
 
 const track_target_ptr & points::GetConnectingPiece(DIRTYPE direction) const {
 	if(pflags & PTF_OOC) return empty_track_target;
-	
+
 	bool pointsrev = pflags & PTF_REV;
-	
+
 	switch(direction) {
 		case TDIR_PTS_FACE:
 			return pointsrev ? reverse : normal;
@@ -291,9 +300,9 @@ const track_target_ptr & points::GetConnectingPieceByIndex(DIRTYPE direction, un
 
 DIRTYPE points::GetReverseDirection(DIRTYPE direction) const {
 	if(pflags & PTF_OOC) return TDIR_NULL;
-	
+
 	bool pointsrev = pflags & PTF_REV;
-	
+
 	switch(direction) {
 		case TDIR_PTS_FACE:
 			return pointsrev ? TDIR_PTS_REVERSE : TDIR_PTS_NORMAL;
@@ -371,7 +380,7 @@ std::ostream& operator<<(std::ostream& os, const DIRTYPE& obj) {
 			break;
 		default:
 			os << "Unknown direction";
-			break;	
+			break;
 	}
 	return os;
 }
