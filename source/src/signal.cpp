@@ -26,6 +26,20 @@
 
 #include <cassert>
 
+class error_signalinit : public layout_initialisation_error_obj {
+	public:
+	error_signalinit(const genericsignal &sig, const std::string &str = "") {
+		msg << "Signal Initialisation Error for " << sig << ": " << str;
+	}
+};
+
+class error_signalinit_trackscan : public error_signalinit {
+	public:
+	error_signalinit_trackscan(const genericsignal &sig, const track_target_ptr &piece, const std::string &str = "") : error_signalinit(sig) {
+		msg << "Track Scan: Piece: " << piece << ": " << str;
+	}
+};
+
 bool genericsignal::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
 	switch(this_entrance_direction) {
 		case TDIR_FORWARD:
@@ -70,10 +84,19 @@ unsigned int genericsignal::SetSignalFlagsMasked(unsigned int set_flags, unsigne
 	return sflags;
 }
 
+bool genericsignal::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+	if(direction != TDIR_FORWARD && rr_flags & (RRF_STARTPIECE | RRF_ENDPIECE)) {
+		return false;
+	}
+	if(rr_flags & RRF_ENDPIECE) return true;
+	return trs.Reservation(direction, index, rr_flags, resroute);
+}
+
 bool autosignal::PostLayoutInit(error_collection &ec) {
 	bool continue_initing = genericsignal::PostLayoutInit(ec);
 	if(continue_initing) {
 		signal_route.start = vartrack_target_ptr<routingpoint>(this, TDIR_FORWARD);
+		bool route_success = false;
 
 		auto func = [&](const route_recording_list &route_pieces, const track_target_ptr &piece) {
 			unsigned int pieceflags = piece.track->GetFlags(piece.direction);
@@ -83,15 +106,16 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 					if(! (target_routing_piece->GetSetRouteTypes(piece.direction) & (RPRT_ROUTEEND | RPRT_SHUNTEND | RPRT_VIA))) {
 						signal_route.pieces = route_pieces;
 						signal_route.end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
+						route_success = true;
 						return true;
 					}
 				}
-				//err = GTL_SIGNAL_ROUTING;
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit_trackscan(*this, piece, "Routing piece not a valid autosignal route end")));
 				continue_initing = false;
 				return true;
 			}
 			if(pieceflags & GTF_ROUTESET) {
-				//err = GTL_SIGNAL_ROUTING;
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit_trackscan(*this, piece, "Autosignal route already reserved")));
 				continue_initing = false;
 				return true;
 			}
@@ -101,9 +125,21 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 		signal_route.pieces.clear();
 		unsigned int error_flags = 0;
 		TrackScan(100, 0, GetConnectingPieceByIndex(TDIR_FORWARD, 0), signal_route.pieces, error_flags, func);
-		
+
 		if(error_flags != 0) {
 			continue_initing = false;
+			ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit(*this, std::string("Track scan failed constraints: ") + GetTrackScanErrorFlagsStr(error_flags))));
+		}
+		else if(!route_success) {
+			continue_initing = false;
+			ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit(*this, "Track scan found no route")));
+		}
+		else {
+			if(RouteReservation(signal_route, RRF_AUTOROUTE | RRF_TRYRESERVE)) RouteReservation(signal_route, RRF_AUTOROUTE | RRF_RESERVE);
+			else {
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit(*this, "Autosignal crosses reserved route")));
+				continue_initing = false;
+			}
 		}
 	}
 	return continue_initing;
@@ -111,4 +147,79 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 
 unsigned int autosignal::GetFlags(DIRTYPE direction) const {
 	return GTF_ROUTINGPOINT;
+}
+
+bool routesignal::PostLayoutInit(error_collection &ec) {
+	bool continue_initing = genericsignal::PostLayoutInit(ec);
+	if(continue_initing) {
+		auto func = [&](const route_recording_list &route_pieces, const track_target_ptr &piece) {
+			unsigned int pieceflags = piece.track->GetFlags(piece.direction);
+			if(pieceflags & GTF_ROUTINGPOINT) {
+				routingpoint *target_routing_piece = dynamic_cast<routingpoint *>(piece.track);
+				if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(piece.direction) & RPRT_ROUTEEND) {
+					if(! (target_routing_piece->GetSetRouteTypes(piece.direction) & (RPRT_ROUTEEND | RPRT_SHUNTEND | RPRT_VIA))) {
+						signal_routes.emplace_back();
+						route &rt = signal_routes.back();
+						rt.start = vartrack_target_ptr<routingpoint>(this, TDIR_FORWARD);
+						rt.pieces = route_pieces;
+						rt.end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
+						rt.FillViaList();
+						return true;
+					}
+				}
+				else if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(piece.direction) & RPRT_VIA) {
+					//via point, ignore, handled by route::FillViaList
+					return true;
+				}
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit_trackscan(*this, piece, "Routing piece not a valid route signal route end")));
+				continue_initing = false;
+				return true;
+			}
+			if(pieceflags & GTF_ROUTESET) {
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit_trackscan(*this, piece, "Route signal route already reserved")));
+				continue_initing = false;
+				return true;
+			}
+			return false;
+		};
+		
+		unsigned int error_flags = 0;
+		route_recording_list pieces;
+		TrackScan(100, 10, GetConnectingPieceByIndex(TDIR_FORWARD, 0), pieces, error_flags, func);
+		
+		if(error_flags != 0) {
+			continue_initing = false;
+			ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit(*this, std::string("Track scan failed constraints: ") + GetTrackScanErrorFlagsStr(error_flags))));
+		}
+		else if(signal_routes.empty()) {
+			continue_initing = false;
+			ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit(*this, "Track scan found no route")));
+		}
+	}
+	return continue_initing;
+}
+
+unsigned int routesignal::GetFlags(DIRTYPE direction) const {
+	return GTF_ROUTINGPOINT;
+}
+
+//returns false on failure
+bool RouteReservation(route &res_route, unsigned int rr_flags) {
+	if(!res_route.start.track->Reservation(res_route.start.direction, 0, rr_flags | RRF_STARTPIECE, &res_route)) return false;
+
+	for(auto it = res_route.pieces.begin(); it != res_route.pieces.end(); ++it) {
+		if(!it->location.track->Reservation(it->location.direction, it->connection_index, rr_flags, &res_route)) return false;
+	}
+
+	if(!res_route.end.track->Reservation(res_route.end.direction, 0, rr_flags | RRF_ENDPIECE, &res_route)) return false;
+	return true;
+}
+
+void route::FillViaList() {
+	for(auto it = pieces.begin(); it != pieces.end(); ++it) {
+		routingpoint *target_routing_piece = dynamic_cast<routingpoint *>(it->location.track);
+		if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(it->location.direction) & routingpoint::RPRT_VIA) {
+			vias.push_back(target_routing_piece);
+		}
+	}
 }

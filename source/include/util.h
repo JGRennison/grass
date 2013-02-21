@@ -24,6 +24,9 @@
 #ifndef INC_UTIL_ALREADY
 #define INC_UTIL_ALREADY
 
+#include <ctime>
+#include <string>
+
 //adapted from http://forums.devshed.com/showpost.php?p=2678621&postcount=9
 //Newton-Raphson
 template <typename I> I fast_isqrt( I n ){
@@ -40,5 +43,9 @@ template <typename I> I fast_isqrt( I n ){
 
 	return p;
 }
+
+std::string string_format(const std::string &fmt, ...);
+std::string gr_strftime(const std::string &format, const struct tm *tm, time_t timestamp, bool localtime);
+unsigned int GetMilliTime();
 
 #endif

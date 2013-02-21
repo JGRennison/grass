@@ -96,7 +96,7 @@ void train::TrainMoveStep(unsigned int ms) {
 	if(new_speed < min_new_speed) new_speed = min_new_speed;
 
 	if(new_speed < 0) current_speed = 0;
-	else if(new_speed > current_max_speed) current_speed = current_max_speed;
+	else if((unsigned int) new_speed > current_max_speed) current_speed = current_max_speed;
 	else current_speed = new_speed;
 }
 

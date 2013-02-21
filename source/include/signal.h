@@ -28,7 +28,6 @@
 #include "traverse.h"
 
 class routingpoint : public genericzlentrack {
-
 	public:
 	enum {
 		RPRT_SHUNTSTART		= 1<<0,
@@ -50,12 +49,17 @@ struct route {
 	route_recording_list pieces;
 	vartrack_target_ptr<routingpoint> end;
 	via_list vias;
+	
+	void FillViaList();
 };
+
+bool RouteReservation(route &res_route, unsigned int rr_flags);
 
 class genericsignal : public routingpoint {
 	track_target_ptr prev;
 	track_target_ptr next;
 	unsigned int sflags;
+	track_reservation_state trs;
 
 	public:
 	genericsignal() : sflags(0) { }
@@ -65,7 +69,8 @@ class genericsignal : public routingpoint {
 
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
-
+	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	
 	virtual std::string GetTypeName() const { return "Generic Signal"; }
 
 	virtual unsigned int GetSignalFlags() const;
@@ -85,7 +90,11 @@ class autosignal : public genericsignal {
 };
 
 class routesignal : public genericsignal {
+	std::list<route> signal_routes;
+
 	public:
+	bool PostLayoutInit(error_collection &ec);
+	unsigned int GetFlags(DIRTYPE direction) const;
 	virtual std::string GetTypeName() const { return "Route Signal"; }
 };
 

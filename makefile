@@ -109,7 +109,7 @@ endif
 
 OBJS:=$(patsubst source/src/%.cpp,$(OBJDIR)/%.o,$(OBJS_SRC))
 TEST_OBJS:=$(patsubst source/test/%.cpp,$(TESTOBJDIR)/%.o,$(TEST_SRC))
-TS_OBJS:=$(TSOBJDIR)/track.o $(TSOBJDIR)/train.o $(TSOBJDIR)/trackcircuit.o $(TSOBJDIR)/traverse.o
+TS_OBJS:=$(TSOBJDIR)/track.o $(TSOBJDIR)/train.o $(TSOBJDIR)/trackcircuit.o $(TSOBJDIR)/traverse.o $(TSOBJDIR)/error.o  $(TSOBJDIR)/util.o
 
 ALL_OBJS:=$(OBJS) $(TEST_OBJS) $(TS_OBJS)
 

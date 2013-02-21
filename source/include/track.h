@@ -38,6 +38,7 @@ class generictrack;
 template <typename T> struct vartrack_target_ptr;
 typedef vartrack_target_ptr<generictrack> track_target_ptr;
 class track_location;
+class route;
 
 struct speed_restriction {
 	unsigned int speed;
@@ -68,6 +69,27 @@ class tractionset {
 	std::forward_list<traction_type> tractions;
 };
 
+enum {
+	RRF_RESERVE			= 1<<0,
+	RRF_UNRESERVE			= 1<<1,
+	RRF_AUTOROUTE			= 1<<2,
+	RRF_TRYRESERVE			= 1<<3,
+	RRF_STARTPIECE			= 1<<4,
+	RRF_ENDPIECE			= 1<<5,
+	
+	RRF_SAVEMASK			= RRF_AUTOROUTE | RRF_STARTPIECE | RRF_ENDPIECE | RRF_RESERVE,
+};
+
+class track_reservation_state {
+	route *reserved_route;
+	DIRTYPE direction;
+	unsigned int index;
+	unsigned int rr_flags;
+	
+	public:
+	bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+};
+
 class generictrack {
 	std::string name;
 	public:
@@ -90,6 +112,8 @@ class generictrack {
 	virtual const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const = 0;
 
 	bool FullConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec);
+	
+	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) = 0;
 
 	virtual std::string GetTypeName() const { return "Generic Track"; }
 
@@ -207,6 +231,7 @@ class trackseg : public generictrack {
 	unsigned int traincount;
 	track_target_ptr next;
 	track_target_ptr prev;
+	track_reservation_state trs;
 
 	public:
 	trackseg() : length(0), elevationdelta(0), tc(0), traincount(0) { }
@@ -226,6 +251,7 @@ class trackseg : public generictrack {
 
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
+	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
 
 	virtual std::string GetTypeName() const { return "Track Segment"; }
 
@@ -260,6 +286,7 @@ class points : public genericpoints {
 	track_target_ptr normal;
 	track_target_ptr reverse;
 	unsigned int pflags;
+	track_reservation_state trs;
 
 	public:
 	enum {
@@ -278,6 +305,7 @@ class points : public genericpoints {
 
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
+	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
 
 	virtual std::string GetTypeName() const { return "Points"; }
 
@@ -288,6 +316,12 @@ class points : public genericpoints {
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
 };
 
+class layout_initialisation_error_obj : public error_obj {
+	public:
+	layout_initialisation_error_obj();
+};
+
+std::ostream& operator<<(std::ostream& os, const generictrack& obj);
 std::ostream& operator<<(std::ostream& os, const track_target_ptr& obj);
 std::ostream& operator<<(std::ostream& os, const track_location& obj);
 std::ostream& operator<<(std::ostream& os, const DIRTYPE& obj);

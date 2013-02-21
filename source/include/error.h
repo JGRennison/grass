@@ -26,10 +26,26 @@
 
 #include <memory>
 #include <list>
+#include <string>
+#include <sstream>
 
 class error_obj {
+	protected:
+	std::stringstream msg;
+	time_t timestamp;
+	unsigned int millitimestamp;
+
 	public:
+	error_obj();
 	virtual ~error_obj() { }
+	void StreamOut(std::ostream& os) const;
+};
+
+class generic_error_obj : public error_obj {
+	public:
+	generic_error_obj(const std::string &str) {
+		msg << str;
+	}
 };
 
 class error_collection {
@@ -37,6 +53,12 @@ class error_collection {
 	
 	public:
 	void RegisterError(std::unique_ptr<error_obj> &&err);
+	void Reset();
+	unsigned int GetErrorCount() const;
+	void StreamOut(std::ostream& os) const;
 };
+
+std::ostream& operator<<(std::ostream& os, const error_obj& obj);
+std::ostream& operator<<(std::ostream& os, const error_collection& obj);
 
 #endif

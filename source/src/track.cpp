@@ -24,6 +24,7 @@
 #include "common.h"
 #include "track.h"
 #include "train.h"
+#include "error.h"
 
 #include <cassert>
 
@@ -87,12 +88,19 @@ bool generictrack::TryConnectPiece(track_target_ptr &piece_var, const track_targ
 	}
 }
 
+class error_trackconnection : public layout_initialisation_error_obj {
+	public:
+	error_trackconnection(const track_target_ptr &targ1, const track_target_ptr &targ2) {
+		msg << "Track Connection Error: Could Not Connect: " << targ1 << " to " << targ2;
+	}
+};
+
 bool generictrack::FullConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec) {
 	if(HalfConnect(this_entrance_direction, target_entrance) && target_entrance.track->HalfConnect(target_entrance.direction, track_target_ptr(this, this_entrance_direction))) {
 		return true;
 	}
 	else {
-		//produce error obj
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_trackconnection(track_target_ptr(this, this_entrance_direction), target_entrance)));
 		return false;
 	}
 }
@@ -225,6 +233,9 @@ trackseg & trackseg::SetTrackCircuit(track_circuit *tc) {
 	return *this;
 }
 
+bool trackseg::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+	return trs.Reservation(direction, index, rr_flags, resroute);
+}
 
 unsigned int genericzlentrack::GetStartOffset(DIRTYPE direction) const {
 	return 0;
@@ -343,9 +354,65 @@ unsigned int points::SetPointFlagsMasked(unsigned int set_flags, unsigned int ma
 	return pflags;
 }
 
+bool points::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+	unsigned int pflags = GetPointFlags();
+	bool rev = pflags & PTF_REV;
+	if(GetPointFlags() && PTF_LOCKED) {
+		switch(direction) {
+			case TDIR_PTS_FACE:
+				if((index == 0 && rev) || (index == 1 && !rev)) return false;
+				break;
+			case TDIR_PTS_NORMAL:
+				if(rev) return false;
+				break;
+			case TDIR_PTS_REVERSE:
+				if(!rev) return false;
+				break;
+			default:
+				return false;
+		}
+	}
+	return trs.Reservation(direction, index, rr_flags, resroute);
+}
+
 std::string generictrack::GetFriendlyName() const {
 	std::string result= std::string(GetTypeName()).append(": ").append((!name.empty()) ? name : std::string("[unnamed]"));
 	return result;
+}
+
+layout_initialisation_error_obj::layout_initialisation_error_obj() {
+	msg << "Track layout initialisation failure: ";
+}
+
+bool track_reservation_state::Reservation(DIRTYPE in_dir, unsigned int in_index, unsigned int in_rr_flags, route *resroute) {
+	if(in_rr_flags & (RRF_RESERVE | RRF_TRYRESERVE)) {
+		if(rr_flags & RRF_RESERVE) {	//track already reserved
+			if(direction != in_dir || index != in_index) return false;	//reserved piece doesn't match
+		}
+		if(in_rr_flags & RRF_RESERVE) {
+			rr_flags = in_rr_flags & RRF_SAVEMASK;
+			direction = in_dir;
+			index = in_index;
+			reserved_route = resroute;
+		}
+		return true;
+	}
+	else if(in_rr_flags & RRF_UNRESERVE) {
+		if(rr_flags & RRF_RESERVE) {
+			if(direction != in_dir || index != in_index) return false;	//reserved piece doesn't match
+			rr_flags = 0;
+			direction = TDIR_NULL;
+			index = 0;
+			reserved_route = 0;
+		}
+		return true;
+	}
+	else return false;
+}
+
+std::ostream& operator<<(std::ostream& os, const generictrack& obj) {
+	os << obj.GetFriendlyName();
+	return os;
 }
 
 std::ostream& operator<<(std::ostream& os, const track_target_ptr& obj) {

@@ -21,4 +21,23 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
+#ifdef __MINGW32__
 
+#include <string>
+#include <sstream>
+
+//fix for MinGW, from http://pastebin.com/7rhvv92A
+namespace std
+{
+    template <typename T>
+    string to_string(const T & value)
+    {
+        stringstream stream;
+        stream << value;
+        return stream.str();// string_stream;
+    }
+}
+#endif
+#ifdef _WIN32
+#define strncasecmp _strnicmp
+#endif

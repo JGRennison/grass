@@ -46,5 +46,6 @@ struct route_recording_item {
 typedef std::deque<route_recording_item> route_recording_list;
 
 void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, unsigned int &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece)> step_func);
+std::string GetTrackScanErrorFlagsStr(unsigned int error_flags);
 
 #endif

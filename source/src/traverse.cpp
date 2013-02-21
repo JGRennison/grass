@@ -98,3 +98,18 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 	}
 
 }
+
+std::string GetTrackScanErrorFlagsStr(unsigned int error_flags) {
+	std::string str;
+	if(error_flags & TSEF_OUTOFTRACK) {
+		str += "Ran out of track, ";
+	}
+	if(error_flags & TSEF_JUNCTIONLIMITREACHED) {
+		str += "Route junction limit exceeded, ";
+	}
+	if(error_flags & TSEF_LENGTHLIMIT) {
+		str += "Maximum route length exceeded, ";
+	}
+	if(str.size()) str.resize(str.size()-2);
+	return str;
+}
