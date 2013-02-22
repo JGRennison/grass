@@ -177,23 +177,23 @@ void train::ReverseDirection() {
 	track_location new_head = tail_pos;
 	tail_pos = head_pos;
 	head_pos = new_head;
-	
+
 	tail_pos.ReverseDirection();
 	head_pos.ReverseDirection();
 
 	unsigned int new_head_height = tail_relative_height;
 	tail_relative_height = head_relative_height;
 	head_relative_height = new_head_height;
-	
+
 	RefreshLookahead();
 }
 
 void train::RefreshCoveredTrackSpeedLimits() {
 	covered_track_speed_limits.clear();
-	
+
 	track_location local_backtrack_pos = head_pos;
 	local_backtrack_pos.ReverseDirection();
-	
+
 	auto func = [this](track_location &old_track, track_location &new_track) {
 		const speedrestrictionset *speeds = new_track.GetTrack()->GetSpeedRestrictions();
 		if(speeds) this->AddCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(this));
@@ -208,16 +208,16 @@ void train::RefreshCoveredTrackSpeedLimits() {
 
 void train::DropTrainIntoPosition(const track_location &position) {
 	tail_relative_height = head_relative_height = 0;
-	
+
 	head_pos = position;
 	tail_pos = position;
-	
+
 	tail_pos.ReverseDirection();
 
 	auto func = [this](track_location &old_track, track_location &new_track) {
 		new_track.GetTrack()->TrainEnter(new_track.GetTrack()->GetReverseDirection(new_track.GetDirection()), this);
 	};
-	
+
 	track_location temp;
 	func(temp, tail_pos);				//include the first track piece
 	AdvanceDisplacement(total_length, tail_pos, &tail_relative_height, func);
@@ -229,7 +229,7 @@ void train::UprootTrain() {
 	auto func = [this](track_location &old_track, track_location &new_track) {
 		new_track.GetTrack()->TrainEnter(new_track.GetTrack()->GetReverseDirection(new_track.GetDirection()), this);
 	};
-	
+
 	track_location temp;
 	func(temp, tail_pos);				//include the first track piece
 	AdvanceDisplacement(total_length, tail_pos, 0, func);

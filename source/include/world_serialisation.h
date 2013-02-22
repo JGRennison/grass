@@ -1,6 +1,6 @@
-//  grass - Generic Rail And Signalling Simulator
+//  retcon
 //
-//  WEBSITE: http://grss.sourceforge.net
+//  WEBSITE: http://retcon.sourceforge.net
 //
 //  NOTE: This software is licensed under the GPL. See: COPYING-GPL.txt
 //
@@ -18,32 +18,21 @@
 //  Foundation, Inc.,  59 Temple Place,  Suite 330, Boston,  MA 02111-1307
 //  USA
 //
-//  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
+//  2012 - j.g.rennison@gmail.com
 //==========================================================================
 
-#ifndef INC_COMMON_ALREADY
-#define INC_COMMON_ALREADY
+#ifndef INC_WORLD_SERIALISATION_ALREADY
+#define INC_WORLD_SERIALISATION_ALREADY
 
-#ifdef __MINGW32__
+class world_serialisation {
+	world &w;
 
-#include <string>
-#include <sstream>
-
-//fix for MinGW, from http://pastebin.com/7rhvv92A
-namespace std
-{
-    template <typename T>
-    string to_string(const T & value)
-    {
-        stringstream stream;
-        stream << value;
-        return stream.str();// string_stream;
-    }
-}
-#endif
-
-#ifdef _WIN32
-#define strncasecmp _strnicmp
-#endif
+	public:
+	world_serialisation(world &w_) : w(w_) { }
+	void LoadGame(const rapidjson::Value &json, error_collection &ec);
+	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);
+	template <typename T> T* MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec);
+	template <typename T> T* DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec);
+};
 
 #endif

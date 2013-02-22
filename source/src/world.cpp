@@ -21,7 +21,9 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
+#include "common.h"
 #include "world.h"
+#include "error.h"
 
 void world::ConnectTrack(generictrack *track1, DIRTYPE dir1, std::string name2, DIRTYPE dir2, error_collection &ec) {
 	auto target_it = all_pieces.find(name2);

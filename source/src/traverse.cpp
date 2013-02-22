@@ -21,6 +21,7 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
+#include "common.h"
 #include "traverse.h"
 
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/, std::function<void (track_location & /*old*/, track_location & /*new*/)> func) {

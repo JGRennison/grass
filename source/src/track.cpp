@@ -375,11 +375,6 @@ bool points::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-std::string generictrack::GetFriendlyName() const {
-	std::string result= std::string(GetTypeName()).append(": ").append((!name.empty()) ? name : std::string("[unnamed]"));
-	return result;
-}
-
 layout_initialisation_error_obj::layout_initialisation_error_obj() {
 	msg << "Track layout initialisation failure: ";
 }

@@ -109,7 +109,8 @@ endif
 
 OBJS:=$(patsubst source/src/%.cpp,$(OBJDIR)/%.o,$(OBJS_SRC))
 TEST_OBJS:=$(patsubst source/test/%.cpp,$(TESTOBJDIR)/%.o,$(TEST_SRC))
-TS_OBJS:=$(TSOBJDIR)/track.o $(TSOBJDIR)/train.o $(TSOBJDIR)/trackcircuit.o $(TSOBJDIR)/traverse.o $(TSOBJDIR)/error.o  $(TSOBJDIR)/util.o
+TS_OBJS:=$(TSOBJDIR)/track.o $(TSOBJDIR)/train.o $(TSOBJDIR)/trackcircuit.o $(TSOBJDIR)/traverse.o $(TSOBJDIR)/error.o
+TS_OBJS+=$(TSOBJDIR)/world.o $(TSOBJDIR)/future.o $(TSOBJDIR)/world_obj.o $(TSOBJDIR)/track_serialisation.o $(TSOBJDIR)/util.o
 
 ALL_OBJS:=$(OBJS) $(TEST_OBJS) $(TS_OBJS)
 
@@ -129,7 +130,7 @@ $(OUTNAME)$(SUFFIX): $(OBJS)
 $(TESTOUTNAME)$(SUFFIX): $(TEST_OBJS)
 	$(GCC) $(TEST_OBJS) $(TS_OBJS) -o $(TESTOUTNAME)$(SUFFIX) $(LIBS) $(AFLAGS) $(GFLAGS)
 	$(EXECPREFIX)$(TESTOUTNAME)$(SUFFIX)
-	
+
 MAKEDEPS = -MMD -MP -MT '$@ $(@:.o=.d)'
 
 $(OBJDIR)/%.o: source/src/%.cpp

@@ -88,8 +88,60 @@ bool genericsignal::Reservation(DIRTYPE direction, unsigned int index, unsigned 
 	if(direction != TDIR_FORWARD && rr_flags & (RRF_STARTPIECE | RRF_ENDPIECE)) {
 		return false;
 	}
-	if(rr_flags & RRF_ENDPIECE) return true;
-	return trs.Reservation(direction, index, rr_flags, resroute);
+	if(rr_flags & RRF_STARTPIECE) {
+		return start_trs.Reservation(direction, index, rr_flags, resroute);
+	}
+	else if(rr_flags & RRF_ENDPIECE) {
+		return end_trs.Reservation(direction, index, rr_flags, resroute);
+	}
+	else {
+		return start_trs.Reservation(direction, index, rr_flags, resroute) && end_trs.Reservation(direction, index, rr_flags, resroute);
+	}
+}
+
+DIRTYPE genericsignal::GetReverseDirection(DIRTYPE direction) const {
+	switch(direction) {
+		case TDIR_FORWARD:
+			return TDIR_REVERSE;
+		case TDIR_REVERSE:
+			return TDIR_FORWARD;
+		default:
+			assert(false);
+			return TDIR_NULL;
+	}
+}
+
+unsigned int genericsignal::GetAvailableRouteTypes(DIRTYPE direction) {
+	return (direction == TDIR_FORWARD) ? availableroutetypes : 0;
+}
+
+unsigned int genericsignal::GetSetRouteTypes(DIRTYPE direction) {
+	unsigned int result = 0;
+	if(direction == TDIR_FORWARD) {
+		if(start_trs.reserved_route && start_trs.rr_flags & RRF_RESERVE) {
+			switch(start_trs.reserved_route->type) {
+				case RTC_SHUNT:
+					if(start_trs.rr_flags & RRF_STARTPIECE) result |= RPRT_SHUNTSTART;
+					break;
+				case RTC_ROUTE:
+					if(start_trs.rr_flags & RRF_STARTPIECE) result |= RPRT_ROUTESTART;
+					else if(start_trs.direction == TDIR_FORWARD) result |= RPRT_ROUTETRANS;
+					break;
+			}
+		}
+		if(end_trs.reserved_route && end_trs.rr_flags & RRF_RESERVE) {
+			switch(end_trs.reserved_route->type) {
+				case RTC_SHUNT:
+					if(end_trs.rr_flags & RRF_ENDPIECE) result |= RPRT_SHUNTEND;
+					break;
+				case RTC_ROUTE:
+					if(end_trs.rr_flags & RRF_ENDPIECE) result |= RPRT_ROUTEEND;
+					else if(end_trs.direction == TDIR_FORWARD) result |= RPRT_ROUTETRANS;
+					break;
+			}
+		}
+	}
+	return result;
 }
 
 bool autosignal::PostLayoutInit(error_collection &ec) {
@@ -106,6 +158,7 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 					if(! (target_routing_piece->GetSetRouteTypes(piece.direction) & (RPRT_ROUTEEND | RPRT_SHUNTEND | RPRT_VIA))) {
 						signal_route.pieces = route_pieces;
 						signal_route.end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
+						signal_route.type = RTC_ROUTE;
 						route_success = true;
 						return true;
 					}
@@ -156,14 +209,20 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 			unsigned int pieceflags = piece.track->GetFlags(piece.direction);
 			if(pieceflags & GTF_ROUTINGPOINT) {
 				routingpoint *target_routing_piece = dynamic_cast<routingpoint *>(piece.track);
-				if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(piece.direction) & RPRT_ROUTEEND) {
+				if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(piece.direction) & (RPRT_ROUTEEND | RPRT_SHUNTEND)) {
 					if(! (target_routing_piece->GetSetRouteTypes(piece.direction) & (RPRT_ROUTEEND | RPRT_SHUNTEND | RPRT_VIA))) {
-						signal_routes.emplace_back();
-						route &rt = signal_routes.back();
-						rt.start = vartrack_target_ptr<routingpoint>(this, TDIR_FORWARD);
-						rt.pieces = route_pieces;
-						rt.end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
-						rt.FillViaList();
+						auto mk_route = [&](ROUTE_CLASS type) {
+							signal_routes.emplace_back();
+							route &rt = signal_routes.back();
+							rt.start = vartrack_target_ptr<routingpoint>(this, TDIR_FORWARD);
+							rt.pieces = route_pieces;
+							rt.end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
+							rt.FillViaList();
+						};
+
+						if(GetAvailableRouteTypes(TDIR_FORWARD) & RPRT_ROUTESTART && target_routing_piece->GetAvailableRouteTypes(piece.direction) & RPRT_ROUTEEND) mk_route(RTC_ROUTE);
+						if(GetAvailableRouteTypes(TDIR_FORWARD) & RPRT_SHUNTSTART && target_routing_piece->GetAvailableRouteTypes(piece.direction) & RPRT_SHUNTEND) mk_route(RTC_SHUNT);
+
 						return true;
 					}
 				}
@@ -182,11 +241,11 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 			}
 			return false;
 		};
-		
+
 		unsigned int error_flags = 0;
 		route_recording_list pieces;
 		TrackScan(100, 10, GetConnectingPieceByIndex(TDIR_FORWARD, 0), pieces, error_flags, func);
-		
+
 		if(error_flags != 0) {
 			continue_initing = false;
 			ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit(*this, std::string("Track scan failed constraints: ") + GetTrackScanErrorFlagsStr(error_flags))));

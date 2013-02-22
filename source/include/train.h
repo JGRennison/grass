@@ -24,6 +24,7 @@
 #ifndef INC_TRAIN_ALREADY
 #define INC_TRAIN_ALREADY
 
+#include "world_obj.h"
 #include "track.h"
 #include "timetable.h"
 #include <list>
@@ -78,7 +79,7 @@ struct train_track_speed_limit_item {
 	train_track_speed_limit_item(unsigned int speed_, unsigned int count_) : speed(speed_), count(count_) { }
 };
 
-class train {
+class train : public world_obj  {
 	unsigned int tflags;
 	enum {
 		TF_CONSISTREVDIR	= 1<<0,
@@ -114,6 +115,7 @@ class train {
 	timetable currenttimetable;
 
 	public:
+	train(world &w_) : world_obj(w_) { }
 	void TrainMoveStep(unsigned int ms);
 	void CalculateTrainMotionProperties();
 	void AddCoveredTrackSpeedLimit(unsigned int speed);

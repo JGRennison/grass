@@ -28,6 +28,7 @@
 #include <string>
 #include <iostream>
 
+#include "world_obj.h"
 #include "trackcircuit.h"
 #include "tractiontype.h"
 #include "error.h"
@@ -76,23 +77,22 @@ enum {
 	RRF_TRYRESERVE			= 1<<3,
 	RRF_STARTPIECE			= 1<<4,
 	RRF_ENDPIECE			= 1<<5,
-	
+
 	RRF_SAVEMASK			= RRF_AUTOROUTE | RRF_STARTPIECE | RRF_ENDPIECE | RRF_RESERVE,
 };
 
-class track_reservation_state {
+struct track_reservation_state {
 	route *reserved_route;
 	DIRTYPE direction;
 	unsigned int index;
 	unsigned int rr_flags;
-	
-	public:
+
 	bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
 };
 
-class generictrack {
-	std::string name;
+class generictrack : public world_obj {
 	public:
+	generictrack(world &w_) : world_obj(w_) { }
 	virtual const speedrestrictionset *GetSpeedRestrictions() const;
 	virtual const tractionset *GetTractionTypes() const;
 	virtual const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const = 0;
@@ -112,14 +112,10 @@ class generictrack {
 	virtual const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const = 0;
 
 	bool FullConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec);
-	
+
 	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) = 0;
 
 	virtual std::string GetTypeName() const { return "Generic Track"; }
-
-	virtual std::string GetName() const { return name; }
-	virtual void SetName(std::string newname) { name = newname; }
-	virtual std::string GetFriendlyName() const;
 
 	virtual generictrack & SetLength(unsigned int length);
 	virtual generictrack & AddSpeedRestriction(speed_restriction sr);
@@ -234,7 +230,7 @@ class trackseg : public generictrack {
 	track_reservation_state trs;
 
 	public:
-	trackseg() : length(0), elevationdelta(0), tc(0), traincount(0) { }
+	trackseg(world &w_) : generictrack(w_), length(0), elevationdelta(0), tc(0), traincount(0) { }
 	void TrainEnter(DIRTYPE direction, train *t);
 	void TrainLeave(DIRTYPE direction, train *t);
 	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
@@ -260,12 +256,16 @@ class trackseg : public generictrack {
 	trackseg & SetElevationDelta(unsigned int elevationdelta);
 	trackseg & SetTrackCircuit(track_circuit *tc);
 
+	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual bool Serialise(serialiser_output &so, error_collection &ec);
+
 	protected:
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
 };
 
 class genericzlentrack : public generictrack {
 	public:
+	genericzlentrack(world &w_) : generictrack(w_) { }
 	unsigned int GetNewOffset(DIRTYPE direction, unsigned int currentoffset, unsigned int step) const;
 	unsigned int GetRemainingLength(DIRTYPE direction, unsigned int currentoffset) const;
 	unsigned int GetLength(DIRTYPE direction) const;
@@ -275,6 +275,7 @@ class genericzlentrack : public generictrack {
 
 class genericpoints : public genericzlentrack {
 	public:
+	genericpoints(world &w_) : genericzlentrack(w_) { }
 	void TrainEnter(DIRTYPE direction, train *t);
 	void TrainLeave(DIRTYPE direction, train *t);
 
@@ -297,7 +298,7 @@ class points : public genericpoints {
 		PTF_FAILED	= 1<<4,
 	};
 
-	points() : pflags(0) { }
+	points(world &w_) : genericpoints(w_), pflags(0) { }
 
 	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
 	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
@@ -311,6 +312,9 @@ class points : public genericpoints {
 
 	virtual unsigned int GetPointFlags() const;
 	virtual unsigned int SetPointFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
+
+	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual bool Serialise(serialiser_output &so, error_collection &ec);
 
 	protected:
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);

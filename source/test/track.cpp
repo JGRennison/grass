@@ -25,11 +25,13 @@
 #include "track.h"
 #include "train.h"
 #include "traverse.h"
+#include "world.h"
 
 struct test_fixture_1 {
+	world w;
 	trackseg track1, track2;
 	error_collection ec;
-	test_fixture_1() {
+	test_fixture_1() : track1(w), track2(w) {
 		track1.SetLength(50000);
 		track1.SetElevationDelta(-100);
 		track1.SetName("T1");
@@ -41,10 +43,11 @@ struct test_fixture_1 {
 };
 
 struct test_fixture_2 {
+	world w;
 	trackseg track1, track2, track3;
 	points pt1;
 	error_collection ec;
-	test_fixture_2() {
+	test_fixture_2() : track1(w), track2(w), track3(w), pt1(w) {
 		track1.SetLength(50000);
 		track1.SetElevationDelta(-100);
 		track1.SetName("T1");
@@ -147,29 +150,29 @@ TEST_CASE( "track/traverse/points", "Test basic points traversal" ) {
 	leftover = AdvanceDisplacement(60000, loc, 0, stub);
 	REQUIRE(leftover == 0);
 	REQUIRE(loc == track_location(&env.track3, TDIR_FORWARD, 10000));
-	
+
 	loc.SetTargetStartLocation(&env.track3, TDIR_REVERSE);
 	leftover = AdvanceDisplacement(210000, loc, 0, stub);
 	REQUIRE(leftover == 0);
 	REQUIRE(loc == track_location(&env.track1, TDIR_REVERSE, 40000));
-	
+
 	loc.SetTargetStartLocation(&env.track2, TDIR_REVERSE);
 	leftover = AdvanceDisplacement(110000, loc, 0, stub);
 	REQUIRE(leftover == 10000);
 	REQUIRE(loc == track_location(&env.pt1, TDIR_PTS_NORMAL, 0));
-	
+
 	//OOC
 	env.pt1.SetPointFlagsMasked(points::PTF_OOC, points::PTF_OOC);
 	loc.SetTargetStartLocation(&env.track1, TDIR_FORWARD);
 	leftover = AdvanceDisplacement(60000, loc, 0, stub);
 	REQUIRE(leftover == 10000);
 	REQUIRE(loc == track_location(&env.pt1, TDIR_PTS_FACE, 0));
-	
+
 	loc.SetTargetStartLocation(&env.track2, TDIR_REVERSE);
 	leftover = AdvanceDisplacement(110000, loc, 0, stub);
 	REQUIRE(leftover == 10000);
 	REQUIRE(loc == track_location(&env.pt1, TDIR_PTS_NORMAL, 0));
-	
+
 	loc.SetTargetStartLocation(&env.track3, TDIR_REVERSE);
 	leftover = AdvanceDisplacement(210000, loc, 0, stub);
 	REQUIRE(leftover == 10000);

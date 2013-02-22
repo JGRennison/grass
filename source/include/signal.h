@@ -29,12 +29,14 @@
 
 class routingpoint : public genericzlentrack {
 	public:
+	routingpoint(world &w_) : genericzlentrack(w_) { }
 	enum {
 		RPRT_SHUNTSTART		= 1<<0,
 		RPRT_SHUNTEND		= 1<<1,
 		RPRT_ROUTESTART		= 1<<2,
 		RPRT_ROUTEEND		= 1<<3,
-		RPRT_VIA		= 1<<4,
+		RPRT_ROUTETRANS		= 1<<4,
+		RPRT_VIA		= 1<<5,
 	};
 	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction) = 0;
 	virtual unsigned int GetSetRouteTypes(DIRTYPE direction) = 0;
@@ -44,12 +46,18 @@ class routingpoint : public genericzlentrack {
 
 typedef std::deque<routingpoint *> via_list;
 
+typedef enum {
+	RTC_SHUNT,
+	RTC_ROUTE,
+} ROUTE_CLASS;
+
 struct route {
 	vartrack_target_ptr<routingpoint> start;
 	route_recording_list pieces;
 	vartrack_target_ptr<routingpoint> end;
 	via_list vias;
-	
+	ROUTE_CLASS type;
+
 	void FillViaList();
 };
 
@@ -59,10 +67,14 @@ class genericsignal : public routingpoint {
 	track_target_ptr prev;
 	track_target_ptr next;
 	unsigned int sflags;
-	track_reservation_state trs;
+	track_reservation_state start_trs;
+	track_reservation_state end_trs;
+
+	protected:
+	unsigned int availableroutetypes;
 
 	public:
-	genericsignal() : sflags(0) { }
+	genericsignal(world &w_) : routingpoint(w_), sflags(0), availableroutetypes(RPRT_SHUNTEND | RPRT_ROUTEEND) { }
 	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
 	void TrainEnter(DIRTYPE direction, train *t);
 	void TrainLeave(DIRTYPE direction, train *t);
@@ -70,11 +82,16 @@ class genericsignal : public routingpoint {
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
 	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
-	
+
 	virtual std::string GetTypeName() const { return "Generic Signal"; }
 
 	virtual unsigned int GetSignalFlags() const;
 	virtual unsigned int SetSignalFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
+
+	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
+
+	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction);
+	virtual unsigned int GetSetRouteTypes(DIRTYPE direction);
 
 	protected:
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
@@ -84,18 +101,26 @@ class autosignal : public genericsignal {
 	route signal_route;
 
 	public:
+	autosignal(world &w_) : genericsignal(w_) { availableroutetypes |= RPRT_ROUTESTART; }
 	bool PostLayoutInit(error_collection &ec);
 	unsigned int GetFlags(DIRTYPE direction) const;
 	virtual std::string GetTypeName() const { return "Automatic Signal"; }
+
+	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual bool Serialise(serialiser_output &so, error_collection &ec);
 };
 
 class routesignal : public genericsignal {
 	std::list<route> signal_routes;
 
 	public:
+	routesignal(world &w_) : genericsignal(w_) { }
 	bool PostLayoutInit(error_collection &ec);
 	unsigned int GetFlags(DIRTYPE direction) const;
 	virtual std::string GetTypeName() const { return "Route Signal"; }
+
+	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual bool Serialise(serialiser_output &so, error_collection &ec);
 };
 
 #endif

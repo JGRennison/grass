@@ -50,7 +50,7 @@ class generic_error_obj : public error_obj {
 
 class error_collection {
 	std::list<std::unique_ptr<error_obj> > errors;
-	
+
 	public:
 	void RegisterError(std::unique_ptr<error_obj> &&err);
 	void Reset();

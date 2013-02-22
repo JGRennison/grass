@@ -21,34 +21,24 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#ifndef INC_WORLD_ALREADY
-#define INC_WORLD_ALREADY
+#ifndef INC_WORLDOBJ_ALREADY
+#define INC_WORLDOBJ_ALREADY
 
-#include <unordered_map>
-#include <deque>
-#include "track.h"
+#include "future.h"
 #include "serialisable.h"
 
-struct connection_forward_declaration {
-	generictrack *track1;
-	DIRTYPE dir1;
-	std::string name2;
-	DIRTYPE dir2;
-	connection_forward_declaration(generictrack *t1, DIRTYPE d1, const std::string &n2, DIRTYPE d2) : track1(t1), dir1(d1), name2(n2), dir2(d2) { }
-};
+class world;
 
-class world_serialisation;
-
-class world {
-	friend world_serialisation;
-	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
-	std::deque<connection_forward_declaration> connection_forward_declarations;
+class world_obj : public serialisable_obj, public futurable_obj {
+	std::string name;
+	world &w;
 
 	public:
-	void AddTrack(std::unique_ptr<generictrack> &&piece, error_collection &ec);
-	void ConnectTrack(generictrack *track1, DIRTYPE dir1, std::string name2, DIRTYPE dir2, error_collection &ec);
-	void ConnectAllPiecesInit(error_collection &ec);
-	void PostLayoutInit(error_collection &ec);
+	world_obj(world &w_) : w(w_) { }
+	virtual std::string GetTypeName() const = 0;
+	virtual std::string GetName() const { return name; }
+	virtual void SetName(std::string newname) { name = newname; }
+	virtual std::string GetFriendlyName() const;
 };
 
 #endif

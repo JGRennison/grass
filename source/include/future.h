@@ -21,34 +21,56 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#ifndef INC_WORLD_ALREADY
-#define INC_WORLD_ALREADY
+#ifndef INC_FUTURE_ALREADY
+#define INC_FUTURE_ALREADY
 
-#include <unordered_map>
-#include <deque>
-#include "track.h"
+#include <forward_list>
+#include <memory>
+#include <map>
 #include "serialisable.h"
 
-struct connection_forward_declaration {
-	generictrack *track1;
-	DIRTYPE dir1;
-	std::string name2;
-	DIRTYPE dir2;
-	connection_forward_declaration(generictrack *t1, DIRTYPE d1, const std::string &n2, DIRTYPE d2) : track1(t1), dir1(d1), name2(n2), dir2(d2) { }
-};
+typedef unsigned int future_time;
 
-class world_serialisation;
+class future_set;
+class futurable_obj;
 
-class world {
-	friend world_serialisation;
-	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
-	std::deque<connection_forward_declaration> connection_forward_declarations;
+//all futures must be allocated with new
+class future : public serialisable_obj {
+	friend class future_set;
+	friend class futurable_obj;
+	future_set &fs;
+	futurable_obj &target;
+	unsigned int f_flags;
+	future_time trigger_time;
+
+	enum {
+		FF_INFS		= 1<<0,
+	};
 
 	public:
-	void AddTrack(std::unique_ptr<generictrack> &&piece, error_collection &ec);
-	void ConnectTrack(generictrack *track1, DIRTYPE dir1, std::string name2, DIRTYPE dir2, error_collection &ec);
-	void ConnectAllPiecesInit(error_collection &ec);
-	void PostLayoutInit(error_collection &ec);
+	future(future_set &fs_, futurable_obj &targ, future_time ft);
+	~future();
+	virtual void Execute() = 0;
+};
+
+class future_set {
+	friend class future;
+	friend class futurable_obj;
+	std::multimap<future_time, future *> futures;
+
+	public:
+	void ExecuteUpTo(future_time ft);
+};
+
+class futurable_obj {
+	friend class future;
+	std::forward_list<std::unique_ptr<future> > own_futures;
+
+	void RegisterFuture(std::unique_ptr<future> &&f);
+
+	public:
+	void ExterminateFuture(future *f);
+	void ClearFutures();
 };
 
 #endif
