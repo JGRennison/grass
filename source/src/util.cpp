@@ -28,6 +28,8 @@
 #include <cstdio>
 #ifdef _WIN32
 #include <Windows.h>
+#else
+#include <sys/time.h>
 #endif
 
 //from http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf#2342176
