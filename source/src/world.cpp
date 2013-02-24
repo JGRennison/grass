@@ -52,3 +52,11 @@ void world::PostLayoutInit(error_collection &ec) {
 		it->second->PostLayoutInit(ec);
 	}
 }
+
+generictrack *world::FindTrackByName(const std::string &name) const {
+	auto it = all_pieces.find(name);
+	if(it != all_pieces.end()) {
+		if(it->second) return it->second.get();
+	}
+	return 0;
+}

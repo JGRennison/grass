@@ -38,8 +38,10 @@ class routingpoint : public genericzlentrack {
 		RPRT_ROUTETRANS		= 1<<4,
 		RPRT_VIA		= 1<<5,
 	};
-	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction) = 0;
-	virtual unsigned int GetSetRouteTypes(DIRTYPE direction) = 0;
+	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction) const = 0;
+	virtual unsigned int GetSetRouteTypes(DIRTYPE direction) const = 0;
+
+	virtual route *GetRouteByIndex(unsigned int index) = 0;
 
 	virtual std::string GetTypeName() const { return "Track Routing Point"; }
 };
@@ -57,6 +59,9 @@ struct route {
 	vartrack_target_ptr<routingpoint> end;
 	via_list vias;
 	ROUTE_CLASS type;
+
+	routingpoint *parent;
+	unsigned int index;
 
 	void FillViaList();
 };
@@ -90,8 +95,8 @@ class genericsignal : public routingpoint {
 
 	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
 
-	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction);
-	virtual unsigned int GetSetRouteTypes(DIRTYPE direction);
+	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction) const;
+	virtual unsigned int GetSetRouteTypes(DIRTYPE direction) const;
 
 	protected:
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
@@ -106,8 +111,10 @@ class autosignal : public genericsignal {
 	unsigned int GetFlags(DIRTYPE direction) const;
 	virtual std::string GetTypeName() const { return "Automatic Signal"; }
 
+	virtual route *GetRouteByIndex(unsigned int index);
+
 	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual bool Serialise(serialiser_output &so, error_collection &ec);
+	virtual bool Serialise(serialiser_output &so, error_collection &ec) const;
 };
 
 class routesignal : public genericsignal {
@@ -119,8 +126,10 @@ class routesignal : public genericsignal {
 	unsigned int GetFlags(DIRTYPE direction) const;
 	virtual std::string GetTypeName() const { return "Route Signal"; }
 
+	virtual route *GetRouteByIndex(unsigned int index);
+
 	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual bool Serialise(serialiser_output &so, error_collection &ec);
+	virtual bool Serialise(serialiser_output &so, error_collection &ec) const;
 };
 
 #endif

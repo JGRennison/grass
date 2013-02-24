@@ -49,6 +49,7 @@ class world {
 	void ConnectTrack(generictrack *track1, DIRTYPE dir1, std::string name2, DIRTYPE dir2, error_collection &ec);
 	void ConnectAllPiecesInit(error_collection &ec);
 	void PostLayoutInit(error_collection &ec);
+	generictrack *FindTrackByName(const std::string &name) const;
 };
 
 #endif

@@ -111,11 +111,11 @@ DIRTYPE genericsignal::GetReverseDirection(DIRTYPE direction) const {
 	}
 }
 
-unsigned int genericsignal::GetAvailableRouteTypes(DIRTYPE direction) {
+unsigned int genericsignal::GetAvailableRouteTypes(DIRTYPE direction) const {
 	return (direction == TDIR_FORWARD) ? availableroutetypes : 0;
 }
 
-unsigned int genericsignal::GetSetRouteTypes(DIRTYPE direction) {
+unsigned int genericsignal::GetSetRouteTypes(DIRTYPE direction) const {
 	unsigned int result = 0;
 	if(direction == TDIR_FORWARD) {
 		if(start_trs.reserved_route && start_trs.rr_flags & RRF_RESERVE) {
@@ -159,6 +159,8 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 						signal_route.pieces = route_pieces;
 						signal_route.end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
 						signal_route.type = RTC_ROUTE;
+						signal_route.parent = this;
+						signal_route.index = 0;
 						route_success = true;
 						return true;
 					}
@@ -202,9 +204,15 @@ unsigned int autosignal::GetFlags(DIRTYPE direction) const {
 	return GTF_ROUTINGPOINT;
 }
 
+route *autosignal::GetRouteByIndex(unsigned int index) {
+	if(index == 0) return &signal_route;
+	else return 0;
+}
+
 bool routesignal::PostLayoutInit(error_collection &ec) {
 	bool continue_initing = genericsignal::PostLayoutInit(ec);
 	if(continue_initing) {
+		unsigned int route_index = 0;
 		auto func = [&](const route_recording_list &route_pieces, const track_target_ptr &piece) {
 			unsigned int pieceflags = piece.track->GetFlags(piece.direction);
 			if(pieceflags & GTF_ROUTINGPOINT) {
@@ -218,6 +226,9 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 							rt.pieces = route_pieces;
 							rt.end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
 							rt.FillViaList();
+							rt.parent = this;
+							rt.index = route_index;
+							route_index++;
 						};
 
 						if(GetAvailableRouteTypes(TDIR_FORWARD) & RPRT_ROUTESTART && target_routing_piece->GetAvailableRouteTypes(piece.direction) & RPRT_ROUTEEND) mk_route(RTC_ROUTE);
@@ -260,6 +271,13 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 
 unsigned int routesignal::GetFlags(DIRTYPE direction) const {
 	return GTF_ROUTINGPOINT;
+}
+
+route *routesignal::GetRouteByIndex(unsigned int index) {
+	for(auto it = signal_routes.begin(); it != signal_routes.end(); ++it) {
+		if(it->index == index) return &(*it);
+	}
+	return 0;
 }
 
 //returns false on failure

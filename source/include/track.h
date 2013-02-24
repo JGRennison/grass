@@ -81,13 +81,16 @@ enum {
 	RRF_SAVEMASK			= RRF_AUTOROUTE | RRF_STARTPIECE | RRF_ENDPIECE | RRF_RESERVE,
 };
 
-struct track_reservation_state {
+struct track_reservation_state : public serialisable_obj {
 	route *reserved_route;
 	DIRTYPE direction;
 	unsigned int index;
 	unsigned int rr_flags;
 
 	bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+
+	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual bool Serialise(serialiser_output &so, error_collection &ec) const;
 };
 
 class generictrack : public world_obj {
@@ -257,7 +260,7 @@ class trackseg : public generictrack {
 	trackseg & SetTrackCircuit(track_circuit *tc);
 
 	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual bool Serialise(serialiser_output &so, error_collection &ec);
+	virtual bool Serialise(serialiser_output &so, error_collection &ec) const;
 
 	protected:
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
@@ -314,7 +317,7 @@ class points : public genericpoints {
 	virtual unsigned int SetPointFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
 
 	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual bool Serialise(serialiser_output &so, error_collection &ec);
+	virtual bool Serialise(serialiser_output &so, error_collection &ec) const;
 
 	protected:
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
@@ -329,5 +332,8 @@ std::ostream& operator<<(std::ostream& os, const generictrack& obj);
 std::ostream& operator<<(std::ostream& os, const track_target_ptr& obj);
 std::ostream& operator<<(std::ostream& os, const track_location& obj);
 std::ostream& operator<<(std::ostream& os, const DIRTYPE& obj);
+
+const char * SerialiseDirectionName(const DIRTYPE& obj);
+bool DeserialiseDirectionName(DIRTYPE& obj, const char *dirname);
 
 #endif

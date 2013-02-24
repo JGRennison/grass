@@ -32,7 +32,7 @@ struct serialiser_output;
 class serialisable_obj {
 	public:
 	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec) = 0;
-	virtual bool Serialise(serialiser_output &so, error_collection &ec) = 0;
+	virtual bool Serialise(serialiser_output &so, error_collection &ec) const = 0;
 };
 
 #endif

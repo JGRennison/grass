@@ -31,13 +31,6 @@
 #include "signal.h"
 #include <typeinfo>
 
-class error_deserialisation : public error_obj {
-	public:
-	error_deserialisation(const std::string &str = "") {
-		msg << "JSON deserialisation error: " << str;
-	}
-};
-
 void world_serialisation::LoadGame(const rapidjson::Value &json, error_collection &ec) {
 	if(json.IsArray()) {
 		for(rapidjson::SizeType i = 0; i < json.Size(); i++) {
@@ -53,7 +46,7 @@ void world_serialisation::LoadGame(const rapidjson::Value &json, error_collectio
 					}
 					else name=string_format("#%d", i);
 
-					DeserialiseObject(deserialiser_input(name, type, cur), ec);
+					DeserialiseObject(deserialiser_input(name, type, cur, &w), ec);
 				}
 				else {
 					ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("LoadGame: Object has no type")));

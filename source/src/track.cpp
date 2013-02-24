@@ -27,6 +27,7 @@
 #include "error.h"
 
 #include <cassert>
+#include <cstring>
 
 const track_location empty_track_location;
 const track_target_ptr empty_track_target;
@@ -445,4 +446,50 @@ std::ostream& operator<<(std::ostream& os, const DIRTYPE& obj) {
 			break;
 	}
 	return os;
+}
+const char * SerialiseDirectionName(const DIRTYPE& obj) {
+	switch(obj) {
+		case TDIR_NULL:
+			return "nulldirection";
+		case TDIR_FORWARD:
+			return "forward";
+		case TDIR_REVERSE:
+			return "reverse";
+		case TDIR_PTS_FACE:
+			return "facing";
+		case TDIR_PTS_NORMAL:
+			return "normal";
+		case TDIR_PTS_REVERSE:
+			return "reverse";
+		default:
+			return "unknowndirection";
+	}
+}
+
+bool DeserialiseDirectionName(DIRTYPE& obj, const char *dirname) {
+	if(strcmp(dirname, "nulldirection") == 0) {
+		obj = TDIR_NULL;
+		return true;
+	}
+	if(strcmp(dirname, "forward") == 0) {
+		obj = TDIR_FORWARD;
+		return true;
+	}
+	if(strcmp(dirname, "reverse") == 0) {
+		obj = TDIR_REVERSE;
+		return true;
+	}
+	if(strcmp(dirname, "facing") == 0) {
+		obj = TDIR_PTS_FACE;
+		return true;
+	}
+	if(strcmp(dirname, "normal") == 0) {
+		obj = TDIR_PTS_NORMAL;
+		return true;
+	}
+	if(strcmp(dirname, "reverse") == 0) {
+		obj = TDIR_PTS_REVERSE;
+		return true;
+	}
+	return false;
 }

@@ -30,7 +30,7 @@ bool autosignal::Deserialise(const deserialiser_input &di, error_collection &ec)
 	return false;
 }
 
-bool autosignal::Serialise(serialiser_output &so, error_collection &ec) {
+bool autosignal::Serialise(serialiser_output &so, error_collection &ec) const {
 	return false;
 }
 
@@ -38,6 +38,6 @@ bool routesignal::Deserialise(const deserialiser_input &di, error_collection &ec
 	return false;
 }
 
-bool routesignal::Serialise(serialiser_output &so, error_collection &ec) {
+bool routesignal::Serialise(serialiser_output &so, error_collection &ec) const {
 	return false;
 }
