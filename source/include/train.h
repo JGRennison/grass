@@ -86,8 +86,8 @@ class train : public world_obj  {
 	};
 
 	std::list<train_unit> train_segments;
-	std::forward_list<traction_type> active_tractions;
-	speed_class *vehspeedclass;
+	tractionset active_tractions;
+	std::string vehspeedclass;
 	std::forward_list<train_track_speed_limit_item> covered_track_speed_limits;
 
 	lookahead_set lookahead;
@@ -127,7 +127,8 @@ class train : public world_obj  {
 	void DropTrainIntoPosition(const track_location &position);
 	void UprootTrain();
 	inline unsigned int GetMaxVehSpeed() const { return veh_max_speed; }
-	inline const speed_class * GetVehSpeedClass() const { return vehspeedclass; }
+	inline std::string GetVehSpeedClass() const { return vehspeedclass; }
+	const tractionset &GetTractionTypes() const { return active_tractions; }
 };
 
 #endif

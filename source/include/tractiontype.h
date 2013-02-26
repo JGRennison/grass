@@ -21,6 +21,32 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
+#ifndef INC_TRACTIONTYPE_ALREADY
+#define INC_TRACTIONTYPE_ALREADY
+
+#include <string>
+#include <vector>
+#include "serialisable.h"
+
+class train;
+
 struct traction_type {
-	
+	std::string name;
+	bool alwaysavailable;
+	traction_type(std::string n, bool a) : name(n), alwaysavailable(a) { }
+	traction_type() : alwaysavailable(false) { }
 };
+
+class tractionset : public serialisable_obj {
+	std::vector<traction_type *> tractions;
+
+	public:
+	inline void AddTractionType(traction_type *type) {
+		tractions.emplace_back(type);
+	}
+	bool CanTrainPass(train *t) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+};
+
+#endif

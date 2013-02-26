@@ -35,7 +35,7 @@ const track_target_ptr empty_track_target;
 unsigned int speedrestrictionset::GetTrainTrackSpeedLimit(train *t) const {
 	unsigned int max_speed = t->GetMaxVehSpeed();
 	for(auto it = speeds.begin(); it != speeds.end(); ++it) {
-		if(it->speedclass == 0 || it->speedclass == t->GetVehSpeedClass()) {
+		if(it->speedclass.empty() || it->speedclass == t->GetVehSpeedClass()) {
 			if(it->speed < max_speed) max_speed = it->speed;
 		}
 	}

@@ -46,7 +46,7 @@ void world_serialisation::LoadGame(const rapidjson::Value &json, error_collectio
 					}
 					else name=string_format("#%d", i);
 
-					DeserialiseObject(deserialiser_input(name, type, cur, &w), ec);
+					DeserialiseObject(deserialiser_input(name, type, cur, &w, this), ec);
 				}
 				else {
 					ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("LoadGame: Object has no type")));
@@ -79,9 +79,40 @@ template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deser
 template <typename T> T* world_serialisation::DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec) {
 	T* target = MakeOrFindGenericTrack<T>(di, ec);
 	if(target) {
-		target->Deserialise(di, ec);
+		target->DeserialiseObject(di, ec);
 	}
 	return target;
+}
+
+void world_serialisation::DeserialiseTemplate(const deserialiser_input &di, error_collection &ec) {
+	const rapidjson::Value &contentval=di.json["content"];
+	std::string name;
+	if(CheckTransJsonValue(name, di.json, "name", ec) && contentval.IsObject()) {
+		template_map[name] = &contentval;
+	}
+	else {
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("Invalid template definition")));
+	}
+}
+
+void world_serialisation::ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec) {
+	auto templ = template_map.find(name);
+	if(templ != template_map.end() && templ->second) {
+		obj.Deserialise(deserialiser_input(*(templ->second), di), ec);
+	}
+	else {
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(string_format("Template: \"%s\" not found", name.c_str()))));
+	}
+}
+
+void world_serialisation::DeserialiseTractionType(const deserialiser_input &di, error_collection &ec) {
+	std::string name;
+	if(CheckTransJsonValue(name, di.json, "name", ec) && di.w) {
+		di.w->AddTractionType(name, CheckGetJsonValueDef<bool, bool>(di.json, "alwaysavailable", false, ec));
+	}
+	else {
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("Invalid traction type definition")));
+	}
 }
 
 void world_serialisation::DeserialiseObject(const deserialiser_input &di, error_collection &ec) {
@@ -96,6 +127,12 @@ void world_serialisation::DeserialiseObject(const deserialiser_input &di, error_
 	}
 	else if(di.type == "routesignal") {
 		DeserialiseGenericTrack<routesignal>(di, ec);
+	}
+	else if(di.type == "template") {
+		DeserialiseTemplate(di, ec);
+	}
+	else if(di.type == "tractiontype") {
+		DeserialiseTractionType(di, ec);
 	}
 	else {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(string_format("LoadGame: Unknown object type: %s", di.type.c_str()))));

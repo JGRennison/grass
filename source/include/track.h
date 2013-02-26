@@ -33,7 +33,6 @@
 #include "tractiontype.h"
 #include "error.h"
 
-struct speed_class;
 class train;
 class generictrack;
 template <typename T> struct vartrack_target_ptr;
@@ -43,10 +42,10 @@ class route;
 
 struct speed_restriction {
 	unsigned int speed;
-	speed_class *speedclass;
+	std::string speedclass;
 };
 
-class speedrestrictionset {
+class speedrestrictionset : public serialisable_obj {
 	std::forward_list<speed_restriction> speeds;
 
 	public:
@@ -54,6 +53,8 @@ class speedrestrictionset {
 	inline void AddSpeedRestriction(const speed_restriction &sr) {
 		speeds.push_front(sr);
 	}
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };
 
 typedef enum {
@@ -65,10 +66,6 @@ typedef enum {
 	TDIR_PTS_NORMAL,	//points: normal trailing direction
 	TDIR_PTS_REVERSE,	//points: reverse trailing direction
 } DIRTYPE;
-
-class tractionset {
-	std::forward_list<traction_type> tractions;
-};
 
 enum {
 	RRF_RESERVE			= 1<<0,
@@ -89,8 +86,8 @@ struct track_reservation_state : public serialisable_obj {
 
 	bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
 
-	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual bool Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };
 
 class generictrack : public world_obj {
@@ -259,8 +256,8 @@ class trackseg : public generictrack {
 	trackseg & SetElevationDelta(unsigned int elevationdelta);
 	trackseg & SetTrackCircuit(track_circuit *tc);
 
-	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual bool Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 
 	protected:
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
@@ -316,8 +313,8 @@ class points : public genericpoints {
 	virtual unsigned int GetPointFlags() const;
 	virtual unsigned int SetPointFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
 
-	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual bool Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 
 	protected:
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);

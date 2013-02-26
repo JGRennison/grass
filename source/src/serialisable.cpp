@@ -22,18 +22,27 @@
 //==========================================================================
 
 #include "common.h"
-#include "signal.h"
 #include "serialisable_impl.h"
 #include "error.h"
 
-void autosignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
+void serialisable_obj::DeserialisePrePost(const char *name, const deserialiser_input &di, error_collection &ec) {
+	const rapidjson::Value &subval=di.json[name];
+	if(subval.IsNull()) return;
+	else if(subval.IsString() && di.ws) di.ws->ExecuteTemplate(*this, subval.GetString(), di, ec);
+	else if(subval.IsArray() && di.ws) {
+		for(rapidjson::SizeType i = 0; i < subval.Size(); i++) {
+			const rapidjson::Value &arrayval = subval[i];
+			if(arrayval.IsString()) di.ws->ExecuteTemplate(*this, arrayval.GetString(), di, ec);
+			else ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("Invalid template reference")));
+		}
+	}
+	else {
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("Invalid template reference")));
+	}
 }
 
-void autosignal::Serialise(serialiser_output &so, error_collection &ec) const {
-}
-
-void routesignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
-}
-
-void routesignal::Serialise(serialiser_output &so, error_collection &ec) const {
+void serialisable_obj::DeserialiseObject(const deserialiser_input &di, error_collection &ec) {
+	DeserialisePrePost("preparse", di, ec);
+	Deserialise(di, ec);
+	DeserialisePrePost("postparse", di, ec);
 }

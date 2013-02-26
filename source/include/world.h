@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <deque>
 #include "track.h"
+#include "tractiontype.h"
 #include "serialisable.h"
 
 struct connection_forward_declaration {
@@ -43,9 +44,19 @@ class world {
 	friend world_serialisation;
 	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
 	std::deque<connection_forward_declaration> connection_forward_declarations;
+	std::unordered_map<std::string, traction_type> traction_types;
 
 	public:
 	void AddTrack(std::unique_ptr<generictrack> &&piece, error_collection &ec);
+	inline void AddTractionType(std::string name, bool alwaysavailable) {
+		traction_types[name].name=name;
+		traction_types[name].alwaysavailable=alwaysavailable;
+	}
+	inline traction_type *GetTractionTypeByName(std::string name) {
+		auto tt = traction_types.find(name);
+		if(tt != traction_types.end()) return &(tt->second);
+		else return 0;
+	}
 	void ConnectTrack(generictrack *track1, DIRTYPE dir1, std::string name2, DIRTYPE dir2, error_collection &ec);
 	void ConnectAllPiecesInit(error_collection &ec);
 	void PostLayoutInit(error_collection &ec);

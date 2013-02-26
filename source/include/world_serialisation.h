@@ -24,13 +24,27 @@
 #ifndef INC_WORLD_SERIALISATION_ALREADY
 #define INC_WORLD_SERIALISATION_ALREADY
 
+#include <map>
+#include <string>
+
+#include "world.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#include "rapidjson/document.h"
+#pragma GCC diagnostic pop
+
 class world_serialisation {
 	world &w;
+	std::map<std::string, const rapidjson::Value *> template_map;
 
 	public:
 	world_serialisation(world &w_) : w(w_) { }
 	void LoadGame(const rapidjson::Value &json, error_collection &ec);
 	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);
+	void DeserialiseTemplate(const deserialiser_input &di, error_collection &ec);
+	void ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec);
+	void DeserialiseTractionType(const deserialiser_input &di, error_collection &ec);
 	template <typename T> T* MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec);
 	template <typename T> T* DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec);
 };

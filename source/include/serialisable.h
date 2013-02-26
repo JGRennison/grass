@@ -30,9 +30,12 @@ struct deserialiser_input;
 struct serialiser_output;
 
 class serialisable_obj {
+	void DeserialisePrePost(const char *name, const deserialiser_input &di, error_collection &ec);
+
 	public:
-	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec) = 0;
-	virtual bool Serialise(serialiser_output &so, error_collection &ec) const = 0;
+	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) = 0;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const = 0;
 };
 
 #endif

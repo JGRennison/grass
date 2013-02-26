@@ -113,8 +113,8 @@ class autosignal : public genericsignal {
 
 	virtual route *GetRouteByIndex(unsigned int index);
 
-	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual bool Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };
 
 class routesignal : public genericsignal {
@@ -128,8 +128,8 @@ class routesignal : public genericsignal {
 
 	virtual route *GetRouteByIndex(unsigned int index);
 
-	virtual bool Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual bool Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };
 
 #endif

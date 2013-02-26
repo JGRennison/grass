@@ -28,29 +28,40 @@
 #include "error.h"
 #include "world.h"
 
-bool trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
+void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonValue(length, di.json, "length", ec);
 	CheckTransJsonValue(elevationdelta, di.json, "elevationdelta", ec);
 	CheckTransJsonValue(traincount, di.json, "traincount", ec);
 	CheckTransJsonSubObj(trs, di.json, "trs", "trs", ec, di.w);
-	return true;
+	CheckTransJsonSubArray(speed_limits, di.json, "speedlimits", "speedlimits", ec, di.w);
+	CheckTransJsonSubArray(tractiontypes, di.json, "tractiontypes", "tractiontypes", ec, di.w);
 }
 
-bool trackseg::Serialise(serialiser_output &so, error_collection &ec) const {
+void trackseg::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseSubObjJson(trs, so, "trs", ec);
 	SerialiseValueJson(traincount, so, "traincount");
-	return true;
 }
 
-bool points::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	return false;
+void points::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	CheckTransJsonSubObj(trs, di.json, "trs", "trs", ec, di.w);
+	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_REV, di.json, "reverse", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_OOC, di.json, "ooc", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_LOCKED, di.json, "locked", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_REMINDER, di.json, "reminder", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_FAILED, di.json, "failed", ec);
 }
 
-bool points::Serialise(serialiser_output &so, error_collection &ec) const {
-	return false;
+void points::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseSubObjJson(trs, so, "trs", ec);
+	SerialiseFlagJson<unsigned int>(pflags, PTF_REV, so, "reverse");
+	SerialiseFlagJson<unsigned int>(pflags, PTF_OOC, so, "ooc");
+	SerialiseFlagJson<unsigned int>(pflags, PTF_LOCKED, so, "locked");
+	SerialiseFlagJson<unsigned int>(pflags, PTF_REMINDER, so, "reminder");
+	SerialiseFlagJson<unsigned int>(pflags, PTF_FAILED, so, "failed");
+
 }
 
-bool track_reservation_state::Deserialise(const deserialiser_input &di, error_collection &ec) {
+void track_reservation_state::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	std::string targname;
 	if(CheckTransJsonValue(targname, di.json, "route_parent", ec)) {
 		unsigned int index;
@@ -63,12 +74,38 @@ bool track_reservation_state::Deserialise(const deserialiser_input &di, error_co
 			}
 		}
 	}
+	if(CheckGetJsonValueDef<bool, bool>(di.json, "no_route", false, ec)) reserved_route = 0;
 	CheckTransJsonValue(direction, di.json, "direction", ec);
 	CheckTransJsonValue(index, di.json, "index", ec);
 	CheckTransJsonValue(rr_flags, di.json, "rr_flags", ec);
-	return true;
 }
 
-bool track_reservation_state::Serialise(serialiser_output &so, error_collection &ec) const {
-	return false;
+void track_reservation_state::Serialise(serialiser_output &so, error_collection &ec) const {
+	if(reserved_route) {
+		if(reserved_route->parent) {
+			SerialiseValueJson(reserved_route->parent->GetName(), so, "route_parent");
+			SerialiseValueJson(reserved_route->index, so, "route_index");
+		}
+	}
+	else SerialiseValueJson(true, so, "no_route");
+	SerialiseValueJson(direction, so, "direction");
+	SerialiseValueJson(index, so, "index");
+	SerialiseValueJson(rr_flags, so, "rr_flags");
+}
+
+void speedrestrictionset::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
+		const rapidjson::Value &cur = di.json[i];
+		speed_restriction sr;
+		if(cur.IsObject() && CheckTransJsonValueDef(sr.speedclass, cur, "speedclass", "", ec) && CheckTransJsonValueDef(sr.speed, cur, "speed", 0, ec)) {
+			AddSpeedRestriction(sr);
+		}
+		else {
+			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("Invalid speed restriction definition")));
+		}
+	}
+}
+
+void speedrestrictionset::Serialise(serialiser_output &so, error_collection &ec) const {
+	return;
 }

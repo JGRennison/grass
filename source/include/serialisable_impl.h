@@ -27,6 +27,7 @@
 #include "serialisable.h"
 #include "error.h"
 #include "util.h"
+#include "world_serialisation.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"
@@ -57,9 +58,11 @@ struct deserialiser_input {
 	const std::string type;
 	const rapidjson::Value &json;
 	world *w;
+	world_serialisation *ws;
 
-	deserialiser_input(const std::string &n, const std::string &t, const rapidjson::Value &j, world *w_=0) : name(n), type(t), json(j), w(w_) { }
-	deserialiser_input(const std::string &n, const std::string &t, const rapidjson::Value &j, const deserialiser_input &base) : name(n), type(t), json(j), w(base.w) { }
+	deserialiser_input(const std::string &n, const std::string &t, const rapidjson::Value &j, world *w_=0, world_serialisation *ws_=0) : name(n), type(t), json(j), w(w_), ws(ws_) { }
+	deserialiser_input(const std::string &n, const std::string &t, const rapidjson::Value &j, const deserialiser_input &base) : name(n), type(t), json(j), w(base.w), ws(base.ws) { }
+	deserialiser_input(const rapidjson::Value &j, const deserialiser_input &base) : name(base.name), type(base.type), json(j), w(base.w), ws(base.ws) { }
 };
 
 struct serialiser_output {
@@ -113,6 +116,7 @@ template <> inline void SetType<DIRTYPE>(Handler &out, DIRTYPE val) {
 }
 
 struct placeholder_subobject { };
+struct placeholder_array { };
 
 template <typename C> inline const char *GetTypeFriendlyName();
 template <> inline const char *GetTypeFriendlyName<bool>() { return "boolean"; }
@@ -123,6 +127,7 @@ template <> inline const char *GetTypeFriendlyName<const char*>() { return "stri
 template <> inline const char *GetTypeFriendlyName<std::string>() { return "string"; }
 template <> inline const char *GetTypeFriendlyName<DIRTYPE>() { return "direction"; }
 template <> inline const char *GetTypeFriendlyName<placeholder_subobject>() { return "object"; }
+template <> inline const char *GetTypeFriendlyName<placeholder_array>() { return "array"; }
 
 template <typename C> inline void CheckJsonTypeAndReportError(const char *prop, const rapidjson::Value& subval, error_collection &ec) {
 	if(!subval.IsNull()) {
@@ -175,27 +180,37 @@ template <typename C, typename D> inline C CheckGetJsonValueDef(const rapidjson:
 	return res?GetType<C>(subval):def;
 }
 
-template <typename C> inline bool CheckTransJsonSubObj(C &obj, const rapidjson::Value& val, const char *prop, const std::string &type_name, error_collection &ec, world *w=0) {
+template <typename C> inline void CheckTransJsonSubObj(C &obj, const rapidjson::Value& val, const char *prop, const std::string &type_name, error_collection &ec, world *w=0) {
 	const rapidjson::Value &subval=val[prop];
-	bool res=subval.IsObject();
-	if(res) return obj.Deserialise(deserialiser_input("", type_name, subval, w), ec);
+	if(subval.IsObject()) obj.Deserialise(deserialiser_input("", type_name, subval, w), ec);
 	else {
 		CheckJsonTypeAndReportError<placeholder_subobject>(prop, subval, ec);
-		return false;
 	}
 }
 
-template <typename C> inline bool SerialiseSubObjJson(const C &obj, serialiser_output &so, const char *prop, error_collection &ec) {
-	so.json_out.String(prop);
-	so.json_out.StartObject();
-	bool res = obj.Serialise(so, ec);
-	so.json_out.EndObject();
-	return res;
+template <typename C> inline void CheckTransJsonSubArray(C &obj, const rapidjson::Value& val, const char *prop, const std::string &type_name, error_collection &ec, world *w=0) {
+	const rapidjson::Value &subval=val[prop];
+	if(subval.IsArray()) obj.Deserialise(deserialiser_input("", type_name, subval, w), ec);
+	else {
+		CheckJsonTypeAndReportError<placeholder_array>(prop, subval, ec);
+	}
 }
 
-template <typename C> inline void SerialiseValueJson(const C &value, serialiser_output &so, const char *prop) {
+template <typename C> inline void SerialiseSubObjJson(const C &obj, serialiser_output &so, const char *prop, error_collection &ec) {
+	so.json_out.String(prop);
+	so.json_out.StartObject();
+	obj.Serialise(so, ec);
+	so.json_out.EndObject();
+}
+
+template <typename C> inline void SerialiseValueJson(C value, serialiser_output &so, const char *prop) {
 	so.json_out.String(prop);
 	SetType(so.json_out, value);
+}
+
+template <typename C> inline void SerialiseFlagJson(C value, C mask, serialiser_output &so, const char *prop) {
+	so.json_out.String(prop);
+	SetType<bool>(so.json_out, value & mask);
 }
 
 #endif
