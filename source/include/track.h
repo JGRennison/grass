@@ -134,6 +134,7 @@ class generictrack : public world_obj {
 	protected:
 	virtual bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) = 0;
 	static bool TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target);
+	void DeserialiseGenericTrackCommon(const deserialiser_input &di, error_collection &ec);
 };
 
 template <typename T> struct vartrack_target_ptr {
@@ -275,9 +276,19 @@ class genericzlentrack : public generictrack {
 
 class genericpoints : public genericzlentrack {
 	public:
+	enum {
+		PTF_REV		= 1<<0,
+		PTF_OOC		= 1<<1,
+		PTF_LOCKED	= 1<<2,
+		PTF_REMINDER	= 1<<3,
+		PTF_FAILED	= 1<<4,
+		PTF_INVALID	= 1<<5,
+	};
 	genericpoints(world &w_) : genericzlentrack(w_) { }
 	void TrainEnter(DIRTYPE direction, train *t);
 	void TrainLeave(DIRTYPE direction, train *t);
+	virtual unsigned int GetPointFlags(unsigned int points_index) const = 0;
+	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags)  = 0;
 
 	virtual std::string GetTypeName() const { return "Generic Points"; }
 };
@@ -290,14 +301,6 @@ class points : public genericpoints {
 	track_reservation_state trs;
 
 	public:
-	enum {
-		PTF_REV		= 1<<0,
-		PTF_OOC		= 1<<1,
-		PTF_LOCKED	= 1<<2,
-		PTF_REMINDER	= 1<<3,
-		PTF_FAILED	= 1<<4,
-	};
-
 	points(world &w_) : genericpoints(w_), pflags(0) { }
 
 	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
@@ -310,8 +313,8 @@ class points : public genericpoints {
 
 	virtual std::string GetTypeName() const { return "Points"; }
 
-	virtual unsigned int GetPointFlags() const;
-	virtual unsigned int SetPointFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
+	virtual unsigned int GetPointFlags(unsigned int points_index) const;
+	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags);
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;

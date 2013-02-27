@@ -76,7 +76,7 @@ TEST_CASE( "track/conn/track", "Test basic track segment connectivity" ) {
 TEST_CASE( "track/conn/points", "Test basic points connectivity" ) {
 	test_fixture_2 env;
 
-	REQUIRE(env.pt1.GetPointFlags() == 0);
+	REQUIRE(env.pt1.GetPointFlags(0) == 0);
 	REQUIRE(env.track1.GetConnectingPiece(TDIR_FORWARD) == track_target_ptr(&env.pt1, TDIR_PTS_FACE));
 	REQUIRE(env.track2.GetConnectingPiece(TDIR_REVERSE) == track_target_ptr(&env.pt1, TDIR_PTS_NORMAL));
 	REQUIRE(env.track3.GetConnectingPiece(TDIR_REVERSE) == track_target_ptr(&env.pt1, TDIR_PTS_REVERSE));
@@ -85,12 +85,12 @@ TEST_CASE( "track/conn/points", "Test basic points connectivity" ) {
 	REQUIRE(env.track2.GetConnectingPiece(TDIR_REVERSE).GetConnectingPiece() == track_target_ptr(&env.track1, TDIR_REVERSE));
 	REQUIRE(env.track3.GetConnectingPiece(TDIR_REVERSE).GetConnectingPiece() == track_target_ptr());
 	//reverse
-	env.pt1.SetPointFlagsMasked(points::PTF_REV, points::PTF_REV);
+	env.pt1.SetPointFlagsMasked(0, points::PTF_REV, points::PTF_REV);
 	REQUIRE(env.track1.GetConnectingPiece(TDIR_FORWARD).GetConnectingPiece() == track_target_ptr(&env.track3, TDIR_FORWARD));
 	REQUIRE(env.track3.GetConnectingPiece(TDIR_REVERSE).GetConnectingPiece() == track_target_ptr(&env.track1, TDIR_REVERSE));
 	REQUIRE(env.track2.GetConnectingPiece(TDIR_REVERSE).GetConnectingPiece() == track_target_ptr());
 	//OOC
-	env.pt1.SetPointFlagsMasked(points::PTF_OOC, points::PTF_OOC);
+	env.pt1.SetPointFlagsMasked(0, points::PTF_OOC, points::PTF_OOC);
 	REQUIRE(env.track1.GetConnectingPiece(TDIR_FORWARD).GetConnectingPiece() == track_target_ptr());
 	REQUIRE(env.track2.GetConnectingPiece(TDIR_REVERSE).GetConnectingPiece() == track_target_ptr());
 	REQUIRE(env.track3.GetConnectingPiece(TDIR_REVERSE).GetConnectingPiece() == track_target_ptr());
@@ -144,7 +144,7 @@ TEST_CASE( "track/traverse/points", "Test basic points traversal" ) {
 	REQUIRE(loc == track_location(&env.pt1, TDIR_PTS_REVERSE, 0));
 
 	//reverse
-	env.pt1.SetPointFlagsMasked(points::PTF_REV, points::PTF_REV);
+	env.pt1.SetPointFlagsMasked(0, points::PTF_REV, points::PTF_REV);
 
 	loc.SetTargetStartLocation(&env.track1, TDIR_FORWARD);
 	leftover = AdvanceDisplacement(60000, loc, 0, stub);
@@ -162,7 +162,7 @@ TEST_CASE( "track/traverse/points", "Test basic points traversal" ) {
 	REQUIRE(loc == track_location(&env.pt1, TDIR_PTS_NORMAL, 0));
 
 	//OOC
-	env.pt1.SetPointFlagsMasked(points::PTF_OOC, points::PTF_OOC);
+	env.pt1.SetPointFlagsMasked(0, points::PTF_OOC, points::PTF_OOC);
 	loc.SetTargetStartLocation(&env.track1, TDIR_FORWARD);
 	leftover = AdvanceDisplacement(60000, loc, 0, stub);
 	REQUIRE(leftover == 10000);

@@ -27,12 +27,14 @@
 #include "error.h"
 
 void autosignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	DeserialiseGenericTrackCommon(di, ec);
 }
 
 void autosignal::Serialise(serialiser_output &so, error_collection &ec) const {
 }
 
 void routesignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	DeserialiseGenericTrackCommon(di, ec);
 }
 
 void routesignal::Serialise(serialiser_output &so, error_collection &ec) const {

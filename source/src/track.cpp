@@ -346,19 +346,21 @@ unsigned int points::GetFlags(DIRTYPE direction) const {
 	return GTF_ROUTEFORK;
 }
 
-unsigned int points::GetPointFlags() const {
+unsigned int points::GetPointFlags(unsigned int points_index) const {
+	if(points_index != 0) return PTF_INVALID;
 	return pflags;
 }
 
-unsigned int points::SetPointFlagsMasked(unsigned int set_flags, unsigned int mask_flags) {
+unsigned int points::SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags) {
+	if(points_index != 0) return PTF_INVALID;
 	pflags = (pflags & (~mask_flags)) | set_flags;
 	return pflags;
 }
 
 bool points::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
-	unsigned int pflags = GetPointFlags();
+	unsigned int pflags = GetPointFlags(0);
 	bool rev = pflags & PTF_REV;
-	if(GetPointFlags() && PTF_LOCKED) {
+	if(pflags && PTF_LOCKED) {
 		switch(direction) {
 			case TDIR_PTS_FACE:
 				if((index == 0 && rev) || (index == 1 && !rev)) return false;
