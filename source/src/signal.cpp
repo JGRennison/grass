@@ -24,6 +24,8 @@
 #include "common.h"
 #include "signal.h"
 
+#include <algorithm>
+#include <iterator>
 #include <cassert>
 
 class error_signalinit : public layout_initialisation_error_obj {
@@ -127,6 +129,8 @@ unsigned int genericsignal::GetSetRouteTypes(DIRTYPE direction) const {
 					if(start_trs.rr_flags & RRF_STARTPIECE) result |= RPRT_ROUTESTART;
 					else if(start_trs.direction == TDIR_FORWARD) result |= RPRT_ROUTETRANS;
 					break;
+				default:
+					break;
 			}
 		}
 		if(end_trs.reserved_route && end_trs.rr_flags & RRF_RESERVE) {
@@ -137,6 +141,8 @@ unsigned int genericsignal::GetSetRouteTypes(DIRTYPE direction) const {
 				case RTC_ROUTE:
 					if(end_trs.rr_flags & RRF_ENDPIECE) result |= RPRT_ROUTEEND;
 					else if(end_trs.direction == TDIR_FORWARD) result |= RPRT_ROUTETRANS;
+					break;
+				default:
 					break;
 			}
 		}
@@ -219,6 +225,9 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 				routingpoint *target_routing_piece = dynamic_cast<routingpoint *>(piece.track);
 				if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(piece.direction) & (RPRT_ROUTEEND | RPRT_SHUNTEND)) {
 					if(! (target_routing_piece->GetSetRouteTypes(piece.direction) & (RPRT_ROUTEEND | RPRT_SHUNTEND | RPRT_VIA))) {
+						std::vector<const route_restriction*> matching_restrictions;
+						unsigned int restriction_denyflags = restrictions.CheckAllRestrictions(matching_restrictions, route_pieces, piece);
+
 						auto mk_route = [&](ROUTE_CLASS type) {
 							signal_routes.emplace_back();
 							route &rt = signal_routes.back();
@@ -229,10 +238,13 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 							rt.parent = this;
 							rt.index = route_index;
 							route_index++;
+							for(auto it = matching_restrictions.begin(); it != matching_restrictions.end(); ++it) {
+								(*it)->ApplyRestriction(rt);
+							}
 						};
 
-						if(GetAvailableRouteTypes(TDIR_FORWARD) & RPRT_ROUTESTART && target_routing_piece->GetAvailableRouteTypes(piece.direction) & RPRT_ROUTEEND) mk_route(RTC_ROUTE);
-						if(GetAvailableRouteTypes(TDIR_FORWARD) & RPRT_SHUNTSTART && target_routing_piece->GetAvailableRouteTypes(piece.direction) & RPRT_SHUNTEND) mk_route(RTC_SHUNT);
+						if(GetAvailableRouteTypes(TDIR_FORWARD) & RPRT_ROUTESTART && target_routing_piece->GetAvailableRouteTypes(piece.direction) & RPRT_ROUTEEND && !(restriction_denyflags & route_restriction::RRDF_NOROUTE)) mk_route(RTC_ROUTE);
+						if(GetAvailableRouteTypes(TDIR_FORWARD) & RPRT_SHUNTSTART && target_routing_piece->GetAvailableRouteTypes(piece.direction) & RPRT_SHUNTEND && !(restriction_denyflags & route_restriction::RRDF_NOSHUNT)) mk_route(RTC_SHUNT);
 
 						return true;
 					}
@@ -299,4 +311,36 @@ void route::FillViaList() {
 			vias.push_back(target_routing_piece);
 		}
 	}
+}
+
+bool route_restriction::CheckRestriction(unsigned int &restriction_flags, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
+	if(!targets.empty() && std::find(targets.begin(), targets.end(), piece.track->GetName()) == targets.end()) return false;
+	
+	auto via_start = via.begin();
+	for(auto it = route_pieces.begin(); it != route_pieces.end(); ++it) {
+		if(!notvia.empty() && std::find(notvia.begin(), notvia.end(), it->location.track->GetName()) != notvia.end()) return false;
+		if(!via.empty()) {
+			auto found_via = std::find(via_start, via.end(), it->location.track->GetName());
+			if(found_via != via.end()) {
+				via_start = std::next(found_via, 2);
+			}
+		}
+		it->location.track;
+	}
+	if(via_start != via.end()) return false;
+	
+	restriction_flags |= denyflags;
+	return true;
+}
+
+void route_restriction::ApplyRestriction(route &rt) const {
+	if(routerestrictionflags & ROUTERESTRICTIONFLAGS_PRIORITYSET) rt.priority = priority;
+}
+
+unsigned int route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
+	unsigned int restriction_flags = 0;
+	for(auto it = restrictions.begin(); it != restrictions.end(); ++it) {
+		if(it->CheckRestriction(restriction_flags, route_pieces, piece)) matching_restrictions.push_back(&(*it));
+	}
+	return restriction_flags;
 }

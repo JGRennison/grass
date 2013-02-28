@@ -25,6 +25,24 @@
 #include "serialisable_impl.h"
 #include "error.h"
 
+error_deserialisation::error_deserialisation(const deserialiser_input &di, const std::string &str) {
+	std::function<void (const deserialiser_input *, unsigned int)> f= [&](const deserialiser_input *des, unsigned int counter) {
+		if(des) {
+			f(des->parent, counter+1);
+			msg << "\t" << counter << ": " << di.reference_name;
+			if(!di.type.empty()) msg << ", Type: " << di.type;
+			if(!di.name.empty()) msg << ", Name: " << di.name;
+			msg << "\n";
+		}
+	};
+
+	msg << "JSON deserialisation error: " << str;
+	f(&di, 0);
+}
+error_deserialisation::error_deserialisation(const std::string &str) {
+	msg << "JSON deserialisation error: " << str;
+}
+
 void serialisable_obj::DeserialisePrePost(const char *name, const deserialiser_input &di, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[name];
 	if(subval.IsNull()) return;
@@ -33,11 +51,11 @@ void serialisable_obj::DeserialisePrePost(const char *name, const deserialiser_i
 		for(rapidjson::SizeType i = 0; i < subval.Size(); i++) {
 			const rapidjson::Value &arrayval = subval[i];
 			if(arrayval.IsString()) di.ws->ExecuteTemplate(*this, arrayval.GetString(), di, ec);
-			else ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("Invalid template reference")));
+			else ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template reference")));
 		}
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("Invalid template reference")));
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template reference")));
 	}
 }
 

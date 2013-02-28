@@ -24,6 +24,8 @@
 #ifndef INC_SIGNAL_ALREADY
 #define INC_SIGNAL_ALREADY
 
+#include <vector>
+
 #include "track.h"
 #include "traverse.h"
 
@@ -49,6 +51,7 @@ class routingpoint : public genericzlentrack {
 typedef std::deque<routingpoint *> via_list;
 
 typedef enum {
+	RTC_NULL,
 	RTC_SHUNT,
 	RTC_ROUTE,
 } ROUTE_CLASS;
@@ -59,11 +62,48 @@ struct route {
 	vartrack_target_ptr<routingpoint> end;
 	via_list vias;
 	ROUTE_CLASS type;
+	int priority;
 
 	routingpoint *parent;
 	unsigned int index;
 
+	route() : type(RTC_NULL), priority(0), parent(0), index(0) { }
 	void FillViaList();
+};
+
+class route_restriction_set;
+
+class route_restriction {
+	friend route_restriction_set;
+	
+	std::vector<std::string> targets;
+	std::vector<std::string> via;
+	std::vector<std::string> notvia;
+	int priority;
+	unsigned int denyflags;
+	unsigned int routerestrictionflags;
+	
+	enum {
+		ROUTERESTRICTIONFLAGS_PRIORITYSET	= 1<<0,
+	};
+
+	public:
+	enum {
+		RRDF_NOSHUNT	= 1<<0,
+		RRDF_NOROUTE	= 1<<1,
+	};
+	route_restriction() : priority(0), denyflags(0), routerestrictionflags(0) { }
+	bool CheckRestriction(unsigned int &restriction_flags, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
+	void ApplyRestriction(route &rt) const;
+};
+
+class route_restriction_set : public serialisable_obj {
+	std::forward_list<route_restriction> restrictions;
+
+	public:
+	unsigned int CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };
 
 bool RouteReservation(route &res_route, unsigned int rr_flags);
@@ -119,6 +159,7 @@ class autosignal : public genericsignal {
 
 class routesignal : public genericsignal {
 	std::list<route> signal_routes;
+	route_restriction_set restrictions;
 
 	public:
 	routesignal(world &w_) : genericsignal(w_) { }

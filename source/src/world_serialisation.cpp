@@ -31,34 +31,33 @@
 #include "signal.h"
 #include <typeinfo>
 
-void world_serialisation::LoadGame(const rapidjson::Value &json, error_collection &ec) {
-	if(json.IsArray()) {
-		for(rapidjson::SizeType i = 0; i < json.Size(); i++) {
-			const rapidjson::Value &cur = json[i];
-			if(cur.IsObject()) {
-				const rapidjson::Value &typeval = cur["type"];
-				if(typeval.IsString()) {
-					std::string type(typeval.GetString(), typeval.GetStringLength());
-					const rapidjson::Value &nameval = cur["name"];
-					std::string name;
-					if(nameval.IsString()) {
-						name.assign(nameval.GetString(), nameval.GetStringLength());
-					}
-					else name=string_format("#%d", i);
+void world_serialisation::LoadGame(const deserialiser_input &di, error_collection &ec) {
+	if(di.json.IsArray()) {
+		for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
+			deserialiser_input subdi("", "", std::to_string(i), di.json[i], &w, this, &di);
+			if(subdi.json.IsObject()) {
+				const rapidjson::Value &nameval = subdi.json["name"];
+				if(nameval.IsString()) {
+					subdi.name.assign(nameval.GetString(), nameval.GetStringLength());
+				}
+				else subdi.name=string_format("#%d", i);
 
-					DeserialiseObject(deserialiser_input(name, type, cur, &w, this), ec);
+				const rapidjson::Value &typeval = subdi.json["type"];
+				if(typeval.IsString()) {
+					subdi.type.assign(typeval.GetString(), typeval.GetStringLength());
+					DeserialiseObject(subdi, ec);
 				}
 				else {
-					ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("LoadGame: Object has no type")));
+					ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "LoadGame: Object has no type")));
 				}
 			}
 			else {
-				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("LoadGame: Expected object")));
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "LoadGame: Expected object")));
 			}
 		}
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("LoadGame: Document root not array")));
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "LoadGame: Document root not array")));
 	}
 }
 
@@ -66,7 +65,7 @@ template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deser
 	std::unique_ptr<generictrack> &ptr = w.all_pieces[di.name];
 	if(ptr) {
 		if(typeid(*ptr) != typeid(T)) {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(string_format("LoadGame: Track type definition conflict: %s is not a %s", ptr->GetFriendlyName().c_str(), di.type.c_str()))));
+			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("LoadGame: Track type definition conflict: %s is not a %s", ptr->GetFriendlyName().c_str(), di.type.c_str()))));
 			return 0;
 		}
 	}
@@ -87,31 +86,31 @@ template <typename T> T* world_serialisation::DeserialiseGenericTrack(const dese
 void world_serialisation::DeserialiseTemplate(const deserialiser_input &di, error_collection &ec) {
 	const rapidjson::Value &contentval=di.json["content"];
 	std::string name;
-	if(CheckTransJsonValue(name, di.json, "name", ec) && contentval.IsObject()) {
+	if(CheckTransJsonValue(name, di, "name", ec) && contentval.IsObject()) {
 		template_map[name] = &contentval;
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("Invalid template definition")));
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template definition")));
 	}
 }
 
 void world_serialisation::ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec) {
 	auto templ = template_map.find(name);
 	if(templ != template_map.end() && templ->second) {
-		obj.Deserialise(deserialiser_input(*(templ->second), di), ec);
+		obj.Deserialise(deserialiser_input(*(templ->second), "Template: " + name, di), ec);
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(string_format("Template: \"%s\" not found", name.c_str()))));
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Template: \"%s\" not found", name.c_str()))));
 	}
 }
 
 void world_serialisation::DeserialiseTractionType(const deserialiser_input &di, error_collection &ec) {
 	std::string name;
-	if(CheckTransJsonValue(name, di.json, "name", ec) && di.w) {
-		di.w->AddTractionType(name, CheckGetJsonValueDef<bool, bool>(di.json, "alwaysavailable", false, ec));
+	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
+		di.w->AddTractionType(name, CheckGetJsonValueDef<bool, bool>(di, "alwaysavailable", false, ec));
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("Invalid traction type definition")));
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid traction type definition")));
 	}
 }
 
@@ -135,6 +134,6 @@ void world_serialisation::DeserialiseObject(const deserialiser_input &di, error_
 		DeserialiseTractionType(di, ec);
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(string_format("LoadGame: Unknown object type: %s", di.type.c_str()))));
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("LoadGame: Unknown object type: %s", di.type.c_str()))));
 	}
 }

@@ -29,18 +29,18 @@
 #include "world.h"
 
 void generictrack::DeserialiseGenericTrackCommon(const deserialiser_input &di, error_collection &ec) {
-	const rapidjson::Value &val=di.json["connect"];
+	deserialiser_input subdi(di.json["connect"], "trackconnection", "connect", di);
 
-	if(!val.IsNull() && di.w) {
-		auto connfunc = [&](const rapidjson::Value &subval) {
+	if(!subdi.json.IsNull() && subdi.w) {
+		auto connfunc = [&](const deserialiser_input &funcdi) {
 			bool ok = true;
-			if(val.IsObject()) {
+			if(funcdi.json.IsObject()) {
 				DIRTYPE this_entrance_direction = TDIR_NULL;
 				DIRTYPE target_entrance_direction = TDIR_NULL;
 				std::string target_name;
-				ok = CheckTransJsonValue(this_entrance_direction, subval, "fromdirection", ec);
-				ok &= CheckTransJsonValue(target_entrance_direction, subval, "todirection", ec);
-				ok &= CheckTransJsonValue(target_name, subval, "to", ec);
+				ok = CheckTransJsonValue(this_entrance_direction, funcdi, "fromdirection", ec);
+				ok &= CheckTransJsonValue(target_entrance_direction, funcdi, "todirection", ec);
+				ok &= CheckTransJsonValue(target_name, funcdi, "to", ec);
 				
 				if(ok) {
 					di.w->ConnectTrack(this, this_entrance_direction, target_name, target_entrance_direction, ec);
@@ -55,26 +55,26 @@ void generictrack::DeserialiseGenericTrackCommon(const deserialiser_input &di, e
 			else ok = false;
 
 			if(!ok) {
-				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("Invalid track connection definition")));
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(funcdi, "Invalid track connection definition")));
 			}
 		};
 
-		if(val.IsArray()) {
+		if(subdi.json.IsArray()) {
 			for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
-				connfunc(val[i]);
+				connfunc(deserialiser_input(subdi.json[i], std::to_string(i), subdi));
 			}
 		}
-		else connfunc(val);
+		else connfunc(subdi);
 	}
 }
 
 void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	CheckTransJsonValue(length, di.json, "length", ec);
-	CheckTransJsonValue(elevationdelta, di.json, "elevationdelta", ec);
-	CheckTransJsonValue(traincount, di.json, "traincount", ec);
-	CheckTransJsonSubObj(trs, di.json, "trs", "trs", ec, di.w);
-	CheckTransJsonSubArray(speed_limits, di.json, "speedlimits", "speedlimits", ec, di.w);
-	CheckTransJsonSubArray(tractiontypes, di.json, "tractiontypes", "tractiontypes", ec, di.w);
+	CheckTransJsonValue(length, di, "length", ec);
+	CheckTransJsonValue(elevationdelta, di, "elevationdelta", ec);
+	CheckTransJsonValue(traincount, di, "traincount", ec);
+	CheckTransJsonSubObj(trs, di, "trs", "trs", ec, di.w);
+	CheckTransJsonSubArray(speed_limits, di, "speedlimits", "speedlimits", ec, di.w);
+	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec, di.w);
 	DeserialiseGenericTrackCommon(di, ec);
 }
 
@@ -84,12 +84,12 @@ void trackseg::Serialise(serialiser_output &so, error_collection &ec) const {
 }
 
 void points::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	CheckTransJsonSubObj(trs, di.json, "trs", "trs", ec, di.w);
-	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_REV, di.json, "reverse", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_OOC, di.json, "ooc", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_LOCKED, di.json, "locked", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_REMINDER, di.json, "reminder", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_FAILED, di.json, "failed", ec);
+	CheckTransJsonSubObj(trs, di, "trs", "trs", ec, di.w);
+	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_REV, di, "reverse", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_OOC, di, "ooc", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_LOCKED, di, "locked", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_REMINDER, di, "reminder", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_FAILED, di, "failed", ec);
 	DeserialiseGenericTrackCommon(di, ec);
 }
 
@@ -105,9 +105,9 @@ void points::Serialise(serialiser_output &so, error_collection &ec) const {
 
 void track_reservation_state::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	std::string targname;
-	if(CheckTransJsonValue(targname, di.json, "route_parent", ec)) {
+	if(CheckTransJsonValue(targname, di, "route_parent", ec)) {
 		unsigned int index;
-		CheckTransJsonValueDef(index, di.json, "route_index", 0, ec);
+		CheckTransJsonValueDef(index, di, "route_index", 0, ec);
 		if(di.w) {
 			generictrack *gt = di.w->FindTrackByName(targname);
 			routingpoint *rp = dynamic_cast<routingpoint *>(gt);
@@ -116,10 +116,10 @@ void track_reservation_state::Deserialise(const deserialiser_input &di, error_co
 			}
 		}
 	}
-	if(CheckGetJsonValueDef<bool, bool>(di.json, "no_route", false, ec)) reserved_route = 0;
-	CheckTransJsonValue(direction, di.json, "direction", ec);
-	CheckTransJsonValue(index, di.json, "index", ec);
-	CheckTransJsonValue(rr_flags, di.json, "rr_flags", ec);
+	if(CheckGetJsonValueDef<bool, bool>(di, "no_route", false, ec)) reserved_route = 0;
+	CheckTransJsonValue(direction, di, "direction", ec);
+	CheckTransJsonValue(index, di, "index", ec);
+	CheckTransJsonValue(rr_flags, di, "rr_flags", ec);
 }
 
 void track_reservation_state::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -137,13 +137,13 @@ void track_reservation_state::Serialise(serialiser_output &so, error_collection 
 
 void speedrestrictionset::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
-		const rapidjson::Value &cur = di.json[i];
+		deserialiser_input subdi(di.json[i], "speedrestriction", std::to_string(i), di);
 		speed_restriction sr;
-		if(cur.IsObject() && CheckTransJsonValueDef(sr.speedclass, cur, "speedclass", "", ec) && CheckTransJsonValueDef(sr.speed, cur, "speed", 0, ec)) {
+		if(subdi.json.IsObject() && CheckTransJsonValueDef(sr.speedclass, subdi, "speedclass", "", ec) && CheckTransJsonValueDef(sr.speed, subdi, "speed", 0, ec)) {
 			AddSpeedRestriction(sr);
 		}
 		else {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation("Invalid speed restriction definition")));
+			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Invalid speed restriction definition")));
 		}
 	}
 }

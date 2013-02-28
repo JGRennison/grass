@@ -40,7 +40,7 @@ class world_serialisation {
 
 	public:
 	world_serialisation(world &w_) : w(w_) { }
-	void LoadGame(const rapidjson::Value &json, error_collection &ec);
+	void LoadGame(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTemplate(const deserialiser_input &di, error_collection &ec);
 	void ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec);

@@ -39,3 +39,18 @@ void routesignal::Deserialise(const deserialiser_input &di, error_collection &ec
 
 void routesignal::Serialise(serialiser_output &so, error_collection &ec) const {
 }
+
+void route_restriction_set::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
+		deserialiser_input subdi(di.json[i], "routerestriction", std::to_string(i), di);
+		if(subdi.json.IsObject()) {
+			
+		}
+		else {
+			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Invalid route restriction definition")));
+		}
+	}
+}
+
+void route_restriction_set::Serialise(serialiser_output &so, error_collection &ec) const {
+}
