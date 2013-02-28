@@ -322,10 +322,9 @@ bool route_restriction::CheckRestriction(unsigned int &restriction_flags, const 
 		if(!via.empty()) {
 			auto found_via = std::find(via_start, via.end(), it->location.track->GetName());
 			if(found_via != via.end()) {
-				via_start = std::next(found_via, 2);
+				via_start = std::next(found_via, 1);
 			}
 		}
-		it->location.track;
 	}
 	if(via_start != via.end()) return false;
 	
@@ -334,7 +333,7 @@ bool route_restriction::CheckRestriction(unsigned int &restriction_flags, const 
 }
 
 void route_restriction::ApplyRestriction(route &rt) const {
-	if(routerestrictionflags & ROUTERESTRICTIONFLAGS_PRIORITYSET) rt.priority = priority;
+	if(routerestrictionflags & RRF_PRIORITYSET) rt.priority = priority;
 }
 
 unsigned int route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {

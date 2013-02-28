@@ -84,7 +84,7 @@ class route_restriction {
 	unsigned int routerestrictionflags;
 	
 	enum {
-		ROUTERESTRICTIONFLAGS_PRIORITYSET	= 1<<0,
+		RRF_PRIORITYSET	= 1<<0,
 	};
 
 	public:
@@ -98,7 +98,7 @@ class route_restriction {
 };
 
 class route_restriction_set : public serialisable_obj {
-	std::forward_list<route_restriction> restrictions;
+	std::vector<route_restriction> restrictions;
 
 	public:
 	unsigned int CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const;

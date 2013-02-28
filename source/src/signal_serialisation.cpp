@@ -35,16 +35,26 @@ void autosignal::Serialise(serialiser_output &so, error_collection &ec) const {
 
 void routesignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	DeserialiseGenericTrackCommon(di, ec);
+	CheckTransJsonSubArray(restrictions, di, "routerestrictions", "routerestrictions", ec);
 }
 
 void routesignal::Serialise(serialiser_output &so, error_collection &ec) const {
 }
 
 void route_restriction_set::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	restrictions.reserve(di.json.Size());
 	for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
-		deserialiser_input subdi(di.json[i], "routerestriction", std::to_string(i), di);
+		deserialiser_input subdi(di.json[i], "routerestriction", MkArrayRefName(i), di);
 		if(subdi.json.IsObject()) {
-			
+			restrictions.emplace_back();
+			route_restriction &rr = restrictions.back();
+			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "targets", ec, rr.targets);
+			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "via", ec, rr.via);
+			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "notvia", ec, rr.notvia);
+			if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF_PRIORITYSET;
+			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOSHUNT, subdi, "denyshunt", ec);
+			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOROUTE, subdi, "denyroute", ec);
+			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOSHUNT | route_restriction::RRDF_NOROUTE, subdi, "denyall", ec);
 		}
 		else {
 			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Invalid route restriction definition")));

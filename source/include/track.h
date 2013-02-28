@@ -49,6 +49,7 @@ class speedrestrictionset : public serialisable_obj {
 	std::forward_list<speed_restriction> speeds;
 
 	public:
+	unsigned int GetTrackSpeedLimitByClass(const std::string &speedclass, unsigned int default_max) const;
 	unsigned int GetTrainTrackSpeedLimit(train *t) const;
 	inline void AddSpeedRestriction(const speed_restriction &sr) {
 		speeds.push_front(sr);

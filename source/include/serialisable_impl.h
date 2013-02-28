@@ -53,6 +53,10 @@ struct Handler : public rapidjson::Writer<writestream> {
 	Handler(writestream &wr) : rapidjson::Writer<writestream>::Writer(wr) { }
 };
 
+inline std::string MkArrayRefName(unsigned int i) {
+	return "Array Element " + std::to_string(i);
+}
+
 struct deserialiser_input {
 	std::string name;
 	std::string type;
@@ -99,7 +103,7 @@ template <> inline unsigned int GetType<unsigned int>(const rapidjson::Value& va
 template <> inline int GetType<int>(const rapidjson::Value& val) { return val.GetInt(); }
 template <> inline uint64_t GetType<uint64_t>(const rapidjson::Value& val) { return val.GetUint64(); }
 template <> inline const char* GetType<const char*>(const rapidjson::Value& val) { return val.GetString(); }
-template <> inline std::string GetType<std::string>(const rapidjson::Value& val) { return val.GetString(); }
+template <> inline std::string GetType<std::string>(const rapidjson::Value& val) { return std::string(val.GetString(), val.GetStringLength()); }
 template <> inline DIRTYPE GetType<DIRTYPE>(const rapidjson::Value& val) {
 	DIRTYPE dir = TDIR_NULL;
 	DeserialiseDirectionName(dir, val.GetString());
@@ -140,7 +144,7 @@ template <typename C> inline void CheckJsonTypeAndReportError(const deserialiser
 template <typename C> inline bool CheckTransJsonValue(C &var, const deserialiser_input &di, const char *prop, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
 	bool res=IsType<C>(subval);
-	if(res) GetType<C>(subval);
+	if(res) var=GetType<C>(subval);
 	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec);
 	return res;
 }
@@ -182,20 +186,47 @@ template <typename C, typename D> inline C CheckGetJsonValueDef(const deserialis
 	return res?GetType<C>(subval):def;
 }
 
-template <typename C> inline void CheckTransJsonSubObj(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, world *w=0) {
+template <typename C> inline void CheckTransJsonSubObj(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
-	if(subval.IsObject()) obj.Deserialise(deserialiser_input("", type_name, prop, subval, w), ec);
+	if(subval.IsObject()) obj.Deserialise(deserialiser_input("", type_name, prop, subval), ec);
 	else {
 		CheckJsonTypeAndReportError<placeholder_subobject>(di, prop, subval, ec);
 	}
 }
 
-template <typename C> inline void CheckTransJsonSubArray(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, world *w=0) {
+template <typename C> inline void CheckTransJsonSubArray(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
-	if(subval.IsArray()) obj.Deserialise(deserialiser_input("", type_name, prop, subval, w), ec);
+	if(subval.IsArray()) obj.Deserialise(deserialiser_input("", type_name, prop, subval), ec);
 	else {
 		CheckJsonTypeAndReportError<placeholder_array>(di, prop, subval, ec);
 	}
+}
+
+template <typename C> inline void CheckIterateJsonArrayOrType(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func) {
+	deserialiser_input subdi(di.json[prop], type_name, prop, di);
+	
+	auto innerfunc = [&](const deserialiser_input &inner_di) {
+		if(IsType<C>(inner_di.json)) {
+			func(inner_di, ec);
+		}
+		else {
+			CheckJsonTypeAndReportError<C>(inner_di, inner_di.reference_name.c_str(), inner_di.json, ec);
+		}
+	};
+	
+	if(subdi.json.IsArray()) {
+		for(rapidjson::SizeType i = 0; i < subdi.json.Size(); i++) {
+			innerfunc(deserialiser_input(subdi.json[i], type_name, MkArrayRefName(i), subdi));
+		}
+	}
+	else innerfunc(subdi);
+}
+
+template <typename C> inline void CheckFillTypeVectorFromJsonArrayOrType(const deserialiser_input &di, const char *prop, error_collection &ec, std::vector<C> &vec) {
+	auto func = [&](const deserialiser_input &fdi, error_collection &ec) {
+		vec.push_back(GetType<C>(fdi.json));
+	};
+	CheckIterateJsonArrayOrType<std::string>(di, prop, "", ec, func);
 }
 
 template <typename C> inline void SerialiseSubObjJson(const C &obj, serialiser_output &so, const char *prop, error_collection &ec) {

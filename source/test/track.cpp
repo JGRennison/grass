@@ -26,6 +26,9 @@
 #include "train.h"
 #include "traverse.h"
 #include "world.h"
+#include "world_serialisation.h"
+#include "deserialisation-test.h"
+
 
 struct test_fixture_1 {
 	world w;
@@ -177,4 +180,56 @@ TEST_CASE( "track/traverse/points", "Test basic points traversal" ) {
 	leftover = AdvanceDisplacement(210000, loc, 0, stub);
 	REQUIRE(leftover == 10000);
 	REQUIRE(loc == track_location(&env.pt1, TDIR_PTS_REVERSE, 0));
+}
+
+TEST_CASE( "track/deserialisation/track", "Test basic track segment deserialisation" ) {
+	std::string track_test_str = 
+	"{ \"content\" : [ "
+		"{ \"type\" : \"trackseg\", \"name\" : \"T1\", \"length\" : 50000, \"elevationdelta\" : -1000, \"traincount\" : 1, "
+			"\"speedlimits\" : [ { \"speedclass\" : \"foo\", \"speed\" : 27778 } ] }"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+	
+	trackseg *t = dynamic_cast<trackseg *>(env.w.FindTrackByName("T1"));
+	REQUIRE(t != 0);
+	REQUIRE(t->GetLength(TDIR_FORWARD) == 50000);
+	REQUIRE(t->GetElevationDelta(TDIR_FORWARD) == -1000);
+	
+	const speedrestrictionset *sr = t->GetSpeedRestrictions();
+	REQUIRE(sr != 0);
+	REQUIRE(sr->GetTrackSpeedLimitByClass("foo", UINT_MAX) == 27778);
+	REQUIRE(sr->GetTrackSpeedLimitByClass("bar", UINT_MAX) == UINT_MAX);
+}
+
+TEST_CASE( "track/deserialisation/points", "Test basic points deserialisation" ) {
+	std::string track_test_str = 
+	"{ \"content\" : [ "
+		"{ \"type\" : \"points\", \"name\" : \"P1\", \"reverse\" : true, \"failed\" : false, \"reminder\" : true}"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+	
+	points *p = dynamic_cast<points *>(env.w.FindTrackByName("P1"));
+	REQUIRE(p != 0);
+	REQUIRE(p->GetPointFlags(0) == (points::PTF_REV | points::PTF_REMINDER));
+}
+
+TEST_CASE( "track/deserialisation/autoname", "Test deserialisation automatic naming" ) {
+	std::string track_test_str = 
+	"{ \"content\" : [ "
+		"{ \"type\" : \"points\"}, "
+		"{ \"type\" : \"trackseg\"}"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+	
+	trackseg *p = dynamic_cast<trackseg *>(env.w.FindTrackByName("#1"));
+	REQUIRE(p != 0);
 }

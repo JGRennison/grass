@@ -39,12 +39,13 @@ unsigned int error_collection::GetErrorCount() const {
 void error_collection::StreamOut(std::ostream& os) const {
 	os << "Errors: " << errors.size() << "\n";
 	for(auto it=errors.begin(); it!=errors.end(); ++it) {
-		os << **it;
+		const error_obj& obj = **it;
+		os << obj;
 	}
 }
 
 void error_obj::StreamOut(std::ostream& os) const {
-	os << msg << "\n";
+	os << msg.str() << "\n";
 }
 
 error_obj::error_obj() {

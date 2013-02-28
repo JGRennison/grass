@@ -26,14 +26,15 @@
 #include "error.h"
 
 error_deserialisation::error_deserialisation(const deserialiser_input &di, const std::string &str) {
-	std::function<void (const deserialiser_input *, unsigned int)> f= [&](const deserialiser_input *des, unsigned int counter) {
+	std::function<unsigned int (const deserialiser_input *, unsigned int)> f= [&](const deserialiser_input *des, unsigned int counter) {
 		if(des) {
-			f(des->parent, counter+1);
-			msg << "\t" << counter << ": " << di.reference_name;
-			if(!di.type.empty()) msg << ", Type: " << di.type;
-			if(!di.name.empty()) msg << ", Name: " << di.name;
-			msg << "\n";
+			counter = f(des->parent, counter);
+			msg << "\n\t" << counter << ": " << des->reference_name;
+			if(!des->type.empty()) msg << ", Type: " << des->type;
+			if(!des->name.empty()) msg << ", Name: " << des->name;
+			counter++;
 		}
+		return counter;
 	};
 
 	msg << "JSON deserialisation error: " << str;

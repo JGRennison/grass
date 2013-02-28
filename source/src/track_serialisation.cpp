@@ -61,7 +61,7 @@ void generictrack::DeserialiseGenericTrackCommon(const deserialiser_input &di, e
 
 		if(subdi.json.IsArray()) {
 			for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
-				connfunc(deserialiser_input(subdi.json[i], std::to_string(i), subdi));
+				connfunc(deserialiser_input(subdi.json[i], MkArrayRefName(i), subdi));
 			}
 		}
 		else connfunc(subdi);
@@ -72,9 +72,9 @@ void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonValue(length, di, "length", ec);
 	CheckTransJsonValue(elevationdelta, di, "elevationdelta", ec);
 	CheckTransJsonValue(traincount, di, "traincount", ec);
-	CheckTransJsonSubObj(trs, di, "trs", "trs", ec, di.w);
-	CheckTransJsonSubArray(speed_limits, di, "speedlimits", "speedlimits", ec, di.w);
-	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec, di.w);
+	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	CheckTransJsonSubArray(speed_limits, di, "speedlimits", "speedlimits", ec);
+	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec);
 	DeserialiseGenericTrackCommon(di, ec);
 }
 
@@ -84,7 +84,7 @@ void trackseg::Serialise(serialiser_output &so, error_collection &ec) const {
 }
 
 void points::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	CheckTransJsonSubObj(trs, di, "trs", "trs", ec, di.w);
+	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
 	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_REV, di, "reverse", ec);
 	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_OOC, di, "ooc", ec);
 	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_LOCKED, di, "locked", ec);
@@ -137,7 +137,7 @@ void track_reservation_state::Serialise(serialiser_output &so, error_collection 
 
 void speedrestrictionset::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
-		deserialiser_input subdi(di.json[i], "speedrestriction", std::to_string(i), di);
+		deserialiser_input subdi(di.json[i], "speedrestriction", MkArrayRefName(i), di);
 		speed_restriction sr;
 		if(subdi.json.IsObject() && CheckTransJsonValueDef(sr.speedclass, subdi, "speedclass", "", ec) && CheckTransJsonValueDef(sr.speed, subdi, "speed", 0, ec)) {
 			AddSpeedRestriction(sr);

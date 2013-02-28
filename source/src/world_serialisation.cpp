@@ -31,10 +31,20 @@
 #include "signal.h"
 #include <typeinfo>
 
+void world_serialisation::ParseInputString(const std::string &input, error_collection &ec) {
+	parsed_inputs.emplace_front();
+	rapidjson::Document &dc =  parsed_inputs.front();
+	if (dc.Parse<0>(input.c_str()).HasParseError()) {
+		ec.RegisterError(std::unique_ptr<error_obj>(new generic_error_obj(string_format("JSON Parsing error at offset: %d, Error: %s", dc.GetErrorOffset(), dc.GetParseError()))));
+	}
+	else LoadGame(deserialiser_input("[root]", "", "[root]", dc, &w, this, 0), ec);
+}
+
 void world_serialisation::LoadGame(const deserialiser_input &di, error_collection &ec) {
-	if(di.json.IsArray()) {
-		for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
-			deserialiser_input subdi("", "", std::to_string(i), di.json[i], &w, this, &di);
+	deserialiser_input contentdi(di.json["content"], "content", "content", di);
+	if(contentdi.json.IsArray()) {
+		for(rapidjson::SizeType i = 0; i < contentdi.json.Size(); i++) {
+			deserialiser_input subdi("", "", MkArrayRefName(i), contentdi.json[i], &w, this, &contentdi);
 			if(subdi.json.IsObject()) {
 				const rapidjson::Value &nameval = subdi.json["name"];
 				if(nameval.IsString()) {

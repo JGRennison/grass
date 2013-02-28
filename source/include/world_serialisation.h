@@ -37,9 +37,11 @@
 class world_serialisation {
 	world &w;
 	std::map<std::string, const rapidjson::Value *> template_map;
+	std::forward_list<rapidjson::Document> parsed_inputs;
 
 	public:
 	world_serialisation(world &w_) : w(w_) { }
+	void ParseInputString(const std::string &input, error_collection &ec);
 	void LoadGame(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTemplate(const deserialiser_input &di, error_collection &ec);

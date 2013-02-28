@@ -32,14 +32,17 @@
 const track_location empty_track_location;
 const track_target_ptr empty_track_target;
 
-unsigned int speedrestrictionset::GetTrainTrackSpeedLimit(train *t) const {
-	unsigned int max_speed = t->GetMaxVehSpeed();
+unsigned int speedrestrictionset::GetTrackSpeedLimitByClass(const std::string &speedclass, unsigned int default_max) const {
 	for(auto it = speeds.begin(); it != speeds.end(); ++it) {
-		if(it->speedclass.empty() || it->speedclass == t->GetVehSpeedClass()) {
-			if(it->speed < max_speed) max_speed = it->speed;
+		if(it->speedclass.empty() || it->speedclass == speedclass) {
+			if(it->speed < default_max) default_max = it->speed;
 		}
 	}
-	return max_speed;
+	return default_max;
+}
+
+unsigned int speedrestrictionset::GetTrainTrackSpeedLimit(train *t) const {
+	return GetTrackSpeedLimitByClass(t->GetVehSpeedClass(), t->GetMaxVehSpeed());
 }
 
 track_circuit *generictrack::GetTrackCircuit() const {

@@ -87,6 +87,7 @@ endif
 endif
 
 CFLAGS += -iquote source/include
+TESTCFLAGS += -iquote source/test-include
 
 OUTNAME:=$(OUTNAME)$(SIZEPOSTFIX)$(DEBUGPOSTFIX)
 
@@ -139,7 +140,7 @@ $(OBJDIR)/%.o: source/src/%.cpp
 	$(GCC) -c $< -o $@ $(CFLAGS) $(SRCCFLAGS) $(CXXFLAGS) $(SRCCXXFLAGS) $(GFLAGS) $(MAKEDEPS)
 
 $(TESTOBJDIR)/%.o: source/test/%.cpp
-	$(GCC) -c $< -o $@ $(CFLAGS) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
+	$(GCC) -c $< -o $@ $(CFLAGS) $(TESTCFLAGS) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
 
 $(TSOBJDIR)/%.o: source/src/%.cpp
 	$(GCC) -c $< -o $@ $(CFLAGS) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
