@@ -65,11 +65,16 @@ struct deserialiser_input {
 	world *w;
 	world_serialisation *ws;
 	const deserialiser_input *parent;
+	mutable std::vector<const char *> seenprops;
 
 	deserialiser_input(const std::string &n, const std::string &t, const std::string &r, const rapidjson::Value &j, world *w_=0, world_serialisation *ws_=0, const deserialiser_input *base=0) : name(n), type(t), reference_name(r), json(j), w(w_), ws(ws_), parent(base) { }
 	deserialiser_input(const std::string &n, const std::string &t, const std::string &r, const rapidjson::Value &j, const deserialiser_input &base) : name(n), type(t), reference_name(r), json(j), w(base.w), ws(base.ws), parent(&base) { }
 	deserialiser_input(const rapidjson::Value &j, const std::string &t, const std::string &r, const deserialiser_input &base) : type(t), reference_name(r), json(j), w(base.w), ws(base.ws), parent(&base) { }
 	deserialiser_input(const rapidjson::Value &j, const std::string &r, const deserialiser_input &base) : reference_name(r), json(j), w(base.w), ws(base.ws), parent(&base) { }
+
+	inline void RegisterProp(const char *prop) const {
+		seenprops.push_back(prop);
+	}
 };
 
 struct serialiser_output {
@@ -143,6 +148,7 @@ template <typename C> inline void CheckJsonTypeAndReportError(const deserialiser
 
 template <typename C> inline bool CheckTransJsonValue(C &var, const deserialiser_input &di, const char *prop, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
+	di.RegisterProp(prop);
 	bool res=IsType<C>(subval);
 	if(res) var=GetType<C>(subval);
 	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec);
@@ -151,6 +157,7 @@ template <typename C> inline bool CheckTransJsonValue(C &var, const deserialiser
 
 template <typename C, typename D> inline bool CheckTransJsonValueDef(C &var, const deserialiser_input &di, const char *prop, const D def, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
+	di.RegisterProp(prop);
 	bool res=IsType<C>(subval);
 	var=res?GetType<C>(subval):def;
 	if(!res) CheckJsonTypeAndReportError<C>(di, prop, subval, ec);
@@ -159,6 +166,7 @@ template <typename C, typename D> inline bool CheckTransJsonValueDef(C &var, con
 
 template <typename C> inline bool CheckTransJsonValueFlag(C &var, C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
+	di.RegisterProp(prop);
 	bool res=IsType<bool>(subval);
 	if(res) {
 		if(GetType<bool>(subval)) var|=flagmask;
@@ -170,6 +178,7 @@ template <typename C> inline bool CheckTransJsonValueFlag(C &var, C flagmask, co
 
 template <typename C> inline bool CheckTransJsonValueDefFlag(C &var, C flagmask, const deserialiser_input &di, const char *prop, bool def, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
+	di.RegisterProp(prop);
 	bool res=IsType<bool>(subval);
 	bool flagval=res?GetType<bool>(subval):def;
 	if(flagval) var|=flagmask;
@@ -180,6 +189,7 @@ template <typename C> inline bool CheckTransJsonValueDefFlag(C &var, C flagmask,
 
 template <typename C, typename D> inline C CheckGetJsonValueDef(const deserialiser_input &di, const char *prop, const D def, error_collection &ec, bool *hadval=0) {
 	const rapidjson::Value &subval=di.json[prop];
+	di.RegisterProp(prop);
 	bool res=IsType<C>(subval);
 	if(hadval) *hadval=res;
 	if(!res) CheckJsonTypeAndReportError<C>(di, prop, subval, ec);
@@ -188,7 +198,8 @@ template <typename C, typename D> inline C CheckGetJsonValueDef(const deserialis
 
 template <typename C> inline void CheckTransJsonSubObj(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
-	if(subval.IsObject()) obj.Deserialise(deserialiser_input("", type_name, prop, subval), ec);
+	di.RegisterProp(prop);
+	if(subval.IsObject()) obj.DeserialiseObject(deserialiser_input("", type_name, prop, subval), ec);
 	else {
 		CheckJsonTypeAndReportError<placeholder_subobject>(di, prop, subval, ec);
 	}
@@ -196,6 +207,7 @@ template <typename C> inline void CheckTransJsonSubObj(C &obj, const deserialise
 
 template <typename C> inline void CheckTransJsonSubArray(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
+	di.RegisterProp(prop);
 	if(subval.IsArray()) obj.Deserialise(deserialiser_input("", type_name, prop, subval), ec);
 	else {
 		CheckJsonTypeAndReportError<placeholder_array>(di, prop, subval, ec);
@@ -204,7 +216,8 @@ template <typename C> inline void CheckTransJsonSubArray(C &obj, const deseriali
 
 template <typename C> inline void CheckIterateJsonArrayOrType(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func) {
 	deserialiser_input subdi(di.json[prop], type_name, prop, di);
-	
+	di.RegisterProp(prop);
+
 	auto innerfunc = [&](const deserialiser_input &inner_di) {
 		if(IsType<C>(inner_di.json)) {
 			func(inner_di, ec);
@@ -213,7 +226,7 @@ template <typename C> inline void CheckIterateJsonArrayOrType(const deserialiser
 			CheckJsonTypeAndReportError<C>(inner_di, inner_di.reference_name.c_str(), inner_di.json, ec);
 		}
 	};
-	
+
 	if(subdi.json.IsArray()) {
 		for(rapidjson::SizeType i = 0; i < subdi.json.Size(); i++) {
 			innerfunc(deserialiser_input(subdi.json[i], type_name, MkArrayRefName(i), subdi));

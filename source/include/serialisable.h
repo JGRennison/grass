@@ -28,9 +28,13 @@
 
 struct deserialiser_input;
 struct serialiser_output;
+class world_serialisation;
 
 class serialisable_obj {
+	friend world_serialisation;
+
 	void DeserialisePrePost(const char *name, const deserialiser_input &di, error_collection &ec);
+	void DeserialiseObjectPropCheck(const deserialiser_input &di, error_collection &ec);
 
 	public:
 	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);

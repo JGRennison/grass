@@ -49,10 +49,6 @@ track_circuit *generictrack::GetTrackCircuit() const {
 	return 0;
 }
 
-unsigned int generictrack::GetFlags(DIRTYPE direction) const {
-	return 0;
-}
-
 const speedrestrictionset *generictrack::GetSpeedRestrictions() const {
 	return 0;
 }
@@ -92,13 +88,6 @@ bool generictrack::TryConnectPiece(track_target_ptr &piece_var, const track_targ
 	}
 }
 
-class error_trackconnection : public layout_initialisation_error_obj {
-	public:
-	error_trackconnection(const track_target_ptr &targ1, const track_target_ptr &targ2) {
-		msg << "Track Connection Error: Could Not Connect: " << targ1 << " to " << targ2;
-	}
-};
-
 bool generictrack::FullConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec) {
 	if(HalfConnect(this_entrance_direction, target_entrance) && target_entrance.track->HalfConnect(target_entrance.direction, track_target_ptr(this, this_entrance_direction))) {
 		return true;
@@ -132,7 +121,6 @@ bool trackseg::HalfConnect(DIRTYPE this_entrance_direction, const track_target_p
 		case TDIR_REVERSE:
 			return TryConnectPiece(next, target_entrance);
 		default:
-			assert(false);
 			return false;
 	}
 }
@@ -205,7 +193,7 @@ track_circuit *trackseg::GetTrackCircuit() const {
 }
 
 unsigned int trackseg::GetFlags(DIRTYPE direction) const {
-	return 0;
+	return trs.GetGTReservationFlags(direction);
 }
 
 DIRTYPE trackseg::GetReverseDirection(DIRTYPE direction) const {
@@ -340,13 +328,12 @@ bool points::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr
 		case TDIR_PTS_REVERSE:
 			return TryConnectPiece(reverse, target_entrance);
 		default:
-			assert(false);
 			return false;
 	}
 }
 
 unsigned int points::GetFlags(DIRTYPE direction) const {
-	return GTF_ROUTEFORK;
+	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
 unsigned int points::GetPointFlags(unsigned int points_index) const {
@@ -363,7 +350,7 @@ unsigned int points::SetPointFlagsMasked(unsigned int points_index, unsigned int
 bool points::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
 	unsigned int pflags = GetPointFlags(0);
 	bool rev = pflags & PTF_REV;
-	if(pflags && PTF_LOCKED) {
+	if(pflags & PTF_LOCKED) {
 		switch(direction) {
 			case TDIR_PTS_FACE:
 				if((index == 0 && rev) || (index == 1 && !rev)) return false;
@@ -381,8 +368,218 @@ bool points::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
+const track_target_ptr & catchpoints::GetConnectingPiece(DIRTYPE direction) const {
+	if(pflags & PTF_OOC) return empty_track_target;
+	if(pflags & PTF_REV) return empty_track_target;
+
+	switch(direction) {
+		case TDIR_FORWARD:
+			return next;
+		case TDIR_REVERSE:
+			return prev;
+		default:
+			assert(false);
+			return empty_track_target;
+	}
+}
+
+unsigned int catchpoints::GetMaxConnectingPieces(DIRTYPE direction) const {
+	switch(direction) {
+		case TDIR_FORWARD:
+			return 1;
+		case TDIR_REVERSE:
+			return 1;
+		default:
+			assert(false);
+			return 0;
+	}
+}
+
+const track_target_ptr & catchpoints::GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const {
+	switch(direction) {
+		case TDIR_FORWARD:
+			return next;
+		case TDIR_REVERSE:
+			return prev;
+		default:
+			assert(false);
+			return empty_track_target;
+	}
+}
+
+DIRTYPE catchpoints::GetReverseDirection(DIRTYPE direction) const {
+	if(pflags & PTF_OOC) return TDIR_NULL;
+	if(pflags & PTF_REV) return TDIR_NULL;
+
+	switch(direction) {
+		case TDIR_FORWARD:
+			return TDIR_REVERSE;
+		case TDIR_REVERSE:
+			return TDIR_FORWARD;
+		default:
+			assert(false);
+			return TDIR_NULL;
+	}
+}
+
+bool catchpoints::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+	switch(this_entrance_direction) {
+		case TDIR_FORWARD:
+			return TryConnectPiece(prev, target_entrance);
+		case TDIR_REVERSE:
+			return TryConnectPiece(next, target_entrance);
+		default:
+			return false;
+	}
+}
+
+unsigned int catchpoints::GetFlags(DIRTYPE direction) const {
+	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
+}
+
+unsigned int catchpoints::GetPointFlags(unsigned int points_index) const {
+	if(points_index != 0) return PTF_INVALID;
+	return pflags;
+}
+
+unsigned int catchpoints::SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags) {
+	if(points_index != 0) return PTF_INVALID;
+	pflags = (pflags & (~mask_flags)) | set_flags;
+	return pflags;
+}
+
+bool catchpoints::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+	unsigned int pflags = GetPointFlags(0);
+	if(pflags & PTF_LOCKED && pflags & PTF_REV)  return false;
+	bool res = trs.Reservation(direction, index, rr_flags, resroute);
+	if(res) {
+		//move points as necessary
+	}
+	return res;
+}
+
+const track_target_ptr & springpoints::GetConnectingPiece(DIRTYPE direction) const {
+	switch(direction) {
+		case TDIR_PTS_FACE:
+			return sendreverse ? reverse : normal;
+		case TDIR_PTS_NORMAL:
+			return prev;
+		case TDIR_PTS_REVERSE:
+			return prev;
+		default:
+			assert(false);
+			return empty_track_target;
+	}
+}
+
+unsigned int springpoints::GetMaxConnectingPieces(DIRTYPE direction) const {
+	return 1;
+}
+
+DIRTYPE springpoints::GetReverseDirection(DIRTYPE direction) const {
+	switch(direction) {
+		case TDIR_PTS_FACE:
+			return sendreverse ? TDIR_PTS_REVERSE : TDIR_PTS_NORMAL;
+		case TDIR_PTS_NORMAL:
+			return TDIR_PTS_FACE;
+		case TDIR_PTS_REVERSE:
+			return TDIR_PTS_FACE;
+		default:
+			assert(false);
+			return TDIR_NULL;
+	}
+}
+
+bool springpoints::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+	switch(this_entrance_direction) {
+		case TDIR_PTS_FACE:
+			return TryConnectPiece(prev, target_entrance);
+		case TDIR_PTS_NORMAL:
+			return TryConnectPiece(normal, target_entrance);
+		case TDIR_PTS_REVERSE:
+			return TryConnectPiece(reverse, target_entrance);
+		default:
+			return false;
+	}
+}
+
+unsigned int springpoints::GetFlags(DIRTYPE direction) const {
+	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
+}
+
+bool springpoints::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+	return trs.Reservation(direction, index, rr_flags, resroute);
+}
+
+const track_target_ptr & crossover::GetConnectingPiece(DIRTYPE direction) const {
+	switch(direction) {
+		case TDIR_X_N:
+			return north;
+		case TDIR_X_S:
+			return south;
+		case TDIR_X_W:
+			return west;
+		case TDIR_X_E:
+			return east;
+		default:
+			assert(false);
+			return empty_track_target;
+	}
+}
+
+unsigned int crossover::GetMaxConnectingPieces(DIRTYPE direction) const {
+	return 1;
+}
+
+DIRTYPE crossover::GetReverseDirection(DIRTYPE direction) const {
+	switch(direction) {
+		case TDIR_X_N:
+			return TDIR_X_S;
+		case TDIR_X_S:
+			return TDIR_X_N;
+		case TDIR_X_W:
+			return TDIR_X_E;
+		case TDIR_X_E:
+			return TDIR_X_W;
+		default:
+			assert(false);
+			return TDIR_NULL;
+	}
+}
+
+bool crossover::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+	switch(this_entrance_direction) {
+		case TDIR_X_N:
+			return TryConnectPiece(north, target_entrance);
+		case TDIR_X_S:
+			return TryConnectPiece(south, target_entrance);
+		case TDIR_X_W:
+			return TryConnectPiece(west, target_entrance);
+		case TDIR_X_E:
+			return TryConnectPiece(east, target_entrance);
+		default:
+			return false;
+	}
+}
+
+unsigned int crossover::GetFlags(DIRTYPE direction) const {
+	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
+}
+
+bool crossover::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+	return trs.Reservation(direction, index, rr_flags, resroute);
+}
+
 layout_initialisation_error_obj::layout_initialisation_error_obj() {
 	msg << "Track layout initialisation failure: ";
+}
+
+error_trackconnection::error_trackconnection(const track_target_ptr &targ1, const track_target_ptr &targ2) {
+	msg << "Track Connection Error: Could Not Connect: " << targ1 << " to " << targ2;
+}
+
+error_trackconnection_notfound::error_trackconnection_notfound(const track_target_ptr &targ1, const std::string &targ2) {
+	msg << "Track Connection Error: Could Not Connect: " << targ1 << " to Unfound Target:" << targ2;
 }
 
 bool track_reservation_state::Reservation(DIRTYPE in_dir, unsigned int in_index, unsigned int in_rr_flags, route *resroute) {
@@ -411,6 +608,15 @@ bool track_reservation_state::Reservation(DIRTYPE in_dir, unsigned int in_index,
 	else return false;
 }
 
+unsigned int track_reservation_state::GetGTReservationFlags(DIRTYPE checkdirection) const {
+	unsigned int outputflags = 0;
+	if(rr_flags & RRF_RESERVE) {
+		outputflags |= generictrack::GTF_ROUTESET;
+		if(direction == checkdirection) outputflags |= generictrack::GTF_ROUTETHISDIR;
+	}
+	return outputflags;
+}
+
 std::ostream& operator<<(std::ostream& os, const generictrack& obj) {
 	os << obj.GetFriendlyName();
 	return os;
@@ -426,75 +632,48 @@ std::ostream& operator<<(std::ostream& os, const track_location& obj) {
 	else os << "Invalid Track Location";
 	return os;
 }
+
+struct direction_name {
+	DIRTYPE dir;
+	const std::string serialname;
+	const std::string friendlyname;
+};
+
+const direction_name dirnames[] = {
+	{ TDIR_NULL, "nulldirection", "Null direction" },
+	{ TDIR_FORWARD, "forward", "Forward direction" },
+	{ TDIR_REVERSE, "reverse", "Reverse direction" },
+	{ TDIR_PTS_FACE, "facing", "Points: facing input direction" },
+	{ TDIR_PTS_NORMAL, "normal", "Points: facing input direction" },
+	{ TDIR_PTS_REVERSE, "reverse", "Points: reverse input direction" },
+	{ TDIR_X_N, "north", "Cross-over: North face input direction" },
+	{ TDIR_X_S, "south", "Cross-over: South face input direction" },
+	{ TDIR_X_W, "west", "Cross-over: West face input direction" },
+	{ TDIR_X_E, "east", "Cross-over: East face input direction" },
+	{ TDIR_DS_FL, "leftforward", "Double-slip: Forward direction: Left track" },
+	{ TDIR_DS_FR, "rightforward", "Double-slip: Forward direction: Right track" },
+	{ TDIR_DS_RL, "leftreverse", "Double-slip: Reverse direction: Left track" },
+	{ TDIR_DS_RR, "rightreverse", "Double-slip: Reverse direction: Right track" },
+};
+
 std::ostream& operator<<(std::ostream& os, const DIRTYPE& obj) {
-	switch(obj) {
-		case TDIR_NULL:
-			os << "Null direction";
-			break;
-		case TDIR_FORWARD:
-			os << "Forward direction";
-			break;
-		case TDIR_REVERSE:
-			os << "Reverse direction";
-			break;
-		case TDIR_PTS_FACE:
-			os << "Points: facing input direction";
-			break;
-		case TDIR_PTS_NORMAL:
-			os << "Points: normal input direction";
-			break;
-		case TDIR_PTS_REVERSE:
-			os << "Points: reverse input direction";
-			break;
-		default:
-			os << "Unknown direction";
-			break;
-	}
+	const direction_name &dirname = dirnames[obj];
+	if(dirname.dir != obj) assert(false);
+	os << dirname.friendlyname;
 	return os;
 }
 const char * SerialiseDirectionName(const DIRTYPE& obj) {
-	switch(obj) {
-		case TDIR_NULL:
-			return "nulldirection";
-		case TDIR_FORWARD:
-			return "forward";
-		case TDIR_REVERSE:
-			return "reverse";
-		case TDIR_PTS_FACE:
-			return "facing";
-		case TDIR_PTS_NORMAL:
-			return "normal";
-		case TDIR_PTS_REVERSE:
-			return "reverse";
-		default:
-			return "unknowndirection";
-	}
+	const direction_name &dirname = dirnames[obj];
+	if(dirname.dir != obj) assert(false);
+	return dirname.serialname.c_str();
 }
 
 bool DeserialiseDirectionName(DIRTYPE& obj, const char *dirname) {
-	if(strcmp(dirname, "nulldirection") == 0) {
-		obj = TDIR_NULL;
-		return true;
-	}
-	if(strcmp(dirname, "forward") == 0) {
-		obj = TDIR_FORWARD;
-		return true;
-	}
-	if(strcmp(dirname, "reverse") == 0) {
-		obj = TDIR_REVERSE;
-		return true;
-	}
-	if(strcmp(dirname, "facing") == 0) {
-		obj = TDIR_PTS_FACE;
-		return true;
-	}
-	if(strcmp(dirname, "normal") == 0) {
-		obj = TDIR_PTS_NORMAL;
-		return true;
-	}
-	if(strcmp(dirname, "reverse") == 0) {
-		obj = TDIR_PTS_REVERSE;
-		return true;
+	for(unsigned int i = 0; i < sizeof(dirnames)/sizeof(direction_name); i++) {
+		if(strcmp(dirname, dirnames[i].serialname.c_str()) == 0) {
+			obj = dirnames[i].dir;
+			return true;
+		}
 	}
 	return false;
 }

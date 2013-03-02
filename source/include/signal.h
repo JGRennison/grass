@@ -109,17 +109,16 @@ class route_restriction_set : public serialisable_obj {
 bool RouteReservation(route &res_route, unsigned int rr_flags);
 
 class genericsignal : public routingpoint {
+	protected:
 	track_target_ptr prev;
 	track_target_ptr next;
 	unsigned int sflags;
 	track_reservation_state start_trs;
 	track_reservation_state end_trs;
-
-	protected:
 	unsigned int availableroutetypes;
 
 	public:
-	genericsignal(world &w_) : routingpoint(w_), sflags(0), availableroutetypes(RPRT_SHUNTEND | RPRT_ROUTEEND) { }
+	genericsignal(world &w_) : routingpoint(w_), sflags(0), availableroutetypes(0) { }
 	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
 	void TrainEnter(DIRTYPE direction, train *t);
 	void TrainLeave(DIRTYPE direction, train *t);
@@ -137,6 +136,9 @@ class genericsignal : public routingpoint {
 
 	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction) const;
 	virtual unsigned int GetSetRouteTypes(DIRTYPE direction) const;
+
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 
 	protected:
 	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);

@@ -24,6 +24,7 @@
 #include "common.h"
 #include "serialisable_impl.h"
 #include "error.h"
+#include <algorithm>
 
 error_deserialisation::error_deserialisation(const deserialiser_input &di, const std::string &str) {
 	std::function<unsigned int (const deserialiser_input *, unsigned int)> f= [&](const deserialiser_input *des, unsigned int counter) {
@@ -62,6 +63,19 @@ void serialisable_obj::DeserialisePrePost(const char *name, const deserialiser_i
 
 void serialisable_obj::DeserialiseObject(const deserialiser_input &di, error_collection &ec) {
 	DeserialisePrePost("preparse", di, ec);
-	Deserialise(di, ec);
+	DeserialiseObjectPropCheck(di, ec);
 	DeserialisePrePost("postparse", di, ec);
+}
+
+void serialisable_obj::DeserialiseObjectPropCheck(const deserialiser_input &di, error_collection &ec) {
+	di.seenprops.reserve(di.json.GetMemberCount());
+	Deserialise(di, ec);
+	if(di.seenprops.size() == di.json.GetMemberCount()) return;
+	else {
+		for(auto it = di.json.MemberBegin(); it != di.json.MemberEnd(); ++it) {
+			if(std::find_if(di.seenprops.begin(), di.seenprops.end(), [&](const char *& s) { return strcmp(it->name.GetString(), s) == 0; }) == di.seenprops.end()) {
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Unknown object property: \"%s\"", it->name.GetString()))));
+			}
+		}
+	}
 }

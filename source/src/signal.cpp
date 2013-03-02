@@ -207,7 +207,7 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 }
 
 unsigned int autosignal::GetFlags(DIRTYPE direction) const {
-	return GTF_ROUTINGPOINT;
+	return GTF_ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
 }
 
 route *autosignal::GetRouteByIndex(unsigned int index) {
@@ -282,7 +282,7 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 }
 
 unsigned int routesignal::GetFlags(DIRTYPE direction) const {
-	return GTF_ROUTINGPOINT;
+	return GTF_ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
 }
 
 route *routesignal::GetRouteByIndex(unsigned int index) {
@@ -313,6 +313,7 @@ void route::FillViaList() {
 	}
 }
 
+//return true if restriction applies
 bool route_restriction::CheckRestriction(unsigned int &restriction_flags, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
 	if(!targets.empty() && std::find(targets.begin(), targets.end(), piece.track->GetName()) == targets.end()) return false;
 	

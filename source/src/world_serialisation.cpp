@@ -45,16 +45,19 @@ void world_serialisation::LoadGame(const deserialiser_input &di, error_collectio
 	if(contentdi.json.IsArray()) {
 		for(rapidjson::SizeType i = 0; i < contentdi.json.Size(); i++) {
 			deserialiser_input subdi("", "", MkArrayRefName(i), contentdi.json[i], &w, this, &contentdi);
+			subdi.seenprops.reserve(subdi.json.GetMemberCount());
 			if(subdi.json.IsObject()) {
 				const rapidjson::Value &nameval = subdi.json["name"];
 				if(nameval.IsString()) {
 					subdi.name.assign(nameval.GetString(), nameval.GetStringLength());
+					subdi.RegisterProp("name");
 				}
 				else subdi.name=string_format("#%d", i);
 
 				const rapidjson::Value &typeval = subdi.json["type"];
 				if(typeval.IsString()) {
 					subdi.type.assign(typeval.GetString(), typeval.GetStringLength());
+					subdi.RegisterProp("type");
 					DeserialiseObject(subdi, ec);
 				}
 				else {
@@ -107,7 +110,7 @@ void world_serialisation::DeserialiseTemplate(const deserialiser_input &di, erro
 void world_serialisation::ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec) {
 	auto templ = template_map.find(name);
 	if(templ != template_map.end() && templ->second) {
-		obj.Deserialise(deserialiser_input(*(templ->second), "Template: " + name, di), ec);
+		obj.DeserialiseObjectPropCheck(deserialiser_input(*(templ->second), "Template: " + name, di), ec);
 	}
 	else {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Template: \"%s\" not found", name.c_str()))));
@@ -136,6 +139,15 @@ void world_serialisation::DeserialiseObject(const deserialiser_input &di, error_
 	}
 	else if(di.type == "routesignal") {
 		DeserialiseGenericTrack<routesignal>(di, ec);
+	}
+	else if(di.type == "catchpoints") {
+		DeserialiseGenericTrack<catchpoints>(di, ec);
+	}
+	else if(di.type == "springpoints") {
+		DeserialiseGenericTrack<springpoints>(di, ec);
+	}
+	else if(di.type == "crossover") {
+		DeserialiseGenericTrack<crossover>(di, ec);
 	}
 	else if(di.type == "template") {
 		DeserialiseTemplate(di, ec);

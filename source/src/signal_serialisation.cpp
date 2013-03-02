@@ -26,19 +26,39 @@
 #include "serialisable_impl.h"
 #include "error.h"
 
-void autosignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
+void genericsignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	DeserialiseGenericTrackCommon(di, ec);
+	CheckTransJsonSubObj(start_trs, di, "start_trs", "trs", ec);
+	CheckTransJsonSubObj(end_trs, di, "end_trs", "trs", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_SHUNTSTART | RPRT_SHUNTEND, di, "shuntsignal", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_ROUTESTART | RPRT_ROUTEEND | RPRT_SHUNTEND, di, "routesignal", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_SHUNTSTART, di, "shuntstart", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_SHUNTEND, di, "shuntend", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_ROUTESTART, di, "routestart", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_ROUTEEND, di, "routeend", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_ROUTETRANS, di, "routethrough", ec);
+}
+
+void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseSubObjJson(start_trs, so, "start_trs", ec);
+	SerialiseSubObjJson(end_trs, so, "end_trs", ec);
+}
+
+void autosignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	genericsignal::Deserialise(di, ec);
 }
 
 void autosignal::Serialise(serialiser_output &so, error_collection &ec) const {
+	genericsignal::Serialise(so, ec);
 }
 
 void routesignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	DeserialiseGenericTrackCommon(di, ec);
+	genericsignal::Deserialise(di, ec);
 	CheckTransJsonSubArray(restrictions, di, "routerestrictions", "routerestrictions", ec);
 }
 
 void routesignal::Serialise(serialiser_output &so, error_collection &ec) const {
+	genericsignal::Serialise(so, ec);
 }
 
 void route_restriction_set::Deserialise(const deserialiser_input &di, error_collection &ec) {

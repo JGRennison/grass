@@ -73,3 +73,14 @@ TEST_CASE( "deserialisation/error/arraytypemismatch", "Test supplying a value of
 	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 2);
 }
+
+TEST_CASE( "deserialisation/error/extravalues", "Test unknown extra value detection" ) {
+	std::string track_test_str = 
+	"{ \"content\" : [ "
+		"{ \"type\" : \"trackseg\", \"length\" : 0, \"foobar\" : \"baz\" }"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 1);
+}

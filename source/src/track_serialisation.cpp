@@ -83,24 +83,61 @@ void trackseg::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(traincount, so, "traincount");
 }
 
+void DeserialisePointFlags(unsigned int &pflags, const deserialiser_input &di, error_collection &ec) {
+	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_REV, di, "reverse", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_OOC, di, "ooc", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_LOCKED, di, "locked", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_REMINDER, di, "reminder", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_FAILED, di, "failed", ec);
+}
+
+void SerialisePointFlags(unsigned int pflags, serialiser_output &so, error_collection &ec) {
+	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_REV, so, "reverse");
+	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_OOC, so, "ooc");
+	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_LOCKED, so, "locked");
+	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_REMINDER, so, "reminder");
+	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_FAILED, so, "failed");
+}
+
 void points::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_REV, di, "reverse", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_OOC, di, "ooc", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_LOCKED, di, "locked", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_REMINDER, di, "reminder", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, PTF_FAILED, di, "failed", ec);
+	DeserialisePointFlags(pflags, di, ec);
 	DeserialiseGenericTrackCommon(di, ec);
 }
 
 void points::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseSubObjJson(trs, so, "trs", ec);
-	SerialiseFlagJson<unsigned int>(pflags, PTF_REV, so, "reverse");
-	SerialiseFlagJson<unsigned int>(pflags, PTF_OOC, so, "ooc");
-	SerialiseFlagJson<unsigned int>(pflags, PTF_LOCKED, so, "locked");
-	SerialiseFlagJson<unsigned int>(pflags, PTF_REMINDER, so, "reminder");
-	SerialiseFlagJson<unsigned int>(pflags, PTF_FAILED, so, "failed");
+	SerialisePointFlags(pflags, so, ec);
+}
 
+void catchpoints::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	DeserialisePointFlags(pflags, di, ec);
+	DeserialiseGenericTrackCommon(di, ec);
+}
+
+void catchpoints::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseSubObjJson(trs, so, "trs", ec);
+	SerialisePointFlags(pflags, so, ec);
+}
+
+void springpoints::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	CheckTransJsonValue(sendreverse, di, "sendreverse", ec);
+	DeserialiseGenericTrackCommon(di, ec);
+}
+
+void springpoints::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseSubObjJson(trs, so, "trs", ec);
+}
+
+void crossover::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	DeserialiseGenericTrackCommon(di, ec);
+}
+
+void crossover::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseSubObjJson(trs, so, "trs", ec);
 }
 
 void track_reservation_state::Deserialise(const deserialiser_input &di, error_collection &ec) {

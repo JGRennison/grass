@@ -244,6 +244,9 @@ public:
 	ConstMemberIterator MemberEnd()	const	{ RAPIDJSON_ASSERT(IsObject()); return data_.o.members + data_.o.size; }
 	MemberIterator MemberBegin()			{ RAPIDJSON_ASSERT(IsObject()); return data_.o.members; }
 	MemberIterator MemberEnd()				{ RAPIDJSON_ASSERT(IsObject()); return data_.o.members + data_.o.size; }
+	
+	//! Get count of object members
+	SizeType GetMemberCount()	const	{ RAPIDJSON_ASSERT(IsObject()); return data_.o.size; }
 
 	//! Check whether a member exists in the object.
 	bool HasMember(const Ch* name) const { return FindMember(name) != 0; }
