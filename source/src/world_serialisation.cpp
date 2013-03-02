@@ -45,8 +45,8 @@ void world_serialisation::LoadGame(const deserialiser_input &di, error_collectio
 	if(contentdi.json.IsArray()) {
 		for(rapidjson::SizeType i = 0; i < contentdi.json.Size(); i++) {
 			deserialiser_input subdi("", "", MkArrayRefName(i), contentdi.json[i], &w, this, &contentdi);
-			subdi.seenprops.reserve(subdi.json.GetMemberCount());
 			if(subdi.json.IsObject()) {
+				subdi.seenprops.reserve(subdi.json.GetMemberCount());
 				const rapidjson::Value &nameval = subdi.json["name"];
 				if(nameval.IsString()) {
 					subdi.name.assign(nameval.GetString(), nameval.GetStringLength());
@@ -127,35 +127,28 @@ void world_serialisation::DeserialiseTractionType(const deserialiser_input &di, 
 	}
 }
 
+template <typename C> void world_serialisation::MakeGenericTrackTypeWrapper() {
+	auto func = [&](const deserialiser_input &di, error_collection &ec) {
+		this->DeserialiseGenericTrack<C>(di, ec);
+	};
+	object_types.RegisterType(C::GetTypeSerialisationNameStatic(), func);
+}
+
+void world_serialisation::InitObjectTypes() {
+	MakeGenericTrackTypeWrapper<trackseg>();
+	MakeGenericTrackTypeWrapper<points>();
+	MakeGenericTrackTypeWrapper<autosignal>();
+	MakeGenericTrackTypeWrapper<routesignal>();
+	MakeGenericTrackTypeWrapper<catchpoints>();
+	MakeGenericTrackTypeWrapper<springpoints>();
+	MakeGenericTrackTypeWrapper<crossover>();
+	MakeGenericTrackTypeWrapper<doubleslip>();
+	object_types.RegisterType("template", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTemplate(di, ec); });
+	object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTractionType(di, ec); });
+}
+
 void world_serialisation::DeserialiseObject(const deserialiser_input &di, error_collection &ec) {
-	if(di.type == "trackseg") {
-		DeserialiseGenericTrack<trackseg>(di, ec);
-	}
-	else if(di.type == "points") {
-		DeserialiseGenericTrack<points>(di, ec);
-	}
-	else if(di.type == "autosignal") {
-		DeserialiseGenericTrack<autosignal>(di, ec);
-	}
-	else if(di.type == "routesignal") {
-		DeserialiseGenericTrack<routesignal>(di, ec);
-	}
-	else if(di.type == "catchpoints") {
-		DeserialiseGenericTrack<catchpoints>(di, ec);
-	}
-	else if(di.type == "springpoints") {
-		DeserialiseGenericTrack<springpoints>(di, ec);
-	}
-	else if(di.type == "crossover") {
-		DeserialiseGenericTrack<crossover>(di, ec);
-	}
-	else if(di.type == "template") {
-		DeserialiseTemplate(di, ec);
-	}
-	else if(di.type == "tractiontype") {
-		DeserialiseTractionType(di, ec);
-	}
-	else {
+	if(!object_types.FindAndDeserialise(di.type, di, ec)) {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("LoadGame: Unknown object type: %s", di.type.c_str()))));
 	}
 }

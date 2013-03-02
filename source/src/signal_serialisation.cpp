@@ -27,7 +27,8 @@
 #include "error.h"
 
 void genericsignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	DeserialiseGenericTrackCommon(di, ec);
+	routingpoint::Deserialise(di, ec);
+
 	CheckTransJsonSubObj(start_trs, di, "start_trs", "trs", ec);
 	CheckTransJsonSubObj(end_trs, di, "end_trs", "trs", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_SHUNTSTART | RPRT_SHUNTEND, di, "shuntsignal", ec);
@@ -40,6 +41,8 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 }
 
 void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {
+	routingpoint::Serialise(so, ec);
+
 	SerialiseSubObjJson(start_trs, so, "start_trs", ec);
 	SerialiseSubObjJson(end_trs, so, "end_trs", ec);
 }

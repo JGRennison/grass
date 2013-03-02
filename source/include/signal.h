@@ -155,6 +155,8 @@ class autosignal : public genericsignal {
 
 	virtual route *GetRouteByIndex(unsigned int index);
 
+	static std::string GetTypeSerialisationNameStatic() { return "autosignal"; }
+	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };
@@ -171,6 +173,8 @@ class routesignal : public genericsignal {
 
 	virtual route *GetRouteByIndex(unsigned int index);
 
+	static std::string GetTypeSerialisationNameStatic() { return "routesignal"; }
+	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };

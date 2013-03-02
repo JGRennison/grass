@@ -570,6 +570,116 @@ bool crossover::Reservation(DIRTYPE direction, unsigned int index, unsigned int 
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
+const track_target_ptr & doubleslip::GetConnectingPiece(DIRTYPE direction) const {
+	DIRTYPE exitdirection = GetReverseDirection(direction);
+
+	if(exitdirection != TDIR_NULL) return GetInputPiece(exitdirection);
+	else return empty_track_target;
+}
+
+unsigned int doubleslip::GetMaxConnectingPieces(DIRTYPE direction) const {
+	switch(direction) {
+		case TDIR_DS_FL:
+			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_RR | DSF_NO_FL_RL));
+		case TDIR_DS_FR:
+			return 2 - __builtin_popcount(dsflags&(DSF_NO_FR_RR | DSF_NO_FR_RL));
+		case TDIR_DS_RL:
+			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_RL | DSF_NO_FR_RL));
+		case TDIR_DS_RR:
+			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_RR | DSF_NO_FR_RR));
+		default:
+			assert(false);
+			return 0;
+	}
+}
+
+const track_target_ptr & doubleslip::GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const {
+	unsigned int pf = GetCurrentPointFlags(direction);
+	bool isrev = (pf & PTF_FIXED) ? (pf & PTF_REV) : index;
+
+	DIRTYPE exitdirection = GetConnectingPointDirection(direction, isrev);
+	return GetInputPiece(exitdirection);
+}
+
+DIRTYPE doubleslip::GetReverseDirection(DIRTYPE direction) const {
+	unsigned int pf = GetCurrentPointFlags(direction);
+	if(pf & PTF_OOC) return TDIR_NULL;
+
+	DIRTYPE exitdirection = GetConnectingPointDirection(direction, pf & PTF_REV);
+	unsigned int exitpf = GetCurrentPointFlags(exitdirection);
+	if(exitpf & PTF_OOC) return TDIR_NULL;
+
+	if(GetConnectingPointDirection(exitdirection, exitpf & PTF_REV) == direction) {
+		return exitdirection;
+	}
+	else return TDIR_NULL;
+}
+
+bool doubleslip::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+	track_target_ptr &piece = GetInputPiece(this_entrance_direction);
+	if(piece.IsValid()) return TryConnectPiece(piece, target_entrance);
+	else return false;
+}
+
+unsigned int doubleslip::GetFlags(DIRTYPE direction) const {
+	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
+}
+
+unsigned int doubleslip::GetPointFlags(unsigned int points_index) const {
+	if(points_index < 4) return pflags[points_index];
+	else {
+		assert(false);
+		return PTF_INVALID;
+	}
+}
+
+unsigned int doubleslip::SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags) {
+	if(points_index < 4) {
+		auto safe_set = [&](unsigned int &flagsvar, unsigned int newflags) {
+			if(!(flagsvar & PTF_FIXED)) flagsvar = (newflags & PTF_SERIALISABLE) | (flagsvar & ~PTF_SERIALISABLE);
+		};
+
+		unsigned int newpointsflags = (pflags[points_index] & (~mask_flags)) | set_flags;
+		if(dof == 1) {
+			safe_set(pflags[0], newpointsflags);
+			safe_set(pflags[1], newpointsflags);
+			safe_set(pflags[2], newpointsflags);
+			safe_set(pflags[3], newpointsflags);
+		}
+		else if(dof == 2) {
+			safe_set(pflags[points_index], newpointsflags);
+			safe_set(pflags[points_index ^ 1], newpointsflags ^ PTF_REV);
+		}
+		else if(dof == 4) safe_set(pflags[points_index], newpointsflags);
+		return pflags[points_index];
+	}
+	else {
+		return PTF_INVALID;
+	}
+}
+
+bool doubleslip::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+	unsigned int pf = GetCurrentPointFlags(direction);
+	if(pf & PTF_LOCKED) {
+		if(!(pf & PTF_REV) != !index) return false;	//points locked in wrong direction
+	}
+
+	bool isrev = (pf & PTF_FIXED) ? (pf & PTF_REV) : index;
+	DIRTYPE exitdirection = GetConnectingPointDirection(direction, isrev);
+	unsigned int exitpf = GetCurrentPointFlags(exitdirection);
+	bool exitpointsrev = (GetConnectingPointDirection(exitdirection, true) == direction);
+
+	if(exitpf & PTF_LOCKED) {
+		if(!(exitpf & PTF_REV) != !exitpointsrev) return false;	//points locked in wrong direction
+	}
+
+	bool res = trs.Reservation(direction, index, rr_flags, resroute);
+	if(res) {
+		//move points as necessary
+	}
+	return res;
+}
+
 layout_initialisation_error_obj::layout_initialisation_error_obj() {
 	msg << "Track layout initialisation failure: ";
 }

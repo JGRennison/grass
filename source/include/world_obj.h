@@ -29,7 +29,7 @@
 
 class world;
 
-class world_obj : public serialisable_obj, public futurable_obj {
+class world_obj : public serialisable_futurable_obj {
 	std::string name;
 	world &w;
 
@@ -39,6 +39,8 @@ class world_obj : public serialisable_obj, public futurable_obj {
 	virtual std::string GetName() const { return name; }
 	virtual void SetName(std::string newname) { name = newname; }
 	virtual std::string GetFriendlyName() const;
+	
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 };
 
 #endif

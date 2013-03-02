@@ -22,8 +22,13 @@
 //==========================================================================
 
 #include "world_obj.h"
+#include "world.h"
 
 std::string world_obj::GetFriendlyName() const {
 	std::string result= std::string(GetTypeName()).append(": ").append((!name.empty()) ? name : std::string("[unnamed]"));
 	return result;
+}
+
+void world_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	DeserialiseFutures(di, ec, w.future_types, w.futures);
 }

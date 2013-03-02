@@ -28,6 +28,7 @@
 #include <string>
 
 #include "world.h"
+#include "serialisable.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"
@@ -40,7 +41,10 @@ class world_serialisation {
 	std::forward_list<rapidjson::Document> parsed_inputs;
 
 	public:
-	world_serialisation(world &w_) : w(w_) { }
+	deserialisation_type_factory<> object_types;
+
+	void InitObjectTypes();
+	world_serialisation(world &w_) : w(w_) { InitObjectTypes(); }
 	void ParseInputString(const std::string &input, error_collection &ec);
 	void LoadGame(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);
@@ -49,6 +53,7 @@ class world_serialisation {
 	void DeserialiseTractionType(const deserialiser_input &di, error_collection &ec);
 	template <typename T> T* MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec);
 	template <typename T> T* DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec);
+	template <typename C> void MakeGenericTrackTypeWrapper();
 };
 
 #endif

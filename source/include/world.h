@@ -47,6 +47,9 @@ class world {
 	std::unordered_map<std::string, traction_type> traction_types;
 
 	public:
+	future_deserialisation_type_factory future_types;
+	future_set futures;
+
 	void AddTrack(std::unique_ptr<generictrack> &&piece, error_collection &ec);
 	inline void AddTractionType(std::string name, bool alwaysavailable) {
 		traction_types[name].name=name;
@@ -61,6 +64,16 @@ class world {
 	void ConnectAllPiecesInit(error_collection &ec);
 	void PostLayoutInit(error_collection &ec);
 	generictrack *FindTrackByName(const std::string &name) const;
+	void InitFutureTypes();
+	world() { InitFutureTypes(); }
 };
+
+template <typename C> void MakeFutureTypeWrapper(future_deserialisation_type_factory &future_types) {
+	auto func = [&](const deserialiser_input &di, error_collection &ec, future_set &fs, serialisable_futurable_obj &sfo, future_time ft) {
+		C *f = new C(fs, sfo, ft);
+		f->DeserialiseObject(di, ec);
+	};
+	future_types.RegisterType(C::GetTypeSerialisationNameStatic(), func);
+}
 
 #endif

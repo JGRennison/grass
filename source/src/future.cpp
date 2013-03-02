@@ -23,6 +23,7 @@
 
 #include "common.h"
 #include "future.h"
+#include "serialisable_impl.h"
 
 future::future(future_set &fs_, futurable_obj &targ, future_time ft) : fs(fs_), target(targ), trigger_time(ft) {
 	targ.RegisterFuture(std::unique_ptr<future>(this));
@@ -40,6 +41,15 @@ future::~future() {
 		}
 		f_flags &= ~FF_INFS;
 	}
+}
+
+void future::Deserialise(const deserialiser_input &di, error_collection &ec) {
+
+}
+
+void future::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseValueJson(trigger_time, so, "ftime");
+	SerialiseValueJson(GetTypeSerialisationName(), so, "ftype");
 }
 
 void future_set::ExecuteUpTo(future_time ft) {
@@ -64,4 +74,53 @@ void futurable_obj::ExterminateFuture(future *f) {
 }
 void futurable_obj::ClearFutures() {
 	own_futures.clear();
+}
+
+void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di, error_collection &ec, const future_deserialisation_type_factory &dtf, future_set &fs) {
+	deserialiser_input futuresdi(di.json["futures"], "futures", "futures", di);
+	if(futuresdi.json.IsArray()) {
+		for(rapidjson::SizeType i = 0; i < futuresdi.json.Size(); i++) {
+			deserialiser_input subdi(futuresdi.json[i], "", MkArrayRefName(i), futuresdi);
+			if(subdi.json.IsObject()) {
+				subdi.seenprops.reserve(subdi.json.GetMemberCount());
+				
+				const rapidjson::Value &timeval = subdi.json["ftime"];
+				if(IsType<future_time>(timeval)) {
+					const rapidjson::Value &typeval = subdi.json["ftype"];
+					if(typeval.IsString()) {
+						subdi.type.assign(typeval.GetString(), typeval.GetStringLength());
+						subdi.RegisterProp("ftype");
+						if(!dtf.FindAndDeserialise(subdi.type, subdi, ec, fs, *this, GetType<future_time>(timeval))) {
+							ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, string_format("LoadGame: Unknown future type: %s", subdi.type.c_str()))));
+						}
+					}
+					else {
+						ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Object has no type")));
+					}
+				}
+				else {
+					ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Object has no time")));
+				}
+			}
+			else {
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Expected object")));
+			}
+		}
+	}
+	else if(!futuresdi.json.IsNull()) {
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Futures: Expected an array")));
+	}
+}
+
+void serialisable_futurable_obj::Serialise(serialiser_output &so, error_collection &ec) const {
+	if(!own_futures.empty()) {
+		so.json_out.String("futures");
+		so.json_out.StartArray();
+		for(auto it = own_futures.begin(); it != own_futures.end(); ++it) {
+			so.json_out.StartObject();
+			(*it)->Serialise(so, ec);
+			so.json_out.EndObject();
+		}
+		so.json_out.EndArray();
+	}
 }

@@ -27,6 +27,8 @@
 #include <forward_list>
 #include <string>
 #include <iostream>
+#include <array>
+#include <limits.h>
 
 #include "world_obj.h"
 #include "trackcircuit.h"
@@ -66,12 +68,12 @@ typedef enum {
 	TDIR_PTS_FACE,		//points: facing direction
 	TDIR_PTS_NORMAL,	//points: normal trailing direction
 	TDIR_PTS_REVERSE,	//points: reverse trailing direction
-	
+
 	TDIR_X_N,		//crossover: North face (connects South)
 	TDIR_X_S,		//crossover: South face (connects North)
 	TDIR_X_W,		//crossover: West face (connects East)
 	TDIR_X_E,		//crossover: East face (connects West)
-	
+
 	TDIR_DS_FL,		//double-slip: forwards, left track
 	TDIR_DS_FR,		//double-slip: forwards, right track
 	TDIR_DS_RL,		//double-slip: reverse, left track
@@ -142,11 +144,14 @@ class generictrack : public world_obj {
 		GTF_ROUTEFORK	= 1<<2,
 		GTF_ROUTINGPOINT= 1<<3,
 	};
+	
+	void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual std::string GetTypeSerialisationName() const = 0;
 
 	protected:
 	virtual bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) = 0;
 	static bool TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target);
-	void DeserialiseGenericTrackCommon(const deserialiser_input &di, error_collection &ec);
+	
 };
 
 template <typename T> struct vartrack_target_ptr {
@@ -269,6 +274,8 @@ class trackseg : public generictrack {
 	trackseg & SetElevationDelta(unsigned int elevationdelta);
 	trackseg & SetTrackCircuit(track_circuit *tc);
 
+	static std::string GetTypeSerialisationNameStatic() { return "trackseg"; }
+	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 
@@ -295,6 +302,8 @@ class genericpoints : public genericzlentrack {
 		PTF_REMINDER	= 1<<3,
 		PTF_FAILED	= 1<<4,
 		PTF_INVALID	= 1<<5,
+		PTF_FIXED	= 1<<6,
+		PTF_SERIALISABLE = PTF_REV | PTF_OOC | PTF_LOCKED | PTF_REMINDER | PTF_FAILED,
 	};
 	genericpoints(world &w_) : genericzlentrack(w_) { }
 	void TrainEnter(DIRTYPE direction, train *t);
@@ -330,6 +339,8 @@ class points : public genericpoints {
 	virtual unsigned int GetPointFlags(unsigned int points_index) const;
 	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags);
 
+	static std::string GetTypeSerialisationNameStatic() { return "points"; }
+	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 
@@ -360,6 +371,8 @@ class catchpoints : public genericpoints {
 	virtual unsigned int GetPointFlags(unsigned int points_index) const;
 	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags);
 
+	static std::string GetTypeSerialisationNameStatic() { return "catchpoints"; }
+	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 
@@ -389,6 +402,8 @@ class springpoints : public genericzlentrack {
 
 	virtual std::string GetTypeName() const { return "Spring Points"; }
 
+	static std::string GetTypeSerialisationNameStatic() { return "springpoints"; }
+	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 
@@ -418,6 +433,106 @@ class crossover : public genericzlentrack {
 
 	virtual std::string GetTypeName() const { return "Crossover"; }
 
+	static std::string GetTypeSerialisationNameStatic() { return "crossover"; }
+	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+
+	protected:
+	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
+};
+
+class doubleslip : public genericpoints {
+	track_target_ptr forwardleftinput;
+	track_target_ptr forwardrightinput;
+	track_target_ptr reverseleftinput;
+	track_target_ptr reverserightinput;
+	unsigned int pflags[4] = { 0, 0, 0, 0 };
+	track_reservation_state trs;
+	unsigned int dof = 2;
+	unsigned int fail_pflags = PTF_INVALID;
+
+	unsigned int dsflags;
+	enum {
+		DSF_NO_FL_RR	= 1<<0,
+		DSF_NO_FR_RR	= 1<<1,
+		DSF_NO_FL_RL	= 1<<2,
+		DSF_NO_FR_RL	= 1<<3,
+	};
+
+	inline unsigned int GetCurrentPointIndex(DIRTYPE direction) {
+		switch(direction) {
+			case TDIR_DS_FL:
+				return 0;
+			case TDIR_DS_FR:
+				return 1;
+			case TDIR_DS_RL:
+				return 2;
+			case TDIR_DS_RR:
+				return 3;
+			default:
+				return UINT_MAX;
+		}
+	}
+
+	inline unsigned int &GetCurrentPointFlags(DIRTYPE direction) {
+		unsigned int index = GetCurrentPointIndex(direction);
+		if(index < 4) return pflags[index];
+		else return fail_pflags;
+	}
+
+	inline unsigned int GetCurrentPointFlags(DIRTYPE direction) const { return GetCurrentPointFlags(direction); }
+
+	inline DIRTYPE GetConnectingPointDirection(DIRTYPE direction, bool reverse) const {
+		switch(direction) {
+			case TDIR_DS_FL:
+				return reverse ? TDIR_DS_RR : TDIR_DS_RL;
+			case TDIR_DS_FR:
+				return reverse ? TDIR_DS_RL : TDIR_DS_RR;
+			case TDIR_DS_RL:
+				return reverse ? TDIR_DS_FR : TDIR_DS_FL;
+			case TDIR_DS_RR:
+				return reverse ? TDIR_DS_FL : TDIR_DS_FR;
+			default:
+				return TDIR_NULL;
+		}
+	}
+
+	inline track_target_ptr &GetInputPiece(DIRTYPE direction) {
+		switch(direction) {
+			case TDIR_DS_FL:
+				return forwardleftinput;
+			case TDIR_DS_FR:
+				return forwardrightinput;
+			case TDIR_DS_RL:
+				return reverseleftinput;
+			case TDIR_DS_RR:
+				return reverserightinput;
+			default:
+				return const_cast<track_target_ptr &>(empty_track_target);
+		}
+	}
+	inline const track_target_ptr &GetInputPiece(DIRTYPE direction) const { return GetInputPiece(direction); }
+
+	public:
+	doubleslip(world &w_) : genericpoints(w_) { }
+
+	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
+	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
+	unsigned int GetFlags(DIRTYPE direction) const;
+
+	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
+	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
+	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+
+	virtual std::string GetTypeName() const { return "Double Slip Points"; }
+
+	virtual unsigned int GetPointCount() const { return 4; }
+	virtual unsigned int GetPointFlags(unsigned int points_index) const;
+	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags);
+
+	static std::string GetTypeSerialisationNameStatic() { return "doubleslip"; }
+	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 

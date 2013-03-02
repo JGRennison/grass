@@ -25,10 +25,29 @@
 #define INC_SERIALISABLE_ALREADY
 
 #include "error.h"
+#include <map>
 
 struct deserialiser_input;
 struct serialiser_output;
 class world_serialisation;
+
+template <typename... Args> class deserialisation_type_factory {
+	std::map<std::string, std::function<void(const deserialiser_input &di, error_collection &ec, Args...)> > typemapping;
+	
+	public:
+	bool FindAndDeserialise(const std::string &name, const deserialiser_input &di, error_collection &ec, const Args & ...extras) const {
+		auto targ = typemapping.find(name);
+		if(targ != typemapping.end()) {
+			targ->second(di, ec, extras...);
+			return true;
+		}
+		else return false;
+	}
+
+	void RegisterType(const std::string &name, std::function<void(const deserialiser_input &di, error_collection &ec, Args...)> func) {
+		typemapping[name] = func;
+	}
+};
 
 class serialisable_obj {
 	friend world_serialisation;

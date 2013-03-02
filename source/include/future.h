@@ -33,6 +33,9 @@ typedef unsigned int future_time;
 
 class future_set;
 class futurable_obj;
+class serialisable_futurable_obj;
+
+typedef deserialisation_type_factory<future_set &, serialisable_futurable_obj &, future_time> future_deserialisation_type_factory;
 
 //all futures must be allocated with new
 class future : public serialisable_obj {
@@ -49,8 +52,14 @@ class future : public serialisable_obj {
 
 	public:
 	future(future_set &fs_, futurable_obj &targ, future_time ft);
-	~future();
+	virtual ~future();
 	virtual void Execute() = 0;
+	virtual std::string GetTypeSerialisationName() const = 0;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	futurable_obj &GetTarget() { return target; } 
+	future_set &GetFutureSet() { return fs; }
+	future_time GetTriggerTime() { return trigger_time; }
 };
 
 class future_set {
@@ -62,15 +71,27 @@ class future_set {
 	void ExecuteUpTo(future_time ft);
 };
 
+class serialisable_futurable_obj;
+
 class futurable_obj {
 	friend class future;
+	friend class serialisable_futurable_obj;
+
 	std::forward_list<std::unique_ptr<future> > own_futures;
 
 	void RegisterFuture(std::unique_ptr<future> &&f);
 
 	public:
+	virtual ~futurable_obj() { }
 	void ExterminateFuture(future *f);
 	void ClearFutures();
+};
+
+class serialisable_futurable_obj : public serialisable_obj, public futurable_obj {
+
+	public:
+	void DeserialiseFutures(const deserialiser_input &di, error_collection &ec, const future_deserialisation_type_factory &dtf, future_set &fs);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };
 
 #endif
