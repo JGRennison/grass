@@ -207,7 +207,7 @@ TEST_CASE( "track/deserialisation/track", "Test basic track segment deserialisat
 TEST_CASE( "track/deserialisation/points", "Test basic points deserialisation" ) {
 	std::string track_test_str = 
 	"{ \"content\" : [ "
-		"{ \"type\" : \"points\", \"name\" : \"P1\", \"reverse\" : true, \"failed\" : false, \"reminder\" : true}"
+		"{ \"type\" : \"points\", \"name\" : \"P1\", \"reverse\" : true, \"failednorm\" : false, \"reminder\" : true}"
 	"] }";
 	test_fixture_world env(track_test_str);
 	

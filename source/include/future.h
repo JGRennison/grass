@@ -28,63 +28,76 @@
 #include <memory>
 #include <map>
 #include "serialisable.h"
+#include "common.h"
 
-typedef unsigned int future_time;
+typedef uint64_t future_id_type;
 
 class future_set;
 class futurable_obj;
 class serialisable_futurable_obj;
 
-typedef deserialisation_type_factory<future_set &, serialisable_futurable_obj &, future_time> future_deserialisation_type_factory;
+typedef deserialisation_type_factory<future_set &, serialisable_futurable_obj &, world_time, future_id_type> future_deserialisation_type_factory;
 
 //all futures must be allocated with new
 class future : public serialisable_obj {
-	friend class future_set;
-	friend class futurable_obj;
 	future_set &fs;
 	futurable_obj &target;
 	unsigned int f_flags;
-	future_time trigger_time;
+	world_time trigger_time;
+	const uint64_t future_id = 1;
 
 	enum {
 		FF_INFS		= 1<<0,
 	};
 
+	virtual void ExecuteAction() = 0;
+
 	public:
-	future(future_set &fs_, futurable_obj &targ, future_time ft);
+	future(future_set &fs_, futurable_obj &targ, world_time ft, future_id_type id);
 	virtual ~future();
-	virtual void Execute() = 0;
+	void Execute();
+	void Cancel();
 	virtual std::string GetTypeSerialisationName() const = 0;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
-	futurable_obj &GetTarget() { return target; } 
-	future_set &GetFutureSet() { return fs; }
-	future_time GetTriggerTime() { return trigger_time; }
+	futurable_obj &GetTarget() const { return target; }
+	future_set &GetFutureSet() const { return fs; }
+	world_time GetTriggerTime() const { return trigger_time; }
+	
+	//only for internal use
+	void MarkRemovedFromFutureSet() { f_flags &= ~FF_INFS; }
 };
 
 class future_set {
-	friend class future;
-	friend class futurable_obj;
-	std::multimap<future_time, future *> futures;
+	std::multimap<world_time, future *> futures;
+	uint64_t nextid;
 
 	public:
-	void ExecuteUpTo(future_time ft);
+	void RemoveFuture(const future &f);
+	void ExecuteUpTo(world_time ft);
+	
+	private:
+	friend future;
+	uint64_t GetNextID() { return nextid++; }
+	void RegisterFuture(future &f);
 };
 
 class serialisable_futurable_obj;
 
 class futurable_obj {
-	friend class future;
-	friend class serialisable_futurable_obj;
-
 	std::forward_list<std::unique_ptr<future> > own_futures;
-
-	void RegisterFuture(std::unique_ptr<future> &&f);
 
 	public:
 	virtual ~futurable_obj() { }
-	void ExterminateFuture(future *f);
 	void ClearFutures();
+	void EnumerateFutures(std::function<void (future &)> f);
+	void EnumerateFutures(std::function<void (const future &)> f) const;
+	bool HaveFutures() const;
+	void RegisterFuture(std::unique_ptr<future> &&f);
+	
+	private:
+	friend future;
+	void ExterminateFuture(future *f);
 };
 
 class serialisable_futurable_obj : public serialisable_obj, public futurable_obj {

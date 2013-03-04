@@ -21,31 +21,21 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#ifndef INC_COMMON_ALREADY
-#define INC_COMMON_ALREADY
+#include "common.h"
+#include "action.h"
 
-typedef unsigned int world_time;
-
-#ifdef __MINGW32__
-
-#include <string>
-#include <sstream>
-
-//fix for MinGW, from http://pastebin.com/7rhvv92A
-namespace std
-{
-    template <typename T>
-    string to_string(const T & value)
-    {
-        stringstream stream;
-        stream << value;
-        return stream.str();// string_stream;
-    }
+void action::Execute() {
+	ExecuteAction();
 }
-#endif
 
-#ifdef _WIN32
-#define strncasecmp _strnicmp
-#endif
+void action::SendReply(const std::string &message) {
 
-#endif
+}
+
+void action::ActionRegisterFuture(world_obj &obj, std::unique_ptr<future> &&f) {
+	obj.RegisterFuture(std::move(f));
+}
+
+void action::ActionCancelFuture(future &f) {
+	f.Cancel();
+}

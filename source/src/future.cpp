@@ -25,22 +25,25 @@
 #include "future.h"
 #include "serialisable_impl.h"
 
-future::future(future_set &fs_, futurable_obj &targ, future_time ft) : fs(fs_), target(targ), trigger_time(ft) {
+future::future(future_set &fs_, futurable_obj &targ, world_time ft, future_id_type id) : fs(fs_), target(targ), trigger_time(ft), future_id(id ? id : fs.GetNextID()) {
 	targ.RegisterFuture(std::unique_ptr<future>(this));
+	fs.RegisterFuture(*this);
+	f_flags |= FF_INFS;
 }
 
 future::~future() {
 	if(f_flags & FF_INFS) {
-		auto range = fs.futures.equal_range(trigger_time);
-		for(auto it = range.first; it != range.second; ) {
-			auto current = it;
-			++it;
-			//this is so that *current can be erased without invalidating *it
-
-			if(current->second == this) fs.futures.erase(current);
-		}
+		fs.RemoveFuture(*this);
 		f_flags &= ~FF_INFS;
 	}
+}
+
+void future::Cancel() {
+	target.ExterminateFuture(this);
+}
+
+void future::Execute() {
+	ExecuteAction();
 }
 
 void future::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -49,31 +52,65 @@ void future::Deserialise(const deserialiser_input &di, error_collection &ec) {
 
 void future::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(trigger_time, so, "ftime");
+	SerialiseValueJson(future_id, so, "fid");
 	SerialiseValueJson(GetTypeSerialisationName(), so, "ftype");
 }
 
-void future_set::ExecuteUpTo(future_time ft) {
+void future_set::RegisterFuture(future &f) {
+	futures.insert(std::make_pair(f.GetTriggerTime(), &f));
+}
+
+void future_set::RemoveFuture(const future &f) {
+	auto range = futures.equal_range(f.GetTriggerTime());
+	for(auto it = range.first; it != range.second; ) {
+		auto current = it;
+		++it;
+		//this is so that *current can be erased without invalidating *it
+
+		if(current->second == &f) futures.erase(current);
+	}
+}
+
+void future_set::ExecuteUpTo(world_time ft) {
 	auto past_end = futures.upper_bound(ft);
 	for(auto it = futures.begin(); it != past_end; ++it) {
 		it->second->Execute();
-		it->second->f_flags &= ~future::FF_INFS;
-		it->second->target.ExterminateFuture(it->second);
+		it->second->MarkRemovedFromFutureSet();
+		it->second->Cancel();
 	}
 	futures.erase(futures.begin(), past_end);
 }
 
 void futurable_obj::RegisterFuture(std::unique_ptr<future> &&f) {
-	f->fs.futures.insert(std::make_pair(f->trigger_time, f.get()));
-	f->f_flags |= future::FF_INFS;
-
 	own_futures.emplace_front(std::move(f));
 }
 
 void futurable_obj::ExterminateFuture(future *f) {
 	own_futures.remove_if([&](const std::unique_ptr<future> &upf){ return upf.get() == f; });
 }
+
 void futurable_obj::ClearFutures() {
 	own_futures.clear();
+}
+
+void futurable_obj::EnumerateFutures(std::function<void (future &)> f) {
+	for(auto it = own_futures.begin(); it != own_futures.end();) {
+		auto current = it;
+		++it;
+		f(**current);
+	}
+}
+
+void futurable_obj::EnumerateFutures(std::function<void (const future &)> f) const {
+	for(auto it = own_futures.begin(); it != own_futures.end();) {
+		auto current = it;
+		++it;
+		f(**current);
+	}
+}
+
+bool futurable_obj::HaveFutures() const {
+	return !own_futures.empty();
 }
 
 void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di, error_collection &ec, const future_deserialisation_type_factory &dtf, future_set &fs) {
@@ -84,22 +121,28 @@ void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di
 			if(subdi.json.IsObject()) {
 				subdi.seenprops.reserve(subdi.json.GetMemberCount());
 				
-				const rapidjson::Value &timeval = subdi.json["ftime"];
-				if(IsType<future_time>(timeval)) {
-					const rapidjson::Value &typeval = subdi.json["ftype"];
-					if(typeval.IsString()) {
-						subdi.type.assign(typeval.GetString(), typeval.GetStringLength());
-						subdi.RegisterProp("ftype");
-						if(!dtf.FindAndDeserialise(subdi.type, subdi, ec, fs, *this, GetType<future_time>(timeval))) {
-							ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, string_format("LoadGame: Unknown future type: %s", subdi.type.c_str()))));
+				const rapidjson::Value &idval = subdi.json["fid"];
+				if(IsType<future_id_type>(idval)) {
+					const rapidjson::Value &timeval = subdi.json["ftime"];
+					if(IsType<world_time>(timeval)) {
+						const rapidjson::Value &typeval = subdi.json["ftype"];
+						if(typeval.IsString()) {
+							subdi.type.assign(typeval.GetString(), typeval.GetStringLength());
+							subdi.RegisterProp("ftype");
+							if(!dtf.FindAndDeserialise(subdi.type, subdi, ec, fs, *this, GetType<world_time>(timeval), GetType<future_id_type>(idval))) {
+								ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, string_format("LoadGame: Unknown future type: %s", subdi.type.c_str()))));
+							}
+						}
+						else {
+							ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Object has no type")));
 						}
 					}
 					else {
-						ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Object has no type")));
+						ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Object has no time")));
 					}
 				}
 				else {
-					ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Object has no time")));
+					ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Object has no id")));
 				}
 			}
 			else {
@@ -113,14 +156,14 @@ void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di
 }
 
 void serialisable_futurable_obj::Serialise(serialiser_output &so, error_collection &ec) const {
-	if(!own_futures.empty()) {
+	if(HaveFutures()) {
 		so.json_out.String("futures");
 		so.json_out.StartArray();
-		for(auto it = own_futures.begin(); it != own_futures.end(); ++it) {
+		EnumerateFutures([&](const future &f) {
 			so.json_out.StartObject();
-			(*it)->Serialise(so, ec);
+			f.Serialise(so, ec);
 			so.json_out.EndObject();
-		}
+		});
 		so.json_out.EndArray();
 	}
 }

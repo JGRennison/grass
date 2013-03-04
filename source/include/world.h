@@ -39,12 +39,21 @@ struct connection_forward_declaration {
 };
 
 class world_serialisation;
+class action;
+
+typedef enum {
+	GM_SINGLE,
+	GM_SERVER,
+	GM_CLIENT,
+} GAMEMODE;
 
 class world {
 	friend world_serialisation;
 	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
 	std::deque<connection_forward_declaration> connection_forward_declarations;
 	std::unordered_map<std::string, traction_type> traction_types;
+	world_time gametime;
+	GAMEMODE mode;
 
 	public:
 	future_deserialisation_type_factory future_types;
@@ -66,11 +75,13 @@ class world {
 	generictrack *FindTrackByName(const std::string &name) const;
 	void InitFutureTypes();
 	world() { InitFutureTypes(); }
+	world_time GetGameTime() const { return gametime; }
+	void SubmitAction(const action &request);
 };
 
 template <typename C> void MakeFutureTypeWrapper(future_deserialisation_type_factory &future_types) {
-	auto func = [&](const deserialiser_input &di, error_collection &ec, future_set &fs, serialisable_futurable_obj &sfo, future_time ft) {
-		C *f = new C(fs, sfo, ft);
+	auto func = [&](const deserialiser_input &di, error_collection &ec, future_set &fs, serialisable_futurable_obj &sfo, world_time ft, future_id_type fid) {
+		C *f = new C(fs, sfo, ft, fid);
 		f->DeserialiseObject(di, ec);
 	};
 	future_types.RegisterType(C::GetTypeSerialisationNameStatic(), func);

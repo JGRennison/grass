@@ -93,7 +93,8 @@ void DeserialisePointFlags(unsigned int &pflags, const deserialiser_input &di, e
 	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_OOC, di, "ooc", ec);
 	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_LOCKED, di, "locked", ec);
 	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_REMINDER, di, "reminder", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_FAILED, di, "failed", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_FAILEDNORM, di, "failednorm", ec);
+	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_FAILEDREV, di, "failedrev", ec);
 }
 
 void SerialisePointFlags(unsigned int pflags, serialiser_output &so, error_collection &ec) {
@@ -101,7 +102,8 @@ void SerialisePointFlags(unsigned int pflags, serialiser_output &so, error_colle
 	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_OOC, so, "ooc");
 	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_LOCKED, so, "locked");
 	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_REMINDER, so, "reminder");
-	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_FAILED, so, "failed");
+	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_FAILEDNORM, so, "failednorm");
+	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_FAILEDREV, so, "failedrev");
 }
 
 void points::Deserialise(const deserialiser_input &di, error_collection &ec) {

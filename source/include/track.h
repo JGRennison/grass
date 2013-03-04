@@ -300,10 +300,11 @@ class genericpoints : public genericzlentrack {
 		PTF_OOC		= 1<<1,
 		PTF_LOCKED	= 1<<2,
 		PTF_REMINDER	= 1<<3,
-		PTF_FAILED	= 1<<4,
-		PTF_INVALID	= 1<<5,
-		PTF_FIXED	= 1<<6,
-		PTF_SERIALISABLE = PTF_REV | PTF_OOC | PTF_LOCKED | PTF_REMINDER | PTF_FAILED,
+		PTF_FAILEDNORM	= 1<<4,
+		PTF_FAILEDREV	= 1<<5,
+		PTF_INVALID	= 1<<6,
+		PTF_FIXED	= 1<<7,
+		PTF_SERIALISABLE = PTF_REV | PTF_OOC | PTF_LOCKED | PTF_REMINDER | PTF_FAILEDNORM | PTF_FAILEDREV,
 	};
 	genericpoints(world &w_) : genericzlentrack(w_) { }
 	void TrainEnter(DIRTYPE direction, train *t);
@@ -313,6 +314,17 @@ class genericpoints : public genericzlentrack {
 	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags)  = 0;
 
 	virtual std::string GetTypeName() const { return "Generic Points"; }
+	
+	inline bool IsFlagsOOC(unsigned int pflags) const {
+		if(pflags & PTF_OOC) return true;
+		if(pflags & PTF_REV && pflags & PTF_FAILEDREV) return true;
+		if(!(pflags & PTF_REV) && pflags & PTF_FAILEDNORM) return true;
+		return false;
+	}
+
+	inline bool IsOOC(unsigned int points_index) const {
+		return IsFlagsOOC(GetPointFlags(points_index));
+	}
 };
 
 class points : public genericpoints {

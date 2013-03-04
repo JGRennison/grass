@@ -24,7 +24,8 @@
 #include "common.h"
 #include "world.h"
 #include "error.h"
-#include "track_futures.h"
+#include "track_ops.h"
+#include "action.h"
 
 void world::ConnectTrack(generictrack *track1, DIRTYPE dir1, std::string name2, DIRTYPE dir2, error_collection &ec) {
 	auto target_it = all_pieces.find(name2);
@@ -64,4 +65,8 @@ generictrack *world::FindTrackByName(const std::string &name) const {
 
 void world::InitFutureTypes() {
 	MakeFutureTypeWrapper<future_pointsaction>(future_types);
+}
+
+void  world::SubmitAction(const action &request) {
+
 }

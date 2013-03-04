@@ -21,31 +21,29 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#ifndef INC_COMMON_ALREADY
-#define INC_COMMON_ALREADY
+#include "serialisable.h"
+#include "world.h"
 
-typedef unsigned int world_time;
+#ifndef INC_ACTION_ALREADY
+#define INC_ACTION_ALREADY
 
-#ifdef __MINGW32__
-
-#include <string>
-#include <sstream>
-
-//fix for MinGW, from http://pastebin.com/7rhvv92A
-namespace std
-{
-    template <typename T>
-    string to_string(const T & value)
-    {
-        stringstream stream;
-        stream << value;
-        return stream.str();// string_stream;
-    }
-}
-#endif
-
-#ifdef _WIN32
-#define strncasecmp _strnicmp
-#endif
+class action : public serialisable_obj {
+	private:
+	virtual void ExecuteAction() = 0;
+	
+	protected:
+	world &w;
+	
+	public:
+	action(world &w_) : w(w_) { }
+	virtual ~action() { }
+	void Execute();
+	void SendReply(const std::string &message);
+	void ActionRegisterFuture(world_obj &obj, std::unique_ptr<future> &&f);
+	void ActionCancelFuture(future &f);
+	virtual std::string GetTypeSerialisationName() const = 0;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) = 0;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const = 0;
+};
 
 #endif

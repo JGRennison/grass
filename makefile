@@ -113,7 +113,7 @@ TEST_OBJS:=$(patsubst source/test/%.cpp,$(TESTOBJDIR)/%.o,$(TEST_SRC))
 TS_OBJS:=$(TSOBJDIR)/track.o $(TSOBJDIR)/train.o $(TSOBJDIR)/trackcircuit.o $(TSOBJDIR)/traverse.o $(TSOBJDIR)/error.o
 TS_OBJS+=$(TSOBJDIR)/world.o $(TSOBJDIR)/future.o $(TSOBJDIR)/world_obj.o $(TSOBJDIR)/track_serialisation.o $(TSOBJDIR)/util.o
 TS_OBJS+=$(TSOBJDIR)/tractiontype.o $(TSOBJDIR)/serialisable.o $(TSOBJDIR)/world_serialisation.o $(TSOBJDIR)/signal_serialisation.o
-TS_OBJS+=$(TSOBJDIR)/signal.o $(TSOBJDIR)/track_futures.o
+TS_OBJS+=$(TSOBJDIR)/signal.o $(TSOBJDIR)/track_ops.o $(TSOBJDIR)/action.o
 
 ALL_OBJS:=$(OBJS) $(TEST_OBJS) $(TS_OBJS)
 

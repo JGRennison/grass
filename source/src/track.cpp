@@ -256,7 +256,7 @@ void genericpoints::TrainLeave(DIRTYPE direction, train *t) { }
 
 
 const track_target_ptr & points::GetConnectingPiece(DIRTYPE direction) const {
-	if(pflags & PTF_OOC) return empty_track_target;
+	if(IsOOC(0)) return empty_track_target;
 
 	bool pointsrev = pflags & PTF_REV;
 
@@ -302,7 +302,7 @@ const track_target_ptr & points::GetConnectingPieceByIndex(DIRTYPE direction, un
 }
 
 DIRTYPE points::GetReverseDirection(DIRTYPE direction) const {
-	if(pflags & PTF_OOC) return TDIR_NULL;
+	if(IsOOC(0)) return TDIR_NULL;
 
 	bool pointsrev = pflags & PTF_REV;
 
@@ -369,7 +369,7 @@ bool points::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_
 }
 
 const track_target_ptr & catchpoints::GetConnectingPiece(DIRTYPE direction) const {
-	if(pflags & PTF_OOC) return empty_track_target;
+	if(IsOOC(0)) return empty_track_target;
 	if(pflags & PTF_REV) return empty_track_target;
 
 	switch(direction) {
@@ -408,7 +408,7 @@ const track_target_ptr & catchpoints::GetConnectingPieceByIndex(DIRTYPE directio
 }
 
 DIRTYPE catchpoints::GetReverseDirection(DIRTYPE direction) const {
-	if(pflags & PTF_OOC) return TDIR_NULL;
+	if(IsOOC(0)) return TDIR_NULL;
 	if(pflags & PTF_REV) return TDIR_NULL;
 
 	switch(direction) {
@@ -603,11 +603,11 @@ const track_target_ptr & doubleslip::GetConnectingPieceByIndex(DIRTYPE direction
 
 DIRTYPE doubleslip::GetReverseDirection(DIRTYPE direction) const {
 	unsigned int pf = GetCurrentPointFlags(direction);
-	if(pf & PTF_OOC) return TDIR_NULL;
+	if(IsFlagsOOC(pf)) return TDIR_NULL;
 
 	DIRTYPE exitdirection = GetConnectingPointDirection(direction, pf & PTF_REV);
 	unsigned int exitpf = GetCurrentPointFlags(exitdirection);
-	if(exitpf & PTF_OOC) return TDIR_NULL;
+	if(IsFlagsOOC(exitpf)) return TDIR_NULL;
 
 	if(GetConnectingPointDirection(exitdirection, exitpf & PTF_REV) == direction) {
 		return exitdirection;
