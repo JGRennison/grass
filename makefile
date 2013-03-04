@@ -4,6 +4,7 @@
 #debug: set to true to for a debug build
 #list: set to true to enable listings
 #map: set to true to enable linker map
+#noexceptions: set to build without exceptions
 #On windows only:
 #x64: set to true to compile for x86_64/win64
 
@@ -11,25 +12,30 @@
 OBJS_SRC:=$(wildcard source/src/*.cpp)
 TEST_SRC:=$(wildcard source/test/*.cpp)
 OUTNAME:=grass
-TESTOUTNAME:=$(OUTNAME)-test
+TESTOUTNAME=$(OUTNAME)-test
 CFLAGS=-O3 -Wextra -Wall -Wno-unused-parameter
 #-Wno-missing-braces -Wno-unused-parameter
 CXXFLAGS:=-std=gnu++0x
-SRCCXXFLAGS:=-fno-exceptions
 GCC:=g++
 LD:=ld
 OBJDIR:=objs/main
 TESTOBJDIR:=objs/test
-TSOBJDIR:=objs/src-test
-DIRS=$(OBJDIR) $(TESTOBJDIR) $(TSOBJDIR)
+DIRS=$(OBJDIR) $(TESTOBJDIR)
+
+ifdef noexceptions
+SRCCXXFLAGS:=-fno-exceptions
+NXPOSTFIX:=_nx
+OBJDIR:=$(OBJDIR)$(NXPOSTFIX)
+TESTOBJDIR:=$(TESTOBJDIR)$(NXPOSTFIX)
+OUTNAME:=$(OUTNAME)$(NXPOSTFIX)
+endif
 
 ifdef debug
 CFLAGS=-g -Wextra -Wall -Wno-unused-parameter
 #AFLAGS:=-Wl,-d,--export-all-symbols
 DEBUGPOSTFIX:=_debug
-OBJDIR=$(OBJDIR)$(DEBUGPOSTFIX)
-TESTOBJDIR=$(TESTOBJDIR)$(DEBUGPOSTFIX)
-TSOBJDIR=$(TSOBJDIR)$(DEBUGPOSTFIX)
+OBJDIR:=$(OBJDIR)$(DEBUGPOSTFIX)
+TESTOBJDIR:=$(TESTOBJDIR)$(DEBUGPOSTFIX)
 endif
 
 GCCMACHINE:=$(shell $(GCC) -dumpmachine)
@@ -52,7 +58,7 @@ MKDIR:=mkdir
 
 ifdef x64
 SIZEPOSTFIX:=64
-OBJDIR+=$(SIZEPOSTFIX)
+OBJDIR:=$(OBJDIR)$(SIZEPOSTFIX)
 GCC:=$(GCC64)
 SRCLIBS:=$(SRCLIBS64)
 CFLAGS+=-mcx16
@@ -110,12 +116,9 @@ endif
 
 OBJS:=$(patsubst source/src/%.cpp,$(OBJDIR)/%.o,$(OBJS_SRC))
 TEST_OBJS:=$(patsubst source/test/%.cpp,$(TESTOBJDIR)/%.o,$(TEST_SRC))
-TS_OBJS:=$(TSOBJDIR)/track.o $(TSOBJDIR)/train.o $(TSOBJDIR)/trackcircuit.o $(TSOBJDIR)/traverse.o $(TSOBJDIR)/error.o
-TS_OBJS+=$(TSOBJDIR)/world.o $(TSOBJDIR)/future.o $(TSOBJDIR)/world_obj.o $(TSOBJDIR)/track_serialisation.o $(TSOBJDIR)/util.o
-TS_OBJS+=$(TSOBJDIR)/tractiontype.o $(TSOBJDIR)/serialisable.o $(TSOBJDIR)/world_serialisation.o $(TSOBJDIR)/signal_serialisation.o
-TS_OBJS+=$(TSOBJDIR)/signal.o $(TSOBJDIR)/track_ops.o $(TSOBJDIR)/action.o
+TS_OBJS:=$(filter-out $(OBJDIR)/main.o $(OBJDIR)/cmdline.o,$(OBJS))
 
-ALL_OBJS:=$(OBJS) $(TEST_OBJS) $(TS_OBJS)
+ALL_OBJS:=$(OBJS) $(TEST_OBJS)
 
 ifneq ($(ARCH),)
 CFLAGS2 += -march=$(ARCH)
@@ -123,14 +126,17 @@ endif
 
 .SUFFIXES:
 
-all: $(OUTNAME)$(SUFFIX) $(TESTOUTNAME)$(SUFFIX)
+all: $(OUTNAME)$(SUFFIX)
+ifndef noexceptions
+all: $(TESTOUTNAME)$(SUFFIX)
+endif
 main: $(OUTNAME)$(SUFFIX)
 test: $(TESTOUTNAME)$(SUFFIX)
 
 $(OUTNAME)$(SUFFIX): $(OBJS)
 	$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX) $(LIBS) $(SRCLIBS) $(AFLAGS) $(SRCAFLAGS) $(GFLAGS)
 
-$(TESTOUTNAME)$(SUFFIX): $(TEST_OBJS)
+$(TESTOUTNAME)$(SUFFIX): $(TEST_OBJS) $(TS_OBJS)
 	$(GCC) $(TEST_OBJS) $(TS_OBJS) -o $(TESTOUTNAME)$(SUFFIX) $(LIBS) $(AFLAGS) $(GFLAGS)
 	$(EXECPREFIX)$(TESTOUTNAME)$(SUFFIX)
 
@@ -142,15 +148,10 @@ $(OBJDIR)/%.o: source/src/%.cpp
 $(TESTOBJDIR)/%.o: source/test/%.cpp
 	$(GCC) -c $< -o $@ $(CFLAGS) $(TESTCFLAGS) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
 
-$(TSOBJDIR)/%.o: source/src/%.cpp
-	$(GCC) -c $< -o $@ $(CFLAGS) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
-
 $(ALL_OBJS): | $(DIRS)
 
 $(DIRS):
 	-$(MKDIR) $(subst /,$(PATHSEP),$@)
-
-$(TESTOUTNAME)$(SUFFIX): $(TS_OBJS)
 
 -include $(ALL_OBJS:.o=.d)
 
