@@ -33,7 +33,7 @@ class world_serialisation;
 
 template <typename... Args> class deserialisation_type_factory {
 	std::map<std::string, std::function<void(const deserialiser_input &di, error_collection &ec, Args...)> > typemapping;
-	
+
 	public:
 	bool FindAndDeserialise(const std::string &name, const deserialiser_input &di, error_collection &ec, const Args & ...extras) const {
 		auto targ = typemapping.find(name);

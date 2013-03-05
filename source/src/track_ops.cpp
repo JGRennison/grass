@@ -24,6 +24,7 @@
 #include "common.h"
 #include "track_ops.h"
 #include "serialisable_impl.h"
+#include <memory>
 
 void future_pointsaction::ExecuteAction() {
 	genericpoints *gp = dynamic_cast<genericpoints *>(&GetTarget());
@@ -56,13 +57,21 @@ void action_pointsaction::ExecuteAction() {
 	unsigned immediate_action_mask = 0;
 
 	if(change_flags & genericpoints::PTF_REV) {
-		CancelFutures(index, 0, genericpoints::PTF_OOC);
-		immediate_action_bits |= (bits & genericpoints::PTF_REV) | genericpoints::PTF_OOC;
-		immediate_action_mask |= genericpoints::PTF_REV | genericpoints::PTF_OOC;
+		if(old_pflags & genericpoints::PTF_LOCKED) {
+			//report error that points are locked
+		}
+		//else if(reserved) {
+			//report error that points are reserved
+		//}
+		else {
+			CancelFutures(index, 0, genericpoints::PTF_OOC);
+			immediate_action_bits |= (bits & genericpoints::PTF_REV) | genericpoints::PTF_OOC;
+			immediate_action_mask |= genericpoints::PTF_REV | genericpoints::PTF_OOC;
 
-		//code for random failures goes here
+			//code for random failures goes here
 
-		ActionRegisterFuture(*target, std::unique_ptr<future>(new future_pointsaction(w.futures, *target, GetPointsMovementCompletionTime(), index, 0, genericpoints::PTF_OOC)));
+			ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, GetPointsMovementCompletionTime(), index, 0, genericpoints::PTF_OOC));
+		}
 	}
 	if(change_flags & genericpoints::PTF_LOCKED) {
 		immediate_action_bits |= bits & genericpoints::PTF_LOCKED;
@@ -73,7 +82,7 @@ void action_pointsaction::ExecuteAction() {
 		immediate_action_mask |= genericpoints::PTF_REMINDER;
 	}
 
-	ActionRegisterFuture(*target, std::unique_ptr<future>(new future_pointsaction(w.futures, *target, w.GetGameTime() + 1, index, immediate_action_bits, immediate_action_mask)));
+	ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, w.GetGameTime() + 1, index, immediate_action_bits, immediate_action_mask));
 }
 
 world_time action_pointsaction::GetPointsMovementCompletionTime() {
@@ -90,7 +99,7 @@ void action_pointsaction::CancelFutures(unsigned int index, unsigned int setmask
 		if(foundset || foundunset) {
 			unsigned int newmask = fp->mask & ~(foundset | foundunset);
 			if(newmask) {
-				ActionRegisterFuture(*target, std::unique_ptr<future>(new future_pointsaction(w.futures, *target, fp->GetTriggerTime(), index, fp->bits, newmask)));
+				ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, fp->GetTriggerTime(), index, fp->bits, newmask));
 			}
 			ActionCancelFuture(f);
 		}

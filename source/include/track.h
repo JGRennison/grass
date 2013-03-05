@@ -130,6 +130,8 @@ class generictrack : public world_obj {
 	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) = 0;
 
 	virtual std::string GetTypeName() const { return "Generic Track"; }
+	static std::string GetTypeSerialisationClassNameStatic() { return "track"; }
+	virtual std::string GetTypeSerialisationClassName() const { return GetTypeSerialisationClassNameStatic(); }
 
 	virtual generictrack & SetLength(unsigned int length);
 	virtual generictrack & AddSpeedRestriction(speed_restriction sr);

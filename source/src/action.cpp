@@ -28,14 +28,14 @@ void action::Execute() {
 	ExecuteAction();
 }
 
-void action::SendReply(const std::string &message) {
+void action::ActionSendReplyFuture(const std::shared_ptr<future> &f) {
 
 }
 
-void action::ActionRegisterFuture(world_obj &obj, std::unique_ptr<future> &&f) {
-	obj.RegisterFuture(std::move(f));
+void action::ActionRegisterFuture(const std::shared_ptr<future> &f) {
+	f->RegisterLocal(w.futures);
 }
 
 void action::ActionCancelFuture(future &f) {
-	f.Cancel();
+	w.futures.RemoveFuture(f);
 }

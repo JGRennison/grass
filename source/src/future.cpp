@@ -25,21 +25,18 @@
 #include "future.h"
 #include "serialisable_impl.h"
 
-future::future(future_set &fs_, futurable_obj &targ, world_time ft, future_id_type id) : fs(fs_), target(targ), trigger_time(ft), future_id(id ? id : fs.GetNextID()) {
-	targ.RegisterFuture(std::unique_ptr<future>(this));
-	fs.RegisterFuture(*this);
-	f_flags |= FF_INFS;
+uint64_t future::lastid = 0;
+
+future::future(futurable_obj &targ, world_time ft, future_id_type id) : target(targ), trigger_time(ft), future_id(id ? id : MakeNewID()) {
+
 }
 
 future::~future() {
-	if(f_flags & FF_INFS) {
-		fs.RemoveFuture(*this);
-		f_flags &= ~FF_INFS;
-	}
+
 }
 
-void future::Cancel() {
-	target.ExterminateFuture(this);
+void future::RegisterLocal(future_container &fs) {
+	fs.RegisterFuture(shared_from_this());
 }
 
 void future::Execute() {
@@ -56,18 +53,20 @@ void future::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(GetTypeSerialisationName(), so, "ftype");
 }
 
-void future_set::RegisterFuture(future &f) {
-	futures.insert(std::make_pair(f.GetTriggerTime(), &f));
+void future_set::RegisterFuture(const std::shared_ptr<future> &f) {
+	futures.insert(std::make_pair(f->GetTriggerTime(), f));
+	f->GetTarget().RegisterFuture(f.get());
 }
 
-void future_set::RemoveFuture(const future &f) {
+void future_set::RemoveFuture(future &f) {
+	f.GetTarget().DeregisterFuture(&f);
 	auto range = futures.equal_range(f.GetTriggerTime());
 	for(auto it = range.first; it != range.second; ) {
 		auto current = it;
 		++it;
 		//this is so that *current can be erased without invalidating *it
 
-		if(current->second == &f) futures.erase(current);
+		if(current->second.get() == &f) futures.erase(current);
 	}
 }
 
@@ -75,18 +74,17 @@ void future_set::ExecuteUpTo(world_time ft) {
 	auto past_end = futures.upper_bound(ft);
 	for(auto it = futures.begin(); it != past_end; ++it) {
 		it->second->Execute();
-		it->second->MarkRemovedFromFutureSet();
-		it->second->Cancel();
+		it->second->GetTarget().DeregisterFuture(it->second.get());
 	}
 	futures.erase(futures.begin(), past_end);
 }
 
-void futurable_obj::RegisterFuture(std::unique_ptr<future> &&f) {
-	own_futures.emplace_front(std::move(f));
+void futurable_obj::RegisterFuture(future *f) {
+	own_futures.emplace_front(f);
 }
 
-void futurable_obj::ExterminateFuture(future *f) {
-	own_futures.remove_if([&](const std::unique_ptr<future> &upf){ return upf.get() == f; });
+void futurable_obj::DeregisterFuture(future *f) {
+	own_futures.remove_if([&](const future *upf){ return upf == f; });
 }
 
 void futurable_obj::ClearFutures() {
@@ -113,7 +111,7 @@ bool futurable_obj::HaveFutures() const {
 	return !own_futures.empty();
 }
 
-void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di, error_collection &ec, const future_deserialisation_type_factory &dtf, future_set &fs) {
+void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di, error_collection &ec, const future_deserialisation_type_factory &dtf, future_container &fc) {
 	deserialiser_input futuresdi(di.json["futures"], "futures", "futures", di);
 	if(futuresdi.json.IsArray()) {
 		for(rapidjson::SizeType i = 0; i < futuresdi.json.Size(); i++) {
@@ -129,7 +127,7 @@ void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di
 						if(typeval.IsString()) {
 							subdi.type.assign(typeval.GetString(), typeval.GetStringLength());
 							subdi.RegisterProp("ftype");
-							if(!dtf.FindAndDeserialise(subdi.type, subdi, ec, fs, *this, GetType<world_time>(timeval), GetType<future_id_type>(idval))) {
+							if(!dtf.FindAndDeserialise(subdi.type, subdi, ec, fc, *this, GetType<world_time>(timeval), GetType<future_id_type>(idval))) {
 								ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, string_format("LoadGame: Unknown future type: %s", subdi.type.c_str()))));
 							}
 						}

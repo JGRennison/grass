@@ -36,8 +36,8 @@ class future_pointsaction : public future {
 	unsigned int mask;
 
 	public:
-	future_pointsaction(future_set &fs_, futurable_obj &targ, world_time ft, future_id_type id) : future(fs_, targ, ft, id) { };
-	future_pointsaction(future_set &fs_, futurable_obj &targ, world_time ft, unsigned int index_, unsigned int bits_, unsigned int mask_) : future(fs_, targ, ft, 0), index(index_), bits(bits_), mask(mask_) { };
+	future_pointsaction(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id) { };
+	future_pointsaction(futurable_obj &targ, world_time ft, unsigned int index_, unsigned int bits_, unsigned int mask_) : future(targ, ft, 0), index(index_), bits(bits_), mask(mask_) { };
 	static std::string GetTypeSerialisationNameStatic() { return "future_pointsaction"; }
 	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction();

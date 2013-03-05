@@ -63,6 +63,14 @@ generictrack *world::FindTrackByName(const std::string &name) const {
 	return 0;
 }
 
+named_futurable_obj *world::FindFuturableByName(const std::string &name) const {
+	size_t offset = name.find('/');
+	if(offset == std::string::npos) return 0;
+	if(name.compare(0, offset, generictrack::GetTypeSerialisationClassNameStatic())) return FindTrackByName(name.substr(offset+1));
+	else if(name == this->GetFullSerialisationName()) return const_cast<world *>(this);
+	return 0;
+}
+
 void world::InitFutureTypes() {
 	MakeFutureTypeWrapper<future_pointsaction>(future_types);
 }

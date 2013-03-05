@@ -38,8 +38,8 @@ class action : public serialisable_obj {
 	action(world &w_) : w(w_) { }
 	virtual ~action() { }
 	void Execute();
-	void SendReply(const std::string &message);
-	void ActionRegisterFuture(world_obj &obj, std::unique_ptr<future> &&f);
+	void ActionSendReplyFuture(const std::shared_ptr<future> &f);
+	void ActionRegisterFuture(const std::shared_ptr<future> &f);
 	void ActionCancelFuture(future &f);
 	virtual std::string GetTypeSerialisationName() const = 0;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) = 0;
