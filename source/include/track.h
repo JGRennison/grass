@@ -139,6 +139,8 @@ class generictrack : public world_obj {
 	virtual generictrack & SetTrackCircuit(track_circuit *tc);
 
 	virtual bool PostLayoutInit(error_collection &ec) { return true; }	//return false to discontinue initing piece
+	
+	virtual DIRTYPE GetDefaultValidDirecton() const = 0;
 
 	enum {
 		GTF_ROUTESET	= 1<<0,
@@ -264,6 +266,7 @@ class trackseg : public generictrack {
 	track_circuit *GetTrackCircuit() const;
 	unsigned int GetFlags(DIRTYPE direction) const;
 	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
+	virtual DIRTYPE GetDefaultValidDirecton() const { return TDIR_FORWARD; }
 
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
@@ -342,6 +345,7 @@ class points : public genericpoints {
 	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
 	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
 	unsigned int GetFlags(DIRTYPE direction) const;
+	virtual DIRTYPE GetDefaultValidDirecton() const { return TDIR_PTS_FACE; }
 
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
@@ -374,6 +378,7 @@ class catchpoints : public genericpoints {
 	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
 	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
 	unsigned int GetFlags(DIRTYPE direction) const;
+	virtual DIRTYPE GetDefaultValidDirecton() const { return TDIR_PTS_FACE; }
 
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
@@ -409,6 +414,7 @@ class springpoints : public genericzlentrack {
 	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
 	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
 	unsigned int GetFlags(DIRTYPE direction) const;
+	virtual DIRTYPE GetDefaultValidDirecton() const { return TDIR_PTS_FACE; }
 
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const { return GetConnectingPiece(direction); }
@@ -440,6 +446,7 @@ class crossover : public genericzlentrack {
 	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
 	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
 	unsigned int GetFlags(DIRTYPE direction) const;
+	virtual DIRTYPE GetDefaultValidDirecton() const { return TDIR_X_N; }
 
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const { return GetConnectingPiece(direction); }
@@ -534,6 +541,7 @@ class doubleslip : public genericpoints {
 	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
 	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
 	unsigned int GetFlags(DIRTYPE direction) const;
+	virtual DIRTYPE GetDefaultValidDirecton() const { return TDIR_DS_FL; }
 
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;

@@ -26,6 +26,14 @@
 #include "error.h"
 #include "track_ops.h"
 #include "action.h"
+#include "util.h"
+#include <iostream>
+
+void world::GameStep(world_time delta) {
+	gametime += delta;
+
+	futures.ExecuteUpTo(gametime);
+}
 
 void world::ConnectTrack(generictrack *track1, DIRTYPE dir1, std::string name2, DIRTYPE dir2, error_collection &ec) {
 	auto target_it = all_pieces.find(name2);
@@ -71,10 +79,35 @@ named_futurable_obj *world::FindFuturableByName(const std::string &name) const {
 	return 0;
 }
 
+std::string world::FormatGameTime(world_time wt) const {
+	unsigned int s = wt/1000;
+	unsigned int m = s/60;
+	unsigned int h = m/60;
+	return string_format("%02d:%02d:%02d.%03d", h, m%60, s%60, wt%1000);
+}
+
+textpool &world::GetUserMessageTextpool() {
+	static defaultusermessagepool umtp;
+	return umtp;
+}
+
+void world::LogUserMessageLocal(LOGCATEGORY lc, const std::string &message) {
+	std::cout << message << "\n";
+}
+
 void world::InitFutureTypes() {
 	MakeFutureTypeWrapper<future_pointsaction>(future_types);
 }
 
-void  world::SubmitAction(const action &request) {
+void world::SubmitAction(const action &request) {
+	request.Execute();
+}
+
+void world::Deserialise(const deserialiser_input &di, error_collection &ec) {
 
 }
+
+void world::Serialise(serialiser_output &so, error_collection &ec) const {
+
+}
+

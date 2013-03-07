@@ -28,13 +28,14 @@
 #include "world.h"
 #include "world_serialisation.h"
 #include "deserialisation-test.h"
+#include "world-test.h"
 
 
-struct test_fixture_1 {
-	world w;
+struct test_fixture_track_1 {
+	world_test w;
 	trackseg track1, track2;
 	error_collection ec;
-	test_fixture_1() : track1(w), track2(w) {
+	test_fixture_track_1() : track1(w), track2(w) {
 		track1.SetLength(50000);
 		track1.SetElevationDelta(-100);
 		track1.SetName("T1");
@@ -45,12 +46,12 @@ struct test_fixture_1 {
 	}
 };
 
-struct test_fixture_2 {
-	world w;
+struct test_fixture_track_2 {
+	world_test w;
 	trackseg track1, track2, track3;
 	points pt1;
 	error_collection ec;
-	test_fixture_2() : track1(w), track2(w), track3(w), pt1(w) {
+	test_fixture_track_2() : track1(w), track2(w), track3(w), pt1(w) {
 		track1.SetLength(50000);
 		track1.SetElevationDelta(-100);
 		track1.SetName("T1");
@@ -68,7 +69,7 @@ struct test_fixture_2 {
 };
 
 TEST_CASE( "track/conn/track", "Test basic track segment connectivity" ) {
-	test_fixture_1 env;
+	test_fixture_track_1 env;
 
 	REQUIRE(env.track1.GetConnectingPiece(TDIR_FORWARD) == track_target_ptr(&env.track2, TDIR_FORWARD));
 	REQUIRE(env.track2.GetConnectingPiece(TDIR_REVERSE) == track_target_ptr(&env.track1, TDIR_REVERSE));
@@ -77,7 +78,7 @@ TEST_CASE( "track/conn/track", "Test basic track segment connectivity" ) {
 }
 
 TEST_CASE( "track/conn/points", "Test basic points connectivity" ) {
-	test_fixture_2 env;
+	test_fixture_track_2 env;
 
 	REQUIRE(env.pt1.GetPointFlags(0) == 0);
 	REQUIRE(env.track1.GetConnectingPiece(TDIR_FORWARD) == track_target_ptr(&env.pt1, TDIR_PTS_FACE));
@@ -100,7 +101,7 @@ TEST_CASE( "track/conn/points", "Test basic points connectivity" ) {
 }
 
 TEST_CASE( "track/traverse/track", "Test basic track segment traversal" ) {
-	test_fixture_1 env;
+	test_fixture_track_1 env;
 
 	unsigned int leftover;
 	track_location loc;
@@ -122,7 +123,7 @@ TEST_CASE( "track/traverse/track", "Test basic track segment traversal" ) {
 }
 
 TEST_CASE( "track/traverse/points", "Test basic points traversal" ) {
-	test_fixture_2 env;
+	test_fixture_track_2 env;
 
 	unsigned int leftover;
 	track_location loc;

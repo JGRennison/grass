@@ -22,20 +22,30 @@
 //==========================================================================
 
 #include "common.h"
-#include "action.h"
+#include "textpool.h"
 
-void action::Execute() const {
-	ExecuteAction();
+textpool::textpool() {
+	RegisterNewText("textpool/keynotfound", "textpool: No such key: ");
 }
 
-void action::ActionSendReplyFuture(const std::shared_ptr<future> &f) const {
-	w.futures.RegisterFuture(f);
+void textpool::RegisterNewText(const std::string &key, const std::string &text) {
+	textmap[key] = text;
 }
 
-void action::ActionRegisterFuture(const std::shared_ptr<future> &f) const {
-	w.futures.RegisterFuture(f);
+std::string textpool::GetTextByName(const std::string &key) const {
+	auto text = textmap.find(key);
+	if(text != textmap.end()) return text->second;
+	else return textmap.at("textpool/keynotfound") + key;
 }
 
-void action::ActionCancelFuture(future &f) const {
-	w.futures.RemoveFuture(f);
+void textpool::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	//code goes here
+}
+
+
+defaultusermessagepool::defaultusermessagepool() {
+	RegisterNewText("track_ops/pointsunmovable", "Points $points not movable: $reason");
+	RegisterNewText("points/locked", "Locked");
+	RegisterNewText("points/reminderset", "Reminder set");
+	RegisterNewText("track/reserved", "Reserved");
 }

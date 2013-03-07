@@ -21,21 +21,27 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "common.h"
-#include "action.h"
+#ifndef INC_TEXTPOOL_ALREADY
+#define INC_TEXTPOOL_ALREADY
 
-void action::Execute() const {
-	ExecuteAction();
-}
+#include "serialisable.h"
+#include <string>
+#include <map>
 
-void action::ActionSendReplyFuture(const std::shared_ptr<future> &f) const {
-	w.futures.RegisterFuture(f);
-}
+class textpool : public serialisable_obj {
+	std::map<std::string, std::string> textmap;
+	
+	public:
+	textpool();
+	void RegisterNewText(const std::string &key, const std::string &text);
+	std::string GetTextByName(const std::string &key) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const { }
+};
 
-void action::ActionRegisterFuture(const std::shared_ptr<future> &f) const {
-	w.futures.RegisterFuture(f);
-}
+class defaultusermessagepool : public textpool {
+	public:
+	defaultusermessagepool();
+};
 
-void action::ActionCancelFuture(future &f) const {
-	w.futures.RemoveFuture(f);
-}
+#endif

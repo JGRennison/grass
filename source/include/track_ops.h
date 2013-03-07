@@ -25,6 +25,7 @@
 #include "future.h"
 #include "serialisable.h"
 #include "action.h"
+#include "world_ops.h"
 
 class action_pointsaction;
 
@@ -50,17 +51,30 @@ class action_pointsaction : public action {
 	unsigned int index;
 	unsigned int bits;
 	unsigned int mask;
-	
+
 	private:
-	void CancelFutures(unsigned int index, unsigned int setmask, unsigned int clearmask);
-	world_time GetPointsMovementCompletionTime();
+	void CancelFutures(unsigned int index, unsigned int setmask, unsigned int clearmask) const;
+	world_time GetPointsMovementCompletionTime() const;
 
 	public:
 	action_pointsaction(world &w_) : action(w_), target(0) { }
 	action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, unsigned int bits_, unsigned int mask_) : action(w_), target(&targ), index(index_), bits(bits_), mask(mask_) { }
 	static std::string GetTypeSerialisationNameStatic() { return "action_pointsaction"; }
 	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void ExecuteAction();
+	virtual void ExecuteAction() const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+};
+
+class future_pointsactionmessage : public future_genericusermessage {
+	std::string reasonkey;
+
+	public:
+	future_pointsactionmessage(futurable_obj &targ, world_time ft, future_id_type id) : future_genericusermessage(targ, ft, id) { };
+	future_pointsactionmessage(futurable_obj &targ, world_time ft, world *w_, const std::string &textkey_, const std::string &reasonkey_) : future_genericusermessage(targ, ft, w_, textkey_), reasonkey(reasonkey_) { };
+	static std::string GetTypeSerialisationNameStatic() { return "future_pointsactionmessage"; }
+	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
+	virtual void PrepareVariables(message_formatter &mf, world &w);
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };

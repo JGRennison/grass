@@ -35,10 +35,6 @@ future::~future() {
 
 }
 
-void future::RegisterLocal(future_container &fs) {
-	fs.RegisterFuture(shared_from_this());
-}
-
 void future::Execute() {
 	ExecuteAction();
 }

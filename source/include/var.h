@@ -21,21 +21,28 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "common.h"
-#include "action.h"
+#ifndef INC_VAR_ALREADY
+#define INC_VAR_ALREADY
 
-void action::Execute() const {
-	ExecuteAction();
-}
+#include <string>
+#include <functional>
+#include <cctype>
+#include <map>
 
-void action::ActionSendReplyFuture(const std::shared_ptr<future> &f) const {
-	w.futures.RegisterFuture(f);
-}
+struct message_formatter {
+	typedef std::function<std::string(std::string)> mf_lambda;
+	std::map<std::string, mf_lambda> registered_variables;
 
-void action::ActionRegisterFuture(const std::shared_ptr<future> &f) const {
-	w.futures.RegisterFuture(f);
-}
+	public:
+	std::string FormatMessage(const std::string &input) const;
+	void RegisterVariable(const std::string &name, mf_lambda func);
 
-void action::ActionCancelFuture(future &f) const {
-	w.futures.RemoveFuture(f);
-}
+	private:
+	std::string ExpandVariable(std::string::const_iterator &begin, std::string::const_iterator end) const;
+
+	inline bool IsVarChar(char c) const {
+		return isalpha(c) || (c == '-');
+	}
+};
+
+#endif

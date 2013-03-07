@@ -126,6 +126,7 @@ class genericsignal : public routingpoint {
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
 	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	virtual DIRTYPE GetDefaultValidDirecton() const { return TDIR_FORWARD; }
 
 	virtual std::string GetTypeName() const { return "Generic Signal"; }
 

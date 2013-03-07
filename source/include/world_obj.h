@@ -40,7 +40,7 @@ class world_obj : public serialisable_futurable_obj {
 	virtual std::string GetSerialisationName() const { return GetName(); }
 	virtual void SetName(std::string newname) { name = newname; }
 	virtual std::string GetFriendlyName() const;
-	
+
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 };
 

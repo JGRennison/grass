@@ -29,7 +29,7 @@
 
 class action : public serialisable_obj {
 	private:
-	virtual void ExecuteAction() = 0;
+	virtual void ExecuteAction() const = 0;
 	
 	protected:
 	world &w;
@@ -37,10 +37,10 @@ class action : public serialisable_obj {
 	public:
 	action(world &w_) : w(w_) { }
 	virtual ~action() { }
-	void Execute();
-	void ActionSendReplyFuture(const std::shared_ptr<future> &f);
-	void ActionRegisterFuture(const std::shared_ptr<future> &f);
-	void ActionCancelFuture(future &f);
+	void Execute() const;
+	void ActionSendReplyFuture(const std::shared_ptr<future> &f) const;
+	void ActionRegisterFuture(const std::shared_ptr<future> &f) const;
+	void ActionCancelFuture(future &f) const;
 	virtual std::string GetTypeSerialisationName() const = 0;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) = 0;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const = 0;

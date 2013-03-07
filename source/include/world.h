@@ -30,6 +30,8 @@
 #include "tractiontype.h"
 #include "serialisable.h"
 #include "future.h"
+#include "textpool.h"
+#include "world_ops.h"
 
 struct connection_forward_declaration {
 	generictrack *track1;
@@ -48,13 +50,19 @@ typedef enum {
 	GM_CLIENT,
 } GAMEMODE;
 
+typedef enum {
+	LOG_NULL,
+	LOG_DENIED,
+	LOG_MESSAGE,
+} LOGCATEGORY;
+
 class world : public named_futurable_obj {
 	friend world_serialisation;
 	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
 	std::deque<connection_forward_declaration> connection_forward_declarations;
 	std::unordered_map<std::string, traction_type> traction_types;
-	world_time gametime;
-	GAMEMODE mode;
+	world_time gametime = 0;
+	GAMEMODE mode = GM_SINGLE;
 
 	public:
 	future_deserialisation_type_factory future_types;
@@ -77,17 +85,23 @@ class world : public named_futurable_obj {
 	void InitFutureTypes();
 	world() { InitFutureTypes(); }
 	world_time GetGameTime() const { return gametime; }
+	std::string FormatGameTime(world_time wt) const;
 	void SubmitAction(const action &request);
 	named_futurable_obj *FindFuturableByName(const std::string &name) const;
 	virtual std::string GetTypeSerialisationClassName() const { return ""; }
 	virtual std::string GetSerialisationName() const { return "world"; }
+	virtual textpool &GetUserMessageTextpool();
+	virtual void LogUserMessageLocal(LOGCATEGORY lc, const std::string &message);
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void GameStep(world_time delta);
 };
 
 template <typename C> void MakeFutureTypeWrapper(future_deserialisation_type_factory &future_types) {
 	auto func = [&](const deserialiser_input &di, error_collection &ec, future_container &fc, serialisable_futurable_obj &sfo, world_time ft, future_id_type fid) {
 		std::shared_ptr<C> f = std::make_shared<C>(sfo, ft, fid);
 		f->DeserialiseObject(di, ec);
-		f->RegisterLocal(fc);
+		fc.RegisterFuture(f);
 	};
 	future_types.RegisterType(C::GetTypeSerialisationNameStatic(), func);
 }

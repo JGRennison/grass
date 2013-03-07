@@ -21,23 +21,24 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#ifndef INC_DESERIALISATION_TEST_ALREADY
-#define INC_DESERIALISATION_TEST_ALREADY
+#ifndef INC_WORLD_TEST_ALREADY
+#define INC_WORLD_TEST_ALREADY
 
-#include "catch.hpp"
-#include "error.h"
+#include <sstream>
 #include "world.h"
-#include "world-test.h"
-#include "world_serialisation.h"
 
-struct test_fixture_world {
-	world_test w;
-	world_serialisation ws;
-	error_collection ec;
-	
-	test_fixture_world(std::string input) : ws(w) {
-		ws.ParseInputString(input, ec);
+class world_test : public world {
+	std::stringstream logtext;
+	LOGCATEGORY lastlc = LOG_NULL;
+
+	public:
+	virtual void LogUserMessageLocal(LOGCATEGORY lc, const std::string &message) {
+		lastlc = lc;
+		logtext << message << "\n";
+		//world::LogUserMessageLocal(lc, message);
 	}
+	std::string GetLogText() const { return logtext.str(); }
+	LOGCATEGORY GetLastLogCategory() const { return lastlc; }
 };
 
 #endif

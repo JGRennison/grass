@@ -41,7 +41,7 @@ class serialisable_futurable_obj;
 typedef deserialisation_type_factory<future_container &, serialisable_futurable_obj &, world_time, future_id_type> future_deserialisation_type_factory;
 
 //all futures must be allocated with new
-class future : public serialisable_obj, public std::enable_shared_from_this<future> {
+class future : public serialisable_obj {
 	futurable_obj &target;
 	world_time trigger_time;
 	const uint64_t future_id = 1;
@@ -54,7 +54,6 @@ class future : public serialisable_obj, public std::enable_shared_from_this<futu
 	public:
 	future(futurable_obj &targ, world_time ft, future_id_type id);
 	virtual ~future();
-	void RegisterLocal(future_container &fs);
 	void Execute();
 	virtual std::string GetTypeSerialisationName() const = 0;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
@@ -69,8 +68,7 @@ class future : public serialisable_obj, public std::enable_shared_from_this<futu
 };
 
 class future_container {
-	private:
-	friend future;
+	public:
 	virtual void RegisterFuture(const std::shared_ptr<future> &f) = 0;
 	virtual void RemoveFuture(future &f) = 0;
 };
