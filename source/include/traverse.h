@@ -45,7 +45,12 @@ struct route_recording_item {
 
 typedef std::deque<route_recording_item> route_recording_list;
 
-void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, unsigned int &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece)> step_func);
+struct generic_route_recording_state {
+	virtual ~generic_route_recording_state() { };
+	virtual generic_route_recording_state *Clone() const = 0;
+};
+
+void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, generic_route_recording_state *grrs, unsigned int &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece, generic_route_recording_state *grrs)> step_func);
 std::string GetTrackScanErrorFlagsStr(unsigned int error_flags);
 
 #endif

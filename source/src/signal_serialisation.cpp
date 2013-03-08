@@ -26,22 +26,37 @@
 #include "serialisable_impl.h"
 #include "error.h"
 
-void genericsignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
+void trackroutingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	routingpoint::Deserialise(di, ec);
+	
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTETRANS, di, "routethrough", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTTRANS, di, "shuntthrough", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_OVERLAPTRANS, di, "overlapthrough", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_ROUTETRANS, di, "routethrough_rev", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_SHUNTTRANS, di, "shuntthrough_rev", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_OVERLAPTRANS, di, "overlapthrough_rev", ec);
+}
+
+void trackroutingpoint::Serialise(serialiser_output &so, error_collection &ec) const {
+	routingpoint::Serialise(so, ec);
+}
+
+void genericsignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	trackroutingpoint::Deserialise(di, ec);
 
 	CheckTransJsonSubObj(start_trs, di, "start_trs", "trs", ec);
 	CheckTransJsonSubObj(end_trs, di, "end_trs", "trs", ec);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_SHUNTSTART | RPRT_SHUNTEND, di, "shuntsignal", ec);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_ROUTESTART | RPRT_ROUTEEND | RPRT_SHUNTEND, di, "routesignal", ec);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_SHUNTSTART, di, "shuntstart", ec);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_SHUNTEND, di, "shuntend", ec);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_ROUTESTART, di, "routestart", ec);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_ROUTEEND, di, "routeend", ec);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_ROUTETRANS, di, "routethrough", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTSTART | RPRT_SHUNTEND, di, "shuntsignal", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTESTART | RPRT_ROUTEEND | RPRT_SHUNTEND, di, "routesignal", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTSTART, di, "shuntstart", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTEND, di, "shuntend", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTESTART, di, "routestart", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTEEND, di, "routeend", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_OVERLAPEND, di, "overlapend", ec);
 }
 
 void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {
-	routingpoint::Serialise(so, ec);
+	trackroutingpoint::Serialise(so, ec);
 
 	SerialiseSubObjJson(start_trs, so, "start_trs", ec);
 	SerialiseSubObjJson(end_trs, so, "end_trs", ec);
@@ -77,7 +92,8 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 			if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF_PRIORITYSET;
 			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOSHUNT, subdi, "denyshunt", ec);
 			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOROUTE, subdi, "denyroute", ec);
-			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOSHUNT | route_restriction::RRDF_NOROUTE, subdi, "denyall", ec);
+			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOOVERLAP, subdi, "denyoverlap", ec);
+			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOSHUNT | route_restriction::RRDF_NOROUTE | route_restriction::RRDF_NOOVERLAP, subdi, "denyall", ec);
 		}
 		else {
 			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Invalid route restriction definition")));

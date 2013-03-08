@@ -58,7 +58,7 @@ unsigned int AdvanceDisplacement(unsigned int displacement, track_location &trac
 	return 0;
 }
 
-void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, unsigned int &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece)> step_func) {
+void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, generic_route_recording_state *grrs, unsigned int &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece, generic_route_recording_state *grrs)> step_func) {
 	while(true) {
 		if(!start_track.IsValid()) {
 			error_flags |= TSEF_OUTOFTRACK;
@@ -76,7 +76,7 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 			else junction_max--;
 		}
 
-		if(step_func(route_pieces, start_track)) return;
+		if(step_func(route_pieces, start_track, grrs)) return;
 
 		unsigned int max_exit_pieces = start_track.track->GetMaxConnectingPieces(start_track.direction);
 		if(max_exit_pieces == 0) {
@@ -90,7 +90,10 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 			for(unsigned int i=1; i < max_exit_pieces; i++) {
 				unsigned int route_pieces_size = route_pieces.size();
 				route_pieces.emplace_back(start_track, i);
-				TrackScan(max_pieces, junction_max, start_track.track->GetConnectingPieceByIndex(start_track.direction, i), route_pieces, error_flags, step_func);
+				generic_route_recording_state *temp_grrs = 0;
+				if(grrs) temp_grrs = grrs->Clone();
+				TrackScan(max_pieces, junction_max, start_track.track->GetConnectingPieceByIndex(start_track.direction, i), route_pieces, temp_grrs, error_flags, step_func);
+				if(temp_grrs) delete temp_grrs;
 				route_pieces.resize(route_pieces_size);
 			}
 		}

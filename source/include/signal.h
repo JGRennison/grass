@@ -35,10 +35,13 @@ class routingpoint : public genericzlentrack {
 	enum {
 		RPRT_SHUNTSTART		= 1<<0,
 		RPRT_SHUNTEND		= 1<<1,
-		RPRT_ROUTESTART		= 1<<2,
-		RPRT_ROUTEEND		= 1<<3,
-		RPRT_ROUTETRANS		= 1<<4,
-		RPRT_VIA		= 1<<5,
+		RPRT_SHUNTTRANS		= 1<<2,
+		RPRT_ROUTESTART		= 1<<3,
+		RPRT_ROUTEEND		= 1<<4,
+		RPRT_ROUTETRANS		= 1<<5,
+		RPRT_VIA		= 1<<6,
+		RPRT_OVERLAPEND		= 1<<7,
+		RPRT_OVERLAPTRANS	= 1<<8,
 	};
 	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction) const = 0;
 	virtual unsigned int GetSetRouteTypes(DIRTYPE direction) const = 0;
@@ -54,6 +57,7 @@ typedef enum {
 	RTC_NULL,
 	RTC_SHUNT,
 	RTC_ROUTE,
+	RTC_OVERLAP,
 } ROUTE_CLASS;
 
 struct route {
@@ -75,14 +79,14 @@ class route_restriction_set;
 
 class route_restriction {
 	friend route_restriction_set;
-	
+
 	std::vector<std::string> targets;
 	std::vector<std::string> via;
 	std::vector<std::string> notvia;
 	int priority;
 	unsigned int denyflags;
 	unsigned int routerestrictionflags;
-	
+
 	enum {
 		RRF_PRIORITYSET	= 1<<0,
 	};
@@ -91,6 +95,7 @@ class route_restriction {
 	enum {
 		RRDF_NOSHUNT	= 1<<0,
 		RRDF_NOROUTE	= 1<<1,
+		RRDF_NOOVERLAP	= 1<<2,
 	};
 	route_restriction() : priority(0), denyflags(0), routerestrictionflags(0) { }
 	bool CheckRestriction(unsigned int &restriction_flags, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
@@ -108,32 +113,44 @@ class route_restriction_set : public serialisable_obj {
 
 bool RouteReservation(route &res_route, unsigned int rr_flags);
 
-class genericsignal : public routingpoint {
+class trackroutingpoint : public routingpoint {
 	protected:
 	track_target_ptr prev;
 	track_target_ptr next;
+	unsigned int availableroutetypes_forward;
+	unsigned int availableroutetypes_reverse;
+
+	public:
+	trackroutingpoint(world &w_) : routingpoint(w_), availableroutetypes_forward(0), availableroutetypes_reverse(0) { }
+	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
+	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
+	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
+	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
+	virtual DIRTYPE GetDefaultValidDirecton() const { return TDIR_FORWARD; }
+
+	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
+
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+};
+
+class genericsignal : public trackroutingpoint {
+	protected:
 	unsigned int sflags;
 	track_reservation_state start_trs;
 	track_reservation_state end_trs;
-	unsigned int availableroutetypes;
 
 	public:
-	genericsignal(world &w_) : routingpoint(w_), sflags(0), availableroutetypes(0) { }
-	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
+	genericsignal(world &w_) : trackroutingpoint(w_), sflags(0) { availableroutetypes_reverse |= RPRT_SHUNTTRANS | RPRT_ROUTETRANS; }
 	void TrainEnter(DIRTYPE direction, train *t);
 	void TrainLeave(DIRTYPE direction, train *t);
 
-	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
-	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
 	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
-	virtual DIRTYPE GetDefaultValidDirecton() const { return TDIR_FORWARD; }
 
 	virtual std::string GetTypeName() const { return "Generic Signal"; }
 
 	virtual unsigned int GetSignalFlags() const;
 	virtual unsigned int SetSignalFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
-
-	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
 
 	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction) const;
 	virtual unsigned int GetSetRouteTypes(DIRTYPE direction) const;
@@ -142,14 +159,15 @@ class genericsignal : public routingpoint {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 
 	protected:
-	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
+	bool PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(ROUTE_CLASS type, const track_target_ptr &piece)> mkblankroute);
 };
 
 class autosignal : public genericsignal {
 	route signal_route;
+	route overlap_route;
 
 	public:
-	autosignal(world &w_) : genericsignal(w_) { availableroutetypes |= RPRT_ROUTESTART; }
+	autosignal(world &w_) : genericsignal(w_) { availableroutetypes_forward |= RPRT_ROUTESTART; }
 	bool PostLayoutInit(error_collection &ec);
 	unsigned int GetFlags(DIRTYPE direction) const;
 	virtual std::string GetTypeName() const { return "Automatic Signal"; }
