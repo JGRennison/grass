@@ -26,6 +26,7 @@
 #include "serialisable.h"
 #include "action.h"
 #include "world_ops.h"
+#include "signal.h"
 
 class action_pointsaction;
 
@@ -75,6 +76,25 @@ class future_pointsactionmessage : public future_genericusermessage {
 	static std::string GetTypeSerialisationNameStatic() { return "future_pointsactionmessage"; }
 	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
 	virtual void PrepareVariables(message_formatter &mf, world &w);
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+};
+
+class action_reservetrack_base : public action {
+	public:
+	action_reservetrack_base(world &w_) : action(w_) { }
+	bool TryReserveRoute(route *rt, world_time action_time) const;
+};
+
+class action_reservetrack : public action_reservetrack_base {
+	route *target;
+	
+	public:
+	action_reservetrack(world &w_) : action_reservetrack_base(w_), target(0) { }
+	action_reservetrack(world &w_, route &targ) : action_reservetrack_base(w_), target(&targ) { }
+	static std::string GetTypeSerialisationNameStatic() { return "action_reservetrack"; }
+	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
+	virtual void ExecuteAction() const;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };

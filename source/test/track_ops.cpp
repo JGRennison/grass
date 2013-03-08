@@ -51,6 +51,7 @@ TEST_CASE( "track/ops/points/movement", "Test basic points movement future" ) {
 	env.w.GameStep(50);
 	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF_REV, genericpoints::PTF_REV));
 	env.w.GameStep(50);
+	REQUIRE(env.p1.GetPointFlags(0) == (genericpoints::PTF_REV | genericpoints::PTF_LOCKED));
 	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, 0, genericpoints::PTF_REV));
 	env.w.GameStep(4900);
 	REQUIRE(env.p1.GetPointFlags(0) == (genericpoints::PTF_REV | genericpoints::PTF_LOCKED));

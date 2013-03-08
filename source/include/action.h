@@ -30,12 +30,14 @@
 class action : public serialisable_obj {
 	private:
 	virtual void ExecuteAction() const = 0;
-	
+
 	protected:
 	world &w;
-	
+
 	public:
-	action(world &w_) : w(w_) { }
+	world_time action_time;
+
+	action(world &w_) : w(w_), action_time(w_.GetGameTime()) { }
 	virtual ~action() { }
 	void Execute() const;
 	void ActionSendReplyFuture(const std::shared_ptr<future> &f) const;

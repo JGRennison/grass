@@ -25,6 +25,7 @@
 #include "track.h"
 #include "train.h"
 #include "error.h"
+#include "track_ops.h"
 
 #include <cassert>
 #include <cstring>
@@ -347,25 +348,36 @@ unsigned int points::SetPointFlagsMasked(unsigned int points_index, unsigned int
 	return pflags;
 }
 
+bool IsPointsRoutingDirAndIndexRev(DIRTYPE direction, unsigned int index) {
+	switch(direction) {
+		case TDIR_PTS_FACE:
+			return (index == 1);
+		case TDIR_PTS_NORMAL:
+			return false;
+		case TDIR_PTS_REVERSE:
+			return true;
+		default:
+			return false;
+	}
+}
+
 bool points::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
 	unsigned int pflags = GetPointFlags(0);
 	bool rev = pflags & PTF_REV;
-	if(pflags & PTF_LOCKED) {
-		switch(direction) {
-			case TDIR_PTS_FACE:
-				if((index == 0 && rev) || (index == 1 && !rev)) return false;
-				break;
-			case TDIR_PTS_NORMAL:
-				if(rev) return false;
-				break;
-			case TDIR_PTS_REVERSE:
-				if(!rev) return false;
-				break;
-			default:
-				return false;
-		}
+	if(pflags & (PTF_LOCKED | PTF_REMINDER)) {
+		if(IsPointsRoutingDirAndIndexRev(direction, index) != rev) return false;
 	}
 	return trs.Reservation(direction, index, rr_flags, resroute);
+}
+
+void points::ReservationActions(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
+	if(rr_flags & RRF_RESERVE) {
+		bool rev = pflags & PTF_REV;
+		bool newrev = IsPointsRoutingDirAndIndexRev(direction, index);
+		if(newrev != rev) {
+			submitaction(action_pointsaction(w, *this, 0, newrev ? PTF_REV : 0, PTF_REV));
+		}
+	}
 }
 
 const track_target_ptr & catchpoints::GetConnectingPiece(DIRTYPE direction) const {
@@ -451,11 +463,16 @@ unsigned int catchpoints::SetPointFlagsMasked(unsigned int points_index, unsigne
 bool catchpoints::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
 	unsigned int pflags = GetPointFlags(0);
 	if(pflags & PTF_LOCKED && pflags & PTF_REV)  return false;
-	bool res = trs.Reservation(direction, index, rr_flags, resroute);
-	if(res) {
-		//move points as necessary
+	return trs.Reservation(direction, index, rr_flags, resroute);
+}
+
+void catchpoints::ReservationActions(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
+	if(rr_flags & RRF_RESERVE) {
+		submitaction(action_pointsaction(w, *this, 0, 0, PTF_REV));
 	}
-	return res;
+	else if(rr_flags & RRF_UNRESERVE) {
+		submitaction(action_pointsaction(w, *this, 0, PTF_REV, PTF_REV));
+	}
 }
 
 const track_target_ptr & springpoints::GetConnectingPiece(DIRTYPE direction) const {
@@ -673,11 +690,25 @@ bool doubleslip::Reservation(DIRTYPE direction, unsigned int index, unsigned int
 		if(!(exitpf & PTF_REV) != !exitpointsrev) return false;	//points locked in wrong direction
 	}
 
-	bool res = trs.Reservation(direction, index, rr_flags, resroute);
-	if(res) {
-		//move points as necessary
+	return trs.Reservation(direction, index, rr_flags, resroute);
+}
+
+void doubleslip::ReservationActions(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
+	if(rr_flags & RRF_RESERVE) {
+		unsigned int entranceindex = GetCurrentPointIndex(direction);
+		unsigned int entrancepf = GetCurrentPointFlags(direction);
+		bool isentrancerev = (entrancepf & PTF_FIXED) ? (entrancepf & PTF_REV) : index;
+
+		DIRTYPE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
+
+		unsigned int exitindex = GetCurrentPointIndex(exitdirection);
+		unsigned int exitpf = GetCurrentPointFlags(exitdirection);
+		
+		bool isexitrev = (GetConnectingPointDirection(exitdirection, true) == direction);
+
+		if(!(entrancepf & PTF_REV) != !(isentrancerev)) submitaction(action_pointsaction(w, *this, entranceindex, isentrancerev ? PTF_REV : 0, PTF_REV));
+		if(!(exitpf & PTF_REV) != !(isexitrev)) submitaction(action_pointsaction(w, *this, exitindex, isexitrev ? PTF_REV : 0, PTF_REV));
 	}
-	return res;
 }
 
 layout_initialisation_error_obj::layout_initialisation_error_obj() {

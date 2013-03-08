@@ -48,4 +48,5 @@ defaultusermessagepool::defaultusermessagepool() {
 	RegisterNewText("points/locked", "Locked");
 	RegisterNewText("points/reminderset", "Reminder set");
 	RegisterNewText("track/reserved", "Reserved");
+	RegisterNewText("track/reservation/fail", "Cannot reserve route");
 }

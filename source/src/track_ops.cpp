@@ -24,6 +24,7 @@
 #include "common.h"
 #include "track_ops.h"
 #include "serialisable_impl.h"
+#include "signal.h"
 #include <memory>
 
 void future_pointsaction::ExecuteAction() {
@@ -58,13 +59,13 @@ void action_pointsaction::ExecuteAction() const {
 
 	if(change_flags & genericpoints::PTF_REV) {
 		if(old_pflags & genericpoints::PTF_LOCKED) {
-			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, w.GetGameTime()+1, &w, "track_ops/pointsunmovable", "points/locked"));
+			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "points/locked"));
 		}
 		else if(old_pflags & genericpoints::PTF_REMINDER) {
-			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, w.GetGameTime()+1, &w, "track_ops/pointsunmovable", "points/reminderset"));
+			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "points/reminderset"));
 		}
 		else if(target->GetFlags(target->GetDefaultValidDirecton()) & generictrack::GTF_ROUTESET) {
-			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, w.GetGameTime()+1, &w, "track_ops/pointsunmovable", "track/reserved"));
+			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "track/reserved"));
 		}
 		else {
 			CancelFutures(index, 0, genericpoints::PTF_OOC);
@@ -89,7 +90,7 @@ void action_pointsaction::ExecuteAction() const {
 }
 
 world_time action_pointsaction::GetPointsMovementCompletionTime() const {
-	return w.GetGameTime() + 5000;
+	return action_time + 5000;
 }
 
 void action_pointsaction::CancelFutures(unsigned int index, unsigned int setmask, unsigned int clearmask) const {
@@ -138,4 +139,54 @@ void future_pointsactionmessage::Deserialise(const deserialiser_input &di, error
 void future_pointsactionmessage::Serialise(serialiser_output &so, error_collection &ec) const {
 	future_genericusermessage::Serialise(so, ec);
 	SerialiseValueJson(reasonkey, so, "reasonkey");
+}
+
+//return true on success
+bool action_reservetrack_base::TryReserveRoute(route *rt, world_time action_time) const {
+	if(!rt->start.track->Reservation(rt->start.direction, 0, RRF_TRYRESERVE | RRF_STARTPIECE, rt)) return false;
+	for(auto it = rt->pieces.begin(); it != rt->pieces.end(); ++it) {
+		if(!it->location.track->Reservation(it->location.direction, it->connection_index, RRF_TRYRESERVE, rt)) return false;
+	}
+	if(!rt->end.track->Reservation(rt->end.direction, 0, RRF_TRYRESERVE | RRF_ENDPIECE, rt)) return false;
+	
+	//route is OK, now reserve it
+	
+	auto actioncallback = [&](action &&reservation_act) {
+		reservation_act.action_time++;
+		reservation_act.Execute();
+	};
+	
+	rt->start.track->Reservation(rt->start.direction, 0, RRF_RESERVE | RRF_STARTPIECE, rt);
+	rt->start.track->ReservationActions(rt->start.direction, 0, RRF_RESERVE | RRF_STARTPIECE, rt, w, actioncallback);
+	for(auto it = rt->pieces.begin(); it != rt->pieces.end(); ++it) {
+		it->location.track->Reservation(it->location.direction, it->connection_index, RRF_TRYRESERVE, rt);
+		it->location.track->ReservationActions(it->location.direction, it->connection_index, RRF_TRYRESERVE, rt, w, actioncallback);
+	}
+	rt->end.track->Reservation(rt->end.direction, 0, RRF_RESERVE | RRF_STARTPIECE, rt);
+	rt->end.track->ReservationActions(rt->end.direction, 0, RRF_RESERVE | RRF_ENDPIECE, rt, w, actioncallback);
+	return true;
+}
+
+void action_reservetrack::ExecuteAction() const {
+	if(!target) return;
+
+	if(!TryReserveRoute(target, action_time)) {
+		ActionSendReplyFuture(std::make_shared<future_genericusermessage>(w, action_time+1, &w, "track/reservation/fail"));
+	}
+}
+
+void action_reservetrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	std::string routeparentname;
+	unsigned int index;
+	if(CheckTransJsonValue(routeparentname, di, "routeparent", ec) && CheckTransJsonValue(index, di, "routeindex", ec)) {
+		routingpoint *rp = dynamic_cast<routingpoint *>(w.FindTrackByName(routeparentname));
+		if(rp) target = rp->GetRouteByIndex(index);
+	}
+
+	if(!target) ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid track reservation action definition")));
+}
+
+void action_reservetrack::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseValueJson(target->parent->GetSerialisationName(), so, "routeparent");
+	SerialiseValueJson(target->index, so, "routeindex");
 }

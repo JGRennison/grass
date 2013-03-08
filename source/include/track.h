@@ -41,6 +41,7 @@ template <typename T> struct vartrack_target_ptr;
 typedef vartrack_target_ptr<generictrack> track_target_ptr;
 class track_location;
 class route;
+class action;
 
 struct speed_restriction {
 	unsigned int speed;
@@ -127,7 +128,9 @@ class generictrack : public world_obj {
 
 	bool FullConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec);
 
+	//return true if reservation OK
 	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) = 0;
+	virtual void ReservationActions(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) { }
 
 	virtual std::string GetTypeName() const { return "Generic Track"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "track"; }
@@ -350,6 +353,7 @@ class points : public genericpoints {
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
 	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	virtual void ReservationActions(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction);
 
 	virtual std::string GetTypeName() const { return "Points"; }
 
@@ -383,6 +387,7 @@ class catchpoints : public genericpoints {
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
 	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	virtual void ReservationActions(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction);
 
 	virtual std::string GetTypeName() const { return "Catch Points"; }
 
@@ -546,6 +551,7 @@ class doubleslip : public genericpoints {
 	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
 	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	virtual void ReservationActions(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction);
 
 	virtual std::string GetTypeName() const { return "Double Slip Points"; }
 
