@@ -35,7 +35,7 @@ void world::GameStep(world_time delta) {
 	futures.ExecuteUpTo(gametime);
 }
 
-void world::ConnectTrack(generictrack *track1, DIRTYPE dir1, std::string name2, DIRTYPE dir2, error_collection &ec) {
+void world::ConnectTrack(generictrack *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec) {
 	auto target_it = all_pieces.find(name2);
 	if(target_it == all_pieces.end()) {
 		connection_forward_declarations.emplace_back(track1, dir1, name2, dir2);

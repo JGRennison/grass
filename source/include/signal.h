@@ -43,8 +43,8 @@ class routingpoint : public genericzlentrack {
 		RPRT_OVERLAPEND		= 1<<7,
 		RPRT_OVERLAPTRANS	= 1<<8,
 	};
-	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction) const = 0;
-	virtual unsigned int GetSetRouteTypes(DIRTYPE direction) const = 0;
+	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const = 0;
+	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const = 0;
 
 	virtual route *GetRouteByIndex(unsigned int index) = 0;
 
@@ -122,16 +122,19 @@ class trackroutingpoint : public routingpoint {
 
 	public:
 	trackroutingpoint(world &w_) : routingpoint(w_), availableroutetypes_forward(0), availableroutetypes_reverse(0) { }
-	const track_target_ptr & GetConnectingPiece(DIRTYPE direction) const;
-	unsigned int GetMaxConnectingPieces(DIRTYPE direction) const;
-	const track_target_ptr & GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const;
-	DIRTYPE GetReverseDirection(DIRTYPE direction) const;
-	virtual DIRTYPE GetDefaultValidDirecton() const { return TDIR_FORWARD; }
+	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const;
+	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
+	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const;
+	EDGETYPE GetReverseDirection(EDGETYPE direction) const;
+	virtual EDGETYPE GetDefaultValidDirecton() const { return EDGE_FRONT; }
 
-	bool HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance);
+	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	
+	protected:
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
 };
 
 class genericsignal : public trackroutingpoint {
@@ -142,18 +145,18 @@ class genericsignal : public trackroutingpoint {
 
 	public:
 	genericsignal(world &w_) : trackroutingpoint(w_), sflags(0) { availableroutetypes_reverse |= RPRT_SHUNTTRANS | RPRT_ROUTETRANS; }
-	void TrainEnter(DIRTYPE direction, train *t);
-	void TrainLeave(DIRTYPE direction, train *t);
+	void TrainEnter(EDGETYPE direction, train *t);
+	void TrainLeave(EDGETYPE direction, train *t);
 
-	virtual bool Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
 
 	virtual std::string GetTypeName() const { return "Generic Signal"; }
 
 	virtual unsigned int GetSignalFlags() const;
 	virtual unsigned int SetSignalFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
 
-	virtual unsigned int GetAvailableRouteTypes(DIRTYPE direction) const;
-	virtual unsigned int GetSetRouteTypes(DIRTYPE direction) const;
+	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const;
+	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
@@ -169,7 +172,7 @@ class autosignal : public genericsignal {
 	public:
 	autosignal(world &w_) : genericsignal(w_) { availableroutetypes_forward |= RPRT_ROUTESTART; }
 	bool PostLayoutInit(error_collection &ec);
-	unsigned int GetFlags(DIRTYPE direction) const;
+	unsigned int GetFlags(EDGETYPE direction) const;
 	virtual std::string GetTypeName() const { return "Automatic Signal"; }
 
 	virtual route *GetRouteByIndex(unsigned int index);
@@ -187,7 +190,7 @@ class routesignal : public genericsignal {
 	public:
 	routesignal(world &w_) : genericsignal(w_) { }
 	bool PostLayoutInit(error_collection &ec);
-	unsigned int GetFlags(DIRTYPE direction) const;
+	unsigned int GetFlags(EDGETYPE direction) const;
 	virtual std::string GetTypeName() const { return "Route Signal"; }
 
 	virtual route *GetRouteByIndex(unsigned int index);

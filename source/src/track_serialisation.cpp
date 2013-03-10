@@ -37,8 +37,8 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 		auto connfunc = [&](const deserialiser_input &funcdi) {
 			bool ok = true;
 			if(funcdi.json.IsObject()) {
-				DIRTYPE this_entrance_direction = TDIR_NULL;
-				DIRTYPE target_entrance_direction = TDIR_NULL;
+				EDGETYPE this_entrance_direction = EDGE_NULL;
+				EDGETYPE target_entrance_direction = EDGE_NULL;
 				std::string target_name;
 				ok = CheckTransJsonValue(this_entrance_direction, funcdi, "fromdirection", ec);
 				ok &= CheckTransJsonValue(target_entrance_direction, funcdi, "todirection", ec);
@@ -46,12 +46,6 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 
 				if(ok) {
 					di.w->ConnectTrack(this, this_entrance_direction, target_name, target_entrance_direction, ec);
-
-					/*
-					generictrack *gt = di.w->FindTrackByName(target_name);
-					if(gt) this->FullConnect(this_entrance_direction, track_target_ptr(gt, target_entrance_direction), ec);
-					else ok = false;
-					*/
 				}
 			}
 			else ok = false;
@@ -68,6 +62,8 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 		}
 		else connfunc(subdi);
 	}
+
+	CheckTransJsonValueFlag<unsigned int>(gt_flags, GTF_REVERSEAUTOCONN, di, "reverseautoconnection", ec);
 }
 
 void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -78,7 +74,7 @@ void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonValue(traincount, di, "traincount", ec);
 	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
 	CheckTransJsonSubArray(speed_limits, di, "speedlimits", "speedlimits", ec);
-	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec);	
+	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec);
 }
 
 void trackseg::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -185,20 +181,20 @@ void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec)
 		}
 	}
 
-	auto deserialisepointsflags = [&](DIRTYPE direction, const char *prop) {
+	auto deserialisepointsflags = [&](EDGETYPE direction, const char *prop) {
 		unsigned int pf = GetCurrentPointFlags(direction);
 		pointsflagssubobj ps(&pf);
 		CheckTransJsonSubObj(ps, di, prop, "", ec);
 		SetPointFlagsMasked(GetCurrentPointIndex(direction), pf, genericpoints::PTF_SERIALISABLE);
 	};
-	deserialisepointsflags(TDIR_DS_FL, "forwardleftpoints");
-	deserialisepointsflags(TDIR_DS_RL, "reverseleftpoints");
-	deserialisepointsflags(TDIR_DS_FR, "forwardrightpoints");
-	deserialisepointsflags(TDIR_DS_RR, "reverserightpoints");
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_RR, di, "notrack_fl_rr", ec);
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_RR, di, "notrack_fr_rr", ec);
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_RL, di, "notrack_fl_rl", ec);
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_RL, di, "notrack_fr_rl", ec);
+	deserialisepointsflags(EDGE_DS_FL, "forwardleftpoints");
+	deserialisepointsflags(EDGE_DS_BR, "reverseleftpoints");
+	deserialisepointsflags(EDGE_DS_FR, "forwardrightpoints");
+	deserialisepointsflags(EDGE_DS_BL, "reverserightpoints");
+	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_BL, di, "notrack_fl_bl", ec);
+	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_BL, di, "notrack_fr_bl", ec);
+	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_BR, di, "notrack_fl_br", ec);
+	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_BR, di, "notrack_fr_br", ec);
 	if(__builtin_popcount(dsflags) >= 2) {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Cannot remove more than one track edge from a double-slip, use points or a crossover instead")));
 	}
@@ -208,11 +204,11 @@ void doubleslip::Serialise(serialiser_output &so, error_collection &ec) const {
 	genericpoints::Serialise(so, ec);
 
 	SerialiseSubObjJson(trs, so, "trs", ec);
-	SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(TDIR_DS_FL)), so, "forwardleftpoints", ec);
-	if(dof>=2) SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(TDIR_DS_RL)), so, "reverseleftpoints", ec);
+	SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_FL)), so, "forwardleftpoints", ec);
+	if(dof>=2) SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_BR)), so, "reverseleftpoints", ec);
 	if(dof>=4) {
-		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(TDIR_DS_FR)), so, "forwardrightpoints", ec);
-		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(TDIR_DS_RR)), so, "reverserightpoints", ec);
+		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_FR)), so, "forwardrightpoints", ec);
+		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_BL)), so, "reverserightpoints", ec);
 	}
 }
 

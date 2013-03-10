@@ -94,9 +94,9 @@ template <> inline bool IsType<int>(const rapidjson::Value& val) { return val.Is
 template <> inline bool IsType<uint64_t>(const rapidjson::Value& val) { return val.IsUint64(); }
 template <> inline bool IsType<const char*>(const rapidjson::Value& val) { return val.IsString(); }
 template <> inline bool IsType<std::string>(const rapidjson::Value& val) { return val.IsString(); }
-template <> inline bool IsType<DIRTYPE>(const rapidjson::Value& val) {
+template <> inline bool IsType<EDGETYPE>(const rapidjson::Value& val) {
 	if(val.IsString()) {
-		DIRTYPE dir;
+		EDGETYPE dir;
 		return DeserialiseDirectionName(dir, val.GetString());
 	}
 	else return false;
@@ -109,8 +109,8 @@ template <> inline int GetType<int>(const rapidjson::Value& val) { return val.Ge
 template <> inline uint64_t GetType<uint64_t>(const rapidjson::Value& val) { return val.GetUint64(); }
 template <> inline const char* GetType<const char*>(const rapidjson::Value& val) { return val.GetString(); }
 template <> inline std::string GetType<std::string>(const rapidjson::Value& val) { return std::string(val.GetString(), val.GetStringLength()); }
-template <> inline DIRTYPE GetType<DIRTYPE>(const rapidjson::Value& val) {
-	DIRTYPE dir = TDIR_NULL;
+template <> inline EDGETYPE GetType<EDGETYPE>(const rapidjson::Value& val) {
+	EDGETYPE dir = EDGE_NULL;
 	DeserialiseDirectionName(dir, val.GetString());
 	return dir;
 }
@@ -122,7 +122,7 @@ template <> inline void SetType<int>(Handler &out, int val) { out.Int(val); }
 template <> inline void SetType<uint64_t>(Handler &out, uint64_t val) { out.Uint64(val); }
 template <> inline void SetType<const char*>(Handler &out, const char* val) { out.String(val); }
 template <> inline void SetType<std::string>(Handler &out, std::string val) { out.String(val); }
-template <> inline void SetType<DIRTYPE>(Handler &out, DIRTYPE val) {
+template <> inline void SetType<EDGETYPE>(Handler &out, EDGETYPE val) {
 	out.String(SerialiseDirectionName(val));
 }
 
@@ -136,7 +136,7 @@ template <> inline const char *GetTypeFriendlyName<int>() { return "integer"; }
 template <> inline const char *GetTypeFriendlyName<uint64_t>() { return "unsigned 64-bit integer"; }
 template <> inline const char *GetTypeFriendlyName<const char*>() { return "string"; }
 template <> inline const char *GetTypeFriendlyName<std::string>() { return "string"; }
-template <> inline const char *GetTypeFriendlyName<DIRTYPE>() { return "direction"; }
+template <> inline const char *GetTypeFriendlyName<EDGETYPE>() { return "direction"; }
 template <> inline const char *GetTypeFriendlyName<placeholder_subobject>() { return "object"; }
 template <> inline const char *GetTypeFriendlyName<placeholder_array>() { return "array"; }
 

@@ -35,10 +35,10 @@
 
 struct connection_forward_declaration {
 	generictrack *track1;
-	DIRTYPE dir1;
+	EDGETYPE dir1;
 	std::string name2;
-	DIRTYPE dir2;
-	connection_forward_declaration(generictrack *t1, DIRTYPE d1, const std::string &n2, DIRTYPE d2) : track1(t1), dir1(d1), name2(n2), dir2(d2) { }
+	EDGETYPE dir2;
+	connection_forward_declaration(generictrack *t1, EDGETYPE d1, const std::string &n2, EDGETYPE d2) : track1(t1), dir1(d1), name2(n2), dir2(d2) { }
 };
 
 class world_serialisation;
@@ -78,7 +78,7 @@ class world : public named_futurable_obj {
 		if(tt != traction_types.end()) return &(tt->second);
 		else return 0;
 	}
-	void ConnectTrack(generictrack *track1, DIRTYPE dir1, std::string name2, DIRTYPE dir2, error_collection &ec);
+	void ConnectTrack(generictrack *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec);
 	void ConnectAllPiecesInit(error_collection &ec);
 	void PostLayoutInit(error_collection &ec);
 	generictrack *FindTrackByName(const std::string &name) const;

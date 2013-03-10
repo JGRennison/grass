@@ -42,11 +42,11 @@ class error_signalinit_trackscan : public error_signalinit {
 	}
 };
 
-bool trackroutingpoint::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+bool trackroutingpoint::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
 	switch(this_entrance_direction) {
-		case TDIR_FORWARD:
+		case EDGE_FRONT:
 			return TryConnectPiece(prev, target_entrance);
-		case TDIR_REVERSE:
+		case EDGE_BACK:
 			return TryConnectPiece(next, target_entrance);
 		default:
 			assert(false);
@@ -54,11 +54,11 @@ bool trackroutingpoint::HalfConnect(DIRTYPE this_entrance_direction, const track
 	}
 }
 
-const track_target_ptr & trackroutingpoint::GetConnectingPiece(DIRTYPE direction) const {
+const track_target_ptr & trackroutingpoint::GetConnectingPiece(EDGETYPE direction) const {
 	switch(direction) {
-		case TDIR_FORWARD:
+		case EDGE_FRONT:
 			return next;
-		case TDIR_REVERSE:
+		case EDGE_BACK:
 			return prev;
 		default:
 			assert(false);
@@ -66,28 +66,34 @@ const track_target_ptr & trackroutingpoint::GetConnectingPiece(DIRTYPE direction
 	}
 }
 
-DIRTYPE trackroutingpoint::GetReverseDirection(DIRTYPE direction) const {
+EDGETYPE trackroutingpoint::GetReverseDirection(EDGETYPE direction) const {
 	switch(direction) {
-		case TDIR_FORWARD:
-			return TDIR_REVERSE;
-		case TDIR_REVERSE:
-			return TDIR_FORWARD;
+		case EDGE_FRONT:
+			return EDGE_BACK;
+		case EDGE_BACK:
+			return EDGE_FRONT;
 		default:
 			assert(false);
-			return TDIR_NULL;
+			return EDGE_NULL;
 	}
 }
 
-unsigned int trackroutingpoint::GetMaxConnectingPieces(DIRTYPE direction) const {
+unsigned int trackroutingpoint::GetMaxConnectingPieces(EDGETYPE direction) const {
 	return 1;
 }
 
-const track_target_ptr & trackroutingpoint::GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const {
+const track_target_ptr & trackroutingpoint::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
 	return GetConnectingPiece(direction);
 }
 
-void genericsignal::TrainEnter(DIRTYPE direction, train *t) { }
-void genericsignal::TrainLeave(DIRTYPE direction, train *t) { }
+EDGETYPE trackroutingpoint::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
+	if(forwardconnection && !next.IsValid()) return EDGE_BACK;
+	if(!forwardconnection && !prev.IsValid()) return EDGE_FRONT;
+	return EDGE_NULL;
+}
+
+void genericsignal::TrainEnter(EDGETYPE direction, train *t) { }
+void genericsignal::TrainLeave(EDGETYPE direction, train *t) { }
 
 unsigned int genericsignal::GetSignalFlags() const {
 	return sflags;
@@ -98,8 +104,8 @@ unsigned int genericsignal::SetSignalFlagsMasked(unsigned int set_flags, unsigne
 	return sflags;
 }
 
-bool genericsignal::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
-	if(direction != TDIR_FORWARD && rr_flags & (RRF_STARTPIECE | RRF_ENDPIECE)) {
+bool genericsignal::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+	if(direction != EDGE_FRONT && rr_flags & (RRF_STARTPIECE | RRF_ENDPIECE)) {
 		return false;
 	}
 	if(rr_flags & RRF_STARTPIECE) {
@@ -113,22 +119,22 @@ bool genericsignal::Reservation(DIRTYPE direction, unsigned int index, unsigned 
 	}
 }
 
-unsigned int genericsignal::GetAvailableRouteTypes(DIRTYPE direction) const {
-	return (direction == TDIR_FORWARD) ? availableroutetypes_forward : availableroutetypes_reverse;
+unsigned int genericsignal::GetAvailableRouteTypes(EDGETYPE direction) const {
+	return (direction == EDGE_FRONT) ? availableroutetypes_forward : availableroutetypes_reverse;
 }
 
-unsigned int genericsignal::GetSetRouteTypes(DIRTYPE direction) const {
+unsigned int genericsignal::GetSetRouteTypes(EDGETYPE direction) const {
 	unsigned int result = 0;
-	if(direction == TDIR_FORWARD) {
+	if(direction == EDGE_FRONT) {
 		if(start_trs.reserved_route && start_trs.rr_flags & RRF_RESERVE) {
 			switch(start_trs.reserved_route->type) {
 				case RTC_SHUNT:
 					if(start_trs.rr_flags & RRF_STARTPIECE) result |= RPRT_SHUNTSTART;
-					else if(start_trs.direction == TDIR_FORWARD) result |= RPRT_SHUNTTRANS;
+					else if(start_trs.direction == EDGE_FRONT) result |= RPRT_SHUNTTRANS;
 					break;
 				case RTC_ROUTE:
 					if(start_trs.rr_flags & RRF_STARTPIECE) result |= RPRT_ROUTESTART;
-					else if(start_trs.direction == TDIR_FORWARD) result |= RPRT_ROUTETRANS;
+					else if(start_trs.direction == EDGE_FRONT) result |= RPRT_ROUTETRANS;
 					break;
 				default:
 					break;
@@ -138,11 +144,11 @@ unsigned int genericsignal::GetSetRouteTypes(DIRTYPE direction) const {
 			switch(end_trs.reserved_route->type) {
 				case RTC_SHUNT:
 					if(end_trs.rr_flags & RRF_ENDPIECE) result |= RPRT_SHUNTEND;
-					else if(end_trs.direction == TDIR_FORWARD) result |= RPRT_SHUNTTRANS;
+					else if(end_trs.direction == EDGE_FRONT) result |= RPRT_SHUNTTRANS;
 					break;
 				case RTC_ROUTE:
 					if(end_trs.rr_flags & RRF_ENDPIECE) result |= RPRT_ROUTEEND;
-					else if(end_trs.direction == TDIR_FORWARD) result |= RPRT_ROUTETRANS;
+					else if(end_trs.direction == EDGE_FRONT) result |= RPRT_ROUTETRANS;
 					break;
 				default:
 					break;
@@ -153,10 +159,10 @@ unsigned int genericsignal::GetSetRouteTypes(DIRTYPE direction) const {
 		if(start_trs.reserved_route && start_trs.rr_flags & RRF_RESERVE) {
 			switch(start_trs.reserved_route->type) {
 				case RTC_SHUNT:
-					if(start_trs.direction != TDIR_FORWARD) result |= RPRT_SHUNTTRANS;
+					if(start_trs.direction != EDGE_FRONT) result |= RPRT_SHUNTTRANS;
 					break;
 				case RTC_ROUTE:
-					if(start_trs.direction != TDIR_FORWARD) result |= RPRT_ROUTETRANS;
+					if(start_trs.direction != EDGE_FRONT) result |= RPRT_ROUTETRANS;
 					break;
 				default:
 					break;
@@ -166,7 +172,7 @@ unsigned int genericsignal::GetSetRouteTypes(DIRTYPE direction) const {
 	return result;
 }
 
-unsigned int autosignal::GetFlags(DIRTYPE direction) const {
+unsigned int autosignal::GetFlags(EDGETYPE direction) const {
 	return GTF_ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
 }
 
@@ -176,7 +182,7 @@ route *autosignal::GetRouteByIndex(unsigned int index) {
 	else return 0;
 }
 
-unsigned int routesignal::GetFlags(DIRTYPE direction) const {
+unsigned int routesignal::GetFlags(EDGETYPE direction) const {
 	return GTF_ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
 }
 
@@ -291,7 +297,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 				auto mk_route = [&](ROUTE_CLASS type) {
 					route *rt = mkblankroute(type, piece);
 					if(rt) {
-						rt->start = vartrack_target_ptr<routingpoint>(this, TDIR_FORWARD);
+						rt->start = vartrack_target_ptr<routingpoint>(this, EDGE_FRONT);
 						rt->pieces = route_pieces;
 						rt->end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
 						rt->FillViaList();
@@ -324,9 +330,9 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 	unsigned int error_flags = 0;
 	route_recording_list pieces;
 	signal_route_recording_state rrrs;
-	if(GetAvailableRouteTypes(TDIR_FORWARD) & RPRT_ROUTESTART) rrrs.rrrs_flags |= signal_route_recording_state::RRRSF_ROUTEOK | signal_route_recording_state::RRRSF_OVERLAPOK;
-	if(GetAvailableRouteTypes(TDIR_FORWARD) & RPRT_SHUNTSTART) rrrs.rrrs_flags |= signal_route_recording_state::RRRSF_SHUNTOK;
-	TrackScan(max_pieces, junction_max, GetConnectingPieceByIndex(TDIR_FORWARD, 0), pieces, &rrrs, error_flags, func);
+	if(GetAvailableRouteTypes(EDGE_FRONT) & RPRT_ROUTESTART) rrrs.rrrs_flags |= signal_route_recording_state::RRRSF_ROUTEOK | signal_route_recording_state::RRRSF_OVERLAPOK;
+	if(GetAvailableRouteTypes(EDGE_FRONT) & RPRT_SHUNTSTART) rrrs.rrrs_flags |= signal_route_recording_state::RRRSF_SHUNTOK;
+	TrackScan(max_pieces, junction_max, GetConnectingPieceByIndex(EDGE_FRONT, 0), pieces, &rrrs, error_flags, func);
 
 	if(error_flags != 0) {
 		continue_initing = false;

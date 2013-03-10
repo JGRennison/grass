@@ -85,6 +85,8 @@ template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deser
 	else {
 		ptr.reset(new T(w));
 	}
+	ptr->SetPreviousTrackPiece(previoustrackpiece);
+	previoustrackpiece = ptr.get();
 	return static_cast<T*>(ptr.get());
 }
 

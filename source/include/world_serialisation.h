@@ -35,16 +35,19 @@
 #include "rapidjson/document.h"
 #pragma GCC diagnostic pop
 
+class generictrack;
+
 class world_serialisation {
 	world &w;
 	std::map<std::string, const rapidjson::Value *> template_map;
 	std::forward_list<rapidjson::Document> parsed_inputs;
+	generictrack *previoustrackpiece;
 
 	public:
 	deserialisation_type_factory<> object_types;
 
 	void InitObjectTypes();
-	world_serialisation(world &w_) : w(w_) { InitObjectTypes(); }
+	world_serialisation(world &w_) : w(w_), previoustrackpiece(0) { InitObjectTypes(); }
 	void ParseInputString(const std::string &input, error_collection &ec);
 	void LoadGame(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);

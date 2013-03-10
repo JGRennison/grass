@@ -71,7 +71,7 @@ generictrack & generictrack::SetTrackCircuit(track_circuit *tc) {
 	return *this;
 }
 
-int generictrack::GetPartialElevationDelta(DIRTYPE direction, unsigned int displacement) const {
+int generictrack::GetPartialElevationDelta(EDGETYPE direction, unsigned int displacement) const {
 	int elevationdelta = GetElevationDelta(direction);
 	if(elevationdelta) {
 		return (((int64_t) elevationdelta) * ((int64_t) displacement)) / ((int64_t) GetLength(direction));
@@ -89,7 +89,7 @@ bool generictrack::TryConnectPiece(track_target_ptr &piece_var, const track_targ
 	}
 }
 
-bool generictrack::FullConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec) {
+bool generictrack::FullConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec) {
 	if(HalfConnect(this_entrance_direction, target_entrance) && target_entrance.track->HalfConnect(target_entrance.direction, track_target_ptr(this, this_entrance_direction))) {
 		return true;
 	}
@@ -99,7 +99,18 @@ bool generictrack::FullConnect(DIRTYPE this_entrance_direction, const track_targ
 	}
 }
 
-void trackseg::TrainEnter(DIRTYPE direction, train *t) {
+bool generictrack::PostLayoutInit(error_collection &ec) {
+	if(prevtrack) {
+		EDGETYPE prevedge = prevtrack->GetAvailableAutoConnectionDirection(!(prevtrack->gt_flags & GTF_REVERSEAUTOCONN));
+		EDGETYPE thisedge = GetAvailableAutoConnectionDirection(gt_flags & GTF_REVERSEAUTOCONN);
+		if(prevedge != EDGE_NULL && thisedge != EDGE_NULL) {
+			return FullConnect(thisedge, track_target_ptr(prevtrack, prevedge), ec);
+		}
+	}
+	return true;
+}
+
+void trackseg::TrainEnter(EDGETYPE direction, train *t) {
 	traincount++;
 	track_circuit *tc = GetTrackCircuit();
 	if(tc) tc->TrainEnter(t);
@@ -107,7 +118,7 @@ void trackseg::TrainEnter(DIRTYPE direction, train *t) {
 	if(speeds) t->AddCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
 }
 
-void trackseg::TrainLeave(DIRTYPE direction, train *t) {
+void trackseg::TrainLeave(EDGETYPE direction, train *t) {
 	traincount++;
 	track_circuit *tc = GetTrackCircuit();
 	if(tc) tc->TrainEnter(t);
@@ -115,22 +126,22 @@ void trackseg::TrainLeave(DIRTYPE direction, train *t) {
 	t->RemoveCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
 }
 
-bool trackseg::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+bool trackseg::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
 	switch(this_entrance_direction) {
-		case TDIR_FORWARD:
+		case EDGE_FRONT:
 			return TryConnectPiece(prev, target_entrance);
-		case TDIR_REVERSE:
+		case EDGE_BACK:
 			return TryConnectPiece(next, target_entrance);
 		default:
 			return false;
 	}
 }
 
-const track_target_ptr & trackseg::GetConnectingPiece(DIRTYPE direction) const {
+const track_target_ptr & trackseg::GetConnectingPiece(EDGETYPE direction) const {
 	switch(direction) {
-		case TDIR_FORWARD:
+		case EDGE_FRONT:
 			return next;
-		case TDIR_REVERSE:
+		case EDGE_BACK:
 			return prev;
 		default:
 			assert(false);
@@ -138,19 +149,19 @@ const track_target_ptr & trackseg::GetConnectingPiece(DIRTYPE direction) const {
 	}
 }
 
-unsigned int trackseg::GetMaxConnectingPieces(DIRTYPE direction) const {
+unsigned int trackseg::GetMaxConnectingPieces(EDGETYPE direction) const {
 	return 1;
 }
-const track_target_ptr & trackseg::GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const {
+const track_target_ptr & trackseg::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
 	return GetConnectingPiece(direction);
 }
 
-int trackseg::GetElevationDelta(DIRTYPE direction) const {
-	return (direction==TDIR_FORWARD) ? elevationdelta : -elevationdelta;
+int trackseg::GetElevationDelta(EDGETYPE direction) const {
+	return (direction==EDGE_FRONT) ? elevationdelta : -elevationdelta;
 }
 
-unsigned int trackseg::GetStartOffset(DIRTYPE direction) const {
-	return (direction == TDIR_REVERSE) ? GetLength(direction) : 0;
+unsigned int trackseg::GetStartOffset(EDGETYPE direction) const {
+	return (direction == EDGE_BACK) ? GetLength(direction) : 0;
 }
 
 const speedrestrictionset *trackseg::GetSpeedRestrictions() const {
@@ -161,15 +172,15 @@ const tractionset *trackseg::GetTractionTypes() const {
 	return &tractiontypes;
 }
 
-unsigned int trackseg::GetLength(DIRTYPE direction) const {
+unsigned int trackseg::GetLength(EDGETYPE direction) const {
 	return length;
 }
 
-unsigned int trackseg::GetNewOffset(DIRTYPE direction, unsigned int currentoffset, unsigned int step) const {
+unsigned int trackseg::GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const {
 	switch(direction) {
-		case TDIR_FORWARD:
+		case EDGE_FRONT:
 			return currentoffset + step;
-		case TDIR_REVERSE:
+		case EDGE_BACK:
 			return currentoffset - step;
 		default:
 			assert(false);
@@ -177,11 +188,11 @@ unsigned int trackseg::GetNewOffset(DIRTYPE direction, unsigned int currentoffse
 	}
 }
 
-unsigned int trackseg::GetRemainingLength(DIRTYPE direction, unsigned int currentoffset) const {
+unsigned int trackseg::GetRemainingLength(EDGETYPE direction, unsigned int currentoffset) const {
 	switch(direction) {
-		case TDIR_FORWARD:
+		case EDGE_FRONT:
 			return length - currentoffset;
-		case TDIR_REVERSE:
+		case EDGE_BACK:
 			return currentoffset;
 		default:
 			assert(false);
@@ -193,19 +204,19 @@ track_circuit *trackseg::GetTrackCircuit() const {
 	return tc;
 }
 
-unsigned int trackseg::GetFlags(DIRTYPE direction) const {
+unsigned int trackseg::GetFlags(EDGETYPE direction) const {
 	return trs.GetGTReservationFlags(direction);
 }
 
-DIRTYPE trackseg::GetReverseDirection(DIRTYPE direction) const {
+EDGETYPE trackseg::GetReverseDirection(EDGETYPE direction) const {
 	switch(direction) {
-		case TDIR_FORWARD:
-			return TDIR_REVERSE;
-		case TDIR_REVERSE:
-			return TDIR_FORWARD;
+		case EDGE_FRONT:
+			return EDGE_BACK;
+		case EDGE_BACK:
+			return EDGE_FRONT;
 		default:
 			assert(false);
-			return TDIR_NULL;
+			return EDGE_NULL;
 	}
 }
 
@@ -226,47 +237,53 @@ trackseg & trackseg::SetTrackCircuit(track_circuit *tc) {
 	return *this;
 }
 
-bool trackseg::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool trackseg::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-unsigned int genericzlentrack::GetStartOffset(DIRTYPE direction) const {
+EDGETYPE trackseg::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
+	if(forwardconnection && !next.IsValid()) return EDGE_BACK;
+	if(!forwardconnection && !prev.IsValid()) return EDGE_FRONT;
+	return EDGE_NULL;
+}
+
+unsigned int genericzlentrack::GetStartOffset(EDGETYPE direction) const {
 	return 0;
 }
 
-int genericzlentrack::GetElevationDelta(DIRTYPE direction) const {
+int genericzlentrack::GetElevationDelta(EDGETYPE direction) const {
 	return 0;
 }
 
-unsigned int genericzlentrack::GetNewOffset(DIRTYPE direction, unsigned int currentoffset, unsigned int step) const {
+unsigned int genericzlentrack::GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const {
 	if(currentoffset > 0) assert(false);
 	return 0;
 }
 
-unsigned int genericzlentrack::GetRemainingLength(DIRTYPE direction, unsigned int currentoffset) const {
+unsigned int genericzlentrack::GetRemainingLength(EDGETYPE direction, unsigned int currentoffset) const {
 	if(currentoffset > 0) assert(false);
 	return 0;
 }
 
-unsigned int genericzlentrack::GetLength(DIRTYPE direction) const {
+unsigned int genericzlentrack::GetLength(EDGETYPE direction) const {
 	return 0;
 }
 
-void genericpoints::TrainEnter(DIRTYPE direction, train *t) { }
-void genericpoints::TrainLeave(DIRTYPE direction, train *t) { }
+void genericpoints::TrainEnter(EDGETYPE direction, train *t) { }
+void genericpoints::TrainLeave(EDGETYPE direction, train *t) { }
 
 
-const track_target_ptr & points::GetConnectingPiece(DIRTYPE direction) const {
+const track_target_ptr & points::GetConnectingPiece(EDGETYPE direction) const {
 	if(IsOOC(0)) return empty_track_target;
 
 	bool pointsrev = pflags & PTF_REV;
 
 	switch(direction) {
-		case TDIR_PTS_FACE:
+		case EDGE_PTS_FACE:
 			return pointsrev ? reverse : normal;
-		case TDIR_PTS_NORMAL:
+		case EDGE_PTS_NORMAL:
 			return pointsrev ? empty_track_target : prev;
-		case TDIR_PTS_REVERSE:
+		case EDGE_PTS_REVERSE:
 			return pointsrev ? prev : empty_track_target;
 		default:
 			assert(false);
@@ -274,13 +291,13 @@ const track_target_ptr & points::GetConnectingPiece(DIRTYPE direction) const {
 	}
 }
 
-unsigned int points::GetMaxConnectingPieces(DIRTYPE direction) const {
+unsigned int points::GetMaxConnectingPieces(EDGETYPE direction) const {
 	switch(direction) {
-		case TDIR_PTS_FACE:
+		case EDGE_PTS_FACE:
 			return 2;
-		case TDIR_PTS_NORMAL:
+		case EDGE_PTS_NORMAL:
 			return 1;
-		case TDIR_PTS_REVERSE:
+		case EDGE_PTS_REVERSE:
 			return 1;
 		default:
 			assert(false);
@@ -288,13 +305,13 @@ unsigned int points::GetMaxConnectingPieces(DIRTYPE direction) const {
 	}
 }
 
-const track_target_ptr & points::GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const {
+const track_target_ptr & points::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
 	switch(direction) {
-		case TDIR_PTS_FACE:
+		case EDGE_PTS_FACE:
 			return index == 1 ? reverse : normal;
-		case TDIR_PTS_NORMAL:
+		case EDGE_PTS_NORMAL:
 			return prev;
-		case TDIR_PTS_REVERSE:
+		case EDGE_PTS_REVERSE:
 			return prev;
 		default:
 			assert(false);
@@ -302,38 +319,38 @@ const track_target_ptr & points::GetConnectingPieceByIndex(DIRTYPE direction, un
 	}
 }
 
-DIRTYPE points::GetReverseDirection(DIRTYPE direction) const {
-	if(IsOOC(0)) return TDIR_NULL;
+EDGETYPE points::GetReverseDirection(EDGETYPE direction) const {
+	if(IsOOC(0)) return EDGE_NULL;
 
 	bool pointsrev = pflags & PTF_REV;
 
 	switch(direction) {
-		case TDIR_PTS_FACE:
-			return pointsrev ? TDIR_PTS_REVERSE : TDIR_PTS_NORMAL;
-		case TDIR_PTS_NORMAL:
-			return pointsrev ? TDIR_NULL : TDIR_PTS_FACE;
-		case TDIR_PTS_REVERSE:
-			return pointsrev ? TDIR_PTS_FACE : TDIR_NULL;
+		case EDGE_PTS_FACE:
+			return pointsrev ? EDGE_PTS_REVERSE : EDGE_PTS_NORMAL;
+		case EDGE_PTS_NORMAL:
+			return pointsrev ? EDGE_NULL : EDGE_PTS_FACE;
+		case EDGE_PTS_REVERSE:
+			return pointsrev ? EDGE_PTS_FACE : EDGE_NULL;
 		default:
 			assert(false);
-			return TDIR_NULL;
+			return EDGE_NULL;
 	}
 }
 
-bool points::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+bool points::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
 	switch(this_entrance_direction) {
-		case TDIR_PTS_FACE:
+		case EDGE_PTS_FACE:
 			return TryConnectPiece(prev, target_entrance);
-		case TDIR_PTS_NORMAL:
+		case EDGE_PTS_NORMAL:
 			return TryConnectPiece(normal, target_entrance);
-		case TDIR_PTS_REVERSE:
+		case EDGE_PTS_REVERSE:
 			return TryConnectPiece(reverse, target_entrance);
 		default:
 			return false;
 	}
 }
 
-unsigned int points::GetFlags(DIRTYPE direction) const {
+unsigned int points::GetFlags(EDGETYPE direction) const {
 	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
@@ -348,20 +365,20 @@ unsigned int points::SetPointFlagsMasked(unsigned int points_index, unsigned int
 	return pflags;
 }
 
-bool IsPointsRoutingDirAndIndexRev(DIRTYPE direction, unsigned int index) {
+bool IsPointsRoutingDirAndIndexRev(EDGETYPE direction, unsigned int index) {
 	switch(direction) {
-		case TDIR_PTS_FACE:
+		case EDGE_PTS_FACE:
 			return (index == 1);
-		case TDIR_PTS_NORMAL:
+		case EDGE_PTS_NORMAL:
 			return false;
-		case TDIR_PTS_REVERSE:
+		case EDGE_PTS_REVERSE:
 			return true;
 		default:
 			return false;
 	}
 }
 
-bool points::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool points::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
 	unsigned int pflags = GetPointFlags(0);
 	bool rev = pflags & PTF_REV;
 	if(pflags & (PTF_LOCKED | PTF_REMINDER)) {
@@ -370,7 +387,7 @@ bool points::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-void points::ReservationActions(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
+void points::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
 	if(rr_flags & RRF_RESERVE) {
 		bool rev = pflags & PTF_REV;
 		bool newrev = IsPointsRoutingDirAndIndexRev(direction, index);
@@ -380,14 +397,20 @@ void points::ReservationActions(DIRTYPE direction, unsigned int index, unsigned 
 	}
 }
 
-const track_target_ptr & catchpoints::GetConnectingPiece(DIRTYPE direction) const {
+EDGETYPE points::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
+	if(forwardconnection && !normal.IsValid()) return EDGE_PTS_NORMAL;
+	if(!forwardconnection && !prev.IsValid()) return EDGE_PTS_FACE;
+	return EDGE_NULL;
+}
+
+const track_target_ptr & catchpoints::GetConnectingPiece(EDGETYPE direction) const {
 	if(IsOOC(0)) return empty_track_target;
 	if(pflags & PTF_REV) return empty_track_target;
 
 	switch(direction) {
-		case TDIR_FORWARD:
+		case EDGE_FRONT:
 			return next;
-		case TDIR_REVERSE:
+		case EDGE_BACK:
 			return prev;
 		default:
 			assert(false);
@@ -395,11 +418,11 @@ const track_target_ptr & catchpoints::GetConnectingPiece(DIRTYPE direction) cons
 	}
 }
 
-unsigned int catchpoints::GetMaxConnectingPieces(DIRTYPE direction) const {
+unsigned int catchpoints::GetMaxConnectingPieces(EDGETYPE direction) const {
 	switch(direction) {
-		case TDIR_FORWARD:
+		case EDGE_FRONT:
 			return 1;
-		case TDIR_REVERSE:
+		case EDGE_BACK:
 			return 1;
 		default:
 			assert(false);
@@ -407,11 +430,11 @@ unsigned int catchpoints::GetMaxConnectingPieces(DIRTYPE direction) const {
 	}
 }
 
-const track_target_ptr & catchpoints::GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const {
+const track_target_ptr & catchpoints::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
 	switch(direction) {
-		case TDIR_FORWARD:
+		case EDGE_FRONT:
 			return next;
-		case TDIR_REVERSE:
+		case EDGE_BACK:
 			return prev;
 		default:
 			assert(false);
@@ -419,33 +442,33 @@ const track_target_ptr & catchpoints::GetConnectingPieceByIndex(DIRTYPE directio
 	}
 }
 
-DIRTYPE catchpoints::GetReverseDirection(DIRTYPE direction) const {
-	if(IsOOC(0)) return TDIR_NULL;
-	if(pflags & PTF_REV) return TDIR_NULL;
+EDGETYPE catchpoints::GetReverseDirection(EDGETYPE direction) const {
+	if(IsOOC(0)) return EDGE_NULL;
+	if(pflags & PTF_REV) return EDGE_NULL;
 
 	switch(direction) {
-		case TDIR_FORWARD:
-			return TDIR_REVERSE;
-		case TDIR_REVERSE:
-			return TDIR_FORWARD;
+		case EDGE_FRONT:
+			return EDGE_BACK;
+		case EDGE_BACK:
+			return EDGE_FRONT;
 		default:
 			assert(false);
-			return TDIR_NULL;
+			return EDGE_NULL;
 	}
 }
 
-bool catchpoints::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+bool catchpoints::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
 	switch(this_entrance_direction) {
-		case TDIR_FORWARD:
+		case EDGE_FRONT:
 			return TryConnectPiece(prev, target_entrance);
-		case TDIR_REVERSE:
+		case EDGE_BACK:
 			return TryConnectPiece(next, target_entrance);
 		default:
 			return false;
 	}
 }
 
-unsigned int catchpoints::GetFlags(DIRTYPE direction) const {
+unsigned int catchpoints::GetFlags(EDGETYPE direction) const {
 	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
@@ -460,13 +483,13 @@ unsigned int catchpoints::SetPointFlagsMasked(unsigned int points_index, unsigne
 	return pflags;
 }
 
-bool catchpoints::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool catchpoints::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
 	unsigned int pflags = GetPointFlags(0);
 	if(pflags & PTF_LOCKED && pflags & PTF_REV)  return false;
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-void catchpoints::ReservationActions(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
+void catchpoints::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
 	if(rr_flags & RRF_RESERVE) {
 		submitaction(action_pointsaction(w, *this, 0, 0, PTF_REV));
 	}
@@ -475,13 +498,19 @@ void catchpoints::ReservationActions(DIRTYPE direction, unsigned int index, unsi
 	}
 }
 
-const track_target_ptr & springpoints::GetConnectingPiece(DIRTYPE direction) const {
+EDGETYPE catchpoints::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
+	if(forwardconnection && !next.IsValid()) return EDGE_BACK;
+	if(!forwardconnection && !prev.IsValid()) return EDGE_FRONT;
+	return EDGE_NULL;
+}
+
+const track_target_ptr & springpoints::GetConnectingPiece(EDGETYPE direction) const {
 	switch(direction) {
-		case TDIR_PTS_FACE:
+		case EDGE_PTS_FACE:
 			return sendreverse ? reverse : normal;
-		case TDIR_PTS_NORMAL:
+		case EDGE_PTS_NORMAL:
 			return prev;
-		case TDIR_PTS_REVERSE:
+		case EDGE_PTS_REVERSE:
 			return prev;
 		default:
 			assert(false);
@@ -489,54 +518,60 @@ const track_target_ptr & springpoints::GetConnectingPiece(DIRTYPE direction) con
 	}
 }
 
-unsigned int springpoints::GetMaxConnectingPieces(DIRTYPE direction) const {
+unsigned int springpoints::GetMaxConnectingPieces(EDGETYPE direction) const {
 	return 1;
 }
 
-DIRTYPE springpoints::GetReverseDirection(DIRTYPE direction) const {
+EDGETYPE springpoints::GetReverseDirection(EDGETYPE direction) const {
 	switch(direction) {
-		case TDIR_PTS_FACE:
-			return sendreverse ? TDIR_PTS_REVERSE : TDIR_PTS_NORMAL;
-		case TDIR_PTS_NORMAL:
-			return TDIR_PTS_FACE;
-		case TDIR_PTS_REVERSE:
-			return TDIR_PTS_FACE;
+		case EDGE_PTS_FACE:
+			return sendreverse ? EDGE_PTS_REVERSE : EDGE_PTS_NORMAL;
+		case EDGE_PTS_NORMAL:
+			return EDGE_PTS_FACE;
+		case EDGE_PTS_REVERSE:
+			return EDGE_PTS_FACE;
 		default:
 			assert(false);
-			return TDIR_NULL;
+			return EDGE_NULL;
 	}
 }
 
-bool springpoints::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+bool springpoints::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
 	switch(this_entrance_direction) {
-		case TDIR_PTS_FACE:
+		case EDGE_PTS_FACE:
 			return TryConnectPiece(prev, target_entrance);
-		case TDIR_PTS_NORMAL:
+		case EDGE_PTS_NORMAL:
 			return TryConnectPiece(normal, target_entrance);
-		case TDIR_PTS_REVERSE:
+		case EDGE_PTS_REVERSE:
 			return TryConnectPiece(reverse, target_entrance);
 		default:
 			return false;
 	}
 }
 
-unsigned int springpoints::GetFlags(DIRTYPE direction) const {
+unsigned int springpoints::GetFlags(EDGETYPE direction) const {
 	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-bool springpoints::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool springpoints::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-const track_target_ptr & crossover::GetConnectingPiece(DIRTYPE direction) const {
+EDGETYPE springpoints::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
+	if(forwardconnection && !normal.IsValid()) return EDGE_PTS_NORMAL;
+	if(!forwardconnection && !prev.IsValid()) return EDGE_PTS_FACE;
+	return EDGE_NULL;
+}
+
+const track_target_ptr & crossover::GetConnectingPiece(EDGETYPE direction) const {
 	switch(direction) {
-		case TDIR_X_N:
+		case EDGE_X_N:
 			return north;
-		case TDIR_X_S:
+		case EDGE_X_S:
 			return south;
-		case TDIR_X_W:
+		case EDGE_X_W:
 			return west;
-		case TDIR_X_E:
+		case EDGE_X_E:
 			return east;
 		default:
 			assert(false);
@@ -544,101 +579,101 @@ const track_target_ptr & crossover::GetConnectingPiece(DIRTYPE direction) const 
 	}
 }
 
-unsigned int crossover::GetMaxConnectingPieces(DIRTYPE direction) const {
+unsigned int crossover::GetMaxConnectingPieces(EDGETYPE direction) const {
 	return 1;
 }
 
-DIRTYPE crossover::GetReverseDirection(DIRTYPE direction) const {
+EDGETYPE crossover::GetReverseDirection(EDGETYPE direction) const {
 	switch(direction) {
-		case TDIR_X_N:
-			return TDIR_X_S;
-		case TDIR_X_S:
-			return TDIR_X_N;
-		case TDIR_X_W:
-			return TDIR_X_E;
-		case TDIR_X_E:
-			return TDIR_X_W;
+		case EDGE_X_N:
+			return EDGE_X_S;
+		case EDGE_X_S:
+			return EDGE_X_N;
+		case EDGE_X_W:
+			return EDGE_X_E;
+		case EDGE_X_E:
+			return EDGE_X_W;
 		default:
 			assert(false);
-			return TDIR_NULL;
+			return EDGE_NULL;
 	}
 }
 
-bool crossover::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+bool crossover::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
 	switch(this_entrance_direction) {
-		case TDIR_X_N:
+		case EDGE_X_N:
 			return TryConnectPiece(north, target_entrance);
-		case TDIR_X_S:
+		case EDGE_X_S:
 			return TryConnectPiece(south, target_entrance);
-		case TDIR_X_W:
+		case EDGE_X_W:
 			return TryConnectPiece(west, target_entrance);
-		case TDIR_X_E:
+		case EDGE_X_E:
 			return TryConnectPiece(east, target_entrance);
 		default:
 			return false;
 	}
 }
 
-unsigned int crossover::GetFlags(DIRTYPE direction) const {
+unsigned int crossover::GetFlags(EDGETYPE direction) const {
 	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-bool crossover::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool crossover::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-const track_target_ptr & doubleslip::GetConnectingPiece(DIRTYPE direction) const {
-	DIRTYPE exitdirection = GetReverseDirection(direction);
+const track_target_ptr & doubleslip::GetConnectingPiece(EDGETYPE direction) const {
+	EDGETYPE exitdirection = GetReverseDirection(direction);
 
-	if(exitdirection != TDIR_NULL) return GetInputPiece(exitdirection);
+	if(exitdirection != EDGE_NULL) return GetInputPiece(exitdirection);
 	else return empty_track_target;
 }
 
-unsigned int doubleslip::GetMaxConnectingPieces(DIRTYPE direction) const {
+unsigned int doubleslip::GetMaxConnectingPieces(EDGETYPE direction) const {
 	switch(direction) {
-		case TDIR_DS_FL:
-			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_RR | DSF_NO_FL_RL));
-		case TDIR_DS_FR:
-			return 2 - __builtin_popcount(dsflags&(DSF_NO_FR_RR | DSF_NO_FR_RL));
-		case TDIR_DS_RL:
-			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_RL | DSF_NO_FR_RL));
-		case TDIR_DS_RR:
-			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_RR | DSF_NO_FR_RR));
+		case EDGE_DS_FL:
+			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_BL | DSF_NO_FL_BR));
+		case EDGE_DS_FR:
+			return 2 - __builtin_popcount(dsflags&(DSF_NO_FR_BL | DSF_NO_FR_BR));
+		case EDGE_DS_BR:
+			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_BR | DSF_NO_FR_BR));
+		case EDGE_DS_BL:
+			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_BL | DSF_NO_FR_BL));
 		default:
 			assert(false);
 			return 0;
 	}
 }
 
-const track_target_ptr & doubleslip::GetConnectingPieceByIndex(DIRTYPE direction, unsigned int index) const {
+const track_target_ptr & doubleslip::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
 	unsigned int pf = GetCurrentPointFlags(direction);
 	bool isrev = (pf & PTF_FIXED) ? (pf & PTF_REV) : index;
 
-	DIRTYPE exitdirection = GetConnectingPointDirection(direction, isrev);
+	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isrev);
 	return GetInputPiece(exitdirection);
 }
 
-DIRTYPE doubleslip::GetReverseDirection(DIRTYPE direction) const {
+EDGETYPE doubleslip::GetReverseDirection(EDGETYPE direction) const {
 	unsigned int pf = GetCurrentPointFlags(direction);
-	if(IsFlagsOOC(pf)) return TDIR_NULL;
+	if(IsFlagsOOC(pf)) return EDGE_NULL;
 
-	DIRTYPE exitdirection = GetConnectingPointDirection(direction, pf & PTF_REV);
+	EDGETYPE exitdirection = GetConnectingPointDirection(direction, pf & PTF_REV);
 	unsigned int exitpf = GetCurrentPointFlags(exitdirection);
-	if(IsFlagsOOC(exitpf)) return TDIR_NULL;
+	if(IsFlagsOOC(exitpf)) return EDGE_NULL;
 
 	if(GetConnectingPointDirection(exitdirection, exitpf & PTF_REV) == direction) {
 		return exitdirection;
 	}
-	else return TDIR_NULL;
+	else return EDGE_NULL;
 }
 
-bool doubleslip::HalfConnect(DIRTYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+bool doubleslip::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
 	track_target_ptr &piece = GetInputPiece(this_entrance_direction);
 	if(piece.IsValid()) return TryConnectPiece(piece, target_entrance);
 	else return false;
 }
 
-unsigned int doubleslip::GetFlags(DIRTYPE direction) const {
+unsigned int doubleslip::GetFlags(EDGETYPE direction) const {
 	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
@@ -675,14 +710,14 @@ unsigned int doubleslip::SetPointFlagsMasked(unsigned int points_index, unsigned
 	}
 }
 
-bool doubleslip::Reservation(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool doubleslip::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
 	unsigned int pf = GetCurrentPointFlags(direction);
 	if(pf & PTF_LOCKED) {
 		if(!(pf & PTF_REV) != !index) return false;	//points locked in wrong direction
 	}
 
 	bool isrev = (pf & PTF_FIXED) ? (pf & PTF_REV) : index;
-	DIRTYPE exitdirection = GetConnectingPointDirection(direction, isrev);
+	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isrev);
 	unsigned int exitpf = GetCurrentPointFlags(exitdirection);
 	bool exitpointsrev = (GetConnectingPointDirection(exitdirection, true) == direction);
 
@@ -693,17 +728,17 @@ bool doubleslip::Reservation(DIRTYPE direction, unsigned int index, unsigned int
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-void doubleslip::ReservationActions(DIRTYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
+void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
 	if(rr_flags & RRF_RESERVE) {
 		unsigned int entranceindex = GetCurrentPointIndex(direction);
 		unsigned int entrancepf = GetCurrentPointFlags(direction);
 		bool isentrancerev = (entrancepf & PTF_FIXED) ? (entrancepf & PTF_REV) : index;
 
-		DIRTYPE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
+		EDGETYPE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
 
 		unsigned int exitindex = GetCurrentPointIndex(exitdirection);
 		unsigned int exitpf = GetCurrentPointFlags(exitdirection);
-		
+
 		bool isexitrev = (GetConnectingPointDirection(exitdirection, true) == direction);
 
 		if(!(entrancepf & PTF_REV) != !(isentrancerev)) submitaction(action_pointsaction(w, *this, entranceindex, isentrancerev ? PTF_REV : 0, PTF_REV));
@@ -723,7 +758,7 @@ error_trackconnection_notfound::error_trackconnection_notfound(const track_targe
 	msg << "Track Connection Error: Could Not Connect: " << targ1 << " to Unfound Target:" << targ2;
 }
 
-bool track_reservation_state::Reservation(DIRTYPE in_dir, unsigned int in_index, unsigned int in_rr_flags, route *resroute) {
+bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, unsigned int in_rr_flags, route *resroute) {
 	if(in_rr_flags & (RRF_RESERVE | RRF_TRYRESERVE)) {
 		if(rr_flags & RRF_RESERVE) {	//track already reserved
 			if(direction != in_dir || index != in_index) return false;	//reserved piece doesn't match
@@ -740,7 +775,7 @@ bool track_reservation_state::Reservation(DIRTYPE in_dir, unsigned int in_index,
 		if(rr_flags & RRF_RESERVE) {
 			if(direction != in_dir || index != in_index) return false;	//reserved piece doesn't match
 			rr_flags = 0;
-			direction = TDIR_NULL;
+			direction = EDGE_NULL;
 			index = 0;
 			reserved_route = 0;
 		}
@@ -749,7 +784,7 @@ bool track_reservation_state::Reservation(DIRTYPE in_dir, unsigned int in_index,
 	else return false;
 }
 
-unsigned int track_reservation_state::GetGTReservationFlags(DIRTYPE checkdirection) const {
+unsigned int track_reservation_state::GetGTReservationFlags(EDGETYPE checkdirection) const {
 	unsigned int outputflags = 0;
 	if(rr_flags & RRF_RESERVE) {
 		outputflags |= generictrack::GTF_ROUTESET;
@@ -775,41 +810,41 @@ std::ostream& operator<<(std::ostream& os, const track_location& obj) {
 }
 
 struct direction_name {
-	DIRTYPE dir;
+	EDGETYPE dir;
 	const std::string serialname;
 	const std::string friendlyname;
 };
 
 const direction_name dirnames[] = {
-	{ TDIR_NULL, "nulldirection", "Null direction" },
-	{ TDIR_FORWARD, "forward", "Forward direction" },
-	{ TDIR_REVERSE, "reverse", "Reverse direction" },
-	{ TDIR_PTS_FACE, "facing", "Points: facing input direction" },
-	{ TDIR_PTS_NORMAL, "normal", "Points: facing input direction" },
-	{ TDIR_PTS_REVERSE, "reverse", "Points: reverse input direction" },
-	{ TDIR_X_N, "north", "Cross-over: North face input direction" },
-	{ TDIR_X_S, "south", "Cross-over: South face input direction" },
-	{ TDIR_X_W, "west", "Cross-over: West face input direction" },
-	{ TDIR_X_E, "east", "Cross-over: East face input direction" },
-	{ TDIR_DS_FL, "leftforward", "Double-slip: Forward direction: Left track" },
-	{ TDIR_DS_FR, "rightforward", "Double-slip: Forward direction: Right track" },
-	{ TDIR_DS_RL, "leftreverse", "Double-slip: Reverse direction: Left track" },
-	{ TDIR_DS_RR, "rightreverse", "Double-slip: Reverse direction: Right track" },
+	{ EDGE_NULL, "nulledge", "Null direction/edge" },
+	{ EDGE_FRONT, "front", "Front edge/Forward direction" },
+	{ EDGE_BACK, "back", "Back edge/Reverse direction" },
+	{ EDGE_PTS_FACE, "facing", "Points: facing edge/input direction" },
+	{ EDGE_PTS_NORMAL, "normal", "Points: facing edge/input direction" },
+	{ EDGE_PTS_REVERSE, "reverse", "Points: reverse edge/input direction" },
+	{ EDGE_X_N, "north", "Cross-over: North edge/input direction" },
+	{ EDGE_X_S, "south", "Cross-over: South edge/input direction" },
+	{ EDGE_X_W, "west", "Cross-over: West edge/input direction" },
+	{ EDGE_X_E, "east", "Cross-over: East edge/input direction" },
+	{ EDGE_DS_FL, "leftfront", "Double-slip: Forward direction: Front edge: Left track" },
+	{ EDGE_DS_FR, "rightfront", "Double-slip: Forward direction: Front edge: Right track" },
+	{ EDGE_DS_BL, "leftreverse", "Double-slip: Reverse direction: Back edge: Right track (seen from front)" },
+	{ EDGE_DS_BR, "rightreverse", "Double-slip: Reverse direction: Back edge: Left track (seen from front)" },
 };
 
-std::ostream& operator<<(std::ostream& os, const DIRTYPE& obj) {
+std::ostream& operator<<(std::ostream& os, const EDGETYPE& obj) {
 	const direction_name &dirname = dirnames[obj];
 	if(dirname.dir != obj) assert(false);
 	os << dirname.friendlyname;
 	return os;
 }
-const char * SerialiseDirectionName(const DIRTYPE& obj) {
+const char * SerialiseDirectionName(const EDGETYPE& obj) {
 	const direction_name &dirname = dirnames[obj];
 	if(dirname.dir != obj) assert(false);
 	return dirname.serialname.c_str();
 }
 
-bool DeserialiseDirectionName(DIRTYPE& obj, const char *dirname) {
+bool DeserialiseDirectionName(EDGETYPE& obj, const char *dirname) {
 	for(unsigned int i = 0; i < sizeof(dirnames)/sizeof(direction_name); i++) {
 		if(strcmp(dirname, dirnames[i].serialname.c_str()) == 0) {
 			obj = dirnames[i].dir;
