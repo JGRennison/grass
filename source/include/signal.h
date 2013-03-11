@@ -135,6 +135,7 @@ class trackroutingpoint : public routingpoint {
 	
 	protected:
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
 };
 
 class genericsignal : public trackroutingpoint {

@@ -29,6 +29,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <initializer_list>
 
 const track_location empty_track_location;
 const track_target_ptr empty_track_target;
@@ -99,14 +100,31 @@ bool generictrack::FullConnect(EDGETYPE this_entrance_direction, const track_tar
 	}
 }
 
+class error_track_unconnected : public layout_initialisation_error_obj {
+	public:
+	error_track_unconnected(const track_target_ptr &edge) {
+		msg << "Track edge unconnected: " << edge;
+	}
+};
+
 bool generictrack::PostLayoutInit(error_collection &ec) {
 	if(prevtrack) {
 		EDGETYPE prevedge = prevtrack->GetAvailableAutoConnectionDirection(!(prevtrack->gt_flags & GTF_REVERSEAUTOCONN));
 		EDGETYPE thisedge = GetAvailableAutoConnectionDirection(gt_flags & GTF_REVERSEAUTOCONN);
 		if(prevedge != EDGE_NULL && thisedge != EDGE_NULL) {
-			return FullConnect(thisedge, track_target_ptr(prevtrack, prevedge), ec);
+			if(!FullConnect(thisedge, track_target_ptr(prevtrack, prevedge), ec)) return false;
 		}
 	}
+	
+	std::vector<edgelistitem> edgelist;
+	GetListOfEdges(edgelist);
+	for(auto it = edgelist.begin(); it != edgelist.end(); ++it) {
+		if(! it->target->IsValid()) {
+			ec.RegisterError(std::unique_ptr<error_obj>(new error_track_unconnected(track_target_ptr(this, it->edge))));
+			return false;
+		}
+	}
+	
 	return true;
 }
 
@@ -245,6 +263,10 @@ EDGETYPE trackseg::GetAvailableAutoConnectionDirection(bool forwardconnection) c
 	if(forwardconnection && !next.IsValid()) return EDGE_BACK;
 	if(!forwardconnection && !prev.IsValid()) return EDGE_FRONT;
 	return EDGE_NULL;
+}
+
+void trackseg::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
+	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_BACK, next), edgelistitem(EDGE_FRONT, prev) });
 }
 
 unsigned int genericzlentrack::GetStartOffset(EDGETYPE direction) const {
@@ -403,6 +425,10 @@ EDGETYPE points::GetAvailableAutoConnectionDirection(bool forwardconnection) con
 	return EDGE_NULL;
 }
 
+void points::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
+	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_PTS_FACE, prev), edgelistitem(EDGE_PTS_NORMAL, normal), edgelistitem(EDGE_PTS_REVERSE, reverse) });
+}
+
 const track_target_ptr & catchpoints::GetConnectingPiece(EDGETYPE direction) const {
 	if(IsOOC(0)) return empty_track_target;
 	if(pflags & PTF_REV) return empty_track_target;
@@ -504,6 +530,10 @@ EDGETYPE catchpoints::GetAvailableAutoConnectionDirection(bool forwardconnection
 	return EDGE_NULL;
 }
 
+void catchpoints::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
+	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_BACK, next), edgelistitem(EDGE_FRONT, prev) });
+}
+
 const track_target_ptr & springpoints::GetConnectingPiece(EDGETYPE direction) const {
 	switch(direction) {
 		case EDGE_PTS_FACE:
@@ -563,6 +593,10 @@ EDGETYPE springpoints::GetAvailableAutoConnectionDirection(bool forwardconnectio
 	return EDGE_NULL;
 }
 
+void springpoints::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
+	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_PTS_FACE, prev), edgelistitem(EDGE_PTS_NORMAL, normal), edgelistitem(EDGE_PTS_REVERSE, reverse) });
+}
+
 const track_target_ptr & crossover::GetConnectingPiece(EDGETYPE direction) const {
 	switch(direction) {
 		case EDGE_X_N:
@@ -620,6 +654,10 @@ unsigned int crossover::GetFlags(EDGETYPE direction) const {
 
 bool crossover::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
+}
+
+void crossover::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
+	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_X_N, north), edgelistitem(EDGE_X_S, south), edgelistitem(EDGE_X_W, west), edgelistitem(EDGE_X_E, east) });
 }
 
 const track_target_ptr & doubleslip::GetConnectingPiece(EDGETYPE direction) const {
@@ -744,6 +782,10 @@ void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, unsi
 		if(!(entrancepf & PTF_REV) != !(isentrancerev)) submitaction(action_pointsaction(w, *this, entranceindex, isentrancerev ? PTF_REV : 0, PTF_REV));
 		if(!(exitpf & PTF_REV) != !(isexitrev)) submitaction(action_pointsaction(w, *this, exitindex, isexitrev ? PTF_REV : 0, PTF_REV));
 	}
+}
+
+void doubleslip::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
+	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_DS_FL, frontleft), edgelistitem(EDGE_DS_FR, frontright), edgelistitem(EDGE_DS_BR, backright), edgelistitem(EDGE_DS_BL, backleft) });
 }
 
 layout_initialisation_error_obj::layout_initialisation_error_obj() {

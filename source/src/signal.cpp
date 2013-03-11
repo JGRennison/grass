@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <iterator>
 #include <cassert>
+#include <initializer_list>
 
 class error_signalinit : public layout_initialisation_error_obj {
 	public:
@@ -90,6 +91,10 @@ EDGETYPE trackroutingpoint::GetAvailableAutoConnectionDirection(bool forwardconn
 	if(forwardconnection && !next.IsValid()) return EDGE_BACK;
 	if(!forwardconnection && !prev.IsValid()) return EDGE_FRONT;
 	return EDGE_NULL;
+}
+
+void trackroutingpoint::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
+	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_BACK, next), edgelistitem(EDGE_FRONT, prev) });
 }
 
 void genericsignal::TrainEnter(EDGETYPE direction, train *t) { }

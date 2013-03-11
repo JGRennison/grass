@@ -28,6 +28,7 @@
 #include <string>
 #include <iostream>
 #include <array>
+#include <vector>
 #include <limits.h>
 
 #include "world_obj.h"
@@ -109,7 +110,7 @@ struct track_reservation_state : public serialisable_obj {
 class generictrack : public world_obj {
 	generictrack *prevtrack;
 	unsigned int gt_flags;
-	
+
 	enum {
 		GTF_REVERSEAUTOCONN	= 0<<1,
 	};
@@ -170,6 +171,14 @@ class generictrack : public world_obj {
 	virtual bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) = 0;
 	static bool TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target);
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const = 0;
+	
+	struct edgelistitem {
+		EDGETYPE edge;
+		const track_target_ptr *target;
+		edgelistitem(EDGETYPE e, const track_target_ptr &t) : edge(e), target(&t) { }
+		edgelistitem(const edgelistitem &in) : edge(in.edge), target(in.target) { }
+	};
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const = 0;
 };
 
 template <typename T> struct vartrack_target_ptr {
@@ -301,6 +310,7 @@ class trackseg : public generictrack {
 	protected:
 	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
 };
 
 class genericzlentrack : public generictrack {
@@ -381,6 +391,7 @@ class points : public genericpoints {
 	protected:
 	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
 };
 
 class catchpoints : public genericpoints {
@@ -416,6 +427,7 @@ class catchpoints : public genericpoints {
 	protected:
 	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
 };
 
 class springpoints : public genericzlentrack {
@@ -452,6 +464,7 @@ class springpoints : public genericzlentrack {
 	protected:
 	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
 };
 
 class crossover : public genericzlentrack {
@@ -485,13 +498,14 @@ class crossover : public genericzlentrack {
 	protected:
 	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const { return EDGE_NULL; }
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
 };
 
 class doubleslip : public genericpoints {
-	track_target_ptr forwardleftinput;
-	track_target_ptr forwardrightinput;
-	track_target_ptr reverseleftinput;
-	track_target_ptr reverserightinput;
+	track_target_ptr frontleft;
+	track_target_ptr frontright;
+	track_target_ptr backright;
+	track_target_ptr backleft;
 	unsigned int pflags[4] = { 0, 0, 0, 0 };
 	track_reservation_state trs;
 	unsigned int dof = 2;
@@ -546,13 +560,13 @@ class doubleslip : public genericpoints {
 	inline track_target_ptr &GetInputPiece(EDGETYPE direction) {
 		switch(direction) {
 			case EDGE_DS_FL:
-				return forwardleftinput;
+				return frontleft;
 			case EDGE_DS_FR:
-				return forwardrightinput;
+				return frontright;
 			case EDGE_DS_BR:
-				return reverseleftinput;
+				return backright;
 			case EDGE_DS_BL:
-				return reverserightinput;
+				return backleft;
 			default:
 				return const_cast<track_target_ptr &>(empty_track_target);
 		}
@@ -586,6 +600,7 @@ class doubleslip : public genericpoints {
 	protected:
 	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const { return EDGE_NULL; }
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
 };
 
 class layout_initialisation_error_obj : public error_obj {
