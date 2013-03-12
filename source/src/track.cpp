@@ -738,6 +738,8 @@ unsigned int doubleslip::SetPointFlagsMasked(unsigned int points_index, unsigned
 			if(!(flagsvar & PTF_FIXED)) flagsvar = (newflags & PTF_SERIALISABLE) | (flagsvar & ~PTF_SERIALISABLE);
 		};
 
+		if(pflags[points_index] & PTF_FIXED) return pflags[points_index];
+		
 		unsigned int newpointsflags = (pflags[points_index] & (~mask_flags)) | set_flags;
 		if(dof == 1) {
 			safe_set(pflags[0], newpointsflags);
@@ -795,6 +797,33 @@ void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, unsi
 
 void doubleslip::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_DS_FL, frontleft), edgelistitem(EDGE_DS_FR, frontright), edgelistitem(EDGE_DS_BR, backright), edgelistitem(EDGE_DS_BL, backleft) });
+}
+
+void doubleslip::UpdatePointsFixedStatesFromMissingTrackEdges() {
+	auto fixpoints = [&](EDGETYPE direction1, bool reverse1, EDGETYPE direction2, bool reverse2) {
+		auto fixpoints2 = [&](EDGETYPE direction, bool reverse) {
+			GetCurrentPointFlags(direction) |= PTF_FIXED;
+			GetCurrentPointFlags(direction) &= ~ PTF_REV;
+			GetCurrentPointFlags(direction) |= reverse ? PTF_REV : 0;
+		};
+		fixpoints2(direction1, reverse1);
+		fixpoints2(direction2, reverse2);
+	};
+	
+	switch(dsflags&DSF_NO_TRACK_MASK) {
+		case DSF_NO_FL_BL:
+			fixpoints(EDGE_DS_FL, false, EDGE_DS_BL, false);
+			break;
+		case DSF_NO_FR_BL:
+			fixpoints(EDGE_DS_FR, true, EDGE_DS_BL, true);
+			break;
+		case DSF_NO_FL_BR:
+			fixpoints(EDGE_DS_FL, true, EDGE_DS_BR, true);
+			break;
+		case DSF_NO_FR_BR:
+			fixpoints(EDGE_DS_FR, false, EDGE_DS_BR, false);
+			break;
+	}
 }
 
 layout_initialisation_error_obj::layout_initialisation_error_obj() {

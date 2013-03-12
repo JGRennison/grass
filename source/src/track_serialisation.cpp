@@ -181,6 +181,18 @@ void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec)
 			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid double slip degrees of freedom: " + std::to_string(dof))));
 		}
 	}
+	
+	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_BL, di, "notrack_fl_bl", ec);
+	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_BL, di, "notrack_fr_bl", ec);
+	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_BR, di, "notrack_fl_br", ec);
+	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_BR, di, "notrack_fr_br", ec);
+	
+	if(__builtin_popcount(dsflags&DSF_NO_TRACK_MASK) >= 2) {
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Cannot remove more than one track edge from a double-slip, use points or a crossover instead")));
+		return;
+	}
+	
+	UpdatePointsFixedStatesFromMissingTrackEdges();
 
 	auto deserialisepointsflags = [&](EDGETYPE direction, const char *prop) {
 		unsigned int pf = GetCurrentPointFlags(direction);
@@ -188,17 +200,10 @@ void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec)
 		CheckTransJsonSubObj(ps, di, prop, "", ec);
 		SetPointFlagsMasked(GetCurrentPointIndex(direction), pf, genericpoints::PTF_SERIALISABLE);
 	};
-	deserialisepointsflags(EDGE_DS_FL, "forwardleftpoints");
-	deserialisepointsflags(EDGE_DS_BR, "reverseleftpoints");
-	deserialisepointsflags(EDGE_DS_FR, "forwardrightpoints");
-	deserialisepointsflags(EDGE_DS_BL, "reverserightpoints");
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_BL, di, "notrack_fl_bl", ec);
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_BL, di, "notrack_fr_bl", ec);
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_BR, di, "notrack_fl_br", ec);
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_BR, di, "notrack_fr_br", ec);
-	if(__builtin_popcount(dsflags) >= 2) {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Cannot remove more than one track edge from a double-slip, use points or a crossover instead")));
-	}
+	deserialisepointsflags(EDGE_DS_FL, "leftfrontpoints");
+	deserialisepointsflags(EDGE_DS_FR, "rightfrontpoints");
+	deserialisepointsflags(EDGE_DS_BR, "rightbackpoints");
+	deserialisepointsflags(EDGE_DS_BL, "leftbackpoints");
 }
 
 void doubleslip::Serialise(serialiser_output &so, error_collection &ec) const {

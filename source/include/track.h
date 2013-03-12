@@ -506,7 +506,11 @@ class crossover : public genericzlentrack {
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
 };
 
+class test_doubleslip;
+
 class doubleslip : public genericpoints {
+	friend test_doubleslip;
+
 	track_target_ptr frontleft;
 	track_target_ptr frontright;
 	track_target_ptr backright;
@@ -522,7 +526,9 @@ class doubleslip : public genericpoints {
 		DSF_NO_FR_BL	= 1<<1,
 		DSF_NO_FL_BR	= 1<<2,
 		DSF_NO_FR_BR	= 1<<3,
+		DSF_NO_TRACK_MASK = DSF_NO_FL_BL | DSF_NO_FR_BL | DSF_NO_FL_BR | DSF_NO_FR_BR,
 	};
+	void UpdatePointsFixedStatesFromMissingTrackEdges();
 
 	inline unsigned int GetCurrentPointIndex(EDGETYPE direction) const {
 		switch(direction) {

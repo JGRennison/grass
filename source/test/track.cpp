@@ -286,3 +286,114 @@ TEST_CASE( "track/deserialisation/autoname", "Test deserialisation automatic nam
 	trackseg *p = dynamic_cast<trackseg *>(env.w.FindTrackByName("#1"));
 	REQUIRE(p != 0);
 }
+
+std::string track_test_str_ds =
+R"({ "content" : [ )"
+	R"({ "type" : "doubleslip", "name" : "DS1" }, )"
+	R"({ "type" : "doubleslip", "name" : "DS2", "degreesoffreedom" : 1 }, )"
+	R"({ "type" : "doubleslip", "name" : "DS3", "degreesoffreedom" : 2 }, )"
+	R"({ "type" : "doubleslip", "name" : "DS4", "degreesoffreedom" : 4 }, )"
+	R"({ "type" : "doubleslip", "name" : "DS5", "notrack_fl_bl" : true }, )"
+	R"({ "type" : "doubleslip", "name" : "DS6", "notrack_fl_br" : true, "rightfrontpoints" : { "reverse" : true } }, )"
+	R"({ "type" : "doubleslip", "name" : "DS7", "notrack_fr_br" : true, "degreesoffreedom" : 1, "leftfrontpoints" : { "reverse" : true } }, )"
+	R"({ "type" : "doubleslip", "name" : "DS8", "notrack_fr_bl" : true, "degreesoffreedom" : 4 }, )"
+	R"({ "type" : "doubleslip", "name" : "DS9", "degreesoffreedom" : 1, "leftbackpoints" : { "locked" : true, "reverse" : true } }, )"
+	R"({ "type" : "endofline", "name" : "FL" }, )"
+	R"({ "type" : "endofline", "name" : "FR" }, )"
+	R"({ "type" : "endofline", "name" : "BL" }, )"
+	R"({ "type" : "endofline", "name" : "BR" } )"
+"] }";
+
+TEST_CASE( "track/deserialisation/doubleslip", "Test basic doubleslip deserialisation" ) {
+	test_fixture_world env(track_test_str_ds);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	auto checkds = [&](const char *name, unsigned int pffl, unsigned int pffr, unsigned int pfbl, unsigned int pfbr) {
+		SCOPED_INFO("Double-slip check for: " << name);
+
+		doubleslip *ds = dynamic_cast<doubleslip *>(env.w.FindTrackByName(name));
+		REQUIRE(ds != 0);
+		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_FL) == pffl);
+		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_FR) == pffr);
+		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_BL) == pfbl);
+		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_BR) == pfbr);
+	};
+
+	checkds("DS1", 0, points::PTF_REV, points::PTF_REV, 0);
+	checkds("DS2", 0, 0, 0, 0);
+	checkds("DS3", 0, points::PTF_REV, points::PTF_REV, 0);
+	checkds("DS4", 0, 0, 0, 0);
+	checkds("DS5", points::PTF_FIXED, 0, points::PTF_FIXED, 0);
+	checkds("DS6", points::PTF_FIXED | points::PTF_REV, points::PTF_REV, 0, points::PTF_FIXED | points::PTF_REV);
+	checkds("DS7", points::PTF_REV, points::PTF_FIXED, points::PTF_REV, points::PTF_FIXED);
+	checkds("DS8", 0, points::PTF_FIXED | points::PTF_REV, points::PTF_FIXED | points::PTF_REV, 0);
+	checkds("DS9", points::PTF_LOCKED | points::PTF_REV, points::PTF_LOCKED | points::PTF_REV, points::PTF_LOCKED | points::PTF_REV, points::PTF_LOCKED | points::PTF_REV);
+
+}
+
+class test_doubleslip {
+	public:
+	static inline bool HalfConnect(doubleslip *ds, EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+		return ds->HalfConnect(this_entrance_direction, target_entrance);
+	}
+	static inline unsigned int GetCurrentPointIndex(doubleslip *ds, EDGETYPE direction) {
+		return ds->GetCurrentPointIndex(direction);
+	}
+};
+
+TEST_CASE( "track/conn/doubleslip", "Test basic doubleslip connectivity" ) {
+	test_fixture_world env(track_test_str_ds);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	generictrack *fl = env.w.FindTrackByName("FL");
+	generictrack *fr = env.w.FindTrackByName("FR");
+	generictrack *bl = env.w.FindTrackByName("BL");
+	generictrack *br = env.w.FindTrackByName("BR");
+
+	auto checkdstraverse = [&](const char *name, generictrack *flt, generictrack *frt, generictrack *blt, generictrack *brt) {
+		SCOPED_INFO("Double-slip check for: " << name);
+
+		doubleslip *ds = dynamic_cast<doubleslip *>(env.w.FindTrackByName(name));
+		REQUIRE(ds != 0);
+
+		REQUIRE(test_doubleslip::HalfConnect(ds, EDGE_DS_FL, track_target_ptr(fl, EDGE_FRONT)) == true);
+		REQUIRE(test_doubleslip::HalfConnect(ds, EDGE_DS_FR, track_target_ptr(fr, EDGE_FRONT)) == true);
+		REQUIRE(test_doubleslip::HalfConnect(ds, EDGE_DS_BL, track_target_ptr(bl, EDGE_FRONT)) == true);
+		REQUIRE(test_doubleslip::HalfConnect(ds, EDGE_DS_BR, track_target_ptr(br, EDGE_FRONT)) == true);
+		REQUIRE(ds->GetConnectingPiece(EDGE_DS_FL).track == flt);
+		REQUIRE(ds->GetConnectingPiece(EDGE_DS_FR).track == frt);
+		REQUIRE(ds->GetConnectingPiece(EDGE_DS_BL).track == blt);
+		REQUIRE(ds->GetConnectingPiece(EDGE_DS_BR).track == brt);
+	};
+
+	auto dsmovepoints = [&](const char *name, EDGETYPE direction, bool rev) {
+		SCOPED_INFO("Double-slip check for: " << name);
+
+		doubleslip *ds = dynamic_cast<doubleslip *>(env.w.FindTrackByName(name));
+		REQUIRE(ds != 0);
+
+		ds->SetPointFlagsMasked(test_doubleslip::GetCurrentPointIndex(ds, direction), rev ? genericpoints::PTF_REV : 0, genericpoints::PTF_REV);
+	};
+
+	checkdstraverse("DS1", br, 0, 0, fl);
+	checkdstraverse("DS2", br, bl, fr, fl);
+	dsmovepoints("DS2", EDGE_DS_FL, true);
+	checkdstraverse("DS2", bl, br, fl, fr);
+	checkdstraverse("DS3", br, 0, 0, fl);
+	dsmovepoints("DS3", EDGE_DS_FL, true);
+	checkdstraverse("DS3", bl, 0, fl, 0);
+	checkdstraverse("DS4", br, bl, fr, fl);
+	dsmovepoints("DS4", EDGE_DS_FL, true);
+	checkdstraverse("DS4", 0, bl, fr, 0);
+	checkdstraverse("DS5", br, bl, fr, fl);
+	checkdstraverse("DS6", 0, br, 0, fr);
+	checkdstraverse("DS7", bl, 0, fl, 0);
+	dsmovepoints("DS7", EDGE_DS_FL, false);
+	checkdstraverse("DS7", br, bl, fr, fl);
+	checkdstraverse("DS8", br, 0, 0, fl);
+	checkdstraverse("DS9", bl, br, fl, fr);
+}
