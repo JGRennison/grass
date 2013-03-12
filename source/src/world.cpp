@@ -45,7 +45,7 @@ void world::ConnectTrack(generictrack *track1, EDGETYPE dir1, std::string name2,
 	}
 }
 
-void world::ConnectAllPiecesInit(error_collection &ec) {
+void world::LayoutInit(error_collection &ec) {
 	for(auto it = connection_forward_declarations.begin(); it != connection_forward_declarations.end(); ++it) {
 		auto target_it = all_pieces.find(it->name2);
 		if(target_it == all_pieces.end()) {
@@ -54,6 +54,12 @@ void world::ConnectAllPiecesInit(error_collection &ec) {
 		else {
 			it->track1->FullConnect(it->dir1, track_target_ptr(target_it->second.get(), it->dir2), ec);
 		}
+	}
+	for(auto it = all_pieces.begin(); it != all_pieces.end(); ++it) {
+		it->second->AutoConnections(ec);
+	}
+	for(auto it = all_pieces.begin(); it != all_pieces.end(); ++it) {
+		it->second->CheckUnconnectedEdges(ec);
 	}
 }
 

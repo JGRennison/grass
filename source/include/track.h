@@ -95,10 +95,10 @@ enum {
 };
 
 struct track_reservation_state : public serialisable_obj {
-	route *reserved_route;
-	EDGETYPE direction;
-	unsigned int index;
-	unsigned int rr_flags;
+	route *reserved_route = 0;
+	EDGETYPE direction = EDGE_NULL;
+	unsigned int index = 0;
+	unsigned int rr_flags = 0;
 
 	bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
 	unsigned int GetGTReservationFlags(EDGETYPE direction) const;
@@ -112,7 +112,7 @@ class generictrack : public world_obj {
 	unsigned int gt_flags;
 
 	enum {
-		GTF_REVERSEAUTOCONN	= 0<<1,
+		GTF_REVERSEAUTOCONN	= 1<<0,
 	};
 
 	friend world_serialisation;
@@ -154,6 +154,8 @@ class generictrack : public world_obj {
 	virtual generictrack & SetTrackCircuit(track_circuit *tc);
 
 	virtual bool PostLayoutInit(error_collection &ec);	//return false to discontinue initing piece
+	virtual bool AutoConnections(error_collection &ec);
+	virtual bool CheckUnconnectedEdges(error_collection &ec);
 
 	virtual EDGETYPE GetDefaultValidDirecton() const = 0;
 
@@ -204,6 +206,9 @@ template <typename T> struct vartrack_target_ptr {
 	inline void operator=(const vartrack_target_ptr &other) {
 		track = other.track;
 		direction = other.direction;
+	}
+	template <typename S> inline operator vartrack_target_ptr<S>() {
+		return vartrack_target_ptr<S>(track, direction);
 	}
 	const vartrack_target_ptr &GetConnectingPiece() const;
 };
@@ -519,7 +524,7 @@ class doubleslip : public genericpoints {
 		DSF_NO_FR_BR	= 1<<3,
 	};
 
-	inline unsigned int GetCurrentPointIndex(EDGETYPE direction) {
+	inline unsigned int GetCurrentPointIndex(EDGETYPE direction) const {
 		switch(direction) {
 			case EDGE_DS_FL:
 				return 0;
@@ -534,13 +539,16 @@ class doubleslip : public genericpoints {
 		}
 	}
 
-	inline unsigned int &GetCurrentPointFlags(EDGETYPE direction) {
+	private:
+	inline const unsigned int &GetCurrentPointFlagsIntl(EDGETYPE direction) const {
 		unsigned int index = GetCurrentPointIndex(direction);
 		if(index < 4) return pflags[index];
 		else return fail_pflags;
 	}
 
-	inline unsigned int GetCurrentPointFlags(EDGETYPE direction) const { return GetCurrentPointFlags(direction); }
+	public:
+	inline unsigned int &GetCurrentPointFlags(EDGETYPE direction) { return const_cast<unsigned int &>(GetCurrentPointFlagsIntl(direction)); }
+	inline unsigned int GetCurrentPointFlags(EDGETYPE direction) const { return GetCurrentPointFlagsIntl(direction); }
 
 	inline EDGETYPE GetConnectingPointDirection(EDGETYPE direction, bool reverse) const {
 		switch(direction) {
@@ -557,24 +565,34 @@ class doubleslip : public genericpoints {
 		}
 	}
 
-	inline track_target_ptr &GetInputPiece(EDGETYPE direction) {
+	private:
+	inline const track_target_ptr *GetInputPieceIntl(EDGETYPE direction) const {
 		switch(direction) {
 			case EDGE_DS_FL:
-				return frontleft;
+				return &frontleft;
 			case EDGE_DS_FR:
-				return frontright;
+				return &frontright;
 			case EDGE_DS_BR:
-				return backright;
+				return &backright;
 			case EDGE_DS_BL:
-				return backleft;
+				return &backleft;
 			default:
-				return const_cast<track_target_ptr &>(empty_track_target);
+				return 0;
 		}
 	}
-	inline const track_target_ptr &GetInputPiece(EDGETYPE direction) const { return GetInputPiece(direction); }
+	
+	public:
+	inline track_target_ptr *GetInputPiece(EDGETYPE direction) { return const_cast<track_target_ptr *>(GetInputPieceIntl(direction)); }
+	inline const track_target_ptr *GetInputPiece(EDGETYPE direction) const { return GetInputPieceIntl(direction); }
+	
+	inline const track_target_ptr &GetInputPieceOrEmpty(EDGETYPE direction) const {
+		const track_target_ptr *piece = GetInputPiece(direction);
+		if(piece) return *piece;
+		else return empty_track_target;
+	}
 
 	public:
-	doubleslip(world &w_) : genericpoints(w_) { }
+	doubleslip(world &w_) : genericpoints(w_), dsflags(0) { }
 
 	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const;
 	EDGETYPE GetReverseDirection(EDGETYPE direction) const;

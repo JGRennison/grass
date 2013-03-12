@@ -84,9 +84,9 @@ template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deser
 	}
 	else {
 		ptr.reset(new T(w));
+		ptr->SetPreviousTrackPiece(previoustrackpiece);
+		previoustrackpiece = ptr.get();
 	}
-	ptr->SetPreviousTrackPiece(previoustrackpiece);
-	previoustrackpiece = ptr.get();
 	return static_cast<T*>(ptr.get());
 }
 
@@ -145,6 +145,9 @@ void world_serialisation::InitObjectTypes() {
 	MakeGenericTrackTypeWrapper<springpoints>();
 	MakeGenericTrackTypeWrapper<crossover>();
 	MakeGenericTrackTypeWrapper<doubleslip>();
+	MakeGenericTrackTypeWrapper<startofline>();
+	MakeGenericTrackTypeWrapper<endofline>();
+	MakeGenericTrackTypeWrapper<routingmarker>();
 	object_types.RegisterType("template", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTemplate(di, ec); });
 	object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTractionType(di, ec); });
 }

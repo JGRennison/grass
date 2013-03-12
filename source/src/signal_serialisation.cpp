@@ -29,12 +29,16 @@
 void trackroutingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	routingpoint::Deserialise(di, ec);
 	
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_MASK_TRANS, di, "through", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_MASK_TRANS, di, "through_rev", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTETRANS, di, "routethrough", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTTRANS, di, "shuntthrough", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_OVERLAPTRANS, di, "overlapthrough", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_ROUTETRANS, di, "routethrough_rev", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_SHUNTTRANS, di, "shuntthrough_rev", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_OVERLAPTRANS, di, "overlapthrough_rev", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_OVERLAPEND, di, "overlapend", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_OVERLAPEND, di, "overlapend_rev", ec);
 }
 
 void trackroutingpoint::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -48,11 +52,11 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonSubObj(end_trs, di, "end_trs", "trs", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTSTART | RPRT_SHUNTEND, di, "shuntsignal", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTESTART | RPRT_ROUTEEND | RPRT_SHUNTEND, di, "routesignal", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTESTART | RPRT_SHUNTSTART | RPRT_ROUTEEND | RPRT_SHUNTEND, di, "routeshuntsignal", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTSTART, di, "shuntstart", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTEND, di, "shuntend", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTESTART, di, "routestart", ec);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTEEND, di, "routeend", ec);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_OVERLAPEND, di, "overlapend", ec);
 }
 
 void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -102,4 +106,19 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 }
 
 void route_restriction_set::Serialise(serialiser_output &so, error_collection &ec) const {
+}
+
+void startofline::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	routingpoint::Deserialise(di, ec);
+
+	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_SHUNTEND, di, "shuntend", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_ROUTEEND, di, "routeend", ec);
+	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_OVERLAPEND, di, "overlapend", ec);
+}
+
+void startofline::Serialise(serialiser_output &so, error_collection &ec) const {
+	routingpoint::Serialise(so, ec);
+
+	SerialiseSubObjJson(trs, so, "trs", ec);
 }

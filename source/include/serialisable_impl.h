@@ -239,7 +239,7 @@ template <typename C> inline void CheckFillTypeVectorFromJsonArrayOrType(const d
 	auto func = [&](const deserialiser_input &fdi, error_collection &ec) {
 		vec.push_back(GetType<C>(fdi.json));
 	};
-	CheckIterateJsonArrayOrType<std::string>(di, prop, "", ec, func);
+	CheckIterateJsonArrayOrType<C>(di, prop, "", ec, func);
 }
 
 template <typename C> inline void SerialiseSubObjJson(const C &obj, serialiser_output &so, const char *prop, error_collection &ec) {

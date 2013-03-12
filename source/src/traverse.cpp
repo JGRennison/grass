@@ -95,6 +95,7 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 				TrackScan(max_pieces, junction_max, start_track.track->GetConnectingPieceByIndex(start_track.direction, i), route_pieces, temp_grrs, error_flags, step_func);
 				if(temp_grrs) delete temp_grrs;
 				route_pieces.resize(route_pieces_size);
+				if(error_flags) return;
 			}
 		}
 		route_pieces.emplace_back(start_track, 0);

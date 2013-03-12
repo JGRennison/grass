@@ -34,6 +34,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 	deserialiser_input subdi(di.json["connect"], "trackconnection", "connect", di);
 
 	if(!subdi.json.IsNull() && subdi.w) {
+		di.RegisterProp("connect");
 		auto connfunc = [&](const deserialiser_input &funcdi) {
 			bool ok = true;
 			if(funcdi.json.IsObject()) {

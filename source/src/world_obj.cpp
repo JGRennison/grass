@@ -23,6 +23,7 @@
 
 #include "world_obj.h"
 #include "world.h"
+#include "serialisable_impl.h"
 
 std::string world_obj::GetFriendlyName() const {
 	std::string result= std::string(GetTypeName()).append(": ").append((!name.empty()) ? name : std::string("[unnamed]"));
@@ -30,5 +31,6 @@ std::string world_obj::GetFriendlyName() const {
 }
 
 void world_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	name = di.name;
 	DeserialiseFutures(di, ec, w.future_types, w.futures);
 }

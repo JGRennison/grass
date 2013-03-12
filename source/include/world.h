@@ -79,7 +79,7 @@ class world : public named_futurable_obj {
 		else return 0;
 	}
 	void ConnectTrack(generictrack *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec);
-	void ConnectAllPiecesInit(error_collection &ec);
+	void LayoutInit(error_collection &ec);
 	void PostLayoutInit(error_collection &ec);
 	generictrack *FindTrackByName(const std::string &name) const;
 	void InitFutureTypes();

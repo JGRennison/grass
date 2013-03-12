@@ -107,7 +107,7 @@ class error_track_unconnected : public layout_initialisation_error_obj {
 	}
 };
 
-bool generictrack::PostLayoutInit(error_collection &ec) {
+bool generictrack::AutoConnections(error_collection &ec) {
 	if(prevtrack) {
 		EDGETYPE prevedge = prevtrack->GetAvailableAutoConnectionDirection(!(prevtrack->gt_flags & GTF_REVERSEAUTOCONN));
 		EDGETYPE thisedge = GetAvailableAutoConnectionDirection(gt_flags & GTF_REVERSEAUTOCONN);
@@ -115,16 +115,25 @@ bool generictrack::PostLayoutInit(error_collection &ec) {
 			if(!FullConnect(thisedge, track_target_ptr(prevtrack, prevedge), ec)) return false;
 		}
 	}
-	
+	return true;
+}
+
+bool generictrack::CheckUnconnectedEdges(error_collection &ec) {
+	bool result = true;
+
 	std::vector<edgelistitem> edgelist;
 	GetListOfEdges(edgelist);
 	for(auto it = edgelist.begin(); it != edgelist.end(); ++it) {
 		if(! it->target->IsValid()) {
 			ec.RegisterError(std::unique_ptr<error_obj>(new error_track_unconnected(track_target_ptr(this, it->edge))));
-			return false;
+			result = false;
 		}
 	}
-	
+
+	return result;
+}
+
+bool generictrack::PostLayoutInit(error_collection &ec) {
 	return true;
 }
 
@@ -663,7 +672,7 @@ void crossover::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 const track_target_ptr & doubleslip::GetConnectingPiece(EDGETYPE direction) const {
 	EDGETYPE exitdirection = GetReverseDirection(direction);
 
-	if(exitdirection != EDGE_NULL) return GetInputPiece(exitdirection);
+	if(exitdirection != EDGE_NULL) return GetInputPieceOrEmpty(exitdirection);
 	else return empty_track_target;
 }
 
@@ -688,7 +697,7 @@ const track_target_ptr & doubleslip::GetConnectingPieceByIndex(EDGETYPE directio
 	bool isrev = (pf & PTF_FIXED) ? (pf & PTF_REV) : index;
 
 	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isrev);
-	return GetInputPiece(exitdirection);
+	return GetInputPieceOrEmpty(exitdirection);
 }
 
 EDGETYPE doubleslip::GetReverseDirection(EDGETYPE direction) const {
@@ -706,8 +715,8 @@ EDGETYPE doubleslip::GetReverseDirection(EDGETYPE direction) const {
 }
 
 bool doubleslip::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
-	track_target_ptr &piece = GetInputPiece(this_entrance_direction);
-	if(piece.IsValid()) return TryConnectPiece(piece, target_entrance);
+	track_target_ptr *piece = GetInputPiece(this_entrance_direction);
+	if(piece) return TryConnectPiece(*piece, target_entrance);
 	else return false;
 }
 
@@ -845,6 +854,7 @@ std::ostream& operator<<(std::ostream& os, const track_target_ptr& obj) {
 	else os << "Invalid Track Target";
 	return os;
 }
+
 std::ostream& operator<<(std::ostream& os, const track_location& obj) {
 	if(obj.IsValid()) os << "Track Location: " << obj.GetTrack()->GetFriendlyName() << ", " << obj.GetDirection() << ", " << obj.GetOffset() << "mm";
 	else os << "Invalid Track Location";
@@ -862,7 +872,7 @@ const direction_name dirnames[] = {
 	{ EDGE_FRONT, "front", "Front edge/Forward direction" },
 	{ EDGE_BACK, "back", "Back edge/Reverse direction" },
 	{ EDGE_PTS_FACE, "facing", "Points: facing edge/input direction" },
-	{ EDGE_PTS_NORMAL, "normal", "Points: facing edge/input direction" },
+	{ EDGE_PTS_NORMAL, "normal", "Points: normal edge/input direction" },
 	{ EDGE_PTS_REVERSE, "reverse", "Points: reverse edge/input direction" },
 	{ EDGE_X_N, "north", "Cross-over: North edge/input direction" },
 	{ EDGE_X_S, "south", "Cross-over: South edge/input direction" },
@@ -870,8 +880,8 @@ const direction_name dirnames[] = {
 	{ EDGE_X_E, "east", "Cross-over: East edge/input direction" },
 	{ EDGE_DS_FL, "leftfront", "Double-slip: Forward direction: Front edge: Left track" },
 	{ EDGE_DS_FR, "rightfront", "Double-slip: Forward direction: Front edge: Right track" },
-	{ EDGE_DS_BL, "leftreverse", "Double-slip: Reverse direction: Back edge: Right track (seen from front)" },
-	{ EDGE_DS_BR, "rightreverse", "Double-slip: Reverse direction: Back edge: Left track (seen from front)" },
+	{ EDGE_DS_BL, "leftback", "Double-slip: Reverse direction: Back edge: Right track (seen from front)" },
+	{ EDGE_DS_BR, "rightback", "Double-slip: Reverse direction: Back edge: Left track (seen from front)" },
 };
 
 std::ostream& operator<<(std::ostream& os, const EDGETYPE& obj) {
