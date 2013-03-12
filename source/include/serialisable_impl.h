@@ -164,13 +164,28 @@ template <typename C, typename D> inline bool CheckTransJsonValueDef(C &var, con
 	return res;
 }
 
-template <typename C> inline bool CheckTransJsonValueFlag(C &var, C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec) {
+template <typename C> struct flag_conflict_checker {
+	C set_bits;
+	C clear_bits;
+	flag_conflict_checker() : set_bits(0), clear_bits(0) { }
+};
+
+template <typename C> inline bool CheckTransJsonValueFlag(C &var, C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec, flag_conflict_checker<C> *conflictcheck = 0) {
 	const rapidjson::Value &subval=di.json[prop];
 	di.RegisterProp(prop);
 	bool res=IsType<bool>(subval);
 	if(res) {
-		if(GetType<bool>(subval)) var|=flagmask;
-		else var&=~flagmask;
+		bool set = GetType<bool>(subval);
+		if(set) var |= flagmask;
+		else var &= ~flagmask;
+
+		if(conflictcheck) {
+			if(set) conflictcheck->set_bits |= flagmask;
+			else conflictcheck->clear_bits |= flagmask;
+			if(conflictcheck->set_bits & conflictcheck->clear_bits & flagmask) {
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Flag variable: %s, contradicts earlier declarations in same scope", prop))));
+			}
+		}
 	}
 	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec);
 	return res;

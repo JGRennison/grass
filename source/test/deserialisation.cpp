@@ -84,3 +84,25 @@ TEST_CASE( "deserialisation/error/extravalues", "Test unknown extra value detect
 	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 1);
 }
+
+TEST_CASE( "deserialisation/error/flagcontradiction", "Test contradictory flags" ) {
+	std::string track_test_str = 
+	"{ \"content\" : [ "
+		"{ \"type\" : \"routingmarker\", \"through\" : true, \"routethrough\" : false }"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 1);
+}
+
+TEST_CASE( "deserialisation/error/flagnoncontradiction", "Test non-contradictory flags" ) {
+	std::string track_test_str = 
+	"{ \"content\" : [ "
+		"{ \"type\" : \"routingmarker\", \"through\" : true, \"routethrough\" : true }"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+}
