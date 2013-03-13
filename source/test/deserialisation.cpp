@@ -197,3 +197,16 @@ TEST_CASE( "deserialisation/error/templaterecursion", "Test check for template r
 	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 1);
 }
+
+TEST_CASE( "deserialisation/error/typedefrecursion", "Test check for typedef recursion" ) {
+	std::string track_test_str = 
+	R"({ "content" : [ )"
+		R"({ "type" : "typedef", "newtype" : "T1", "basetype" : "T2" }, )"
+		R"({ "type" : "typedef", "newtype" : "T2", "basetype" : "T1" }, )"
+		R"({ "type" : "T1", "name" : "R1" } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 1);
+}

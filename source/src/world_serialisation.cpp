@@ -125,6 +125,15 @@ void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di
 
 		auto func = [=](const deserialiser_input &di, error_collection &ec) {
 			deserialiser_input typedefwrapperdi(di.name, di.type, "Typedef Wrapper: " + newtype + " base: " + basetype, di.json, di);
+			
+			const deserialiser_input *checkparent = di.parent;
+			do {
+				if(checkparent->reference_name == typedefwrapperdi.reference_name) {
+					ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Typedef: \"%s\": Base \"%s\": Recursive expansion detected: Aborting.", newtype.c_str(), basetype.c_str()))));
+					return;
+				}
+			} while((checkparent = checkparent->parent));
+			
 			typedefwrapperdi.seenprops.swap(di.seenprops);
 			typedefwrapperdi.objpreparse = di.objpreparse;
 			typedefwrapperdi.objpostparse = di.objpostparse;
