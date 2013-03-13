@@ -37,9 +37,14 @@
 
 class generictrack;
 
+struct template_def {
+	const rapidjson::Value *json = 0;
+	bool beingexpanded = false;
+};
+
 class world_serialisation {
 	world &w;
-	std::map<std::string, const rapidjson::Value *> template_map;
+	std::map<std::string, template_def> template_map;
 	std::forward_list<rapidjson::Document> parsed_inputs;
 	generictrack *previoustrackpiece;
 

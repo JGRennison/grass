@@ -173,3 +173,27 @@ TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == 0);
 	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == (routingpoint::RPRT_SHUNTTRANS | routingpoint::RPRT_ROUTETRANS));
 }
+
+TEST_CASE( "deserialisation/error/template", "Test reference to non-existent template" ) {
+	std::string track_test_str = 
+	R"({ "content" : [ )"
+		R"({ "type" : "routingmarker", "name" : "R1", "preparse" : "T1" } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 1);
+}
+
+TEST_CASE( "deserialisation/error/templaterecursion", "Test check for template recursion" ) {
+	std::string track_test_str = 
+	R"({ "content" : [ )"
+		R"({ "type" : "template", "name" : "T1", "content" : { "preparse" : "T2" } }, )"
+		R"({ "type" : "template", "name" : "T2", "content" : { "preparse" : "T1" } }, )"
+		R"({ "type" : "routingmarker", "name" : "R1", "preparse" : "T1" } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 1);
+}

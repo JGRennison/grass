@@ -102,7 +102,7 @@ void world_serialisation::DeserialiseTemplate(const deserialiser_input &di, erro
 	const rapidjson::Value &contentval=di.json["content"];
 	std::string name;
 	if(CheckTransJsonValue(name, di, "name", ec) && contentval.IsObject()) {
-		template_map[name] = &contentval;
+		template_map[name].json = &contentval;
 	}
 	else {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template definition")));
@@ -149,8 +149,16 @@ void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di
 
 void world_serialisation::ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec) {
 	auto templ = template_map.find(name);
-	if(templ != template_map.end() && templ->second) {
-		obj.DeserialiseObject(deserialiser_input(*(templ->second), "Template: " + name, di), ec);
+	if(templ != template_map.end() && templ->second.json) {
+		if(templ->second.beingexpanded) {		//recursive expansion detection
+			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Template: \"%s\": Recursive expansion detected: Aborting.", name.c_str()))));
+			return;
+		}
+		else {
+			templ->second.beingexpanded = true;	//recursive expansion detection
+			obj.DeserialiseObject(deserialiser_input(*(templ->second.json), "Template: " + name, di), ec);
+			templ->second.beingexpanded = false;
+		}
 	}
 	else {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Template: \"%s\" not found", name.c_str()))));
