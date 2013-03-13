@@ -38,9 +38,18 @@ typedef enum {
 
 class route;
 class routingpoint;
+class track_circuit;
+class genericsignal;
 typedef std::deque<routingpoint *> via_list;
+typedef std::deque<track_circuit *> tc_list;
+typedef std::deque<genericsignal *> sig_list;
 
 class routingpoint : public genericzlentrack {
+	protected:
+	unsigned int aspect = 0;
+	routingpoint *aspect_target = 0;
+	ROUTE_CLASS aspect_type = RTC_NULL;
+
 	public:
 	routingpoint(world &w_) : genericzlentrack(w_) { }
 	enum {
@@ -62,6 +71,10 @@ class routingpoint : public genericzlentrack {
 		RPRT_MASK_END		= RPRT_SHUNTEND | RPRT_ROUTEEND | RPRT_OVERLAPEND,
 		RPRT_MASK_TRANS		= RPRT_SHUNTTRANS | RPRT_ROUTETRANS | RPRT_OVERLAPTRANS,
 	};
+	
+	inline unsigned int GetAspect() const { return aspect; }
+	inline routingpoint *GetNextAspectTarget() const { return aspect_target; }
+	inline ROUTE_CLASS GetAspectType() const { return aspect_type; }
 
 	static inline unsigned int GetRouteClassRPRTMask(ROUTE_CLASS rc) {
 		switch(rc) {
@@ -97,6 +110,8 @@ struct route {
 	route_recording_list pieces;
 	vartrack_target_ptr<routingpoint> end;
 	via_list vias;
+	tc_list trackcircuits;
+	sig_list repeatersignals;
 	ROUTE_CLASS type;
 	int priority;
 
@@ -104,7 +119,7 @@ struct route {
 	unsigned int index;
 
 	route() : type(RTC_NULL), priority(0), parent(0), index(0) { }
-	void FillViaList();
+	void FillLists();
 	bool TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const;
 };
 
@@ -178,6 +193,9 @@ class genericsignal : public trackroutingpoint {
 	track_reservation_state start_trs;
 	track_reservation_state end_trs;
 
+	world_time last_state_update = 0;
+	unsigned int max_aspect = 0;
+
 	public:
 	genericsignal(world &w_) : trackroutingpoint(w_), sflags(0) { availableroutetypes_reverse |= RPRT_SHUNTTRANS | RPRT_ROUTETRANS; }
 	void TrainEnter(EDGETYPE direction, train *t);
@@ -187,14 +205,24 @@ class genericsignal : public trackroutingpoint {
 
 	virtual std::string GetTypeName() const { return "Generic Signal"; }
 
+	enum {
+		GSF_REPEATER		= 1<<0,
+		GSF_ASPECTEDREPEATER	= 1<<1,		//true for "standard" repeaters which show an aspect, not true for banner repeaters, etc.
+	};
 	virtual unsigned int GetSignalFlags() const;
 	virtual unsigned int SetSignalFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
 
 	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const;
 	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const;
+	
+	virtual route *GetCurrentForwardRoute() const;
+	virtual bool RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	
+	virtual void UpdateSignalState();
+	virtual void TrackTick() { UpdateSignalState(); }
 
 	protected:
 	bool PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(ROUTE_CLASS type, const track_target_ptr &piece)> mkblankroute);

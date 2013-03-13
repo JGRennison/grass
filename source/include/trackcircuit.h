@@ -21,6 +21,9 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
+#ifndef INC_TRACKCIRCUIT_ALREADY
+#define INC_TRACKCIRCUIT_ALREADY
+
 #include <string>
 
 class train;
@@ -32,4 +35,7 @@ class track_circuit {
 	public:
 	void TrainEnter(train *t);
 	void TrainLeave(train *t);
+	bool Occupied() const { return traincount > 0; }
 };
+
+#endif

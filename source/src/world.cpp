@@ -33,6 +33,10 @@ void world::GameStep(world_time delta) {
 	gametime += delta;
 
 	futures.ExecuteUpTo(gametime);
+	
+	for(auto it = all_pieces.begin(); it != all_pieces.end(); ++it) {
+		it->second->TrackTick();
+	}
 }
 
 void world::ConnectTrack(generictrack *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec) {

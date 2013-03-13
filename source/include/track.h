@@ -164,10 +164,13 @@ class generictrack : public world_obj {
 		GTF_ROUTETHISDIR= 1<<1,
 		GTF_ROUTEFORK	= 1<<2,
 		GTF_ROUTINGPOINT= 1<<3,
+		GTF_SIGNAL	= 1<<4,
 	};
 
 	void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual std::string GetTypeSerialisationName() const = 0;
+	
+	virtual void TrackTick() { }
 
 	protected:
 	virtual bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) = 0;

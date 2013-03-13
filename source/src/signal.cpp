@@ -23,6 +23,8 @@
 
 #include "common.h"
 #include "signal.h"
+#include "world.h"
+#include "trackcircuit.h"
 
 #include <algorithm>
 #include <iterator>
@@ -153,8 +155,73 @@ unsigned int genericsignal::GetSetRouteTypes(EDGETYPE direction) const {
 	return result;
 }
 
+void genericsignal::UpdateSignalState() {
+	if(last_state_update == GetWorld().GetGameTime()) return;
+
+	last_state_update = GetWorld().GetGameTime();
+
+	route *set_route = GetCurrentForwardRoute();
+	if(!set_route || set_route->type == RTC_OVERLAP) {
+		aspect = 0;
+		aspect_target = 0;
+		aspect_type = RTC_NULL;
+		return;
+	}
+
+	if(!(GetSignalFlags() & GSF_REPEATER)) {
+		for(auto it = set_route->trackcircuits.begin(); it != set_route->trackcircuits.end(); ++it) {
+			if((*it)->Occupied()) {
+				aspect = 0;
+				aspect_target = 0;
+				aspect_type = RTC_NULL;
+				return;
+			}
+		}
+	}
+
+	aspect_type = set_route->type;
+	aspect_target = set_route->end.track;
+
+	sig_list::iterator next_repeater;
+	if(set_route->start.track == this) {
+		next_repeater = set_route->repeatersignals.begin();
+	}
+	else {
+		sig_list::iterator check_current_repeater = std::find(set_route->repeatersignals.begin(), set_route->repeatersignals.end(), this);
+		if(check_current_repeater != set_route->repeatersignals.end()) {
+			next_repeater = std::next(check_current_repeater, 1);
+		}
+		else next_repeater = set_route->repeatersignals.end();
+	}
+	if(next_repeater != set_route->repeatersignals.end()) {
+		aspect_target = *next_repeater;
+	}
+
+	if(set_route->type == RTC_SHUNT) aspect = 1;
+	else {
+		aspect = std::max(max_aspect, aspect_target->GetAspect() + 1);
+	}
+}
+
+route *genericsignal::GetCurrentForwardRoute() const {
+	if(end_trs.direction == EDGE_FRONT) {
+		if(end_trs.rr_flags & RRF_RESERVE) return end_trs.reserved_route;
+	}
+	return 0;
+}
+
+bool genericsignal::RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const {
+	if(type == RTC_SHUNT) return true;
+	else if(type == RTC_ROUTE) {
+		if(GetSignalFlags() & GSF_REPEATER && GetSignalFlags() & GSF_ASPECTEDREPEATER) return true;
+	}
+	return false;
+}
+
 unsigned int autosignal::GetFlags(EDGETYPE direction) const {
-	return GTF_ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
+	unsigned int result = GTF_ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
+	if(direction == EDGE_FRONT) result |= GTF_SIGNAL;
+	return result;
 }
 
 route *autosignal::GetRouteByIndex(unsigned int index) {
@@ -176,7 +243,9 @@ void autosignal::EnumerateRoutes(std::function<void (const route *)> func) const
 };
 
 unsigned int routesignal::GetFlags(EDGETYPE direction) const {
-	return GTF_ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
+	unsigned int result = GTF_ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
+	if(direction == EDGE_FRONT) result |= GTF_SIGNAL;
+	return result;
 }
 
 route *routesignal::GetRouteByIndex(unsigned int index) {
@@ -290,7 +359,7 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 
 bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(ROUTE_CLASS type, const track_target_ptr &piece)> mkblankroute) {
 	bool continue_initing = true;
-	
+
 	bool foundoverlap = false;
 
 	auto func = [&](const route_recording_list &route_pieces, const track_target_ptr &piece, generic_route_recording_state *grrs) {
@@ -324,7 +393,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						rt->start = vartrack_target_ptr<routingpoint>(this, EDGE_FRONT);
 						rt->pieces = route_pieces;
 						rt->end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
-						rt->FillViaList();
+						rt->FillLists();
 						rt->parent = this;
 						for(auto it = matching_restrictions.begin(); it != matching_restrictions.end(); ++it) {
 							(*it)->ApplyRestriction(*rt);
@@ -393,11 +462,21 @@ bool RouteReservation(route &res_route, unsigned int rr_flags) {
 	return true;
 }
 
-void route::FillViaList() {
+void route::FillLists() {
+	track_circuit *last_tc = 0;
 	for(auto it = pieces.begin(); it != pieces.end(); ++it) {
+		track_circuit *this_tc = it->location.track->GetTrackCircuit();
+		if(this_tc && this_tc != last_tc) {
+			last_tc = this_tc;
+			trackcircuits.push_back(this_tc);
+		}
 		routingpoint *target_routing_piece = dynamic_cast<routingpoint *>(it->location.track);
 		if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(it->location.direction) & routingpoint::RPRT_VIA) {
 			vias.push_back(target_routing_piece);
+		}
+		if(target_routing_piece && target_routing_piece->GetFlags(it->location.direction) & generictrack::GTF_SIGNAL) {
+			genericsignal *this_signal = dynamic_cast<genericsignal *>(target_routing_piece);
+			if(this_signal && this_signal->RepeaterAspectMeaningfulForRouteType(type)) repeatersignals.push_back(this_signal);
 		}
 	}
 }
