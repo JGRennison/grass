@@ -52,6 +52,7 @@ class world_serialisation {
 	void LoadGame(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTemplate(const deserialiser_input &di, error_collection &ec);
+	void DeserialiseTypeDefinition(const deserialiser_input &di, error_collection &ec);
 	void ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTractionType(const deserialiser_input &di, error_collection &ec);
 	template <typename T> T* MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec);

@@ -109,10 +109,48 @@ void world_serialisation::DeserialiseTemplate(const deserialiser_input &di, erro
 	}
 }
 
+void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di, error_collection &ec) {
+	const rapidjson::Value &contentval=di.json["content"];
+	std::string newtype;
+	std::string basetype;
+	if(CheckTransJsonValue(newtype, di, "newtype", ec) && CheckTransJsonValue(basetype, di, "basetype", ec)) {
+		const rapidjson::Value *content;
+		if(contentval.IsObject()) {
+			content = &contentval;
+		}
+		else {
+			CheckJsonTypeAndReportError<placeholder_subobject>(di, "content", contentval, ec);
+			content = 0;
+		}
+
+		auto func = [=](const deserialiser_input &di, error_collection &ec) {
+			deserialiser_input typedefwrapperdi(di.name, di.type, "Typedef Wrapper: " + newtype + " base: " + basetype, di.json, di);
+			typedefwrapperdi.seenprops.swap(di.seenprops);
+			typedefwrapperdi.objpreparse = di.objpreparse;
+			typedefwrapperdi.objpostparse = di.objpostparse;
+
+			if(content) {
+				deserialiser_input typedefcontentdi(*content, "Typedef Content: " + newtype + " base: " + basetype, typedefwrapperdi);
+				deserialiser_input *targ = &typedefwrapperdi;
+				while(targ->objpreparse) targ = targ->objpreparse;
+				targ->objpreparse = &typedefcontentdi;
+			}
+			if(! this->object_types.FindAndDeserialise(basetype, typedefwrapperdi, ec))  {
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(typedefwrapperdi, string_format("Typedef expansion: %s: Unknown base type: %s", newtype.c_str(), basetype.c_str()))));
+			}
+			typedefwrapperdi.seenprops.swap(di.seenprops);
+		};
+		object_types.RegisterType(newtype, func);
+	}
+	else {
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid typedef definition")));
+	}
+}
+
 void world_serialisation::ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec) {
 	auto templ = template_map.find(name);
 	if(templ != template_map.end() && templ->second) {
-		obj.DeserialiseObjectPropCheck(deserialiser_input(*(templ->second), "Template: " + name, di), ec);
+		obj.DeserialiseObject(deserialiser_input(*(templ->second), "Template: " + name, di), ec);
 	}
 	else {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Template: \"%s\" not found", name.c_str()))));
@@ -149,6 +187,7 @@ void world_serialisation::InitObjectTypes() {
 	MakeGenericTrackTypeWrapper<endofline>();
 	MakeGenericTrackTypeWrapper<routingmarker>();
 	object_types.RegisterType("template", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTemplate(di, ec); });
+	object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTypeDefinition(di, ec); });
 	object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTractionType(di, ec); });
 }
 

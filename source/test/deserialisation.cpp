@@ -26,6 +26,7 @@
 #include "train.h"
 #include "traverse.h"
 #include "world.h"
+#include "signal.h"
 #include "world_serialisation.h"
 #include "deserialisation-test.h"
 
@@ -105,4 +106,70 @@ TEST_CASE( "deserialisation/error/flagnoncontradiction", "Test non-contradictory
 	
 	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
+}
+
+TEST_CASE( "deserialisation/template/basic", "Test basic templating" ) {
+	std::string track_test_str = 
+	R"({ "content" : [ )"
+		R"({ "type" : "template", "name" : "T1", "content" : { "through" : true } }, )"
+		R"({ "type" : "template", "name" : "T2", "content" : { "through" : false } }, )"
+		R"({ "type" : "template", "name" : "T3", "content" : { "shuntthrough_rev" : false } }, )"
+		R"({ "type" : "routingmarker", "name" : "R1", "preparse" : "T1", "routethrough" : false }, )"
+		R"({ "type" : "routingmarker", "name" : "R2", "preparse" : ["T1", "T2"], "routethrough" : true }, )"
+		R"({ "type" : "routingmarker", "name" : "R3", "postparse" : ["T1", "T3"], "routethrough" : false } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+	
+	auto checkrmrtflags = [&](const char *name, unsigned int frontflags, unsigned int backflags) {
+		SCOPED_INFO("Routing Marker check for: " << name);
+		
+		routingmarker *rm = dynamic_cast<routingmarker *>(env.w.FindTrackByName(name));
+		REQUIRE(rm != 0);
+		CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == frontflags);
+		CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == backflags);
+	};
+	
+	checkrmrtflags("R1", routingpoint::RPRT_MASK_TRANS & ~routingpoint::RPRT_ROUTETRANS, routingpoint::RPRT_MASK_TRANS);
+	checkrmrtflags("R2", routingpoint::RPRT_ROUTETRANS, routingpoint::RPRT_MASK_TRANS);
+	checkrmrtflags("R3", routingpoint::RPRT_MASK_TRANS, routingpoint::RPRT_MASK_TRANS & ~routingpoint::RPRT_SHUNTTRANS);
+}
+
+TEST_CASE( "deserialisation/template/nested", "Test nested templating" ) {
+	std::string track_test_str = 
+	R"({ "content" : [ )"
+		R"({ "type" : "template", "name" : "T1", "content" : { "preparse" : "T2", "through" : true } }, )"
+		R"({ "type" : "template", "name" : "T2", "content" : { "postparse" : "T3", "through_rev" : false, "shuntthrough" : false } }, )"
+		R"({ "type" : "template", "name" : "T3", "content" : { "shuntthrough_rev" : true, "through_rev" : true } }, )"
+		R"({ "type" : "routingmarker", "name" : "R1", "preparse" : "T1", "overlapthrough_rev" : false } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+	
+	routingmarker *rm = dynamic_cast<routingmarker *>(env.w.FindTrackByName("R1"));
+	REQUIRE(rm != 0);
+	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == routingpoint::RPRT_MASK_TRANS);
+	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == (routingpoint::RPRT_SHUNTTRANS | routingpoint::RPRT_ROUTETRANS));
+}
+
+TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
+	std::string track_test_str = 
+	R"({ "content" : [ )"
+		R"({ "type" : "typedef", "newtype" : "base", "basetype" : "routingmarker", "content" : { "through" : false, "through_rev" : false } }, )"
+		R"({ "type" : "typedef", "newtype" : "derived", "basetype" : "base", "content" : { "through_rev" : true } }, )"
+		R"({ "type" : "derived", "name" : "R1", "overlapthrough_rev" : false } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+	
+	routingmarker *rm = dynamic_cast<routingmarker *>(env.w.FindTrackByName("R1"));
+	REQUIRE(rm != 0);
+	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == 0);
+	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == (routingpoint::RPRT_SHUNTTRANS | routingpoint::RPRT_ROUTETRANS));
 }

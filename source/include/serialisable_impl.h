@@ -66,6 +66,8 @@ struct deserialiser_input {
 	world_serialisation *ws;
 	const deserialiser_input *parent;
 	mutable std::vector<const char *> seenprops;
+	deserialiser_input *objpreparse = 0;
+	deserialiser_input *objpostparse = 0;
 
 	deserialiser_input(const std::string &n, const std::string &t, const std::string &r, const rapidjson::Value &j, world *w_=0, world_serialisation *ws_=0, const deserialiser_input *base=0) : name(n), type(t), reference_name(r), json(j), w(w_), ws(ws_), parent(base) { }
 	deserialiser_input(const std::string &n, const std::string &t, const std::string &r, const rapidjson::Value &j, const deserialiser_input &base) : name(n), type(t), reference_name(r), json(j), w(base.w), ws(base.ws), parent(&base) { }

@@ -48,28 +48,33 @@ error_deserialisation::error_deserialisation(const std::string &str) {
 void serialisable_obj::DeserialisePrePost(const char *name, const deserialiser_input &di, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[name];
 	if(subval.IsNull()) return;
-	else if(subval.IsString() && di.ws) di.ws->ExecuteTemplate(*this, subval.GetString(), di, ec);
-	else if(subval.IsArray() && di.ws) {
-		for(rapidjson::SizeType i = 0; i < subval.Size(); i++) {
-			const rapidjson::Value &arrayval = subval[i];
-			if(arrayval.IsString()) di.ws->ExecuteTemplate(*this, arrayval.GetString(), di, ec);
-			else ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template reference")));
-		}
-	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template reference")));
+		di.RegisterProp(name);
+		if(subval.IsString() && di.ws) di.ws->ExecuteTemplate(*this, subval.GetString(), di, ec);
+		else if(subval.IsArray() && di.ws) {
+			for(rapidjson::SizeType i = 0; i < subval.Size(); i++) {
+				const rapidjson::Value &arrayval = subval[i];
+				if(arrayval.IsString()) di.ws->ExecuteTemplate(*this, arrayval.GetString(), di, ec);
+				else ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template reference")));
+			}
+		}
+		else {
+			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template reference")));
+		}
 	}
 }
 
 void serialisable_obj::DeserialiseObject(const deserialiser_input &di, error_collection &ec) {
+	di.seenprops.reserve(di.json.GetMemberCount());
+	if(di.objpreparse) DeserialiseObject(*di.objpreparse, ec);
 	DeserialisePrePost("preparse", di, ec);
-	DeserialiseObjectPropCheck(di, ec);
+	Deserialise(di, ec);
 	DeserialisePrePost("postparse", di, ec);
+	if(di.objpostparse) DeserialiseObject(*di.objpostparse, ec);
+	PostDeserialisePropCheck(di, ec);
 }
 
-void serialisable_obj::DeserialiseObjectPropCheck(const deserialiser_input &di, error_collection &ec) {
-	di.seenprops.reserve(di.json.GetMemberCount());
-	Deserialise(di, ec);
+void serialisable_obj::PostDeserialisePropCheck(const deserialiser_input &di, error_collection &ec) {
 	if(di.seenprops.size() == di.json.GetMemberCount()) return;
 	else {
 		for(auto it = di.json.MemberBegin(); it != di.json.MemberEnd(); ++it) {
