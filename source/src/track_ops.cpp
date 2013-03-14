@@ -54,18 +54,21 @@ void action_pointsaction::ExecuteAction() const {
 	unsigned int old_pflags = target->GetPointFlags(index);
 	unsigned int change_flags = (old_pflags ^ bits) & mask;
 
-	unsigned immediate_action_bits = 0;
-	unsigned immediate_action_mask = 0;
+	unsigned int immediate_action_bits = 0;
+	unsigned int immediate_action_mask = 0;
 
 	if(change_flags & genericpoints::PTF_REV) {
 		if(old_pflags & genericpoints::PTF_LOCKED) {
 			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "points/locked"));
+			return;
 		}
 		else if(old_pflags & genericpoints::PTF_REMINDER) {
 			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "points/reminderset"));
+			return;
 		}
 		else if(target->GetFlags(target->GetDefaultValidDirecton()) & generictrack::GTF_ROUTESET) {
 			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "track/reserved"));
+			return;
 		}
 		else {
 			CancelFutures(index, 0, genericpoints::PTF_OOC);
@@ -77,14 +80,9 @@ void action_pointsaction::ExecuteAction() const {
 			ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, GetPointsMovementCompletionTime(), index, 0, genericpoints::PTF_OOC));
 		}
 	}
-	if(change_flags & genericpoints::PTF_LOCKED) {
-		immediate_action_bits |= bits & genericpoints::PTF_LOCKED;
-		immediate_action_mask |= genericpoints::PTF_LOCKED;
-	}
-	if(change_flags & genericpoints::PTF_REMINDER) {
-		immediate_action_bits |= bits & genericpoints::PTF_REMINDER;
-		immediate_action_mask |= genericpoints::PTF_REMINDER;
-	}
+	unsigned int immediate_change_flags = change_flags & (genericpoints::PTF_LOCKED | genericpoints::PTF_REMINDER);
+	immediate_action_mask |= immediate_change_flags;
+	immediate_action_bits |= bits & immediate_change_flags;
 
 	ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, w.GetGameTime() + 1, index, immediate_action_bits, immediate_action_mask));
 }
@@ -159,10 +157,10 @@ bool action_reservetrack_base::TryReserveRoute(route *rt, world_time action_time
 	rt->start.track->Reservation(rt->start.direction, 0, RRF_RESERVE | RRF_STARTPIECE, rt);
 	rt->start.track->ReservationActions(rt->start.direction, 0, RRF_RESERVE | RRF_STARTPIECE, rt, w, actioncallback);
 	for(auto it = rt->pieces.begin(); it != rt->pieces.end(); ++it) {
-		it->location.track->Reservation(it->location.direction, it->connection_index, RRF_TRYRESERVE, rt);
-		it->location.track->ReservationActions(it->location.direction, it->connection_index, RRF_TRYRESERVE, rt, w, actioncallback);
+		it->location.track->Reservation(it->location.direction, it->connection_index, RRF_RESERVE, rt);
+		it->location.track->ReservationActions(it->location.direction, it->connection_index, RRF_RESERVE, rt, w, actioncallback);
 	}
-	rt->end.track->Reservation(rt->end.direction, 0, RRF_RESERVE | RRF_STARTPIECE, rt);
+	rt->end.track->Reservation(rt->end.direction, 0, RRF_RESERVE | RRF_ENDPIECE, rt);
 	rt->end.track->ReservationActions(rt->end.direction, 0, RRF_RESERVE | RRF_ENDPIECE, rt, w, actioncallback);
 	return true;
 }
