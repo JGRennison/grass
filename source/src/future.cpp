@@ -115,29 +115,14 @@ void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di
 			if(subdi.json.IsObject()) {
 				subdi.seenprops.reserve(subdi.json.GetMemberCount());
 				
-				const rapidjson::Value &idval = subdi.json["fid"];
-				if(IsType<future_id_type>(idval)) {
-					const rapidjson::Value &timeval = subdi.json["ftime"];
-					if(IsType<world_time>(timeval)) {
-						const rapidjson::Value &typeval = subdi.json["ftype"];
-						if(typeval.IsString()) {
-							subdi.type.assign(typeval.GetString(), typeval.GetStringLength());
-							subdi.RegisterProp("ftype");
-							if(!dtf.FindAndDeserialise(subdi.type, subdi, ec, fc, *this, GetType<world_time>(timeval), GetType<future_id_type>(idval))) {
-								ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, string_format("LoadGame: Unknown future type: %s", subdi.type.c_str()))));
-							}
-						}
-						else {
-							ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Object has no type")));
-						}
-					}
-					else {
-						ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Object has no time")));
+				future_id_type fid;
+				world_time ftime;
+				if(CheckTransJsonValue(fid, subdi, "fid", ec, true) && CheckTransJsonValue(ftime, subdi, "ftime", ec, true) && CheckTransJsonValue(subdi.type, subdi, "ftype", ec, true)) {
+					if(!dtf.FindAndDeserialise(subdi.type, subdi, ec, fc, *this, ftime, fid)) {
+						ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, string_format("Futures: Unknown future type: %s", subdi.type.c_str()))));
 					}
 				}
-				else {
-					ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Object has no id")));
-				}
+				subdi.PostDeserialisePropCheck(ec);
 			}
 			else {
 				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Expected object")));

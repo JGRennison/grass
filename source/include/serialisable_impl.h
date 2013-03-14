@@ -144,18 +144,21 @@ template <> inline const char *GetTypeFriendlyName<EDGETYPE>() { return "directi
 template <> inline const char *GetTypeFriendlyName<json_object>() { return "object"; }
 template <> inline const char *GetTypeFriendlyName<json_array>() { return "array"; }
 
-template <typename C> inline void CheckJsonTypeAndReportError(const deserialiser_input &di, const char *prop, const rapidjson::Value& subval, error_collection &ec) {
+template <typename C> inline void CheckJsonTypeAndReportError(const deserialiser_input &di, const char *prop, const rapidjson::Value& subval, error_collection &ec, bool mandatory=false) {
 	if(!subval.IsNull()) {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("JSON variable of wrong type: %s, expected: %s", prop, GetTypeFriendlyName<C>()))));
 	}
+	else if(mandatory) {
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Mandatory JSON variable is missing: %s, expected: %s", prop, GetTypeFriendlyName<C>()))));
+	}
 }
 
-template <typename C> inline bool CheckTransJsonValue(C &var, const deserialiser_input &di, const char *prop, error_collection &ec) {
+template <typename C> inline bool CheckTransJsonValue(C &var, const deserialiser_input &di, const char *prop, error_collection &ec, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
 	di.RegisterProp(prop);
 	bool res=IsType<C>(subval);
 	if(res) var=GetType<C>(subval);
-	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec);
+	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec, mandatory);
 	return res;
 }
 
@@ -215,21 +218,21 @@ template <typename C, typename D> inline C CheckGetJsonValueDef(const deserialis
 	return res?GetType<C>(subval):def;
 }
 
-template <typename C> inline void CheckTransJsonSubObj(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec) {
+template <typename C> inline void CheckTransJsonSubObj(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
 	di.RegisterProp(prop);
 	if(subval.IsObject()) obj.DeserialiseObject(deserialiser_input(type_name, prop, subval), ec);
 	else {
-		CheckJsonTypeAndReportError<json_object>(di, prop, subval, ec);
+		CheckJsonTypeAndReportError<json_object>(di, prop, subval, ec, mandatory);
 	}
 }
 
-template <typename C> inline void CheckTransJsonSubArray(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec) {
+template <typename C> inline void CheckTransJsonSubArray(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
 	di.RegisterProp(prop);
 	if(subval.IsArray()) obj.Deserialise(deserialiser_input(type_name, prop, subval), ec);
 	else {
-		CheckJsonTypeAndReportError<json_array>(di, prop, subval, ec);
+		CheckJsonTypeAndReportError<json_array>(di, prop, subval, ec, mandatory);
 	}
 }
 
@@ -261,12 +264,12 @@ template <typename C> inline void CheckFillTypeVectorFromJsonArrayOrType(const d
 	CheckIterateJsonArrayOrType<C>(di, prop, "", ec, func);
 }
 
-template <typename C> inline bool CheckTransRapidjsonValue(const rapidjson::Value *&val, const deserialiser_input &di, const char *prop, error_collection &ec) {
+template <typename C> inline bool CheckTransRapidjsonValue(const rapidjson::Value *&val, const deserialiser_input &di, const char *prop, error_collection &ec, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
 	di.RegisterProp(prop);
 	bool res=IsType<C>(subval);
 	if(res) val=&subval;
-	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec);
+	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec, mandatory);
 	return res;
 }
 
