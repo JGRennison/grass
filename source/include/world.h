@@ -59,6 +59,7 @@ typedef enum {
 class world : public named_futurable_obj {
 	friend world_serialisation;
 	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
+	std::unordered_map<std::string, std::unique_ptr<track_circuit> > all_track_circuits;
 	std::deque<connection_forward_declaration> connection_forward_declarations;
 	std::unordered_map<std::string, traction_type> traction_types;
 	world_time gametime = 0;
@@ -81,13 +82,24 @@ class world : public named_futurable_obj {
 	void ConnectTrack(generictrack *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec);
 	void LayoutInit(error_collection &ec);
 	void PostLayoutInit(error_collection &ec);
-	generictrack *FindTrackByName(const std::string &name) const;
+	inline generictrack *FindTrackByName(const std::string &name) const {
+		auto it = all_pieces.find(name);
+		if(it != all_pieces.end()) {
+			if(it->second) return it->second.get();
+		}
+		return 0;
+	}
+	inline track_circuit *FindOrMakeTrackCircuitByName(const std::string &name) {
+		std::unique_ptr<track_circuit> &tc = all_track_circuits[name];
+		if(! tc.get()) tc.reset(new track_circuit(*this, name));
+		return tc.get();
+	}
 	void InitFutureTypes();
 	world() { InitFutureTypes(); }
 	world_time GetGameTime() const { return gametime; }
 	std::string FormatGameTime(world_time wt) const;
 	void SubmitAction(const action &request);
-	named_futurable_obj *FindFuturableByName(const std::string &name) const;
+	named_futurable_obj *FindFuturableByName(const std::string &name);
 	virtual std::string GetTypeSerialisationClassName() const { return ""; }
 	virtual std::string GetSerialisationName() const { return "world"; }
 	virtual textpool &GetUserMessageTextpool();

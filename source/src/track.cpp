@@ -146,11 +146,11 @@ void trackseg::TrainEnter(EDGETYPE direction, train *t) {
 }
 
 void trackseg::TrainLeave(EDGETYPE direction, train *t) {
-	traincount++;
+	traincount--;
 	track_circuit *tc = GetTrackCircuit();
-	if(tc) tc->TrainEnter(t);
+	if(tc) tc->TrainLeave(t);
 	const speedrestrictionset *speeds = GetSpeedRestrictions();
-	t->RemoveCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
+	if(speeds) t->RemoveCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
 }
 
 bool trackseg::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {

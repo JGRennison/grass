@@ -31,6 +31,5 @@ std::string world_obj::GetFriendlyName() const {
 }
 
 void world_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	name = di.name;
 	DeserialiseFutures(di, ec, w.future_types, w.futures);
 }

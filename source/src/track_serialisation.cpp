@@ -76,6 +76,11 @@ void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
 	CheckTransJsonSubArray(speed_limits, di, "speedlimits", "speedlimits", ec);
 	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec);
+	
+	std::string tracksegname;
+	if(CheckTransJsonValue(tracksegname, di, "trackcircuit", ec)) {
+		tc = GetWorld().FindOrMakeTrackCircuitByName(tracksegname);
+	}
 }
 
 void trackseg::Serialise(serialiser_output &so, error_collection &ec) const {

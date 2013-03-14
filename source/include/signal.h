@@ -48,6 +48,7 @@ class routingpoint : public genericzlentrack {
 	protected:
 	unsigned int aspect = 0;
 	routingpoint *aspect_target = 0;
+	routingpoint *aspect_route_target = 0;
 	ROUTE_CLASS aspect_type = RTC_NULL;
 
 	public:
@@ -74,7 +75,9 @@ class routingpoint : public genericzlentrack {
 	
 	inline unsigned int GetAspect() const { return aspect; }
 	inline routingpoint *GetNextAspectTarget() const { return aspect_target; }
+	inline routingpoint *GetAspectSetRouteTarget() const { return aspect_route_target; }
 	inline ROUTE_CLASS GetAspectType() const { return aspect_type; }
+	virtual void UpdateRoutingPoint() { }
 
 	static inline unsigned int GetRouteClassRPRTMask(ROUTE_CLASS rc) {
 		switch(rc) {
@@ -194,7 +197,7 @@ class genericsignal : public trackroutingpoint {
 	track_reservation_state end_trs;
 
 	world_time last_state_update = 0;
-	unsigned int max_aspect = 0;
+	unsigned int max_aspect = 1;
 
 	public:
 	genericsignal(world &w_) : trackroutingpoint(w_), sflags(0) { availableroutetypes_reverse |= RPRT_SHUNTTRANS | RPRT_ROUTETRANS; }
@@ -208,6 +211,7 @@ class genericsignal : public trackroutingpoint {
 	enum {
 		GSF_REPEATER		= 1<<0,
 		GSF_ASPECTEDREPEATER	= 1<<1,		//true for "standard" repeaters which show an aspect, not true for banner repeaters, etc.
+		GSF_NOOVERLAP		= 1<<2,
 	};
 	virtual unsigned int GetSignalFlags() const;
 	virtual unsigned int SetSignalFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
@@ -222,6 +226,7 @@ class genericsignal : public trackroutingpoint {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 	
 	virtual void UpdateSignalState();
+	virtual void UpdateRoutingPoint() { UpdateSignalState(); }
 	virtual void TrackTick() { UpdateSignalState(); }
 
 	protected:

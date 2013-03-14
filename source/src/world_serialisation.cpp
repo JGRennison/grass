@@ -37,22 +37,18 @@ void world_serialisation::ParseInputString(const std::string &input, error_colle
 	if (dc.Parse<0>(input.c_str()).HasParseError()) {
 		ec.RegisterError(std::unique_ptr<error_obj>(new generic_error_obj(string_format("JSON Parsing error at offset: %d, Error: %s", dc.GetErrorOffset(), dc.GetParseError()))));
 	}
-	else LoadGame(deserialiser_input("[root]", "", "[root]", dc, &w, this, 0), ec);
+	else LoadGame(deserialiser_input("", "[root]", dc, &w, this, 0), ec);
 }
 
 void world_serialisation::LoadGame(const deserialiser_input &di, error_collection &ec) {
 	deserialiser_input contentdi(di.json["content"], "content", "content", di);
 	if(contentdi.json.IsArray()) {
 		for(rapidjson::SizeType i = 0; i < contentdi.json.Size(); i++) {
-			deserialiser_input subdi("", "", MkArrayRefName(i), contentdi.json[i], &w, this, &contentdi);
+			deserialiser_input subdi("", MkArrayRefName(i), contentdi.json[i], &w, this, &contentdi);
 			if(subdi.json.IsObject()) {
 				subdi.seenprops.reserve(subdi.json.GetMemberCount());
-				const rapidjson::Value &nameval = subdi.json["name"];
-				if(nameval.IsString()) {
-					subdi.name.assign(nameval.GetString(), nameval.GetStringLength());
-					subdi.RegisterProp("name");
-				}
-				else subdi.name=string_format("#%d", i);
+				
+				current_content_index = i;
 
 				const rapidjson::Value &typeval = subdi.json["type"];
 				if(typeval.IsString()) {
@@ -75,7 +71,12 @@ void world_serialisation::LoadGame(const deserialiser_input &di, error_collectio
 }
 
 template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec) {
-	std::unique_ptr<generictrack> &ptr = w.all_pieces[di.name];
+	std::string trackname;
+	if(!CheckTransJsonValue(trackname, di, "name", ec)) {
+		trackname=string_format("#%d", current_content_index);
+	}
+
+	std::unique_ptr<generictrack> &ptr = w.all_pieces[trackname];
 	if(ptr) {
 		if(typeid(*ptr) != typeid(T)) {
 			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("LoadGame: Track type definition conflict: %s is not a %s", ptr->GetFriendlyName().c_str(), di.type.c_str()))));
@@ -84,6 +85,7 @@ template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deser
 	}
 	else {
 		ptr.reset(new T(w));
+		ptr->SetName(trackname);
 		ptr->SetPreviousTrackPiece(previoustrackpiece);
 		previoustrackpiece = ptr.get();
 	}
@@ -99,10 +101,11 @@ template <typename T> T* world_serialisation::DeserialiseGenericTrack(const dese
 }
 
 void world_serialisation::DeserialiseTemplate(const deserialiser_input &di, error_collection &ec) {
-	const rapidjson::Value &contentval=di.json["content"];
+	const rapidjson::Value *contentval;
 	std::string name;
-	if(CheckTransJsonValue(name, di, "name", ec) && contentval.IsObject()) {
-		template_map[name].json = &contentval;
+	if(CheckTransJsonValue(name, di, "name", ec) && CheckTransRapidjsonValue<json_object>(contentval, di, "content", ec)) {
+		template_map[name].json = contentval;
+		di.PostDeserialisePropCheck(ec);
 	}
 	else {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template definition")));
@@ -110,21 +113,14 @@ void world_serialisation::DeserialiseTemplate(const deserialiser_input &di, erro
 }
 
 void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di, error_collection &ec) {
-	const rapidjson::Value &contentval=di.json["content"];
 	std::string newtype;
 	std::string basetype;
 	if(CheckTransJsonValue(newtype, di, "newtype", ec) && CheckTransJsonValue(basetype, di, "basetype", ec)) {
 		const rapidjson::Value *content;
-		if(contentval.IsObject()) {
-			content = &contentval;
-		}
-		else {
-			CheckJsonTypeAndReportError<placeholder_subobject>(di, "content", contentval, ec);
-			content = 0;
-		}
+		CheckTransRapidjsonValueDef<json_object>(content, di, "content", ec);
 
 		auto func = [=](const deserialiser_input &di, error_collection &ec) {
-			deserialiser_input typedefwrapperdi(di.name, di.type, "Typedef Wrapper: " + newtype + " base: " + basetype, di.json, di);
+			deserialiser_input typedefwrapperdi(di.type, "Typedef Wrapper: " + newtype + " base: " + basetype, di.json, di);
 			
 			const deserialiser_input *checkparent = di.parent;
 			do {
@@ -150,6 +146,7 @@ void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di
 			typedefwrapperdi.seenprops.swap(di.seenprops);
 		};
 		object_types.RegisterType(newtype, func);
+		di.PostDeserialisePropCheck(ec);
 	}
 	else {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid typedef definition")));
@@ -178,9 +175,21 @@ void world_serialisation::DeserialiseTractionType(const deserialiser_input &di, 
 	std::string name;
 	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
 		di.w->AddTractionType(name, CheckGetJsonValueDef<bool, bool>(di, "alwaysavailable", false, ec));
+		di.PostDeserialisePropCheck(ec);
 	}
 	else {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid traction type definition")));
+	}
+}
+
+void world_serialisation::DeserialiseTrackCircuit(const deserialiser_input &di, error_collection &ec) {
+	std::string name;
+	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
+		track_circuit *tc = di.w->FindOrMakeTrackCircuitByName(name);
+		tc->DeserialiseObject(di, ec);
+	}
+	else {
+		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid track circuit definition")));
 	}
 }
 
@@ -206,6 +215,7 @@ void world_serialisation::InitObjectTypes() {
 	object_types.RegisterType("template", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTemplate(di, ec); });
 	object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTypeDefinition(di, ec); });
 	object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTractionType(di, ec); });
+	object_types.RegisterType("tractkcircuit", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTrackCircuit(di, ec); });
 }
 
 void world_serialisation::DeserialiseObject(const deserialiser_input &di, error_collection &ec) {

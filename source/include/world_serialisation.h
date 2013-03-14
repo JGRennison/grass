@@ -47,6 +47,7 @@ class world_serialisation {
 	std::map<std::string, template_def> template_map;
 	std::forward_list<rapidjson::Document> parsed_inputs;
 	generictrack *previoustrackpiece;
+	unsigned int current_content_index;
 
 	public:
 	deserialisation_type_factory<> object_types;
@@ -60,9 +61,11 @@ class world_serialisation {
 	void DeserialiseTypeDefinition(const deserialiser_input &di, error_collection &ec);
 	void ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTractionType(const deserialiser_input &di, error_collection &ec);
+	void DeserialiseTrackCircuit(const deserialiser_input &di, error_collection &ec);
 	template <typename T> T* MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec);
 	template <typename T> T* DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec);
 	template <typename C> void MakeGenericTrackTypeWrapper();
+	inline unsigned int GetCurrentContentIndex() const { return current_content_index; }
 };
 
 #endif

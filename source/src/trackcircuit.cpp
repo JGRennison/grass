@@ -22,10 +22,23 @@
 //==========================================================================
 
 #include "trackcircuit.h"
+#include "serialisable_impl.h"
 
 void track_circuit::TrainEnter(train *t) {
-	
+	traincount++;
 }
 void track_circuit::TrainLeave(train *t) {
-	
+	traincount--;
+}
+
+void track_circuit::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	world_obj::Deserialise(di, ec);
+
+	CheckTransJsonValue(traincount, di, "traincount", ec);
+}
+
+void track_circuit::Serialise(serialiser_output &so, error_collection &ec) const {
+	world_obj::Serialise(so, ec);
+
+	SerialiseValueJson(traincount, so, "traincount");
 }

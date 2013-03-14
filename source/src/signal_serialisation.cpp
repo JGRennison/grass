@@ -60,6 +60,7 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTEND, di, "shuntend", ec, &conflictcheck);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTESTART, di, "routestart", ec, &conflictcheck);
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTEEND, di, "routeend", ec, &conflictcheck);
+	CheckTransJsonValue(max_aspect, di, "maxaspect", ec);
 }
 
 void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {

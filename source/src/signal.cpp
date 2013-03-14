@@ -164,6 +164,7 @@ void genericsignal::UpdateSignalState() {
 	if(!set_route || set_route->type == RTC_OVERLAP) {
 		aspect = 0;
 		aspect_target = 0;
+		aspect_route_target = 0;
 		aspect_type = RTC_NULL;
 		return;
 	}
@@ -173,6 +174,7 @@ void genericsignal::UpdateSignalState() {
 			if((*it)->Occupied()) {
 				aspect = 0;
 				aspect_target = 0;
+				aspect_route_target = 0;
 				aspect_type = RTC_NULL;
 				return;
 			}
@@ -181,6 +183,7 @@ void genericsignal::UpdateSignalState() {
 
 	aspect_type = set_route->type;
 	aspect_target = set_route->end.track;
+	aspect_route_target = set_route->end.track;
 
 	sig_list::iterator next_repeater;
 	if(set_route->start.track == this) {
@@ -197,9 +200,13 @@ void genericsignal::UpdateSignalState() {
 		aspect_target = *next_repeater;
 	}
 
-	if(set_route->type == RTC_SHUNT) aspect = 1;
+	if(set_route->type == RTC_SHUNT) aspect = std::min((unsigned int) 1, max_aspect);
 	else {
-		aspect = std::max(max_aspect, aspect_target->GetAspect() + 1);
+		if(max_aspect <= 1) aspect = max_aspect;
+		else {
+			aspect_target->UpdateRoutingPoint();
+			aspect = std::min(max_aspect, aspect_target->GetAspect() + 1);
+		}
 	}
 }
 
@@ -432,7 +439,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 	signal_route_recording_state rrrs;
 	bool needoverlap = false;
 	if(GetAvailableRouteTypes(EDGE_FRONT) & RPRT_ROUTESTART) rrrs.rrrs_flags |= signal_route_recording_state::RRRSF_ROUTEOK;
-	if(GetAvailableRouteTypes(EDGE_FRONT) & RPRT_ROUTEEND) {
+	if(GetAvailableRouteTypes(EDGE_FRONT) & RPRT_ROUTEEND && ! (GetSignalFlags() & GSF_NOOVERLAP)) {
 		rrrs.rrrs_flags |= signal_route_recording_state::RRRSF_OVERLAPOK;
 		needoverlap = true;
 	}

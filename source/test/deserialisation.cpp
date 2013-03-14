@@ -210,3 +210,25 @@ TEST_CASE( "deserialisation/error/typedefrecursion", "Test check for typedef rec
 	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 1);
 }
+
+TEST_CASE( "deserialisation/error/templateextravalues", "Test templating extra values check" ) {
+	std::string track_test_str = 
+	R"({ "content" : [ )"
+		R"({ "type" : "template", "name" : "T1", "foobar" : true, "content" : { } } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 1);
+}
+
+TEST_CASE( "deserialisation/error/typedefextravalues", "Test typedef extra values check" ) {
+	std::string track_test_str = 
+	R"({ "content" : [ )"
+		R"({ "type" : "typedef", "newtype" : "derived", "basetype" : "base", "foobar" : true, "content" : { } } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+	
+	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 1);
+}

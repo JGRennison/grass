@@ -32,7 +32,10 @@ error_deserialisation::error_deserialisation(const deserialiser_input &di, const
 			counter = f(des->parent, counter);
 			msg << "\n\t" << counter << ": " << des->reference_name;
 			if(!des->type.empty()) msg << ", Type: " << des->type;
-			if(!des->name.empty()) msg << ", Name: " << des->name;
+			if(des->json.IsObject()) {
+				const rapidjson::Value &nameval=des->json["name"];
+				if(IsType<std::string>(nameval)) msg << ", Name: " << GetType<std::string>(nameval);
+			}
 			counter++;
 		}
 		return counter;
@@ -71,15 +74,15 @@ void serialisable_obj::DeserialiseObject(const deserialiser_input &di, error_col
 	Deserialise(di, ec);
 	DeserialisePrePost("postparse", di, ec);
 	if(di.objpostparse) DeserialiseObject(*di.objpostparse, ec);
-	PostDeserialisePropCheck(di, ec);
+	di.PostDeserialisePropCheck(ec);
 }
 
-void serialisable_obj::PostDeserialisePropCheck(const deserialiser_input &di, error_collection &ec) {
-	if(di.seenprops.size() == di.json.GetMemberCount()) return;
+void deserialiser_input::PostDeserialisePropCheck(error_collection &ec) const {
+	if(seenprops.size() == json.GetMemberCount()) return;
 	else {
-		for(auto it = di.json.MemberBegin(); it != di.json.MemberEnd(); ++it) {
-			if(std::find_if(di.seenprops.begin(), di.seenprops.end(), [&](const char *& s) { return strcmp(it->name.GetString(), s) == 0; }) == di.seenprops.end()) {
-				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Unknown object property: \"%s\"", it->name.GetString()))));
+		for(auto it = json.MemberBegin(); it != json.MemberEnd(); ++it) {
+			if(std::find_if(seenprops.begin(), seenprops.end(), [&](const char *& s) { return strcmp(it->name.GetString(), s) == 0; }) == seenprops.end()) {
+				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(*this, string_format("Unknown object property: \"%s\"", it->name.GetString()))));
 			}
 		}
 	}

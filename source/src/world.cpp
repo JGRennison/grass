@@ -73,19 +73,12 @@ void world::PostLayoutInit(error_collection &ec) {
 	}
 }
 
-generictrack *world::FindTrackByName(const std::string &name) const {
-	auto it = all_pieces.find(name);
-	if(it != all_pieces.end()) {
-		if(it->second) return it->second.get();
-	}
-	return 0;
-}
-
-named_futurable_obj *world::FindFuturableByName(const std::string &name) const {
+named_futurable_obj *world::FindFuturableByName(const std::string &name) {
 	size_t offset = name.find('/');
 	if(offset == std::string::npos) return 0;
 	if(name.compare(0, offset, generictrack::GetTypeSerialisationClassNameStatic())) return FindTrackByName(name.substr(offset+1));
-	else if(name == this->GetFullSerialisationName()) return const_cast<world *>(this);
+	else if(name.compare(0, offset, track_circuit::GetTypeSerialisationClassNameStatic())) return FindOrMakeTrackCircuitByName(name.substr(offset+1));
+	else if(name == this->GetFullSerialisationName()) return this;
 	return 0;
 }
 

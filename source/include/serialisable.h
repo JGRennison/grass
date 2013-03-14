@@ -53,7 +53,6 @@ class serialisable_obj {
 	friend world_serialisation;
 
 	void DeserialisePrePost(const char *name, const deserialiser_input &di, error_collection &ec);
-	void PostDeserialisePropCheck(const deserialiser_input &di, error_collection &ec);
 
 	public:
 	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);
