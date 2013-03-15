@@ -256,10 +256,10 @@ bool catchpoints::Reservation(EDGETYPE direction, unsigned int index, unsigned i
 }
 
 void catchpoints::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
-	if(rr_flags & RRF_RESERVE) {
+	if(rr_flags & RRF_RESERVE && trs.GetReservationCount() == 0) {
 		submitaction(action_pointsaction(GetWorld(), *this, 0, 0, PTF_REV));
 	}
-	else if(rr_flags & RRF_UNRESERVE) {
+	else if(rr_flags & RRF_UNRESERVE && trs.GetReservationCount() == 1) {
 		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF_REV, PTF_REV));
 	}
 }
