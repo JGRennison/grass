@@ -264,7 +264,7 @@ trackseg & trackseg::SetTrackCircuit(track_circuit *tc) {
 	return *this;
 }
 
-bool trackseg::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool trackseg::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
@@ -409,7 +409,7 @@ bool IsPointsRoutingDirAndIndexRev(EDGETYPE direction, unsigned int index) {
 	}
 }
 
-bool points::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool points::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
 	unsigned int pflags = GetPointFlags(0);
 	bool rev = pflags & PTF_REV;
 	if(pflags & (PTF_LOCKED | PTF_REMINDER)) {
@@ -418,12 +418,12 @@ bool points::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-void points::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
-	if(rr_flags & RRF_RESERVE) {
+void points::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+	if(rr_flags & (RRF_RESERVE | RRF_DUMMY_RESERVE)) {
 		bool rev = pflags & PTF_REV;
 		bool newrev = IsPointsRoutingDirAndIndexRev(direction, index);
 		if(newrev != rev) {
-			submitaction(action_pointsaction(w, *this, 0, newrev ? PTF_REV : 0, PTF_REV));
+			submitaction(action_pointsaction(GetWorld(), *this, 0, newrev ? PTF_REV : 0, PTF_REV));
 		}
 	}
 }
@@ -518,18 +518,18 @@ unsigned int catchpoints::SetPointFlagsMasked(unsigned int points_index, unsigne
 	return pflags;
 }
 
-bool catchpoints::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool catchpoints::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
 	unsigned int pflags = GetPointFlags(0);
 	if(pflags & PTF_LOCKED && pflags & PTF_REV)  return false;
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-void catchpoints::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
+void catchpoints::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
 	if(rr_flags & RRF_RESERVE) {
-		submitaction(action_pointsaction(w, *this, 0, 0, PTF_REV));
+		submitaction(action_pointsaction(GetWorld(), *this, 0, 0, PTF_REV));
 	}
 	else if(rr_flags & RRF_UNRESERVE) {
-		submitaction(action_pointsaction(w, *this, 0, PTF_REV, PTF_REV));
+		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF_REV, PTF_REV));
 	}
 }
 
@@ -592,7 +592,7 @@ unsigned int springpoints::GetFlags(EDGETYPE direction) const {
 	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-bool springpoints::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool springpoints::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
@@ -661,7 +661,7 @@ unsigned int crossover::GetFlags(EDGETYPE direction) const {
 	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-bool crossover::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool crossover::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
@@ -739,7 +739,7 @@ unsigned int doubleslip::SetPointFlagsMasked(unsigned int points_index, unsigned
 		};
 
 		if(pflags[points_index] & PTF_FIXED) return pflags[points_index];
-		
+
 		unsigned int newpointsflags = (pflags[points_index] & (~mask_flags)) | set_flags;
 		if(dof == 1) {
 			safe_set(pflags[0], newpointsflags);
@@ -759,7 +759,7 @@ unsigned int doubleslip::SetPointFlagsMasked(unsigned int points_index, unsigned
 	}
 }
 
-bool doubleslip::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool doubleslip::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
 	unsigned int pf = GetCurrentPointFlags(direction);
 	if(pf & PTF_LOCKED) {
 		if(!(pf & PTF_REV) != !index) return false;	//points locked in wrong direction
@@ -777,8 +777,8 @@ bool doubleslip::Reservation(EDGETYPE direction, unsigned int index, unsigned in
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) {
-	if(rr_flags & RRF_RESERVE) {
+void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+	if(rr_flags & (RRF_RESERVE | RRF_DUMMY_RESERVE)) {
 		unsigned int entranceindex = GetCurrentPointIndex(direction);
 		unsigned int entrancepf = GetCurrentPointFlags(direction);
 		bool isentrancerev = (entrancepf & PTF_FIXED) ? (entrancepf & PTF_REV) : index;
@@ -790,8 +790,8 @@ void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, unsi
 
 		bool isexitrev = (GetConnectingPointDirection(exitdirection, true) == direction);
 
-		if(!(entrancepf & PTF_REV) != !(isentrancerev)) submitaction(action_pointsaction(w, *this, entranceindex, isentrancerev ? PTF_REV : 0, PTF_REV));
-		if(!(exitpf & PTF_REV) != !(isexitrev)) submitaction(action_pointsaction(w, *this, exitindex, isexitrev ? PTF_REV : 0, PTF_REV));
+		if(!(entrancepf & PTF_REV) != !(isentrancerev)) submitaction(action_pointsaction(GetWorld(), *this, entranceindex, isentrancerev ? PTF_REV : 0, PTF_REV));
+		if(!(exitpf & PTF_REV) != !(isexitrev)) submitaction(action_pointsaction(GetWorld(), *this, exitindex, isexitrev ? PTF_REV : 0, PTF_REV));
 	}
 }
 
@@ -809,7 +809,7 @@ void doubleslip::UpdatePointsFixedStatesFromMissingTrackEdges() {
 		fixpoints2(direction1, reverse1);
 		fixpoints2(direction2, reverse2);
 	};
-	
+
 	switch(dsflags&DSF_NO_TRACK_MASK) {
 		case DSF_NO_FL_BL:
 			fixpoints(EDGE_DS_FL, false, EDGE_DS_BL, false);
@@ -838,39 +838,78 @@ error_trackconnection_notfound::error_trackconnection_notfound(const track_targe
 	msg << "Track Connection Error: Could Not Connect: " << targ1 << " to Unfound Target:" << targ2;
 }
 
-bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, unsigned int in_rr_flags, route *resroute) {
+bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, unsigned int in_rr_flags, const route *resroute) {
 	if(in_rr_flags & (RRF_RESERVE | RRF_TRYRESERVE)) {
-		if(rr_flags & RRF_RESERVE) {	//track already reserved
-			if(direction != in_dir || index != in_index) return false;	//reserved piece doesn't match
+		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
+			if(it->rr_flags & RRF_RESERVE) {	//track already reserved
+				if(it->direction != in_dir || it->index != in_index) return false;	//reserved piece doesn't match
+			}
 		}
 		if(in_rr_flags & RRF_RESERVE) {
-			rr_flags = in_rr_flags & RRF_SAVEMASK;
-			direction = in_dir;
-			index = in_index;
-			reserved_route = resroute;
+			itrss.emplace_back();
+			inner_track_reservation_state &itrs = itrss.back();
+
+			itrs.rr_flags = in_rr_flags & RRF_SAVEMASK;
+			itrs.direction = in_dir;
+			itrs.index = in_index;
+			itrs.reserved_route = resroute;
 		}
 		return true;
 	}
 	else if(in_rr_flags & RRF_UNRESERVE) {
-		if(rr_flags & RRF_RESERVE) {
-			if(direction != in_dir || index != in_index) return false;	//reserved piece doesn't match
-			rr_flags = 0;
-			direction = EDGE_NULL;
-			index = 0;
-			reserved_route = 0;
+		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
+			if(it->rr_flags & RRF_RESERVE && it->direction == in_dir && it->index == in_index && it->reserved_route == resroute) {
+				itrss.erase(it);
+				return true;
+			}
 		}
-		return true;
 	}
-	else return false;
+	return false;
+}
+
+bool track_reservation_state::IsReserved() const {
+	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
+		if(it->rr_flags & RRF_RESERVE) return true;
+	}
+	return false;
+}
+
+bool track_reservation_state::IsReservedInDirection(EDGETYPE direction) const {
+	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
+		if(it->rr_flags & RRF_RESERVE && it->direction == direction) return true;
+	}
+	return false;
 }
 
 unsigned int track_reservation_state::GetGTReservationFlags(EDGETYPE checkdirection) const {
 	unsigned int outputflags = 0;
-	if(rr_flags & RRF_RESERVE) {
+	if(IsReserved()) {
 		outputflags |= generictrack::GTF_ROUTESET;
-		if(direction == checkdirection) outputflags |= generictrack::GTF_ROUTETHISDIR;
+		if(IsReservedInDirection(checkdirection)) outputflags |= generictrack::GTF_ROUTETHISDIR;
 	}
 	return outputflags;
+}
+
+unsigned int track_reservation_state::ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags)> func) const {
+	unsigned int counter = 0;
+	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
+		if(it->rr_flags & RRF_RESERVE) {
+			func(it->reserved_route, it->direction, it->index, it->rr_flags);
+			counter++;
+		}
+	}
+	return counter;
+}
+
+unsigned int track_reservation_state::ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags)> func) const {
+	unsigned int counter = 0;
+	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
+		if(it->rr_flags & RRF_RESERVE && it->direction == direction) {
+			func(it->reserved_route, it->direction, it->index, it->rr_flags);
+			counter++;
+		}
+	}
+	return counter;
 }
 
 std::ostream& operator<<(std::ostream& os, const generictrack& obj) {

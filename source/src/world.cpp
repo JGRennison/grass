@@ -102,6 +102,7 @@ void world::InitFutureTypes() {
 	MakeFutureTypeWrapper<future_pointsaction>(future_types);
 	MakeFutureTypeWrapper<future_pointsactionmessage>(future_types);
 	MakeFutureTypeWrapper<future_genericusermessage>(future_types);
+	MakeFutureTypeWrapper<future_reservetrack>(future_types);
 }
 
 void world::SubmitAction(const action &request) {

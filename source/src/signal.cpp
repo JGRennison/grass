@@ -118,7 +118,7 @@ unsigned int genericsignal::SetSignalFlagsMasked(unsigned int set_flags, unsigne
 	return sflags;
 }
 
-bool genericsignal::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool genericsignal::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
 	if(direction != EDGE_FRONT && rr_flags & (RRF_STARTPIECE | RRF_ENDPIECE)) {
 		return false;
 	}
@@ -139,18 +139,17 @@ unsigned int genericsignal::GetAvailableRouteTypes(EDGETYPE direction) const {
 
 unsigned int genericsignal::GetSetRouteTypes(EDGETYPE direction) const {
 	unsigned int result = 0;
+
+	auto result_flag_adds = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags) {
+		if(reserved_route) result |= GetRouteClassRPRTMask(reserved_route->type) & GetTRSFlagsRPRTMask(rr_flags);
+	};
+
 	if(direction == EDGE_FRONT) {
-		if(start_trs.reserved_route && start_trs.rr_flags & RRF_RESERVE) {
-			if(start_trs.direction == EDGE_FRONT) result |= GetRouteClassRPRTMask(start_trs.reserved_route->type) & GetTRSFlagsRPRTMask(start_trs.rr_flags);
-		}
-		if(end_trs.reserved_route && end_trs.rr_flags & RRF_RESERVE) {
-			if(end_trs.direction == EDGE_FRONT) result |= GetRouteClassRPRTMask(end_trs.reserved_route->type) & GetTRSFlagsRPRTMask(end_trs.rr_flags);
-		}
+		start_trs.ReservationEnumerationInDirection(EDGE_FRONT, result_flag_adds);
+		end_trs.ReservationEnumerationInDirection(EDGE_FRONT, result_flag_adds);
 	}
 	else {
-		if(start_trs.reserved_route && start_trs.rr_flags & RRF_RESERVE) {
-			if(start_trs.direction == EDGE_BACK) result |= GetRouteClassRPRTMask(start_trs.reserved_route->type) & GetTRSFlagsRPRTMask(start_trs.rr_flags);
-		}
+		start_trs.ReservationEnumerationInDirection(EDGE_BACK, result_flag_adds);
 	}
 	return result;
 }
@@ -160,8 +159,8 @@ void genericsignal::UpdateSignalState() {
 
 	last_state_update = GetWorld().GetGameTime();
 
-	route *set_route = GetCurrentForwardRoute();
-	if(!set_route || set_route->type == RTC_OVERLAP) {
+	const route *set_route = GetCurrentForwardRoute();
+	if(!set_route) {
 		aspect = 0;
 		aspect_target = 0;
 		aspect_route_target = 0;
@@ -185,12 +184,12 @@ void genericsignal::UpdateSignalState() {
 	aspect_target = set_route->end.track;
 	aspect_route_target = set_route->end.track;
 
-	sig_list::iterator next_repeater;
+	sig_list::const_iterator next_repeater;
 	if(set_route->start.track == this) {
 		next_repeater = set_route->repeatersignals.begin();
 	}
 	else {
-		sig_list::iterator check_current_repeater = std::find(set_route->repeatersignals.begin(), set_route->repeatersignals.end(), this);
+		sig_list::const_iterator check_current_repeater = std::find(set_route->repeatersignals.begin(), set_route->repeatersignals.end(), this);
 		if(check_current_repeater != set_route->repeatersignals.end()) {
 			next_repeater = std::next(check_current_repeater, 1);
 		}
@@ -210,11 +209,16 @@ void genericsignal::UpdateSignalState() {
 	}
 }
 
-route *genericsignal::GetCurrentForwardRoute() const {
-	if(end_trs.direction == EDGE_FRONT) {
-		if(end_trs.rr_flags & RRF_RESERVE) return end_trs.reserved_route;
-	}
-	return 0;
+//this will not return the overlap, only the "real" route
+const route *genericsignal::GetCurrentForwardRoute() const {
+	const route *output = 0;
+	
+	auto route_fetch = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags) {
+		if(reserved_route) output = reserved_route;
+	};
+	
+	end_trs.ReservationEnumerationInDirection(EDGE_FRONT, route_fetch);
+	return output;
 }
 
 bool genericsignal::RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const {
@@ -402,6 +406,12 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						rt->end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
 						rt->FillLists();
 						rt->parent = this;
+
+						if(type == RTC_ROUTE) {
+							genericsignal *rt_sig = dynamic_cast<genericsignal *>(target_routing_piece);
+							if(rt_sig && !(rt_sig->GetSignalFlags()&GSF_NOOVERLAP)) rt->routeflags |= route::RF_NEEDOVERLAP;
+						}
+
 						for(auto it = matching_restrictions.begin(); it != matching_restrictions.end(); ++it) {
 							(*it)->ApplyRestriction(*rt);
 						}
@@ -575,7 +585,7 @@ void startofline::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_FRONT, connection) });
 }
 
-bool startofline::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool startofline::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
 	if(rr_flags & RRF_STARTPIECE && direction == EDGE_BACK) {
 		return trs.Reservation(direction, index, rr_flags, resroute);
 	}
@@ -597,10 +607,13 @@ unsigned int startofline::GetAvailableRouteTypes(EDGETYPE direction) const {
 
 unsigned int startofline::GetSetRouteTypes(EDGETYPE direction) const {
 	unsigned int result = 0;
+	
+	auto result_flag_adds = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags) {
+		if(reserved_route) result |= GetRouteClassRPRTMask(reserved_route->type) & GetTRSFlagsRPRTMask(rr_flags) & RPRT_MASK_END;
+	};
+
 	if(direction == EDGE_FRONT) {
-		if(trs.reserved_route && trs.rr_flags & RRF_RESERVE) {
-			if(trs.direction == EDGE_FRONT) result |= GetRouteClassRPRTMask(trs.reserved_route->type) & GetTRSFlagsRPRTMask(trs.rr_flags) & RPRT_MASK_END;
-		}
+		trs.ReservationEnumerationInDirection(EDGE_FRONT, result_flag_adds);
 	}
 	return result;
 }
@@ -613,7 +626,7 @@ unsigned int routingmarker::GetFlags(EDGETYPE direction) const {
 	return GTF_ROUTINGPOINT | trs.GetGTReservationFlags(direction);
 }
 
-bool routingmarker::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) {
+bool routingmarker::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
@@ -623,9 +636,12 @@ unsigned int routingmarker::GetAvailableRouteTypes(EDGETYPE direction) const {
 
 unsigned int routingmarker::GetSetRouteTypes(EDGETYPE direction) const {
 	unsigned int result = 0;
-	if(trs.reserved_route && trs.rr_flags & RRF_RESERVE) {
-		if(trs.direction == direction) result |= GetRouteClassRPRTMask(trs.reserved_route->type) & GetTRSFlagsRPRTMask(trs.rr_flags);
-	}
+	
+	auto result_flag_adds = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags) {
+		if(reserved_route) result |= GetRouteClassRPRTMask(reserved_route->type) & GetTRSFlagsRPRTMask(rr_flags);
+	};
+
+	trs.ReservationEnumerationInDirection(direction, result_flag_adds);
 	return result;
 }
 

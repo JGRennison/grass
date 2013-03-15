@@ -80,6 +80,23 @@ class future_pointsactionmessage : public future_genericusermessage {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };
 
+class action_reservetrack_base;
+
+class future_reservetrack : public future {
+	friend action_reservetrack_base;
+
+	const route *reserved_route;
+
+	public:
+	future_reservetrack(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id), reserved_route(0) { };
+	future_reservetrack(futurable_obj &targ, world_time ft, const route *reserved_route_) : future(targ, ft, 0), reserved_route(reserved_route_) { };
+	static std::string GetTypeSerialisationNameStatic() { return "future_reservetrack"; }
+	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
+	virtual void ExecuteAction();
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+};
+
 class action_reservetrack_base : public action {
 	public:
 	action_reservetrack_base(world &w_) : action(w_) { }

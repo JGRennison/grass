@@ -90,22 +90,39 @@ enum {
 	RRF_TRYRESERVE			= 1<<3,
 	RRF_STARTPIECE			= 1<<4,
 	RRF_ENDPIECE			= 1<<5,
+	
+	RRF_DUMMY_RESERVE		= 1<<6, //for generictrack::ReservationActions, produce actions as normal
 
 	RRF_SAVEMASK			= RRF_AUTOROUTE | RRF_STARTPIECE | RRF_ENDPIECE | RRF_RESERVE,
 };
 
-struct track_reservation_state : public serialisable_obj {
-	route *reserved_route = 0;
+class track_reservation_state;
+
+class inner_track_reservation_state {
+	friend track_reservation_state;
+
+	const route *reserved_route = 0;
 	EDGETYPE direction = EDGE_NULL;
 	unsigned int index = 0;
 	unsigned int rr_flags = 0;
+};
 
-	bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+class track_reservation_state : public serialisable_obj {
+	std::vector<inner_track_reservation_state> itrss;
+
+	public:
+	bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute);
 	unsigned int GetGTReservationFlags(EDGETYPE direction) const;
+	bool IsReserved() const;
+	bool IsReservedInDirection(EDGETYPE direction) const;
+	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags)> func) const;
+	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags)> func) const;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };
+
+const route *DeserialiseRouteTargetByParentAndIndex(const deserialiser_input &di, error_collection &ec);
 
 class generictrack : public world_obj {
 	generictrack *prevtrack;
@@ -141,8 +158,8 @@ class generictrack : public world_obj {
 	bool FullConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec);
 
 	//return true if reservation OK
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute) = 0;
-	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction) { }
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) = 0;
+	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) { }
 
 	virtual std::string GetTypeName() const { return "Generic Track"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "track"; }
@@ -301,7 +318,7 @@ class trackseg : public generictrack {
 
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const;
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 
 	virtual std::string GetTypeName() const { return "Track Segment"; }
 
@@ -382,8 +399,8 @@ class points : public genericpoints {
 
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const;
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
-	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction);
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
+	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 
 	virtual std::string GetTypeName() const { return "Points"; }
 
@@ -418,8 +435,8 @@ class catchpoints : public genericpoints {
 
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const;
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
-	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction);
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
+	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 
 	virtual std::string GetTypeName() const { return "Catch Points"; }
 
@@ -457,7 +474,7 @@ class springpoints : public genericzlentrack {
 
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const { return GetConnectingPiece(direction); }
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 
 	virtual std::string GetTypeName() const { return "Spring Points"; }
 
@@ -494,7 +511,7 @@ class crossover : public genericzlentrack {
 
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const { return GetConnectingPiece(direction); }
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 
 	virtual std::string GetTypeName() const { return "Crossover"; }
 
@@ -610,8 +627,8 @@ class doubleslip : public genericpoints {
 
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const;
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
-	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute, world &w, std::function<void(action &&reservation_act)> submitaction);
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
+	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 
 	virtual std::string GetTypeName() const { return "Double Slip Points"; }
 

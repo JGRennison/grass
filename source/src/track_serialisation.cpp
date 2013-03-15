@@ -223,7 +223,7 @@ void doubleslip::Serialise(serialiser_output &so, error_collection &ec) const {
 	}
 }
 
-void track_reservation_state::Deserialise(const deserialiser_input &di, error_collection &ec) {
+const route *DeserialiseRouteTargetByParentAndIndex(const deserialiser_input &di, error_collection &ec) {
 	std::string targname;
 	if(CheckTransJsonValue(targname, di, "route_parent", ec)) {
 		unsigned int index;
@@ -232,27 +232,46 @@ void track_reservation_state::Deserialise(const deserialiser_input &di, error_co
 			generictrack *gt = di.w->FindTrackByName(targname);
 			routingpoint *rp = dynamic_cast<routingpoint *>(gt);
 			if(rp) {
-				reserved_route = rp->GetRouteByIndex(index);
+				return rp->GetRouteByIndex(index);
 			}
 		}
 	}
-	if(CheckGetJsonValueDef<bool, bool>(di, "no_route", false, ec)) reserved_route = 0;
-	CheckTransJsonValue(direction, di, "direction", ec);
-	CheckTransJsonValue(index, di, "index", ec);
-	CheckTransJsonValue(rr_flags, di, "rr_flags", ec);
+	return 0;
+}
+
+void track_reservation_state::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	itrss.clear();
+	CheckIterateJsonArrayOrType<json_object>(di, "reservations", "track_reservation", ec, [&](const deserialiser_input &innerdi, error_collection &ec) {
+		itrss.emplace_back();
+		inner_track_reservation_state &itrs = itrss.back();
+		
+		itrs.reserved_route = DeserialiseRouteTargetByParentAndIndex(innerdi, ec);
+		CheckTransJsonValue(itrs.direction, innerdi, "direction", ec);
+		CheckTransJsonValue(itrs.index, innerdi, "index", ec);
+		CheckTransJsonValue(itrs.rr_flags, innerdi, "rr_flags", ec);
+		innerdi.PostDeserialisePropCheck(ec);
+	});
 }
 
 void track_reservation_state::Serialise(serialiser_output &so, error_collection &ec) const {
-	if(reserved_route) {
-		if(reserved_route->parent) {
-			SerialiseValueJson(reserved_route->parent->GetName(), so, "route_parent");
-			SerialiseValueJson(reserved_route->index, so, "route_index");
+	if(!itrss.empty()) {
+		so.json_out.String("reservations");
+		so.json_out.StartArray();
+		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
+			so.json_out.StartObject();
+			if(it->reserved_route) {
+				if(it->reserved_route->parent) {
+					SerialiseValueJson(it->reserved_route->parent->GetName(), so, "route_parent");
+					SerialiseValueJson(it->reserved_route->index, so, "route_index");
+				}
+			}
+			SerialiseValueJson(it->direction, so, "direction");
+			SerialiseValueJson(it->index, so, "index");
+			SerialiseValueJson(it->rr_flags, so, "rr_flags");
+			so.json_out.EndObject();
 		}
+		so.json_out.EndArray();
 	}
-	else SerialiseValueJson(true, so, "no_route");
-	SerialiseValueJson(direction, so, "direction");
-	SerialiseValueJson(index, so, "index");
-	SerialiseValueJson(rr_flags, so, "rr_flags");
 }
 
 void speedrestrictionset::Deserialise(const deserialiser_input &di, error_collection &ec) {

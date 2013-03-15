@@ -72,7 +72,7 @@ class routingpoint : public genericzlentrack {
 		RPRT_MASK_END		= RPRT_SHUNTEND | RPRT_ROUTEEND | RPRT_OVERLAPEND,
 		RPRT_MASK_TRANS		= RPRT_SHUNTTRANS | RPRT_ROUTETRANS | RPRT_OVERLAPTRANS,
 	};
-	
+
 	inline unsigned int GetAspect() const { return aspect; }
 	inline routingpoint *GetNextAspectTarget() const { return aspect_target; }
 	inline routingpoint *GetAspectSetRouteTarget() const { return aspect_route_target; }
@@ -118,10 +118,15 @@ struct route {
 	ROUTE_CLASS type;
 	int priority;
 
+	enum {
+		RF_NEEDOVERLAP		= 1<<0,
+	};
+	unsigned int routeflags;
+
 	routingpoint *parent;
 	unsigned int index;
 
-	route() : type(RTC_NULL), priority(0), parent(0), index(0) { }
+	route() : type(RTC_NULL), priority(0), routeflags(0), parent(0), index(0) { }
 	void FillLists();
 	bool TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const;
 };
@@ -204,7 +209,7 @@ class genericsignal : public trackroutingpoint {
 	void TrainEnter(EDGETYPE direction, train *t);
 	void TrainLeave(EDGETYPE direction, train *t);
 
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 
 	virtual std::string GetTypeName() const { return "Generic Signal"; }
 
@@ -218,13 +223,13 @@ class genericsignal : public trackroutingpoint {
 
 	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const;
 	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const;
-	
-	virtual route *GetCurrentForwardRoute() const;
+
+	virtual const route *GetCurrentForwardRoute() const;	//this will not return the overlap, only the "real" route
 	virtual bool RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
-	
+
 	virtual void UpdateSignalState();
 	virtual void UpdateRoutingPoint() { UpdateSignalState(); }
 	virtual void TrackTick() { UpdateSignalState(); }
@@ -297,7 +302,7 @@ class startofline : public routingpoint {
 
 	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const;
 	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const;
-	bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 
 	virtual route *GetRouteByIndex(unsigned int index) { return 0; }
 
@@ -340,7 +345,7 @@ class routingmarker : public trackroutingpoint {
 
 	virtual route *GetRouteByIndex(unsigned int index) { return 0; }
 
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, route *resroute);
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const;
 	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const;
 
