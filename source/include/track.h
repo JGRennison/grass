@@ -95,6 +95,7 @@ class track_reservation_state : public serialisable_obj {
 	bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute);
 	unsigned int GetGTReservationFlags(EDGETYPE direction) const;
 	bool IsReserved() const;
+	unsigned int GetReservationCount() const;
 	bool IsReservedInDirection(EDGETYPE direction) const;
 	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags)> func) const;
 	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags)> func) const;
@@ -115,6 +116,9 @@ class generictrack : public world_obj {
 
 	friend world_serialisation;
 	void SetPreviousTrackPiece(generictrack *prev) { prevtrack = prev; }
+	
+	protected:
+	bool have_inited = false;
 
 	public:
 	generictrack(world &w_) : world_obj(w_), prevtrack(0), gt_flags(0) { }

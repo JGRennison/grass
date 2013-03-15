@@ -134,6 +134,8 @@ bool generictrack::CheckUnconnectedEdges(error_collection &ec) {
 }
 
 bool generictrack::PostLayoutInit(error_collection &ec) {
+	if(have_inited) return false;
+	have_inited = true;
 	return true;
 }
 
@@ -409,6 +411,14 @@ bool track_reservation_state::IsReserved() const {
 		if(it->rr_flags & RRF_RESERVE) return true;
 	}
 	return false;
+}
+
+unsigned int track_reservation_state::GetReservationCount() const {
+	unsigned int count = 0;
+	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
+		if(it->rr_flags & RRF_RESERVE) count++;
+	}
+	return count;
 }
 
 bool track_reservation_state::IsReservedInDirection(EDGETYPE direction) const {

@@ -101,6 +101,7 @@ class routingpoint : public genericzlentrack {
 	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const = 0;
 
 	virtual route *GetRouteByIndex(unsigned int index) = 0;
+	const route *FindBestOverlap() const;
 
 	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
@@ -129,6 +130,8 @@ struct route {
 	route() : type(RTC_NULL), priority(0), routeflags(0), parent(0), index(0) { }
 	void FillLists();
 	bool TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const;
+	bool RouteReservation(unsigned int reserve_flags) const;
+	void RouteReservationActions(unsigned int reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const;
 };
 
 class route_restriction_set;

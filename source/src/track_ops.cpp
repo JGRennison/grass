@@ -142,26 +142,9 @@ void future_pointsactionmessage::Serialise(serialiser_output &so, error_collecti
 	SerialiseValueJson(reasonkey, so, "reasonkey");
 }
 
-inline bool routereserve(const route *rt, unsigned int reserve_flags) {
-	if(!rt->start.track->Reservation(rt->start.direction, 0, reserve_flags | RRF_STARTPIECE, rt)) return false;
-	for(auto it = rt->pieces.begin(); it != rt->pieces.end(); ++it) {
-		if(!it->location.track->Reservation(it->location.direction, it->connection_index, reserve_flags, rt)) return false;
-	}
-	if(!rt->end.track->Reservation(rt->end.direction, 0, reserve_flags | RRF_ENDPIECE, rt)) return false;
-	return true;
-}
-
-inline void routereserveactions(const route *rt, unsigned int reserve_flags, std::function<void(action &&reservation_act)> actioncallback) {
-	rt->start.track->ReservationActions(rt->start.direction, 0, reserve_flags | RRF_STARTPIECE, rt, actioncallback);
-	for(auto it = rt->pieces.begin(); it != rt->pieces.end(); ++it) {
-		it->location.track->ReservationActions(it->location.direction, it->connection_index, reserve_flags, rt, actioncallback);
-	}
-	rt->end.track->ReservationActions(rt->end.direction, 0, reserve_flags | RRF_ENDPIECE, rt, actioncallback);
-}
-
 void future_reservetrack::ExecuteAction() {
 	if(reserved_route) {
-		routereserve(reserved_route, RRF_RESERVE);
+		reserved_route->RouteReservation(RRF_RESERVE);
 	}
 }
 
@@ -182,7 +165,7 @@ void future_reservetrack::Serialise(serialiser_output &so, error_collection &ec)
 
 //return true on success
 bool action_reservetrack_base::TryReserveRoute(route *rt, world_time action_time) const {
-	if(!routereserve(rt, RRF_TRYRESERVE)) return false;
+	if(!rt->RouteReservation(RRF_TRYRESERVE)) return false;
 	
 	//disallow if non-overlap route already set from start point in given direction
 	if(rt->start.track->GetSetRouteTypes(rt->start.direction) & (routingpoint::RPRT_MASK_START & ~routingpoint::RPRT_OVERLAPSTART)) return false;
@@ -190,26 +173,7 @@ bool action_reservetrack_base::TryReserveRoute(route *rt, world_time action_time
 	const route *best_overlap = 0;
 	if(rt->routeflags & route::RF_NEEDOVERLAP) {
 		//need an overlap too
-		genericsignal *endsignal = dynamic_cast<genericsignal *>(rt->end.track);
-		if(!endsignal) return false;
-		
-		int best_score = INT_MIN;
-		auto overlap_finder = [&](const route *r) {
-			if(r->type != RTC_OVERLAP) return;
-			if(!routereserve(r, RRF_TRYRESERVE)) return;
-			
-			int score = r->priority;
-			auto actioncounter = [&](action &&reservation_act) {
-				score -= 10;
-			};
-			routereserveactions(r, RRF_DUMMY_RESERVE, actioncounter);
-			
-			if(score>best_score) {
-				best_score = score;
-				best_overlap = r;
-			}
-		};
-		endsignal->EnumerateRoutes(overlap_finder);
+		best_overlap = rt->end.track->FindBestOverlap();
 		if(!best_overlap) return false;
 	}
 	
@@ -220,10 +184,10 @@ bool action_reservetrack_base::TryReserveRoute(route *rt, world_time action_time
 		reservation_act.Execute();
 	};
 	
-	routereserveactions(rt, RRF_RESERVE, actioncallback);
+	rt->RouteReservationActions(RRF_RESERVE, actioncallback);
 	ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, rt));
 	if(best_overlap) {
-		routereserveactions(best_overlap, RRF_RESERVE, actioncallback);
+		best_overlap->RouteReservationActions(RRF_RESERVE, actioncallback);
 		ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, best_overlap));
 	}
 	return true;
