@@ -39,12 +39,12 @@ class track_circuit : public world_obj {
 	void TrainLeave(train *t);
 	bool Occupied() const { return traincount > 0; }
 	
-	virtual std::string GetTypeName() const { return "Track Circuit"; }
+	virtual std::string GetTypeName() const override { return "Track Circuit"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "trackcircuit"; }
-	virtual std::string GetTypeSerialisationClassName() const { return GetTypeSerialisationClassNameStatic(); }
+	virtual std::string GetTypeSerialisationClassName() const override { return GetTypeSerialisationClassNameStatic(); }
 	
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 #endif

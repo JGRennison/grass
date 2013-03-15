@@ -104,8 +104,6 @@ class world : public named_futurable_obj {
 	virtual std::string GetSerialisationName() const { return "world"; }
 	virtual textpool &GetUserMessageTextpool();
 	virtual void LogUserMessageLocal(LOGCATEGORY lc, const std::string &message);
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 	virtual void GameStep(world_time delta);
 };
 

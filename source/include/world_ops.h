@@ -39,7 +39,7 @@ class future_usermessage : public future {
 	future_usermessage(futurable_obj &targ, world_time ft, world *w_) : future(targ, ft, 0), w(w_) {  };
 
 	virtual void ExecuteAction() = 0;
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 
 	protected:
 	world *GetWorld() const { return w; }
@@ -53,10 +53,10 @@ class future_genericusermessage : public future_usermessage {
 	future_genericusermessage(futurable_obj &targ, world_time ft, future_id_type id) : future_usermessage(targ, ft, id) { };
 	future_genericusermessage(futurable_obj &targ, world_time ft, world *w_, const std::string &textkey_) : future_usermessage(targ, ft, w_), textkey(textkey_) { };
 	static std::string GetTypeSerialisationNameStatic() { return "future_genericusermessage"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void ExecuteAction() final;
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void ExecuteAction() override final;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 	virtual void PrepareVariables(message_formatter &mf, world &w);
 };
 

@@ -37,12 +37,12 @@ class world_obj : public serialisable_futurable_obj {
 	world_obj(world &w_) : w(w_) { }
 	virtual std::string GetTypeName() const = 0;
 	std::string GetName() const { return name; }
-	virtual std::string GetSerialisationName() const { return GetName(); }
+	virtual std::string GetSerialisationName() const override { return GetName(); }
 	void SetName(std::string newname) { name = newname; }
 	virtual std::string GetFriendlyName() const;
 	world &GetWorld() const { return w; }
 
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 };
 
 #endif

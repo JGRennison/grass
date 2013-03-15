@@ -56,8 +56,8 @@ class future : public serialisable_obj {
 	virtual ~future();
 	void Execute();
 	virtual std::string GetTypeSerialisationName() const = 0;
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 	futurable_obj &GetTarget() const { return target; }
 	world_time GetTriggerTime() const { return trigger_time; }
 
@@ -112,7 +112,7 @@ class named_futurable_obj : public futurable_obj {
 class serialisable_futurable_obj : public serialisable_obj, public named_futurable_obj {
 	public:
 	void DeserialiseFutures(const deserialiser_input &di, error_collection &ec, const future_deserialisation_type_factory &dtf, future_container &fs);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 #endif

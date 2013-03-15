@@ -45,8 +45,8 @@ class tractionset : public serialisable_obj {
 		tractions.emplace_back(type);
 	}
 	bool CanTrainPass(train *t) const;
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 #endif

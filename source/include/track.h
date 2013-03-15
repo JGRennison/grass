@@ -301,23 +301,23 @@ class trackseg : public generictrack {
 
 	public:
 	trackseg(world &w_) : generictrack(w_), length(0), elevationdelta(0), tc(0), traincount(0) { }
-	void TrainEnter(EDGETYPE direction, train *t);
-	void TrainLeave(EDGETYPE direction, train *t);
-	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const;
-	unsigned int GetStartOffset(EDGETYPE direction) const;
-	int GetElevationDelta(EDGETYPE direction) const;
-	unsigned int GetLength(EDGETYPE direction) const;
-	const speedrestrictionset *GetSpeedRestrictions() const;
-	const tractionset *GetTractionTypes() const;
-	unsigned int GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const;
-	unsigned int GetRemainingLength(EDGETYPE direction, unsigned int currentoffset) const;
-	track_circuit *GetTrackCircuit() const;
-	unsigned int GetFlags(EDGETYPE direction) const;
-	EDGETYPE GetReverseDirection(EDGETYPE direction) const;
-	virtual EDGETYPE GetDefaultValidDirecton() const { return EDGE_FRONT; }
+	void TrainEnter(EDGETYPE direction, train *t) override;
+	void TrainLeave(EDGETYPE direction, train *t) override;
+	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	unsigned int GetStartOffset(EDGETYPE direction) const override;
+	int GetElevationDelta(EDGETYPE direction) const override;
+	unsigned int GetLength(EDGETYPE direction) const override;
+	const speedrestrictionset *GetSpeedRestrictions() const override;
+	const tractionset *GetTractionTypes() const override;
+	unsigned int GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const override;
+	unsigned int GetRemainingLength(EDGETYPE direction, unsigned int currentoffset) const override;
+	track_circuit *GetTrackCircuit() const override;
+	unsigned int GetFlags(EDGETYPE direction) const override;
+	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
+	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
 
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
-	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const;
+	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 
 	virtual std::string GetTypeName() const { return "Track Segment"; }
@@ -328,24 +328,24 @@ class trackseg : public generictrack {
 	trackseg & SetTrackCircuit(track_circuit *tc);
 
 	static std::string GetTypeSerialisationNameStatic() { return "trackseg"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
+	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
 
 class genericzlentrack : public generictrack {
 	public:
 	genericzlentrack(world &w_) : generictrack(w_) { }
-	unsigned int GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const;
-	unsigned int GetRemainingLength(EDGETYPE direction, unsigned int currentoffset) const;
-	unsigned int GetLength(EDGETYPE direction) const;
-	unsigned int GetStartOffset(EDGETYPE direction) const;
-	int GetElevationDelta(EDGETYPE direction) const;
+	unsigned int GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const override;
+	unsigned int GetRemainingLength(EDGETYPE direction, unsigned int currentoffset) const override;
+	unsigned int GetLength(EDGETYPE direction) const override;
+	unsigned int GetStartOffset(EDGETYPE direction) const override;
+	int GetElevationDelta(EDGETYPE direction) const override;
 };
 
 class genericpoints : public genericzlentrack {
@@ -362,13 +362,13 @@ class genericpoints : public genericzlentrack {
 		PTF_SERIALISABLE = PTF_REV | PTF_OOC | PTF_LOCKED | PTF_REMINDER | PTF_FAILEDNORM | PTF_FAILEDREV,
 	};
 	genericpoints(world &w_) : genericzlentrack(w_) { }
-	void TrainEnter(EDGETYPE direction, train *t);
-	void TrainLeave(EDGETYPE direction, train *t);
+	void TrainEnter(EDGETYPE direction, train *t) override;
+	void TrainLeave(EDGETYPE direction, train *t) override;
 	virtual unsigned int GetPointCount() const = 0;
 	virtual unsigned int GetPointFlags(unsigned int points_index) const = 0;
 	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags)  = 0;
 
-	virtual std::string GetTypeName() const { return "Generic Points"; }
+	virtual std::string GetTypeName() const override { return "Generic Points"; }
 
 	inline bool IsFlagsOOC(unsigned int pflags) const {
 		if(pflags & PTF_OOC) return true;
@@ -392,31 +392,31 @@ class points : public genericpoints {
 	public:
 	points(world &w_) : genericpoints(w_), pflags(0) { }
 
-	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const;
-	EDGETYPE GetReverseDirection(EDGETYPE direction) const;
-	unsigned int GetFlags(EDGETYPE direction) const;
-	virtual EDGETYPE GetDefaultValidDirecton() const { return EDGE_PTS_FACE; }
+	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
+	unsigned int GetFlags(EDGETYPE direction) const override;
+	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
 
-	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
-	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const;
+	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
+	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 
-	virtual std::string GetTypeName() const { return "Points"; }
+	virtual std::string GetTypeName() const override { return "Points"; }
 
-	virtual unsigned int GetPointCount() const { return 1; }
-	virtual unsigned int GetPointFlags(unsigned int points_index) const;
-	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags);
+	virtual unsigned int GetPointCount() const override { return 1; }
+	virtual unsigned int GetPointFlags(unsigned int points_index) const override;
+	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags) override;
 
 	static std::string GetTypeSerialisationNameStatic() { return "points"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
+	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
 
 class catchpoints : public genericpoints {
@@ -428,31 +428,31 @@ class catchpoints : public genericpoints {
 	public:
 	catchpoints(world &w_) : genericpoints(w_), pflags(PTF_REV) { }
 
-	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const;
-	EDGETYPE GetReverseDirection(EDGETYPE direction) const;
-	unsigned int GetFlags(EDGETYPE direction) const;
-	virtual EDGETYPE GetDefaultValidDirecton() const { return EDGE_PTS_FACE; }
+	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
+	unsigned int GetFlags(EDGETYPE direction) const override;
+	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
 
-	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
-	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const;
+	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
+	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 
-	virtual std::string GetTypeName() const { return "Catch Points"; }
+	virtual std::string GetTypeName() const override { return "Catch Points"; }
 
-	virtual unsigned int GetPointCount() const { return 1; }
-	virtual unsigned int GetPointFlags(unsigned int points_index) const;
-	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags);
+	virtual unsigned int GetPointCount() const override { return 1; }
+	virtual unsigned int GetPointFlags(unsigned int points_index) const override;
+	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags) override;
 
 	static std::string GetTypeSerialisationNameStatic() { return "catchpoints"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
+	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
 
 class springpoints : public genericzlentrack {
@@ -464,32 +464,32 @@ class springpoints : public genericzlentrack {
 
 	public:
 	springpoints(world &w_) : genericzlentrack(w_), sendreverse(false) { }
-	void TrainEnter(EDGETYPE direction, train *t) { }
-	void TrainLeave(EDGETYPE direction, train *t) { }
+	void TrainEnter(EDGETYPE direction, train *t) override { }
+	void TrainLeave(EDGETYPE direction, train *t) override { }
 
-	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const;
-	EDGETYPE GetReverseDirection(EDGETYPE direction) const;
-	unsigned int GetFlags(EDGETYPE direction) const;
-	virtual EDGETYPE GetDefaultValidDirecton() const { return EDGE_PTS_FACE; }
+	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
+	unsigned int GetFlags(EDGETYPE direction) const override;
+	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
 
-	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
-	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const { return GetConnectingPiece(direction); }
+	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
+	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override { return GetConnectingPiece(direction); }
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 
-	virtual std::string GetTypeName() const { return "Spring Points"; }
+	virtual std::string GetTypeName() const override { return "Spring Points"; }
 
 	static std::string GetTypeSerialisationNameStatic() { return "springpoints"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	bool GetSendReverseFlag() const { return sendreverse; }
 	void SetSendReverseFlag(bool sr) { sendreverse = sr; }
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
+	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
 
 class crossover : public genericzlentrack {
@@ -501,29 +501,29 @@ class crossover : public genericzlentrack {
 
 	public:
 	crossover(world &w_) : genericzlentrack(w_) { }
-	void TrainEnter(EDGETYPE direction, train *t) { }
-	void TrainLeave(EDGETYPE direction, train *t) { }
+	void TrainEnter(EDGETYPE direction, train *t) override { }
+	void TrainLeave(EDGETYPE direction, train *t) override { }
 
-	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const;
-	EDGETYPE GetReverseDirection(EDGETYPE direction) const;
-	unsigned int GetFlags(EDGETYPE direction) const;
-	virtual EDGETYPE GetDefaultValidDirecton() const { return EDGE_X_N; }
+	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
+	unsigned int GetFlags(EDGETYPE direction) const override;
+	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_X_N; }
 
-	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
-	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const { return GetConnectingPiece(direction); }
+	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
+	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override { return GetConnectingPiece(direction); }
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 
-	virtual std::string GetTypeName() const { return "Crossover"; }
+	virtual std::string GetTypeName() const override { return "Crossover"; }
 
 	static std::string GetTypeSerialisationNameStatic() { return "crossover"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const { return EDGE_NULL; }
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
+	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override { return EDGE_NULL; }
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
 
 class test_doubleslip;
@@ -620,31 +620,31 @@ class doubleslip : public genericpoints {
 	public:
 	doubleslip(world &w_) : genericpoints(w_), dsflags(0) { }
 
-	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const;
-	EDGETYPE GetReverseDirection(EDGETYPE direction) const;
-	unsigned int GetFlags(EDGETYPE direction) const;
-	virtual EDGETYPE GetDefaultValidDirecton() const { return EDGE_DS_FL; }
+	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
+	unsigned int GetFlags(EDGETYPE direction) const override;
+	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_DS_FL; }
 
-	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
-	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const;
+	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
+	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 
-	virtual std::string GetTypeName() const { return "Double Slip Points"; }
+	virtual std::string GetTypeName() const  override{ return "Double Slip Points"; }
 
-	virtual unsigned int GetPointCount() const { return 4; }
-	virtual unsigned int GetPointFlags(unsigned int points_index) const;
-	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags);
+	virtual unsigned int GetPointCount() const override { return 4; }
+	virtual unsigned int GetPointFlags(unsigned int points_index) const override;
+	virtual unsigned int SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags) override;
 
 	static std::string GetTypeSerialisationNameStatic() { return "doubleslip"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const { return EDGE_NULL; }
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
+	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const  override{ return EDGE_NULL; }
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
 
 class layout_initialisation_error_obj : public error_obj {

@@ -108,12 +108,3 @@ void world::InitFutureTypes() {
 void world::SubmitAction(const action &request) {
 	request.Execute();
 }
-
-void world::Deserialise(const deserialiser_input &di, error_collection &ec) {
-
-}
-
-void world::Serialise(serialiser_output &so, error_collection &ec) const {
-
-}
-

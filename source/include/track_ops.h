@@ -61,10 +61,10 @@ class action_pointsaction : public action {
 	action_pointsaction(world &w_) : action(w_), target(0) { }
 	action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, unsigned int bits_, unsigned int mask_) : action(w_), target(&targ), index(index_), bits(bits_), mask(mask_) { }
 	static std::string GetTypeSerialisationNameStatic() { return "action_pointsaction"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void ExecuteAction() const;
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void ExecuteAction() const override;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 class future_pointsactionmessage : public future_genericusermessage {
@@ -74,10 +74,10 @@ class future_pointsactionmessage : public future_genericusermessage {
 	future_pointsactionmessage(futurable_obj &targ, world_time ft, future_id_type id) : future_genericusermessage(targ, ft, id) { };
 	future_pointsactionmessage(futurable_obj &targ, world_time ft, world *w_, const std::string &textkey_, const std::string &reasonkey_) : future_genericusermessage(targ, ft, w_, textkey_), reasonkey(reasonkey_) { };
 	static std::string GetTypeSerialisationNameStatic() { return "future_pointsactionmessage"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void PrepareVariables(message_formatter &mf, world &w);
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void PrepareVariables(message_formatter &mf, world &w) override;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 class action_reservetrack_base;
@@ -91,10 +91,10 @@ class future_reservetrack : public future {
 	future_reservetrack(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id), reserved_route(0) { };
 	future_reservetrack(futurable_obj &targ, world_time ft, const route *reserved_route_) : future(targ, ft, 0), reserved_route(reserved_route_) { };
 	static std::string GetTypeSerialisationNameStatic() { return "future_reservetrack"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void ExecuteAction();
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void ExecuteAction() override;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 class action_reservetrack_base : public action {
@@ -110,8 +110,8 @@ class action_reservetrack : public action_reservetrack_base {
 	action_reservetrack(world &w_) : action_reservetrack_base(w_), target(0) { }
 	action_reservetrack(world &w_, route &targ) : action_reservetrack_base(w_), target(&targ) { }
 	static std::string GetTypeSerialisationNameStatic() { return "action_reservetrack"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void ExecuteAction() const;
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void ExecuteAction() const override;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };

@@ -44,8 +44,8 @@ class action : public serialisable_obj {
 	void ActionRegisterFuture(const std::shared_ptr<future> &f) const;
 	void ActionCancelFuture(future &f) const;
 	virtual std::string GetTypeSerialisationName() const = 0;
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) = 0;
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const = 0;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override = 0;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override = 0;
 };
 
 #endif

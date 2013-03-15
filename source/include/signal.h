@@ -105,7 +105,7 @@ class routingpoint : public genericzlentrack {
 	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
 
-	virtual std::string GetTypeName() const { return "Track Routing Point"; }
+	virtual std::string GetTypeName() const override { return "Track Routing Point"; }
 };
 
 struct route {
@@ -163,8 +163,8 @@ class route_restriction_set : public serialisable_obj {
 
 	public:
 	unsigned int CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	unsigned int GetRestrictionCount() const { return restrictions.size(); }
 };
@@ -180,19 +180,19 @@ class trackroutingpoint : public routingpoint {
 
 	public:
 	trackroutingpoint(world &w_) : routingpoint(w_), availableroutetypes_forward(0), availableroutetypes_reverse(0) { }
-	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const;
-	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
-	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const;
-	EDGETYPE GetReverseDirection(EDGETYPE direction) const;
-	virtual EDGETYPE GetDefaultValidDirecton() const { return EDGE_FRONT; }
+	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
+	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
+	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
+	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
 
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
+	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
 
 class genericsignal : public trackroutingpoint {
@@ -206,12 +206,12 @@ class genericsignal : public trackroutingpoint {
 
 	public:
 	genericsignal(world &w_) : trackroutingpoint(w_), sflags(0) { availableroutetypes_reverse |= RPRT_SHUNTTRANS | RPRT_ROUTETRANS; }
-	void TrainEnter(EDGETYPE direction, train *t);
-	void TrainLeave(EDGETYPE direction, train *t);
+	void TrainEnter(EDGETYPE direction, train *t) override;
+	void TrainLeave(EDGETYPE direction, train *t) override;
 
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 
-	virtual std::string GetTypeName() const { return "Generic Signal"; }
+	virtual std::string GetTypeName() const override { return "Generic Signal"; }
 
 	enum {
 		GSF_REPEATER		= 1<<0,
@@ -221,18 +221,18 @@ class genericsignal : public trackroutingpoint {
 	virtual unsigned int GetSignalFlags() const;
 	virtual unsigned int SetSignalFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
 
-	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const;
-	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const;
+	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const override;
+	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const override;
 
 	virtual const route *GetCurrentForwardRoute() const;	//this will not return the overlap, only the "real" route
 	virtual bool RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const;
 
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	virtual void UpdateSignalState();
-	virtual void UpdateRoutingPoint() { UpdateSignalState(); }
-	virtual void TrackTick() { UpdateSignalState(); }
+	virtual void UpdateRoutingPoint() override { UpdateSignalState(); }
+	virtual void TrackTick() override { UpdateSignalState(); }
 
 	protected:
 	bool PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(ROUTE_CLASS type, const track_target_ptr &piece)> mkblankroute);
@@ -244,19 +244,19 @@ class autosignal : public genericsignal {
 
 	public:
 	autosignal(world &w_) : genericsignal(w_) { availableroutetypes_forward |= RPRT_ROUTESTART | RPRT_SHUNTEND | RPRT_ROUTEEND; }
-	bool PostLayoutInit(error_collection &ec);
-	unsigned int GetFlags(EDGETYPE direction) const;
-	virtual std::string GetTypeName() const { return "Automatic Signal"; }
+	bool PostLayoutInit(error_collection &ec) override;
+	unsigned int GetFlags(EDGETYPE direction) const override;
+	virtual std::string GetTypeName() const override { return "Automatic Signal"; }
 
-	virtual route *GetRouteByIndex(unsigned int index);
+	virtual route *GetRouteByIndex(unsigned int index) override;
 
 	static std::string GetTypeSerialisationNameStatic() { return "autosignal"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
-	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const;
-	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
+	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const override;
+	virtual void EnumerateRoutes(std::function<void (const route *)> func) const override;
 };
 
 class routesignal : public genericsignal {
@@ -265,21 +265,21 @@ class routesignal : public genericsignal {
 
 	public:
 	routesignal(world &w_) : genericsignal(w_) { }
-	bool PostLayoutInit(error_collection &ec);
-	unsigned int GetFlags(EDGETYPE direction) const;
-	virtual std::string GetTypeName() const { return "Route Signal"; }
+	bool PostLayoutInit(error_collection &ec) override;
+	unsigned int GetFlags(EDGETYPE direction) const override;
+	virtual std::string GetTypeName() const override { return "Route Signal"; }
 
-	virtual route *GetRouteByIndex(unsigned int index);
+	virtual route *GetRouteByIndex(unsigned int index) override;
 
 	static std::string GetTypeSerialisationNameStatic() { return "routesignal"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	const route_restriction_set &GetRouteRestrictions() const { return restrictions; }
 
-	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const;
-	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
+	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const override;
+	virtual void EnumerateRoutes(std::function<void (const route *)> func) const override;
 };
 
 class startofline : public routingpoint {
@@ -290,33 +290,33 @@ class startofline : public routingpoint {
 
 	public:
 	startofline(world &w_) : routingpoint(w_), availableroutetypes(RPRT_SHUNTEND | RPRT_ROUTEEND) { }
-	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const;
-	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
-	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const;
-	EDGETYPE GetReverseDirection(EDGETYPE direction) const;
-	virtual EDGETYPE GetDefaultValidDirecton() const { return EDGE_FRONT; }
-	unsigned int GetFlags(EDGETYPE direction) const;
+	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
+	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
+	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
+	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
+	unsigned int GetFlags(EDGETYPE direction) const override;
 
-	void TrainEnter(EDGETYPE direction, train *t) { }
-	void TrainLeave(EDGETYPE direction, train *t) { }
+	void TrainEnter(EDGETYPE direction, train *t) override { }
+	void TrainLeave(EDGETYPE direction, train *t) override { }
 
-	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const;
-	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const;
+	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const override;
+	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const override;
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 
-	virtual route *GetRouteByIndex(unsigned int index) { return 0; }
+	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
 
-	virtual std::string GetTypeName() const { return "Start/End of Line"; }
+	virtual std::string GetTypeName() const override { return "Start/End of Line"; }
 
 	static std::string GetTypeSerialisationNameStatic() { return "startofline"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const;
+	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
 
 class endofline : public startofline {
@@ -324,10 +324,10 @@ class endofline : public startofline {
 	endofline(world &w_) : startofline(w_) { }
 
 	static std::string GetTypeSerialisationNameStatic() { return "endofline"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 
 	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 };
 
 class routingmarker : public trackroutingpoint {
@@ -339,20 +339,20 @@ class routingmarker : public trackroutingpoint {
 		availableroutetypes_forward |= RPRT_SHUNTTRANS | RPRT_ROUTETRANS | RPRT_OVERLAPTRANS;
 		availableroutetypes_reverse |= RPRT_SHUNTTRANS | RPRT_ROUTETRANS | RPRT_OVERLAPTRANS;
 	}
-	void TrainEnter(EDGETYPE direction, train *t) { }
-	void TrainLeave(EDGETYPE direction, train *t) { }
-	unsigned int GetFlags(EDGETYPE direction) const;
+	void TrainEnter(EDGETYPE direction, train *t) override { }
+	void TrainLeave(EDGETYPE direction, train *t) override { }
+	unsigned int GetFlags(EDGETYPE direction) const override;
 
-	virtual route *GetRouteByIndex(unsigned int index) { return 0; }
+	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
 
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
-	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const;
-	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const;
+	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const override;
+	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const override;
 
-	virtual std::string GetTypeName() const { return "Routing Marker"; }
+	virtual std::string GetTypeName() const override { return "Routing Marker"; }
 
 	static std::string GetTypeSerialisationNameStatic() { return "routingmarker"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 };
 
 const char * SerialiseRouteType(const ROUTE_CLASS& type);
