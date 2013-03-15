@@ -43,9 +43,9 @@ void world::GameStep(world_time delta) {
 	gametime += delta;
 
 	futures.ExecuteUpTo(gametime);
-	
-	for(auto it = all_pieces.begin(); it != all_pieces.end(); ++it) {
-		it->second->TrackTick();
+
+	for(auto it = tick_update_list.begin(); it != tick_update_list.end(); ++it) {
+		(*it)->TrackTick();
 	}
 }
 
@@ -141,4 +141,12 @@ track_circuit *world::FindOrMakeTrackCircuitByName(const std::string &name) {
 	std::unique_ptr<track_circuit> &tc = all_track_circuits[name];
 	if(! tc.get()) tc.reset(new track_circuit(*this, name));
 	return tc.get();
+}
+
+void world::RegisterTickUpdate(generictrack *targ) {
+	tick_update_list.push_back(targ);
+}
+
+void world::UnregisterTickUpdate(generictrack *targ) {
+	//this does not need to do anything, for now
 }

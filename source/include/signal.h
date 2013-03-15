@@ -208,7 +208,8 @@ class genericsignal : public trackroutingpoint {
 	unsigned int max_aspect = 1;
 
 	public:
-	genericsignal(world &w_) : trackroutingpoint(w_), sflags(0) { availableroutetypes_reverse |= RPRT_SHUNTTRANS | RPRT_ROUTETRANS; }
+	genericsignal(world &w_);
+	virtual ~genericsignal();
 	void TrainEnter(EDGETYPE direction, train *t) override;
 	void TrainLeave(EDGETYPE direction, train *t) override;
 

@@ -128,6 +128,16 @@ void trackroutingpoint::GetListOfEdges(std::vector<edgelistitem> &outputlist) co
 	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_BACK, next), edgelistitem(EDGE_FRONT, prev) });
 }
 
+
+genericsignal::genericsignal(world &w_) : trackroutingpoint(w_), sflags(0) {
+	availableroutetypes_reverse |= RPRT_SHUNTTRANS | RPRT_ROUTETRANS;
+	w_.RegisterTickUpdate(this);
+}
+
+genericsignal::~genericsignal() {
+	GetWorld().UnregisterTickUpdate(this);
+}
+
 void genericsignal::TrainEnter(EDGETYPE direction, train *t) { }
 void genericsignal::TrainLeave(EDGETYPE direction, train *t) { }
 

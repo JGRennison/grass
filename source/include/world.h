@@ -63,6 +63,7 @@ class world : public named_futurable_obj {
 	std::unordered_map<std::string, std::unique_ptr<track_circuit> > all_track_circuits;
 	std::deque<connection_forward_declaration> connection_forward_declarations;
 	std::unordered_map<std::string, traction_type> traction_types;
+	std::deque<generictrack *> tick_update_list;
 	world_time gametime = 0;
 	GAMEMODE mode = GM_SINGLE;
 
@@ -90,6 +91,8 @@ class world : public named_futurable_obj {
 	virtual textpool &GetUserMessageTextpool();
 	virtual void LogUserMessageLocal(LOGCATEGORY lc, const std::string &message);
 	virtual void GameStep(world_time delta);
+	void RegisterTickUpdate(generictrack *targ);
+	void UnregisterTickUpdate(generictrack *targ);
 };
 
 template <typename C> void MakeFutureTypeWrapper(future_deserialisation_type_factory &future_types) {
