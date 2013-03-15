@@ -21,12 +21,14 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "track.h"
 #include "future.h"
 #include "serialisable.h"
 #include "action.h"
 #include "world_ops.h"
-#include "signal.h"
+
+class genericpoints;
+class generictrack;
+class route;
 
 class action_pointsaction;
 

@@ -23,8 +23,11 @@
 
 #include "common.h"
 #include "track_ops.h"
+#include "track.h"
+#include "points.h"
 #include "serialisable_impl.h"
 #include "signal.h"
+#include "textpool.h"
 #include <memory>
 
 void future_pointsaction::ExecuteAction() {

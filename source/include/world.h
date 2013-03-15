@@ -26,12 +26,16 @@
 
 #include <unordered_map>
 #include <deque>
-#include "track.h"
 #include "tractiontype.h"
 #include "serialisable.h"
 #include "future.h"
-#include "textpool.h"
-#include "world_ops.h"
+#include "edgetype.h"
+
+class world_serialisation;
+class action;
+class generictrack;
+class textpool;
+class track_circuit;
 
 struct connection_forward_declaration {
 	generictrack *track1;
@@ -40,9 +44,6 @@ struct connection_forward_declaration {
 	EDGETYPE dir2;
 	connection_forward_declaration(generictrack *t1, EDGETYPE d1, const std::string &n2, EDGETYPE d2) : track1(t1), dir1(d1), name2(n2), dir2(d2) { }
 };
-
-class world_serialisation;
-class action;
 
 typedef enum {
 	GM_SINGLE,
@@ -69,33 +70,17 @@ class world : public named_futurable_obj {
 	future_deserialisation_type_factory future_types;
 	future_set futures;
 
+	world();
+	virtual ~world();
 	void AddTrack(std::unique_ptr<generictrack> &&piece, error_collection &ec);
-	inline void AddTractionType(std::string name, bool alwaysavailable) {
-		traction_types[name].name=name;
-		traction_types[name].alwaysavailable=alwaysavailable;
-	}
-	inline traction_type *GetTractionTypeByName(std::string name) {
-		auto tt = traction_types.find(name);
-		if(tt != traction_types.end()) return &(tt->second);
-		else return 0;
-	}
+	void AddTractionType(std::string name, bool alwaysavailable);
+	traction_type *GetTractionTypeByName(std::string name) const;
 	void ConnectTrack(generictrack *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec);
 	void LayoutInit(error_collection &ec);
 	void PostLayoutInit(error_collection &ec);
-	inline generictrack *FindTrackByName(const std::string &name) const {
-		auto it = all_pieces.find(name);
-		if(it != all_pieces.end()) {
-			if(it->second) return it->second.get();
-		}
-		return 0;
-	}
-	inline track_circuit *FindOrMakeTrackCircuitByName(const std::string &name) {
-		std::unique_ptr<track_circuit> &tc = all_track_circuits[name];
-		if(! tc.get()) tc.reset(new track_circuit(*this, name));
-		return tc.get();
-	}
+	generictrack *FindTrackByName(const std::string &name) const;
+	track_circuit *FindOrMakeTrackCircuitByName(const std::string &name);
 	void InitFutureTypes();
-	world() { InitFutureTypes(); }
 	world_time GetGameTime() const { return gametime; }
 	std::string FormatGameTime(world_time wt) const;
 	void SubmitAction(const action &request);

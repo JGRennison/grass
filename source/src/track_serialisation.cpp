@@ -23,6 +23,7 @@
 
 #include "common.h"
 #include "track.h"
+#include "points.h"
 #include "signal.h"
 #include "serialisable_impl.h"
 #include "error.h"

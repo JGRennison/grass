@@ -25,6 +25,7 @@
 #include "track_ops.h"
 #include "world-test.h"
 #include "track.h"
+#include "points.h"
 #include "textpool.h"
 #include "var.h"
 

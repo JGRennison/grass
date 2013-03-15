@@ -28,6 +28,7 @@
 #include "error.h"
 #include "util.h"
 #include "world_serialisation.h"
+#include "edgetype.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"

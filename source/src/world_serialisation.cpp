@@ -28,7 +28,9 @@
 #include "util.h"
 #include "world_serialisation.h"
 #include "track.h"
+#include "points.h"
 #include "signal.h"
+#include "trackcircuit.h"
 #include <typeinfo>
 
 void world_serialisation::ParseInputString(const std::string &input, error_collection &ec) {

@@ -24,10 +24,20 @@
 #include "common.h"
 #include "world.h"
 #include "error.h"
+#include "track.h"
 #include "track_ops.h"
+#include "trackcircuit.h"
 #include "action.h"
 #include "util.h"
+#include "textpool.h"
 #include <iostream>
+
+world::world() {
+	InitFutureTypes();
+}
+
+world::~world() {
+}
 
 void world::GameStep(world_time delta) {
 	gametime += delta;
@@ -107,4 +117,28 @@ void world::InitFutureTypes() {
 
 void world::SubmitAction(const action &request) {
 	request.Execute();
+}
+
+void world::AddTractionType(std::string name, bool alwaysavailable) {
+	traction_types[name].name=name;
+	traction_types[name].alwaysavailable=alwaysavailable;
+}
+
+traction_type *world::GetTractionTypeByName(std::string name) const {
+	auto tt = traction_types.find(name);
+	if(tt != traction_types.end()) return const_cast<traction_type *>(&(tt->second));
+	else return 0;
+}
+
+generictrack *world::FindTrackByName(const std::string &name) const {
+	auto it = all_pieces.find(name);
+	if(it != all_pieces.end()) {
+		if(it->second) return it->second.get();
+	}
+	return 0;
+}
+track_circuit *world::FindOrMakeTrackCircuitByName(const std::string &name) {
+	std::unique_ptr<track_circuit> &tc = all_track_circuits[name];
+	if(! tc.get()) tc.reset(new track_circuit(*this, name));
+	return tc.get();
 }
