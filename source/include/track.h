@@ -104,7 +104,7 @@ class track_reservation_state : public serialisable_obj {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
 };
 
-const route *DeserialiseRouteTargetByParentAndIndex(const deserialiser_input &di, error_collection &ec);
+void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deserialiser_input &di, error_collection &ec, bool after_layout_init_resolve=false);
 
 class generictrack : public world_obj {
 	generictrack *prevtrack;

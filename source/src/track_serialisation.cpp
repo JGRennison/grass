@@ -224,20 +224,39 @@ void doubleslip::Serialise(serialiser_output &so, error_collection &ec) const {
 	}
 }
 
-const route *DeserialiseRouteTargetByParentAndIndex(const deserialiser_input &di, error_collection &ec) {
+//if after_layout_init_resolve is true, and the target piece cannot be found (does not exist yet),
+//then a fixup is added to after_layout_init in world to resolve it and set output,
+//such that output *must* remain in scope througout the layout initialisation phase
+void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deserialiser_input &di, error_collection &ec, bool after_layout_init_resolve) {
 	std::string targname;
 	if(CheckTransJsonValue(targname, di, "route_parent", ec)) {
 		unsigned int index;
 		CheckTransJsonValueDef(index, di, "route_index", 0, ec);
+		
+		auto routetargetresolutionerror = [](error_collection &ec, const std::string &targname) {
+			ec.RegisterError(std::unique_ptr<error_obj>(new generic_error_obj("Cannot resolve route target: " + targname)));
+		};
+		
 		if(di.w) {
-			generictrack *gt = di.w->FindTrackByName(targname);
-			routingpoint *rp = dynamic_cast<routingpoint *>(gt);
+			routingpoint *rp = dynamic_cast<routingpoint *>(di.w->FindTrackByName(targname));
 			if(rp) {
-				return rp->GetRouteByIndex(index);
+				output = rp->GetRouteByIndex(index);
+				return;
 			}
+			else if(after_layout_init_resolve) {
+				world *w = di.w;
+				auto resolveroutetarget = [w, targname, index, &output, routetargetresolutionerror](error_collection &ec) {
+					routingpoint *rp = dynamic_cast<routingpoint *>(w->FindTrackByName(targname));
+					if(rp) output = rp->GetRouteByIndex(index);
+					else routetargetresolutionerror(ec, targname);
+				};
+				di.w->after_layout_init.AddFixup(resolveroutetarget);
+			}
+			else routetargetresolutionerror(ec, targname);
 		}
 	}
-	return 0;
+	output = 0;
+	return;
 }
 
 void track_reservation_state::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -246,7 +265,7 @@ void track_reservation_state::Deserialise(const deserialiser_input &di, error_co
 		itrss.emplace_back();
 		inner_track_reservation_state &itrs = itrss.back();
 		
-		itrs.reserved_route = DeserialiseRouteTargetByParentAndIndex(innerdi, ec);
+		DeserialiseRouteTargetByParentAndIndex(itrs.reserved_route, innerdi, ec, true);
 		CheckTransJsonValue(itrs.direction, innerdi, "direction", ec);
 		CheckTransJsonValue(itrs.index, innerdi, "index", ec);
 		CheckTransJsonValue(itrs.rr_flags, innerdi, "rr_flags", ec);

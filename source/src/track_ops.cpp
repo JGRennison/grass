@@ -150,7 +150,7 @@ void future_reservetrack::ExecuteAction() {
 
 void future_reservetrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	future::Deserialise(di, ec);
-	reserved_route = DeserialiseRouteTargetByParentAndIndex(di, ec);
+	DeserialiseRouteTargetByParentAndIndex(reserved_route, di, ec, false);
 }
 
 void future_reservetrack::Serialise(serialiser_output &so, error_collection &ec) const {
