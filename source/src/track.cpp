@@ -100,6 +100,11 @@ bool generictrack::FullConnect(EDGETYPE this_entrance_direction, const track_tar
 	}
 }
 
+bool generictrack::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+	if(!IsEdgeValid(this_entrance_direction)) return false;
+	return TryConnectPiece(GetEdgeConnectingPiece(this_entrance_direction), target_entrance);
+}
+
 class error_track_unconnected : public layout_initialisation_error_obj {
 	public:
 	error_track_unconnected(const track_target_ptr &edge) {
@@ -109,8 +114,8 @@ class error_track_unconnected : public layout_initialisation_error_obj {
 
 bool generictrack::AutoConnections(error_collection &ec) {
 	if(prevtrack) {
-		EDGETYPE prevedge = prevtrack->GetAvailableAutoConnectionDirection(!(prevtrack->gt_flags & GTF_REVERSEAUTOCONN));
-		EDGETYPE thisedge = GetAvailableAutoConnectionDirection(gt_flags & GTF_REVERSEAUTOCONN);
+		EDGETYPE prevedge = prevtrack->GetAvailableAutoConnectionDirection(!(prevtrack->gt_privflags & GTPRIVF_REVERSEAUTOCONN));
+		EDGETYPE thisedge = GetAvailableAutoConnectionDirection(gt_privflags & GTPRIVF_REVERSEAUTOCONN);
 		if(prevedge != EDGE_NULL && thisedge != EDGE_NULL) {
 			if(!FullConnect(thisedge, track_target_ptr(prevtrack, prevedge), ec)) return false;
 		}
@@ -155,14 +160,15 @@ void trackseg::TrainLeave(EDGETYPE direction, train *t) {
 	if(speeds) t->RemoveCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
 }
 
-bool trackseg::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
-	switch(this_entrance_direction) {
+const track_target_ptr& trackseg::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+	switch(edgeid) {
 		case EDGE_FRONT:
-			return TryConnectPiece(prev, target_entrance);
+			return prev;
 		case EDGE_BACK:
-			return TryConnectPiece(next, target_entrance);
+			return next;
 		default:
-			return false;
+			assert(false);
+			return empty_track_target;
 	}
 }
 
@@ -183,6 +189,16 @@ unsigned int trackseg::GetMaxConnectingPieces(EDGETYPE direction) const {
 }
 const track_target_ptr & trackseg::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
 	return GetConnectingPiece(direction);
+}
+
+bool trackseg::IsEdgeValid(EDGETYPE edge) const {
+	switch(edge) {
+		case EDGE_FRONT:
+		case EDGE_BACK:
+			return true;
+		default:
+			return false;
+	}
 }
 
 int trackseg::GetElevationDelta(EDGETYPE direction) const {
@@ -338,16 +354,29 @@ EDGETYPE crossover::GetReverseDirection(EDGETYPE direction) const {
 	}
 }
 
-bool crossover::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
-	switch(this_entrance_direction) {
+const track_target_ptr& crossover::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+	switch(edgeid) {
 		case EDGE_X_N:
-			return TryConnectPiece(north, target_entrance);
+			return north;
 		case EDGE_X_S:
-			return TryConnectPiece(south, target_entrance);
+			return south;
 		case EDGE_X_W:
-			return TryConnectPiece(west, target_entrance);
+			return west;
 		case EDGE_X_E:
-			return TryConnectPiece(east, target_entrance);
+			return east;
+		default:
+			assert(false);
+			return empty_track_target;
+	}
+}
+
+bool crossover::IsEdgeValid(EDGETYPE edge) const {
+	switch(edge) {
+		case EDGE_X_N:
+		case EDGE_X_S:
+		case EDGE_X_W:
+		case EDGE_X_E:
+			return true;
 		default:
 			return false;
 	}

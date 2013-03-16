@@ -99,14 +99,26 @@ EDGETYPE points::GetReverseDirection(EDGETYPE direction) const {
 	}
 }
 
-bool points::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
-	switch(this_entrance_direction) {
+const track_target_ptr& points::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+	switch(edgeid) {
 		case EDGE_PTS_FACE:
-			return TryConnectPiece(prev, target_entrance);
+			return prev;
 		case EDGE_PTS_NORMAL:
-			return TryConnectPiece(normal, target_entrance);
+			return normal;
 		case EDGE_PTS_REVERSE:
-			return TryConnectPiece(reverse, target_entrance);
+			return reverse;
+		default:
+			assert(false);
+			return empty_track_target;
+	}
+}
+
+bool points::IsEdgeValid(EDGETYPE edge) const {
+	switch(edge) {
+		case EDGE_PTS_FACE:
+		case EDGE_PTS_NORMAL:
+		case EDGE_PTS_REVERSE:
+			return true;
 		default:
 			return false;
 	}
@@ -223,12 +235,23 @@ EDGETYPE catchpoints::GetReverseDirection(EDGETYPE direction) const {
 	}
 }
 
-bool catchpoints::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
-	switch(this_entrance_direction) {
+const track_target_ptr& catchpoints::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+	switch(edgeid) {
 		case EDGE_FRONT:
-			return TryConnectPiece(prev, target_entrance);
+			return prev;
 		case EDGE_BACK:
-			return TryConnectPiece(next, target_entrance);
+			return next;
+		default:
+			assert(false);
+			return empty_track_target;
+	}
+}
+
+bool catchpoints::IsEdgeValid(EDGETYPE edge) const {
+	switch(edge) {
+		case EDGE_FRONT:
+		case EDGE_BACK:
+			return true;
 		default:
 			return false;
 	}
@@ -306,14 +329,26 @@ EDGETYPE springpoints::GetReverseDirection(EDGETYPE direction) const {
 	}
 }
 
-bool springpoints::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
-	switch(this_entrance_direction) {
+const track_target_ptr& springpoints::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+	switch(edgeid) {
 		case EDGE_PTS_FACE:
-			return TryConnectPiece(prev, target_entrance);
+			return prev;
 		case EDGE_PTS_NORMAL:
-			return TryConnectPiece(normal, target_entrance);
+			return normal;
 		case EDGE_PTS_REVERSE:
-			return TryConnectPiece(reverse, target_entrance);
+			return reverse;
+		default:
+			assert(false);
+			return empty_track_target;
+	}
+}
+
+bool springpoints::IsEdgeValid(EDGETYPE edge) const {
+	switch(edge) {
+		case EDGE_PTS_FACE:
+		case EDGE_PTS_NORMAL:
+		case EDGE_PTS_REVERSE:
+			return true;
 		default:
 			return false;
 	}
@@ -382,10 +417,25 @@ EDGETYPE doubleslip::GetReverseDirection(EDGETYPE direction) const {
 	else return EDGE_NULL;
 }
 
-bool doubleslip::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
-	track_target_ptr *piece = GetInputPiece(this_entrance_direction);
-	if(piece) return TryConnectPiece(*piece, target_entrance);
-	else return false;
+const track_target_ptr& doubleslip::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+	const track_target_ptr *ttp = GetInputPiece(edgeid);
+	if(ttp) return *ttp;
+	else {
+		assert(false);
+		return empty_track_target;
+	}
+}
+
+bool doubleslip::IsEdgeValid(EDGETYPE edge) const {
+	switch(edge) {
+			case EDGE_DS_FL:
+			case EDGE_DS_FR:
+			case EDGE_DS_BR:
+			case EDGE_DS_BL:
+			return true;
+		default:
+			return false;
+	}
 }
 
 unsigned int doubleslip::GetFlags(EDGETYPE direction) const {

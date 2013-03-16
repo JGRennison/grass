@@ -59,7 +59,7 @@ typedef enum {
 
 class fixup_list {
 	std::deque<std::function<void(error_collection &ec)> > fixups;
-	
+
 	public:
 	void AddFixup(std::function<void(error_collection &ec)> fixup) { fixups.push_back(fixup); }
 	void Execute(error_collection &ec) {
@@ -83,8 +83,8 @@ class world : public named_futurable_obj {
 	public:
 	future_deserialisation_type_factory future_types;
 	future_set futures;
-	fixup_list after_layout_init;
-	fixup_list after_post_layout_init;
+	fixup_list layout_init_final_fixups;
+	fixup_list post_layout_init_final_fixups;
 
 	world();
 	virtual ~world();

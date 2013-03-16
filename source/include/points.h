@@ -70,11 +70,13 @@ class points : public genericpoints {
 	public:
 	points(world &w_) : genericpoints(w_), pflags(0) { }
 
-	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
 	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	unsigned int GetFlags(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
 
+	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	virtual bool IsEdgeValid(EDGETYPE edge) const override;
+	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
@@ -92,7 +94,6 @@ class points : public genericpoints {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
@@ -106,13 +107,16 @@ class catchpoints : public genericpoints {
 	public:
 	catchpoints(world &w_) : genericpoints(w_), pflags(PTF_REV) { }
 
-	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
 	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	unsigned int GetFlags(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
 
+	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	virtual bool IsEdgeValid(EDGETYPE edge) const override;
+	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
+
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 	virtual void ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 
@@ -128,7 +132,6 @@ class catchpoints : public genericpoints {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
@@ -150,6 +153,8 @@ class springpoints : public genericzlentrack {
 	unsigned int GetFlags(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
 
+	virtual bool IsEdgeValid(EDGETYPE edge) const override;
+	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override { return GetConnectingPiece(direction); }
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
@@ -165,7 +170,6 @@ class springpoints : public genericzlentrack {
 	void SetSendReverseFlag(bool sr) { sendreverse = sr; }
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
@@ -250,11 +254,11 @@ class doubleslip : public genericpoints {
 				return 0;
 		}
 	}
-	
+
 	public:
 	inline track_target_ptr *GetInputPiece(EDGETYPE direction) { return const_cast<track_target_ptr *>(GetInputPieceIntl(direction)); }
 	inline const track_target_ptr *GetInputPiece(EDGETYPE direction) const { return GetInputPieceIntl(direction); }
-	
+
 	inline const track_target_ptr &GetInputPieceOrEmpty(EDGETYPE direction) const {
 		const track_target_ptr *piece = GetInputPiece(direction);
 		if(piece) return *piece;
@@ -269,6 +273,8 @@ class doubleslip : public genericpoints {
 	unsigned int GetFlags(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_DS_FL; }
 
+	virtual bool IsEdgeValid(EDGETYPE edge) const override;
+	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
@@ -286,7 +292,6 @@ class doubleslip : public genericpoints {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const  override{ return EDGE_NULL; }
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };

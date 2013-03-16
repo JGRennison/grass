@@ -1,4 +1,4 @@
-﻿//  grass - Generic Rail And Signalling Simulator
+//  grass - Generic Rail And Signalling Simulator
 //
 //  WEBSITE: http://grss.sourceforge.net
 //
@@ -71,7 +71,7 @@ enum {
 	RRF_TRYRESERVE			= 1<<3,
 	RRF_STARTPIECE			= 1<<4,
 	RRF_ENDPIECE			= 1<<5,
-	
+
 	RRF_DUMMY_RESERVE		= 1<<6, //for generictrack::ReservationActions, produce actions as normal
 
 	RRF_SAVEMASK			= RRF_AUTOROUTE | RRF_STARTPIECE | RRF_ENDPIECE | RRF_RESERVE,
@@ -108,23 +108,20 @@ void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deseria
 
 class generictrack : public world_obj {
 	generictrack *prevtrack;
-	unsigned int gt_flags;
+	unsigned int gt_privflags;
+	bool have_inited = false;
 
 	enum {
-		GTF_REVERSEAUTOCONN	= 1<<0,
+		GTPRIVF_REVERSEAUTOCONN	= 1<<0,
 	};
 
 	friend world_serialisation;
 	void SetPreviousTrackPiece(generictrack *prev) { prevtrack = prev; }
-	
-	protected:
-	bool have_inited = false;
 
 	public:
-	generictrack(world &w_) : world_obj(w_), prevtrack(0), gt_flags(0) { }
+	generictrack(world &w_) : world_obj(w_), prevtrack(0), gt_privflags(0) { }
 	virtual const speedrestrictionset *GetSpeedRestrictions() const;
 	virtual const tractionset *GetTractionTypes() const;
-	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const = 0;
 	virtual unsigned int GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const = 0;
 	virtual unsigned int GetStartOffset(EDGETYPE direction) const = 0;
 	virtual unsigned int GetRemainingLength(EDGETYPE direction, unsigned int currentoffset) const = 0;
@@ -132,13 +129,16 @@ class generictrack : public world_obj {
 	virtual int GetElevationDelta(EDGETYPE direction) const = 0;
 	virtual int GetPartialElevationDelta(EDGETYPE direction, unsigned int displacement) const;
 	virtual track_circuit *GetTrackCircuit() const;
-	virtual unsigned int GetFlags(EDGETYPE direction) const = 0;
 	virtual void TrainEnter(EDGETYPE direction, train *t) = 0;
 	virtual void TrainLeave(EDGETYPE direction, train *t) = 0;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const = 0;
 
+	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const = 0;
+	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const = 0;
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const = 0;
 	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const = 0;
+
+	inline track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) {  return const_cast<track_target_ptr &>(const_cast<const generictrack*>(this)->GetEdgeConnectingPiece(edgeid)); }
 
 	bool FullConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec);
 
@@ -168,17 +168,17 @@ class generictrack : public world_obj {
 		GTF_ROUTINGPOINT= 1<<3,
 		GTF_SIGNAL	= 1<<4,
 	};
+	virtual unsigned int GetFlags(EDGETYPE direction) const = 0;
 
 	void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual std::string GetTypeSerialisationName() const = 0;
-	
+
 	virtual void TrackTick() { }
 
 	protected:
-	virtual bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) = 0;
-	static bool TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target);
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const = 0;
-	
+	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
+
 	struct edgelistitem {
 		EDGETYPE edge;
 		const track_target_ptr *target;
@@ -186,6 +186,10 @@ class generictrack : public world_obj {
 		edgelistitem(const edgelistitem &in) : edge(in.edge), target(in.target) { }
 	};
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const = 0;
+	virtual bool IsEdgeValid(EDGETYPE edge) const = 0;
+
+	private:
+	static bool TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target);
 };
 
 template <typename T> struct vartrack_target_ptr {
@@ -301,6 +305,8 @@ class trackseg : public generictrack {
 	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
 
+	virtual bool IsEdgeValid(EDGETYPE edge) const override;
+	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
 	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
@@ -318,7 +324,6 @@ class trackseg : public generictrack {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
@@ -350,6 +355,8 @@ class crossover : public genericzlentrack {
 	unsigned int GetFlags(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_X_N; }
 
+	virtual bool IsEdgeValid(EDGETYPE edge) const override;
+	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override { return GetConnectingPiece(direction); }
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
@@ -362,7 +369,6 @@ class crossover : public genericzlentrack {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override { return EDGE_NULL; }
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };

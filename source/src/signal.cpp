@@ -74,15 +74,15 @@ const route *routingpoint::FindBestOverlap() const {
 	return best_overlap;
 }
 
-bool trackroutingpoint::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
-	switch(this_entrance_direction) {
+const track_target_ptr& trackroutingpoint::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+	switch(edgeid) {
 		case EDGE_FRONT:
-			return TryConnectPiece(prev, target_entrance);
+			return prev;
 		case EDGE_BACK:
-			return TryConnectPiece(next, target_entrance);
+			return next;
 		default:
 			assert(false);
-			return false;
+			return empty_track_target;
 	}
 }
 
@@ -107,6 +107,16 @@ EDGETYPE trackroutingpoint::GetReverseDirection(EDGETYPE direction) const {
 		default:
 			assert(false);
 			return EDGE_NULL;
+	}
+}
+
+bool trackroutingpoint::IsEdgeValid(EDGETYPE edge) const {
+	switch(edge) {
+		case EDGE_FRONT:
+		case EDGE_BACK:
+			return true;
+		default:
+			return false;
 	}
 }
 
@@ -592,13 +602,13 @@ unsigned int route_restriction_set::CheckAllRestrictions(std::vector<const route
 	return restriction_flags;
 }
 
-bool startofline::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
-	switch(this_entrance_direction) {
+const track_target_ptr& startofline::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+	switch(edgeid) {
 		case EDGE_FRONT:
-			return TryConnectPiece(connection, target_entrance);
+			return connection;
 		default:
 			assert(false);
-			return false;
+			return empty_track_target;
 	}
 }
 
@@ -632,6 +642,15 @@ unsigned int startofline::GetMaxConnectingPieces(EDGETYPE direction) const {
 
 const track_target_ptr & startofline::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
 	return GetConnectingPiece(direction);
+}
+
+bool startofline::IsEdgeValid(EDGETYPE edge) const {
+	switch(edge) {
+		case EDGE_FRONT:
+			return true;
+		default:
+			return false;
+	}
 }
 
 EDGETYPE startofline::GetAvailableAutoConnectionDirection(bool forwardconnection) const {

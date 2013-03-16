@@ -42,12 +42,44 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 				EDGETYPE this_entrance_direction = EDGE_NULL;
 				EDGETYPE target_entrance_direction = EDGE_NULL;
 				std::string target_name;
-				ok = CheckTransJsonValue(this_entrance_direction, funcdi, "fromdirection", ec);
-				ok &= CheckTransJsonValue(target_entrance_direction, funcdi, "todirection", ec);
-				ok &= CheckTransJsonValue(target_name, funcdi, "to", ec);
+				bool have_directions;
+				have_directions = CheckTransJsonValue(this_entrance_direction, funcdi, "fromdirection", ec);
+				have_directions &= CheckTransJsonValue(target_entrance_direction, funcdi, "todirection", ec);
+				ok = CheckTransJsonValue(target_name, funcdi, "to", ec);
 
 				if(ok) {
-					di.w->ConnectTrack(this, this_entrance_direction, target_name, target_entrance_direction, ec);
+					if(have_directions) di.w->ConnectTrack(this, this_entrance_direction, target_name, target_entrance_direction, ec);
+					else {
+						world *w = di.w;
+						auto resolveconnection = [w, this, this_entrance_direction, target_entrance_direction, target_name](error_collection &ec) mutable {
+							auto checkconnection = [&](generictrack *gt, EDGETYPE &dir) {
+								if(dir != EDGE_NULL) return;
+								if(!gt) {
+									ec.RegisterError(std::unique_ptr<error_obj>(new generic_error_obj(string_format("Partial track connection declaration: no such piece: %s", target_name.c_str()))));
+									return;
+								}
+
+								std::vector<edgelistitem> edges;
+								gt->GetListOfEdges(edges);
+								EDGETYPE lastfound;
+								unsigned int freeedgecount = 0;
+								for(auto it = edges.begin(); it != edges.end(); ++it) {
+									if(! it->target->IsValid()) {
+										lastfound = it->edge;
+										freeedgecount++;
+									}
+								}
+								if(freeedgecount == 1) dir = lastfound;
+								else {
+									ec.RegisterError(std::unique_ptr<error_obj>(new generic_error_obj(string_format("Ambiguous partial track connection declaration: piece: %s, has: %d unconnected edges", gt->GetName().c_str(), freeedgecount))));
+								}
+							};
+							checkconnection(this, this_entrance_direction);
+							checkconnection(w->FindTrackByName(target_name), target_entrance_direction);
+							w->ConnectTrack(this, this_entrance_direction, target_name, target_entrance_direction, ec);
+						};
+						di.w->layout_init_final_fixups.AddFixup(resolveconnection);
+					}
 				}
 			}
 			else ok = false;
@@ -65,7 +97,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 		else connfunc(subdi);
 	}
 
-	CheckTransJsonValueFlag<unsigned int>(gt_flags, GTF_REVERSEAUTOCONN, di, "reverseautoconnection", ec);
+	CheckTransJsonValueFlag<unsigned int>(gt_privflags, GTPRIVF_REVERSEAUTOCONN, di, "reverseautoconnection", ec);
 }
 
 void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -77,7 +109,7 @@ void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
 	CheckTransJsonSubArray(speed_limits, di, "speedlimits", "speedlimits", ec);
 	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec);
-	
+
 	std::string tracksegname;
 	if(CheckTransJsonValue(tracksegname, di, "trackcircuit", ec)) {
 		tc = GetWorld().FindOrMakeTrackCircuitByName(tracksegname);
@@ -187,17 +219,17 @@ void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec)
 			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid double slip degrees of freedom: " + std::to_string(dof))));
 		}
 	}
-	
+
 	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_BL, di, "notrack_fl_bl", ec);
 	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_BL, di, "notrack_fr_bl", ec);
 	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_BR, di, "notrack_fl_br", ec);
 	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_BR, di, "notrack_fr_br", ec);
-	
+
 	if(__builtin_popcount(dsflags&DSF_NO_TRACK_MASK) >= 2) {
 		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Cannot remove more than one track edge from a double-slip, use points or a crossover instead")));
 		return;
 	}
-	
+
 	UpdatePointsFixedStatesFromMissingTrackEdges();
 
 	auto deserialisepointsflags = [&](EDGETYPE direction, const char *prop) {
@@ -226,17 +258,17 @@ void doubleslip::Serialise(serialiser_output &so, error_collection &ec) const {
 
 //if after_layout_init_resolve is true, and the target piece cannot be found (does not exist yet),
 //then a fixup is added to after_layout_init in world to resolve it and set output,
-//such that output *must* remain in scope througout the layout initialisation phase
+//such that output *must* remain in scope throughout the layout initialisation phase
 void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deserialiser_input &di, error_collection &ec, bool after_layout_init_resolve) {
 	std::string targname;
 	if(CheckTransJsonValue(targname, di, "route_parent", ec)) {
 		unsigned int index;
 		CheckTransJsonValueDef(index, di, "route_index", 0, ec);
-		
+
 		auto routetargetresolutionerror = [](error_collection &ec, const std::string &targname) {
 			ec.RegisterError(std::unique_ptr<error_obj>(new generic_error_obj("Cannot resolve route target: " + targname)));
 		};
-		
+
 		if(di.w) {
 			routingpoint *rp = dynamic_cast<routingpoint *>(di.w->FindTrackByName(targname));
 			if(rp) {
@@ -250,7 +282,7 @@ void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deseria
 					if(rp) output = rp->GetRouteByIndex(index);
 					else routetargetresolutionerror(ec, targname);
 				};
-				di.w->after_layout_init.AddFixup(resolveroutetarget);
+				di.w->layout_init_final_fixups.AddFixup(resolveroutetarget);
 			}
 			else routetargetresolutionerror(ec, targname);
 		}
@@ -264,7 +296,7 @@ void track_reservation_state::Deserialise(const deserialiser_input &di, error_co
 	CheckIterateJsonArrayOrType<json_object>(di, "reservations", "track_reservation", ec, [&](const deserialiser_input &innerdi, error_collection &ec) {
 		itrss.emplace_back();
 		inner_track_reservation_state &itrs = itrss.back();
-		
+
 		DeserialiseRouteTargetByParentAndIndex(itrs.reserved_route, innerdi, ec, true);
 		CheckTransJsonValue(itrs.direction, innerdi, "direction", ec);
 		CheckTransJsonValue(itrs.index, innerdi, "index", ec);

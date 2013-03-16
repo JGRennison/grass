@@ -183,6 +183,8 @@ class trackroutingpoint : public routingpoint {
 
 	public:
 	trackroutingpoint(world &w_) : routingpoint(w_), availableroutetypes_forward(0), availableroutetypes_reverse(0) { }
+	virtual bool IsEdgeValid(EDGETYPE edge) const override;
+	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
@@ -193,7 +195,6 @@ class trackroutingpoint : public routingpoint {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
@@ -294,6 +295,8 @@ class startofline : public routingpoint {
 
 	public:
 	startofline(world &w_) : routingpoint(w_), availableroutetypes(RPRT_SHUNTEND | RPRT_ROUTEEND) { }
+	virtual bool IsEdgeValid(EDGETYPE edge) const override;
+	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
@@ -318,7 +321,6 @@ class startofline : public routingpoint {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) override;
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };

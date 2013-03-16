@@ -398,3 +398,85 @@ TEST_CASE( "track/conn/doubleslip", "Test basic doubleslip connectivity" ) {
 	checkdstraverse("DS8", br, 0, 0, fl);
 	checkdstraverse("DS9", bl, br, fl, fr);
 }
+
+TEST_CASE( "track/deserialisation/partialconnection", "Test partial track connection declaration deserialisation" ) {
+	std::string track_test_str =
+	R"({ "content" : [ )"
+		R"({ "type" : "startofline", "name" : "A"}, )"
+		R"({ "type" : "points", "name" : "P1", "connect" : { "to" : "T2" } }, )"
+		R"({ "type" : "points", "name" : "P2" }, )"
+		R"({ "type" : "trackseg", "name" : "T1" }, )"
+		R"({ "type" : "endofline", "name" : "B" }, )"
+		R"({ "type" : "trackseg", "name" : "T2" }, )"
+		R"({ "type" : "endofline", "name" : "C" }, )"
+		R"({ "type" : "trackseg", "name" : "T3", "connect" : { "to" : "P2" } }, )"
+		R"({ "type" : "endofline", "name" : "D" } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+
+	env.w.LayoutInit(env.ec);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	points *p1 = dynamic_cast<points *>(env.w.FindTrackByName("P1"));
+	REQUIRE(p1 != 0);
+	points *p2 = dynamic_cast<points *>(env.w.FindTrackByName("P2"));
+	REQUIRE(p2 != 0);
+	trackseg *t2 = dynamic_cast<trackseg *>(env.w.FindTrackByName("T2"));
+	REQUIRE(t2 != 0);
+	trackseg *t3 = dynamic_cast<trackseg *>(env.w.FindTrackByName("T3"));
+	REQUIRE(t3 != 0);
+
+	REQUIRE(p1->GetEdgeConnectingPiece(EDGE_PTS_REVERSE) == track_target_ptr(t2, EDGE_FRONT));
+	REQUIRE(p2->GetEdgeConnectingPiece(EDGE_PTS_REVERSE) == track_target_ptr(t3, EDGE_FRONT));
+}
+
+TEST_CASE( "track/deserialisation/ambiguouspartialconnection/1", "Test handling of ambiguous partial track connection declaration deserialisation" ) {
+	std::string track_test_str =
+	R"({ "content" : [ )"
+		R"({ "type" : "startofline", "name" : "A"}, )"
+		R"({ "type" : "points", "name" : "P1", "connect" : { "to" : "T2" } }, )"
+		R"({ "type" : "endofline", "name" : "B" }, )"
+		R"({ "type" : "trackseg", "name" : "T2" } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+
+	env.w.LayoutInit(env.ec);
+
+	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() >= 1);
+}
+
+TEST_CASE( "track/deserialisation/ambiguouspartialconnection/2", "Test handling of ambiguous partial track connection declaration deserialisation" ) {
+	std::string track_test_str =
+	R"({ "content" : [ )"
+		R"({ "type" : "startofline", "name" : "A"}, )"
+		R"({ "type" : "points", "name" : "P1" }, )"
+		R"({ "type" : "endofline", "name" : "B" }, )"
+		R"({ "type" : "trackseg", "name" : "T2" , "connect" : { "to" : "P1" } } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+
+	env.w.LayoutInit(env.ec);
+
+	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() >= 1);
+}
+
+TEST_CASE( "track/deserialisation/ambiguouspartialconnection/3", "Test handling of ambiguous partial track connection declaration deserialisation" ) {
+	std::string track_test_str =
+	R"({ "content" : [ )"
+		R"({ "type" : "startofline", "name" : "A"}, )"
+		R"({ "type" : "trackseg", "name" : "T1" }, )"
+		R"({ "type" : "endofline", "name" : "B" }, )"
+		R"({ "type" : "trackseg", "name" : "T2" , "connect" : { "to" : "T1" } } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+
+	env.w.LayoutInit(env.ec);
+
+	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() >= 1);
+}
+
