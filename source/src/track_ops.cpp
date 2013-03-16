@@ -166,24 +166,24 @@ void future_reservetrack::Serialise(serialiser_output &so, error_collection &ec)
 //return true on success
 bool action_reservetrack_base::TryReserveRoute(route *rt, world_time action_time) const {
 	if(!rt->RouteReservation(RRF_TRYRESERVE)) return false;
-	
+
 	//disallow if non-overlap route already set from start point in given direction
 	if(rt->start.track->GetSetRouteTypes(rt->start.direction) & (routingpoint::RPRT_MASK_START & ~routingpoint::RPRT_OVERLAPSTART)) return false;
-	
+
 	const route *best_overlap = 0;
 	if(rt->routeflags & route::RF_NEEDOVERLAP) {
 		//need an overlap too
 		best_overlap = rt->end.track->FindBestOverlap();
 		if(!best_overlap) return false;
 	}
-	
+
 	//route is OK, now reserve it
-	
+
 	auto actioncallback = [&](action &&reservation_act) {
 		reservation_act.action_time++;
 		reservation_act.Execute();
 	};
-	
+
 	rt->RouteReservationActions(RRF_RESERVE, actioncallback);
 	ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, rt));
 	if(best_overlap) {
@@ -209,7 +209,7 @@ void action_reservetrack::Deserialise(const deserialiser_input &di, error_collec
 		if(rp) target = rp->GetRouteByIndex(index);
 	}
 
-	if(!target) ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid track reservation action definition")));
+	if(!target) ec.RegisterNewError<error_deserialisation>(di, "Invalid track reservation action definition");
 }
 
 void action_reservetrack::Serialise(serialiser_output &so, error_collection &ec) const {

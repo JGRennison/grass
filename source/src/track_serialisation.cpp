@@ -55,7 +55,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 							auto checkconnection = [&](generictrack *gt, EDGETYPE &dir) {
 								if(dir != EDGE_NULL) return;
 								if(!gt) {
-									ec.RegisterError(std::unique_ptr<error_obj>(new generic_error_obj(string_format("Partial track connection declaration: no such piece: %s", target_name.c_str()))));
+									ec.RegisterNewError<generic_error_obj>(string_format("Partial track connection declaration: no such piece: %s", target_name.c_str()));
 									return;
 								}
 
@@ -71,7 +71,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 								}
 								if(freeedgecount == 1) dir = lastfound;
 								else {
-									ec.RegisterError(std::unique_ptr<error_obj>(new generic_error_obj(string_format("Ambiguous partial track connection declaration: piece: %s, has: %d unconnected edges", gt->GetName().c_str(), freeedgecount))));
+									ec.RegisterNewError<generic_error_obj>(string_format("Ambiguous partial track connection declaration: piece: %s, has: %d unconnected edges", gt->GetName().c_str(), freeedgecount));
 								}
 							};
 							checkconnection(this, this_entrance_direction);
@@ -85,7 +85,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 			else ok = false;
 
 			if(!ok) {
-				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(funcdi, "Invalid track connection definition")));
+				ec.RegisterNewError<error_deserialisation>(funcdi, "Invalid track connection definition");
 			}
 		};
 
@@ -216,7 +216,7 @@ void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec)
 	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
 	if(CheckTransJsonValue(dof, di, "degreesoffreedom", ec)) {
 		if(dof != 1 && dof != 2 && dof != 4) {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid double slip degrees of freedom: " + std::to_string(dof))));
+			ec.RegisterNewError<error_deserialisation>(di, "Invalid double slip degrees of freedom: " + std::to_string(dof));
 		}
 	}
 
@@ -226,7 +226,7 @@ void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec)
 	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_BR, di, "notrack_fr_br", ec);
 
 	if(__builtin_popcount(dsflags&DSF_NO_TRACK_MASK) >= 2) {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Cannot remove more than one track edge from a double-slip, use points or a crossover instead")));
+		ec.RegisterNewError<error_deserialisation>(di, "Cannot remove more than one track edge from a double-slip, use points or a crossover instead");
 		return;
 	}
 
@@ -266,7 +266,7 @@ void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deseria
 		CheckTransJsonValueDef(index, di, "route_index", 0, ec);
 
 		auto routetargetresolutionerror = [](error_collection &ec, const std::string &targname) {
-			ec.RegisterError(std::unique_ptr<error_obj>(new generic_error_obj("Cannot resolve route target: " + targname)));
+			ec.RegisterNewError<generic_error_obj>("Cannot resolve route target: " + targname);
 		};
 
 		if(di.w) {
@@ -334,7 +334,7 @@ void speedrestrictionset::Deserialise(const deserialiser_input &di, error_collec
 			AddSpeedRestriction(sr);
 		}
 		else {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Invalid speed restriction definition")));
+			ec.RegisterNewError<error_deserialisation>(subdi, "Invalid speed restriction definition");
 		}
 	}
 }

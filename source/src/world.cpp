@@ -63,7 +63,7 @@ void world::LayoutInit(error_collection &ec) {
 	for(auto it = connection_forward_declarations.begin(); it != connection_forward_declarations.end(); ++it) {
 		auto target_it = all_pieces.find(it->name2);
 		if(target_it == all_pieces.end()) {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_trackconnection_notfound(track_target_ptr(it->track1, it->dir1), it->name2)));
+			ec.RegisterNewError<error_trackconnection_notfound>(track_target_ptr(it->track1, it->dir1), it->name2);
 		}
 		else {
 			it->track1->FullConnect(it->dir1, track_target_ptr(target_it->second.get(), it->dir2), ec);

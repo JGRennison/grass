@@ -367,12 +367,12 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 			candidate->index = 1;
 		}
 		else {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit_trackscan(*this, piece, "Autosignals support route and overlap route types only")));
+			ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Autosignals support route and overlap route types only");
 			return 0;
 		}
 
 		if(candidate->type != RTC_NULL) {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit_trackscan(*this, piece, "Autosignal already has a route of the corresponding type")));
+			ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Autosignal already has a route of the corresponding type");
 			return 0;
 		}
 		else {
@@ -395,18 +395,18 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 					best_overlap->RouteReservation(RRF_AUTOROUTE | RRF_RESERVE);
 				}
 				else {
-					ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit(*this, "Autosignal route cannot reserve overlap")));
+					ec.RegisterNewError<error_signalinit>(*this, "Autosignal route cannot reserve overlap");
 					return false;
 				}
 			}
 		}
 		else {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit(*this, "Autosignal crosses reserved route")));
+			ec.RegisterNewError<error_signalinit>(*this, "Autosignal crosses reserved route");
 			return false;
 		}
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit(*this, "Track scan found no route")));
+		ec.RegisterNewError<error_signalinit>(*this, "Track scan found no route");
 		return false;
 	}
 	return true;
@@ -438,7 +438,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 		if(pieceflags & GTF_ROUTINGPOINT) {
 			routingpoint *target_routing_piece = dynamic_cast<routingpoint *>(piece.track);
 			if(!target_routing_piece) {
-				ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit_trackscan(*this, piece, "Track piece claims to be routingpoint but not downcastable")));
+				ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Track piece claims to be routingpoint but not downcastable");
 				continue_initing = false;
 				return true;
 			}
@@ -446,7 +446,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 			unsigned int availableroutetypes = target_routing_piece->GetAvailableRouteTypes(piece.direction);
 			if(availableroutetypes & (RPRT_ROUTEEND | RPRT_SHUNTEND | RPRT_OVERLAPEND)) {
 				if(target_routing_piece->GetSetRouteTypes(piece.direction) & (RPRT_ROUTEEND | RPRT_SHUNTEND | RPRT_VIA)) {
-					ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit_trackscan(*this, piece, "Signal route already reserved")));
+					ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Signal route already reserved");
 					continue_initing = false;
 					return true;
 				}
@@ -475,7 +475,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						}
 					}
 					else {
-						ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit_trackscan(*this, piece, "Unable to make new route of type: " + std::string(SerialiseRouteType(type)))));
+						ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Unable to make new route of type: " + std::string(SerialiseRouteType(type)));
 					}
 				};
 
@@ -495,7 +495,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 			if(! (rrrs->rrrs_flags & signal_route_recording_state::RRRSF_SCANTYPES)) return true;	//nothing left to scan for
 		}
 		if(pieceflags & GTF_ROUTESET) {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit_trackscan(*this, piece, "Piece already reserved")));
+			ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Piece already reserved");
 			continue_initing = false;
 			return true;
 		}
@@ -516,11 +516,11 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 
 	if(error_flags != 0) {
 		continue_initing = false;
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit(*this, std::string("Track scan failed constraints: ") + GetTrackScanErrorFlagsStr(error_flags))));
+		ec.RegisterNewError<error_signalinit>(*this, std::string("Track scan failed constraints: ") + GetTrackScanErrorFlagsStr(error_flags));
 	}
 	if(needoverlap && !foundoverlap) {
 		continue_initing = false;
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_signalinit(*this, "No overlap found for signal")));
+		ec.RegisterNewError<error_signalinit>(*this, "No overlap found for signal");
 	}
 	return continue_initing;
 }

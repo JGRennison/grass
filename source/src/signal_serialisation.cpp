@@ -28,7 +28,7 @@
 
 void trackroutingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	routingpoint::Deserialise(di, ec);
-	
+
 	flag_conflict_checker<unsigned int> conflictcheck_forward;
 	flag_conflict_checker<unsigned int> conflictcheck_reverse;
 	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_MASK_TRANS, di, "through", ec, &conflictcheck_forward);
@@ -105,7 +105,7 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOSHUNT | route_restriction::RRDF_NOROUTE | route_restriction::RRDF_NOOVERLAP, subdi, "denyall", ec, &conflictcheck);
 		}
 		else {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Invalid route restriction definition")));
+			ec.RegisterNewError<error_deserialisation>(subdi, "Invalid route restriction definition");
 		}
 	}
 }

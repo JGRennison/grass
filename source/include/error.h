@@ -53,6 +53,9 @@ class error_collection {
 
 	public:
 	void RegisterError(std::unique_ptr<error_obj> &&err);
+	template <typename C, typename... Args> void RegisterNewError(Args&& ...msg) {
+		RegisterError(std::unique_ptr<error_obj>(new C(msg...)));
+	}
 	void Reset();
 	unsigned int GetErrorCount() const;
 	void StreamOut(std::ostream& os) const;

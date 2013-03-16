@@ -37,7 +37,7 @@ void world_serialisation::ParseInputString(const std::string &input, error_colle
 	parsed_inputs.emplace_front();
 	rapidjson::Document &dc =  parsed_inputs.front();
 	if (dc.Parse<0>(input.c_str()).HasParseError()) {
-		ec.RegisterError(std::unique_ptr<error_obj>(new generic_error_obj(string_format("JSON Parsing error at offset: %d, Error: %s", dc.GetErrorOffset(), dc.GetParseError()))));
+		ec.RegisterNewError<generic_error_obj>(string_format("JSON Parsing error at offset: %d, Error: %s", dc.GetErrorOffset(), dc.GetParseError()));
 	}
 	else LoadGame(deserialiser_input("", "[root]", dc, &w, this, 0), ec);
 }
@@ -49,7 +49,7 @@ void world_serialisation::LoadGame(const deserialiser_input &di, error_collectio
 			deserialiser_input subdi("", MkArrayRefName(i), contentdi.json[i], &w, this, &contentdi);
 			if(subdi.json.IsObject()) {
 				subdi.seenprops.reserve(subdi.json.GetMemberCount());
-				
+
 				current_content_index = i;
 
 				const rapidjson::Value &typeval = subdi.json["type"];
@@ -59,16 +59,16 @@ void world_serialisation::LoadGame(const deserialiser_input &di, error_collectio
 					DeserialiseObject(subdi, ec);
 				}
 				else {
-					ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "LoadGame: Object has no type")));
+					ec.RegisterNewError<error_deserialisation>(subdi, "LoadGame: Object has no type");
 				}
 			}
 			else {
-				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "LoadGame: Expected object")));
+				ec.RegisterNewError<error_deserialisation>(subdi, "LoadGame: Expected object");
 			}
 		}
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "LoadGame: Document root not array")));
+		ec.RegisterNewError<error_deserialisation>(di, "LoadGame: Document root not array");
 	}
 }
 
@@ -81,7 +81,7 @@ template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deser
 	std::unique_ptr<generictrack> &ptr = w.all_pieces[trackname];
 	if(ptr) {
 		if(typeid(*ptr) != typeid(T)) {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("LoadGame: Track type definition conflict: %s is not a %s", ptr->GetFriendlyName().c_str(), di.type.c_str()))));
+			ec.RegisterNewError<error_deserialisation>(di, string_format("LoadGame: Track type definition conflict: %s is not a %s", ptr->GetFriendlyName().c_str(), di.type.c_str()));
 			return 0;
 		}
 	}
@@ -110,7 +110,7 @@ void world_serialisation::DeserialiseTemplate(const deserialiser_input &di, erro
 		di.PostDeserialisePropCheck(ec);
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template definition")));
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid template definition");
 	}
 }
 
@@ -123,15 +123,15 @@ void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di
 
 		auto func = [=](const deserialiser_input &di, error_collection &ec) {
 			deserialiser_input typedefwrapperdi(di.type, "Typedef Wrapper: " + newtype + " base: " + basetype, di.json, di);
-			
+
 			const deserialiser_input *checkparent = di.parent;
 			do {
 				if(checkparent->reference_name == typedefwrapperdi.reference_name) {
-					ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Typedef: \"%s\": Base \"%s\": Recursive expansion detected: Aborting.", newtype.c_str(), basetype.c_str()))));
+					ec.RegisterNewError<error_deserialisation>(di, string_format("Typedef: \"%s\": Base \"%s\": Recursive expansion detected: Aborting.", newtype.c_str(), basetype.c_str()));
 					return;
 				}
 			} while((checkparent = checkparent->parent));
-			
+
 			typedefwrapperdi.seenprops.swap(di.seenprops);
 			typedefwrapperdi.objpreparse = di.objpreparse;
 			typedefwrapperdi.objpostparse = di.objpostparse;
@@ -143,7 +143,7 @@ void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di
 				targ->objpreparse = &typedefcontentdi;
 			}
 			if(! this->object_types.FindAndDeserialise(basetype, typedefwrapperdi, ec))  {
-				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(typedefwrapperdi, string_format("Typedef expansion: %s: Unknown base type: %s", newtype.c_str(), basetype.c_str()))));
+				ec.RegisterNewError<error_deserialisation>(typedefwrapperdi, string_format("Typedef expansion: %s: Unknown base type: %s", newtype.c_str(), basetype.c_str()));
 			}
 			typedefwrapperdi.seenprops.swap(di.seenprops);
 		};
@@ -151,7 +151,7 @@ void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di
 		di.PostDeserialisePropCheck(ec);
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid typedef definition")));
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid typedef definition");
 	}
 }
 
@@ -159,7 +159,7 @@ void world_serialisation::ExecuteTemplate(serialisable_obj &obj, std::string nam
 	auto templ = template_map.find(name);
 	if(templ != template_map.end() && templ->second.json) {
 		if(templ->second.beingexpanded) {		//recursive expansion detection
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Template: \"%s\": Recursive expansion detected: Aborting.", name.c_str()))));
+			ec.RegisterNewError<error_deserialisation>(di, string_format("Template: \"%s\": Recursive expansion detected: Aborting.", name.c_str()));
 			return;
 		}
 		else {
@@ -169,7 +169,7 @@ void world_serialisation::ExecuteTemplate(serialisable_obj &obj, std::string nam
 		}
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Template: \"%s\" not found", name.c_str()))));
+		ec.RegisterNewError<error_deserialisation>(di, string_format("Template: \"%s\" not found", name.c_str()));
 	}
 }
 
@@ -180,7 +180,7 @@ void world_serialisation::DeserialiseTractionType(const deserialiser_input &di, 
 		di.PostDeserialisePropCheck(ec);
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid traction type definition")));
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid traction type definition");
 	}
 }
 
@@ -191,7 +191,7 @@ void world_serialisation::DeserialiseTrackCircuit(const deserialiser_input &di, 
 		tc->DeserialiseObject(di, ec);
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid track circuit definition")));
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid track circuit definition");
 	}
 }
 
@@ -222,6 +222,6 @@ void world_serialisation::InitObjectTypes() {
 
 void world_serialisation::DeserialiseObject(const deserialiser_input &di, error_collection &ec) {
 	if(!object_types.FindAndDeserialise(di.type, di, ec)) {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("LoadGame: Unknown object type: %s", di.type.c_str()))));
+		ec.RegisterNewError<error_deserialisation>(di, string_format("LoadGame: Unknown object type: %s", di.type.c_str()));
 	}
 }

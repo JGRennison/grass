@@ -114,23 +114,23 @@ void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di
 			deserialiser_input subdi(futuresdi.json[i], "", MkArrayRefName(i), futuresdi);
 			if(subdi.json.IsObject()) {
 				subdi.seenprops.reserve(subdi.json.GetMemberCount());
-				
+
 				future_id_type fid;
 				world_time ftime;
 				if(CheckTransJsonValue(fid, subdi, "fid", ec, true) && CheckTransJsonValue(ftime, subdi, "ftime", ec, true) && CheckTransJsonValue(subdi.type, subdi, "ftype", ec, true)) {
 					if(!dtf.FindAndDeserialise(subdi.type, subdi, ec, fc, *this, ftime, fid)) {
-						ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, string_format("Futures: Unknown future type: %s", subdi.type.c_str()))));
+						ec.RegisterNewError<error_deserialisation>(subdi, string_format("Futures: Unknown future type: %s", subdi.type.c_str()));
 					}
 				}
 				subdi.PostDeserialisePropCheck(ec);
 			}
 			else {
-				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(subdi, "Futures: Expected object")));
+				ec.RegisterNewError<error_deserialisation>(subdi, "Futures: Expected object");
 			}
 		}
 	}
 	else if(!futuresdi.json.IsNull()) {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Futures: Expected an array")));
+		ec.RegisterNewError<error_deserialisation>(di, "Futures: Expected an array");
 	}
 }
 

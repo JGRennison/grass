@@ -95,7 +95,7 @@ bool generictrack::FullConnect(EDGETYPE this_entrance_direction, const track_tar
 		return true;
 	}
 	else {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_trackconnection(track_target_ptr(this, this_entrance_direction), target_entrance)));
+		ec.RegisterNewError<error_trackconnection>(track_target_ptr(this, this_entrance_direction), target_entrance);
 		return false;
 	}
 }
@@ -130,7 +130,7 @@ bool generictrack::CheckUnconnectedEdges(error_collection &ec) {
 	GetListOfEdges(edgelist);
 	for(auto it = edgelist.begin(); it != edgelist.end(); ++it) {
 		if(! it->target->IsValid()) {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_track_unconnected(track_target_ptr(this, it->edge))));
+			ec.RegisterNewError<error_track_unconnected>(track_target_ptr(this, it->edge));
 			result = false;
 		}
 	}

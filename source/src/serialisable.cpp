@@ -58,11 +58,11 @@ void serialisable_obj::DeserialisePrePost(const char *name, const deserialiser_i
 			for(rapidjson::SizeType i = 0; i < subval.Size(); i++) {
 				const rapidjson::Value &arrayval = subval[i];
 				if(arrayval.IsString()) di.ws->ExecuteTemplate(*this, arrayval.GetString(), di, ec);
-				else ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template reference")));
+				else ec.RegisterNewError<error_deserialisation>(di, "Invalid template reference");
 			}
 		}
 		else {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid template reference")));
+			ec.RegisterNewError<error_deserialisation>(di, "Invalid template reference");
 		}
 	}
 }
@@ -82,7 +82,7 @@ void deserialiser_input::PostDeserialisePropCheck(error_collection &ec) const {
 	else {
 		for(auto it = json.MemberBegin(); it != json.MemberEnd(); ++it) {
 			if(std::find_if(seenprops.begin(), seenprops.end(), [&](const char *& s) { return strcmp(it->name.GetString(), s) == 0; }) == seenprops.end()) {
-				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(*this, string_format("Unknown object property: \"%s\"", it->name.GetString()))));
+				ec.RegisterNewError<error_deserialisation>(*this, string_format("Unknown object property: \"%s\"", it->name.GetString()));
 			}
 		}
 	}

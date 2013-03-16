@@ -42,10 +42,10 @@ void tractionset::Deserialise(const deserialiser_input &di, error_collection &ec
 		if(cur.IsString() && di.w) {
 			traction_type *tt = di.w->GetTractionTypeByName(cur.GetString());
 			if(tt) tractions.push_back(tt);
-			else ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("No such traction type: \"%s\"", cur.GetString()))));
+			else ec.RegisterNewError<error_deserialisation>(di, string_format("No such traction type: \"%s\"", cur.GetString()));
 		}
 		else {
-			ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, "Invalid traction set definition")));
+			ec.RegisterNewError<error_deserialisation>(di, "Invalid traction set definition");
 		}
 	}
 }

@@ -147,10 +147,10 @@ template <> inline const char *GetTypeFriendlyName<json_array>() { return "array
 
 template <typename C> inline void CheckJsonTypeAndReportError(const deserialiser_input &di, const char *prop, const rapidjson::Value& subval, error_collection &ec, bool mandatory=false) {
 	if(!subval.IsNull()) {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("JSON variable of wrong type: %s, expected: %s", prop, GetTypeFriendlyName<C>()))));
+		ec.RegisterNewError<error_deserialisation>(di, string_format("JSON variable of wrong type: %s, expected: %s", prop, GetTypeFriendlyName<C>()));
 	}
 	else if(mandatory) {
-		ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Mandatory JSON variable is missing: %s, expected: %s", prop, GetTypeFriendlyName<C>()))));
+		ec.RegisterNewError<error_deserialisation>(di, string_format("Mandatory JSON variable is missing: %s, expected: %s", prop, GetTypeFriendlyName<C>()));
 	}
 }
 
@@ -191,7 +191,7 @@ template <typename C> inline bool CheckTransJsonValueFlag(C &var, C flagmask, co
 			if(set) conflictcheck->set_bits |= flagmask;
 			else conflictcheck->clear_bits |= flagmask;
 			if(conflictcheck->set_bits & conflictcheck->clear_bits & flagmask) {
-				ec.RegisterError(std::unique_ptr<error_obj>(new error_deserialisation(di, string_format("Flag variable: %s, contradicts earlier declarations in same scope", prop))));
+				ec.RegisterNewError<error_deserialisation>(di, string_format("Flag variable: %s, contradicts earlier declarations in same scope", prop));
 			}
 		}
 	}
