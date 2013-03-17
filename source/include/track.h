@@ -60,8 +60,8 @@ class speedrestrictionset : public serialisable_obj {
 	inline void AddSpeedRestriction(const speed_restriction &sr) {
 		speeds.push_front(sr);
 	}
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 enum {
@@ -100,8 +100,8 @@ class track_reservation_state : public serialisable_obj {
 	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags)> func) const;
 	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags)> func) const;
 
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deserialiser_input &di, error_collection &ec, bool after_layout_init_resolve=false);
@@ -148,7 +148,7 @@ class generictrack : public world_obj {
 
 	virtual std::string GetTypeName() const { return "Generic Track"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "track"; }
-	virtual std::string GetTypeSerialisationClassName() const { return GetTypeSerialisationClassNameStatic(); }
+	virtual std::string GetTypeSerialisationClassName() const override { return GetTypeSerialisationClassNameStatic(); }
 
 	virtual generictrack & SetLength(unsigned int length);
 	virtual generictrack & AddSpeedRestriction(speed_restriction sr);

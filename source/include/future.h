@@ -46,7 +46,7 @@ class future : public serialisable_obj {
 	world_time trigger_time;
 	const uint64_t future_id = 1;
 	future_set *registered_fs = 0;
-	
+
 	static uint64_t lastid;
 
 	virtual void ExecuteAction() = 0;
@@ -78,8 +78,8 @@ class future_set : public future_container {
 
 	public:
 	void ExecuteUpTo(world_time ft);
-	virtual void RegisterFuture(const std::shared_ptr<future> &f);
-	virtual void RemoveFuture(future &f);
+	virtual void RegisterFuture(const std::shared_ptr<future> &f) override;
+	virtual void RemoveFuture(future &f) override;
 };
 
 class serialisable_futurable_obj;
@@ -93,7 +93,7 @@ class futurable_obj {
 	void EnumerateFutures(std::function<void (future &)> f);
 	void EnumerateFutures(std::function<void (const future &)> f) const;
 	bool HaveFutures() const;
-	
+
 	private:
 	friend future_set;
 	void DeregisterFuture(future *f);

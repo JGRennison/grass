@@ -104,8 +104,8 @@ class world : public named_futurable_obj {
 	std::string FormatGameTime(world_time wt) const;
 	void SubmitAction(const action &request);
 	named_futurable_obj *FindFuturableByName(const std::string &name);
-	virtual std::string GetTypeSerialisationClassName() const { return ""; }
-	virtual std::string GetSerialisationName() const { return "world"; }
+	virtual std::string GetTypeSerialisationClassName() const override { return ""; }
+	virtual std::string GetSerialisationName() const override { return "world"; }
 	virtual textpool &GetUserMessageTextpool();
 	virtual void LogUserMessageLocal(LOGCATEGORY lc, const std::string &message);
 	virtual void GameStep(world_time delta);

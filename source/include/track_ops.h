@@ -43,10 +43,10 @@ class future_pointsaction : public future {
 	future_pointsaction(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id) { };
 	future_pointsaction(futurable_obj &targ, world_time ft, unsigned int index_, unsigned int bits_, unsigned int mask_) : future(targ, ft, 0), index(index_), bits(bits_), mask(mask_) { };
 	static std::string GetTypeSerialisationNameStatic() { return "future_pointsaction"; }
-	virtual std::string GetTypeSerialisationName() const { return GetTypeSerialisationNameStatic(); }
-	virtual void ExecuteAction();
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const;
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void ExecuteAction() override;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 class action_pointsaction : public action {
@@ -107,7 +107,7 @@ class action_reservetrack_base : public action {
 
 class action_reservetrack : public action_reservetrack_base {
 	route *target;
-	
+
 	public:
 	action_reservetrack(world &w_) : action_reservetrack_base(w_), target(0) { }
 	action_reservetrack(world &w_, route &targ) : action_reservetrack_base(w_), target(&targ) { }

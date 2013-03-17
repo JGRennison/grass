@@ -1,4 +1,4 @@
-﻿//  grass - Generic Rail And Signalling Simulator
+//  grass - Generic Rail And Signalling Simulator
 //
 //  WEBSITE: http://grss.sourceforge.net
 //
