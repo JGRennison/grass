@@ -20,7 +20,7 @@ GCC:=g++
 LD:=ld
 OBJDIR:=objs/main
 TESTOBJDIR:=objs/test
-DIRS=$(OBJDIR) $(TESTOBJDIR)
+DIRS=$(OBJDIR) $(TESTOBJDIR) $(TESTOBJDIR)/pch
 
 ifdef noexceptions
 SRCCXXFLAGS:=-fno-exceptions
@@ -93,7 +93,7 @@ endif
 endif
 
 CFLAGS += -iquote source/include
-TESTCFLAGS += -iquote source/test-include
+TESTCFLAGS += -iquote source/test-include -iquote $(TESTOBJDIR)/pch -Winvalid-pch
 
 OUTNAME:=$(OUTNAME)$(SIZEPOSTFIX)$(DEBUGPOSTFIX)
 
@@ -133,6 +133,8 @@ endif
 main: $(OUTNAME)$(SUFFIX)
 test: $(TESTOUTNAME)$(SUFFIX)
 
+$(TEST_OBJS): $(TESTOBJDIR)/pch/catch.hpp.gch
+
 $(OUTNAME)$(SUFFIX): $(OBJS)
 	$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX) $(LIBS) $(SRCLIBS) $(AFLAGS) $(SRCAFLAGS) $(GFLAGS)
 
@@ -148,6 +150,9 @@ $(OBJDIR)/%.o: source/src/%.cpp
 $(TESTOBJDIR)/%.o: source/test/%.cpp
 	$(GCC) -c $< -o $@ $(CFLAGS) $(TESTCFLAGS) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
 
+$(TESTOBJDIR)/pch/catch.hpp.gch:
+	$(GCC) -c source/test-include/catch.hpp -o $(TESTOBJDIR)/pch/catch.hpp.gch $(CFLAGS) $(TESTCFLAGS) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
+
 $(ALL_OBJS): | $(DIRS)
 
 $(DIRS):
@@ -158,7 +163,7 @@ $(DIRS):
 .PHONY: clean install uninstall all main test
 
 clean:
-	rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.ii) $(ALL_OBJS:.o=.lst) $(ALL_OBJS:.o=.d) $(ALL_OBJS:.o=.s) $(OUTNAME)$(SUFFIX) $(OUTNAME)_debug$(SUFFIX) $(TESTOUTNAME)$(SUFFIX) $(TESTOUTNAME)_debug$(SUFFIX)
+	rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.ii) $(ALL_OBJS:.o=.lst) $(ALL_OBJS:.o=.d) $(ALL_OBJS:.o=.s) $(OUTNAME)$(SUFFIX) $(OUTNAME)_debug$(SUFFIX) $(TESTOUTNAME)$(SUFFIX) $(TESTOUTNAME)_debug$(SUFFIX) $(TESTOBJDIR)/pch/catch.hpp.gch
 
 install:
 ifeq "$(PLATFORM)" "WIN"
