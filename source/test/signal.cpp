@@ -28,6 +28,7 @@
 #include "deserialisation-test.h"
 #include "world-test.h"
 #include "trackcircuit.h"
+#include "track_ops.h"
 
 std::string track_test_str_1 =
 R"({ "content" : [ )"
@@ -158,52 +159,52 @@ TEST_CASE( "signal/routing/general", "Test basic signal and routing connectivity
 	s5check(1, RTC_OVERLAP);
 
 	std::vector<const route *> routeset;
-	REQUIRE(s1->GetMatchingRoutes(routeset, a, via_list()) == 0);
-	REQUIRE(s1->GetMatchingRoutes(routeset, b, via_list()) == 0);
-	REQUIRE(s1->GetMatchingRoutes(routeset, c, via_list()) == 0);
-	REQUIRE(s1->GetMatchingRoutes(routeset, d, via_list()) == 1);
-	REQUIRE(s1->GetMatchingRoutes(routeset, e, via_list()) == 0);
-	REQUIRE(s1->GetMatchingRoutes(routeset, s1, via_list()) == 0);
+	REQUIRE(s1->GetMatchingRoutes(routeset, a, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s1->GetMatchingRoutes(routeset, b, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s1->GetMatchingRoutes(routeset, c, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s1->GetMatchingRoutes(routeset, d, via_list(), routingpoint::GMRF_ALL) == 1);
+	REQUIRE(s1->GetMatchingRoutes(routeset, e, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s1->GetMatchingRoutes(routeset, s1, via_list(), routingpoint::GMRF_ALL) == 0);
 
-	REQUIRE(s2->GetMatchingRoutes(routeset, a, via_list()) == 0);
-	REQUIRE(s2->GetMatchingRoutes(routeset, b, via_list()) == 0);
-	REQUIRE(s2->GetMatchingRoutes(routeset, c, via_list()) == 1);
-	REQUIRE(s2->GetMatchingRoutes(routeset, d, via_list()) == 1);
-	REQUIRE(s2->GetMatchingRoutes(routeset, e, via_list()) == 0);
-	REQUIRE(s2->GetMatchingRoutes(routeset, s2, via_list()) == 0);
+	REQUIRE(s2->GetMatchingRoutes(routeset, a, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s2->GetMatchingRoutes(routeset, b, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s2->GetMatchingRoutes(routeset, c, via_list(), routingpoint::GMRF_ALL) == 1);
+	REQUIRE(s2->GetMatchingRoutes(routeset, d, via_list(), routingpoint::GMRF_ALL) == 1);
+	REQUIRE(s2->GetMatchingRoutes(routeset, e, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s2->GetMatchingRoutes(routeset, s2, via_list(), routingpoint::GMRF_ALL) == 0);
 
-	REQUIRE(s3->GetMatchingRoutes(routeset, a, via_list()) == 0);
-	REQUIRE(s3->GetMatchingRoutes(routeset, b, via_list()) == 1);
-	REQUIRE(s3->GetMatchingRoutes(routeset, c, via_list()) == 0);
-	REQUIRE(s3->GetMatchingRoutes(routeset, d, via_list()) == 0);
-	REQUIRE(s3->GetMatchingRoutes(routeset, e, via_list()) == 0);
-	REQUIRE(s3->GetMatchingRoutes(routeset, s3, via_list()) == 0);
+	REQUIRE(s3->GetMatchingRoutes(routeset, a, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s3->GetMatchingRoutes(routeset, b, via_list(), routingpoint::GMRF_ALL) == 1);
+	REQUIRE(s3->GetMatchingRoutes(routeset, c, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s3->GetMatchingRoutes(routeset, d, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s3->GetMatchingRoutes(routeset, e, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s3->GetMatchingRoutes(routeset, s3, via_list(), routingpoint::GMRF_ALL) == 0);
 
-	REQUIRE(s4->GetMatchingRoutes(routeset, a, via_list()) == 0);
-	REQUIRE(s4->GetMatchingRoutes(routeset, b, via_list()) == 2);
-	REQUIRE(s4->GetMatchingRoutes(routeset, c, via_list()) == 0);
-	REQUIRE(s4->GetMatchingRoutes(routeset, d, via_list()) == 0);
-	REQUIRE(s4->GetMatchingRoutes(routeset, e, via_list()) == 0);
-	REQUIRE(s4->GetMatchingRoutes(routeset, s4, via_list()) == 0);
+	REQUIRE(s4->GetMatchingRoutes(routeset, a, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s4->GetMatchingRoutes(routeset, b, via_list(), routingpoint::GMRF_ALL) == 2);
+	REQUIRE(s4->GetMatchingRoutes(routeset, c, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s4->GetMatchingRoutes(routeset, d, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s4->GetMatchingRoutes(routeset, e, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s4->GetMatchingRoutes(routeset, s4, via_list(), routingpoint::GMRF_ALL) == 0);
 
-	REQUIRE(s5->GetMatchingRoutes(routeset, a, via_list()) == 0);
-	REQUIRE(s5->GetMatchingRoutes(routeset, b, via_list()) == 0);
-	REQUIRE(s5->GetMatchingRoutes(routeset, c, via_list()) == 0);
-	REQUIRE(s5->GetMatchingRoutes(routeset, d, via_list()) == 0);
-	REQUIRE(s5->GetMatchingRoutes(routeset, e, via_list()) == 0);
-	REQUIRE(s5->GetMatchingRoutes(routeset, s4, via_list()) == 2);
-	REQUIRE(s5->GetMatchingRoutes(routeset, s5, via_list()) == 0);
+	REQUIRE(s5->GetMatchingRoutes(routeset, a, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s5->GetMatchingRoutes(routeset, b, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s5->GetMatchingRoutes(routeset, c, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s5->GetMatchingRoutes(routeset, d, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s5->GetMatchingRoutes(routeset, e, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s5->GetMatchingRoutes(routeset, s4, via_list(), routingpoint::GMRF_ALL) == 2);
+	REQUIRE(s5->GetMatchingRoutes(routeset, s5, via_list(), routingpoint::GMRF_ALL) == 0);
 
-	REQUIRE(s6->GetMatchingRoutes(routeset, a, via_list()) == 2);
-	REQUIRE(s6->GetMatchingRoutes(routeset, b, via_list()) == 2);
-	REQUIRE(s6->GetMatchingRoutes(routeset, c, via_list()) == 0);
-	REQUIRE(s6->GetMatchingRoutes(routeset, d, via_list()) == 0);
-	REQUIRE(s6->GetMatchingRoutes(routeset, e, via_list()) == 0);
-	REQUIRE(s6->GetMatchingRoutes(routeset, s6, via_list()) == 0);
+	REQUIRE(s6->GetMatchingRoutes(routeset, a, via_list(), routingpoint::GMRF_ALL) == 2);
+	REQUIRE(s6->GetMatchingRoutes(routeset, b, via_list(), routingpoint::GMRF_ALL) == 2);
+	REQUIRE(s6->GetMatchingRoutes(routeset, c, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s6->GetMatchingRoutes(routeset, d, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s6->GetMatchingRoutes(routeset, e, via_list(), routingpoint::GMRF_ALL) == 0);
+	REQUIRE(s6->GetMatchingRoutes(routeset, s6, via_list(), routingpoint::GMRF_ALL) == 0);
 
 	auto overlapcheck = [&](genericsignal *s, const std::string &target) {
 		routingpoint *rp = dynamic_cast<routingpoint *>(env.w.FindTrackByName(target));
-		REQUIRE(s->GetMatchingRoutes(routeset, rp, via_list()) == 1);
+		REQUIRE(s->GetMatchingRoutes(routeset, rp, via_list(), routingpoint::GMRF_ALL) == 1);
 		REQUIRE(routeset[0]->end.track == rp);
 		REQUIRE(routeset[0]->type == RTC_OVERLAP);
 
@@ -253,6 +254,40 @@ R"({ "content" : [ )"
 	R"({ "type" : "endofline", "name" : "B" } )"
 "] }";
 
+class autosig_test_class_1 {
+	public:
+	genericsignal *s1;
+	genericsignal *s2;
+	genericsignal *s3;
+	genericsignal *s4;
+	genericsignal *s5;
+	genericsignal *s6;
+	routingpoint *a;
+	routingpoint *b;
+	std::function<void(routingpoint *signal, unsigned int aspect, ROUTE_CLASS aspect_type, routingpoint *aspect_target, routingpoint *aspect_route_target)> checksignal;
+
+	autosig_test_class_1(world &w) {
+		s1 = w.FindTrackByNameCast<genericsignal>("S1");
+		s2 = w.FindTrackByNameCast<genericsignal>("S2");
+		s3 = w.FindTrackByNameCast<genericsignal>("S3");
+		s4 = w.FindTrackByNameCast<genericsignal>("S4");
+		s5 = w.FindTrackByNameCast<genericsignal>("S5");
+		s6 = w.FindTrackByNameCast<genericsignal>("S6");
+		a = w.FindTrackByNameCast<routingpoint>("A");
+		b = w.FindTrackByNameCast<routingpoint>("B");
+
+		checksignal = [&](routingpoint *signal, unsigned int aspect, ROUTE_CLASS aspect_type, routingpoint *aspect_target, routingpoint *aspect_route_target) {
+			REQUIRE(signal != 0);
+			SCOPED_INFO("Signal check for: " << signal->GetName() << ", at time: " << w.GetGameTime());
+
+			CHECK(signal->GetAspect() == aspect);
+			CHECK(signal->GetAspectType() == aspect_type);
+			CHECK(signal->GetNextAspectTarget() == aspect_target);
+			CHECK(signal->GetAspectSetRouteTarget() == aspect_route_target);
+		};
+	}
+};
+
 TEST_CASE( "signal/autosignal/propagation", "Test basic autosignal aspect propagation" ) {
 	test_fixture_world env(autosig_test_str_1);
 
@@ -261,53 +296,88 @@ TEST_CASE( "signal/autosignal/propagation", "Test basic autosignal aspect propag
 
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	genericsignal *s1 = env.w.FindTrackByNameCast<genericsignal>("S1");
-	genericsignal *s2 = env.w.FindTrackByNameCast<genericsignal>("S2");
-	genericsignal *s3 = env.w.FindTrackByNameCast<genericsignal>("S3");
-	genericsignal *s4 = env.w.FindTrackByNameCast<genericsignal>("S4");
-	genericsignal *s5 = env.w.FindTrackByNameCast<genericsignal>("S5");
-	genericsignal *s6 = env.w.FindTrackByNameCast<genericsignal>("S6");
-	routingpoint *a = env.w.FindTrackByNameCast<routingpoint>("A");
-	routingpoint *b = env.w.FindTrackByNameCast<routingpoint>("B");
+	autosig_test_class_1 tenv(env.w);
 
-	auto checksignal = [&](routingpoint *signal, unsigned int aspect, ROUTE_CLASS aspect_type, routingpoint *aspect_target, routingpoint *aspect_route_target) {
-		REQUIRE(signal != 0);
-		SCOPED_INFO("Signal check for: " << signal->GetName() << ", at time: " << env.w.GetGameTime());
-
-		CHECK(signal->GetAspect() == aspect);
-		CHECK(signal->GetAspectType() == aspect_type);
-		CHECK(signal->GetNextAspectTarget() == aspect_target);
-		CHECK(signal->GetAspectSetRouteTarget() == aspect_route_target);
-	};
-
-	checksignal(a, 0, RTC_NULL, 0, 0);
-	checksignal(b, 0, RTC_NULL, 0, 0);
-	checksignal(s1, 0, RTC_NULL, 0, 0);
-	checksignal(s2, 0, RTC_NULL, 0, 0);
-	checksignal(s3, 0, RTC_NULL, 0, 0);
-	checksignal(s4, 0, RTC_NULL, 0, 0);
-	checksignal(s5, 0, RTC_NULL, 0, 0);
-	checksignal(s6, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.a, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.b, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s1, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s3, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s4, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s5, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s6, 0, RTC_NULL, 0, 0);
 
 	env.w.GameStep(1);
 
-	checksignal(a, 0, RTC_NULL, 0, 0);
-	checksignal(b, 0, RTC_NULL, 0, 0);
-	checksignal(s1, 3, RTC_ROUTE, s2, s2);
-	checksignal(s2, 3, RTC_ROUTE, s3, s3);
-	checksignal(s3, 2, RTC_ROUTE, s4, s4);
-	checksignal(s4, 1, RTC_ROUTE, s5, s5);
-	checksignal(s5, 0, RTC_NULL, 0, 0);
-	checksignal(s6, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.a, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.b, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s1, 3, RTC_ROUTE, tenv.s2, tenv.s2);
+	tenv.checksignal(tenv.s2, 3, RTC_ROUTE, tenv.s3, tenv.s3);
+	tenv.checksignal(tenv.s3, 2, RTC_ROUTE, tenv.s4, tenv.s4);
+	tenv.checksignal(tenv.s4, 1, RTC_ROUTE, tenv.s5, tenv.s5);
+	tenv.checksignal(tenv.s5, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s6, 0, RTC_NULL, 0, 0);
 
 	track_circuit *s3ovlp = env.w.FindOrMakeTrackCircuitByName("S3ovlp");
 	s3ovlp->SetTCFlagsMasked(track_circuit::TCF_FORCEOCCUPIED, track_circuit::TCF_FORCEOCCUPIED);
 	env.w.GameStep(1);
 
-	checksignal(s1, 1, RTC_ROUTE, s2, s2);
-	checksignal(s2, 0, RTC_NULL, 0, 0);
-	checksignal(s3, 0, RTC_NULL, 0, 0);
-	checksignal(s4, 1, RTC_ROUTE, s5, s5);
-	checksignal(s5, 0, RTC_NULL, 0, 0);
-	checksignal(s6, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s1, 1, RTC_ROUTE, tenv.s2, tenv.s2);
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s3, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s4, 1, RTC_ROUTE, tenv.s5, tenv.s5);
+	tenv.checksignal(tenv.s5, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s6, 0, RTC_NULL, 0, 0);
+}
+
+TEST_CASE( "signal/routesignal/reserveaction", "Test basic routesignal reservation action and aspect propagation" ) {
+	test_fixture_world env(autosig_test_str_1);
+
+	env.w.LayoutInit(env.ec);
+	env.w.PostLayoutInit(env.ec);
+
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	autosig_test_class_1 tenv(env.w);
+
+	std::vector<const route *> out;
+	unsigned int routecount = tenv.s5->GetMatchingRoutes(out, tenv.s6, via_list(), routingpoint::GMRF_ALL);
+	REQUIRE(routecount == 1);
+
+	env.w.SubmitAction(action_reservetrack(env.w, *out[0]));
+
+	tenv.checksignal(tenv.a, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.b, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s1, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s3, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s4, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s5, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s6, 0, RTC_NULL, 0, 0);
+
+	env.w.GameStep(1);
+
+	tenv.checksignal(tenv.a, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.b, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s1, 3, RTC_ROUTE, tenv.s2, tenv.s2);
+	tenv.checksignal(tenv.s2, 3, RTC_ROUTE, tenv.s3, tenv.s3);
+	tenv.checksignal(tenv.s3, 3, RTC_ROUTE, tenv.s4, tenv.s4);
+	tenv.checksignal(tenv.s4, 2, RTC_ROUTE, tenv.s5, tenv.s5);
+	tenv.checksignal(tenv.s5, 1, RTC_ROUTE, tenv.s6, tenv.s6);
+	tenv.checksignal(tenv.s6, 0, RTC_NULL, 0, 0);
+
+	const route* s6rt = tenv.s6->FindBestRoute(tenv.b, routingpoint::GMRF_ALL);
+	REQUIRE(s6rt != 0);
+	env.w.SubmitAction(action_reservetrack(env.w, *s6rt));
+
+	env.w.GameStep(1);
+
+	tenv.checksignal(tenv.a, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.b, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s1, 3, RTC_ROUTE, tenv.s2, tenv.s2);
+	tenv.checksignal(tenv.s2, 3, RTC_ROUTE, tenv.s3, tenv.s3);
+	tenv.checksignal(tenv.s3, 3, RTC_ROUTE, tenv.s4, tenv.s4);
+	tenv.checksignal(tenv.s4, 3, RTC_ROUTE, tenv.s5, tenv.s5);
+	tenv.checksignal(tenv.s5, 2, RTC_ROUTE, tenv.s6, tenv.s6);
+	tenv.checksignal(tenv.s6, 1, RTC_ROUTE, tenv.b, tenv.b);
 }

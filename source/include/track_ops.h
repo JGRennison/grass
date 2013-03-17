@@ -102,15 +102,15 @@ class future_reservetrack : public future {
 class action_reservetrack_base : public action {
 	public:
 	action_reservetrack_base(world &w_) : action(w_) { }
-	bool TryReserveRoute(route *rt, world_time action_time) const;
+	bool TryReserveRoute(const route *rt, world_time action_time) const;
 };
 
 class action_reservetrack : public action_reservetrack_base {
-	route *target;
+	const route *target;
 
 	public:
 	action_reservetrack(world &w_) : action_reservetrack_base(w_), target(0) { }
-	action_reservetrack(world &w_, route &targ) : action_reservetrack_base(w_), target(&targ) { }
+	action_reservetrack(world &w_, const route &targ) : action_reservetrack_base(w_), target(&targ) { }
 	static std::string GetTypeSerialisationNameStatic() { return "action_reservetrack"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;

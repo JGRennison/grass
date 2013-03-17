@@ -45,7 +45,7 @@ class error_signalinit_trackscan : public error_signalinit {
 	}
 };
 
-unsigned int routingpoint::GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const {
+unsigned int routingpoint::GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, unsigned int gmr_flags /* = GMRF_ROUTEOK | GMRF_SHUNTOK */) const {
 	out.clear();
 	return 0;
 }
@@ -72,6 +72,31 @@ const route *routingpoint::FindBestOverlap() const {
 	};
 	EnumerateRoutes(overlap_finder);
 	return best_overlap;
+}
+
+const route *routingpoint::FindBestRoute(const routingpoint *end, unsigned int gmr_flags /* = GMRF_ROUTEOK | GMRF_SHUNTOK */) const {
+	int best_score = INT_MIN;
+	const route *best_route = 0;
+	auto route_finder = [&](const route *r) {
+		if(r->type == RTC_SHUNT && !(gmr_flags & GMRF_SHUNTOK)) return;
+		if(r->type == RTC_ROUTE && !(gmr_flags & GMRF_ROUTEOK)) return;
+		if(r->end.track != end) return;
+		if(!r->RouteReservation(RRF_TRYRESERVE)) return;
+
+		int score = r->priority;
+		auto actioncounter = [&](action &&reservation_act) {
+			score -= 10;
+		};
+		r->RouteReservationActions(RRF_DUMMY_RESERVE, actioncounter);
+
+		if(score == best_score && r->type == RTC_ROUTE && best_route->type == RTC_SHUNT) best_score--;	//prefer routes over shunts at the same priority
+		if(score>best_score) {
+			best_score = score;
+			best_route = r;
+		}
+	};
+	EnumerateRoutes(route_finder);
+	return best_route;
 }
 
 const track_target_ptr& trackroutingpoint::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
@@ -310,7 +335,7 @@ route *autosignal::GetRouteByIndex(unsigned int index) {
 	else return 0;
 }
 
-unsigned int autosignal::GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const {
+unsigned int autosignal::GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, unsigned int gmr_flags /* = GMRF_ROUTEOK | GMRF_SHUNTOK */) const {
 	out.clear();
 	if(signal_route.TestRouteForMatch(end, vias)) out.push_back(&signal_route);
 	if(overlap_route.TestRouteForMatch(end, vias)) out.push_back(&overlap_route);
@@ -335,9 +360,12 @@ route *routesignal::GetRouteByIndex(unsigned int index) {
 	return 0;
 }
 
-unsigned int routesignal::GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const {
+unsigned int routesignal::GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, unsigned int gmr_flags /* = GMRF_ROUTEOK | GMRF_SHUNTOK */) const {
 	out.clear();
 	for(auto it = signal_routes.begin(); it != signal_routes.end(); ++it) {
+		if(it->type == RTC_ROUTE && !(gmr_flags & GMRF_ROUTEOK)) continue;
+		if(it->type == RTC_SHUNT && !(gmr_flags & GMRF_SHUNTOK)) continue;
+		if(it->type == RTC_OVERLAP && !(gmr_flags & GMRF_OVERLAPOK)) continue;
 		if(it->TestRouteForMatch(end, vias)) out.push_back(&*it);
 	}
 	auto sortfunc = [&](const route *a, const route *b) -> bool {

@@ -100,10 +100,18 @@ class routingpoint : public genericzlentrack {
 	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const = 0;
 	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const = 0;
 
+	enum {
+		GMRF_ROUTEOK	= 1<<0,
+		GMRF_SHUNTOK	= 1<<1,
+		GMRF_OVERLAPOK	= 1<<2,
+		GMRF_ALL	= GMRF_ROUTEOK | GMRF_SHUNTOK | GMRF_OVERLAPOK,
+	};
+
 	virtual route *GetRouteByIndex(unsigned int index) = 0;
 	const route *FindBestOverlap() const;
+	const route *FindBestRoute(const routingpoint *end, unsigned int gmr_flags = GMRF_ROUTEOK | GMRF_SHUNTOK) const;
 
-	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const;
+	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, unsigned int gmr_flags = GMRF_ROUTEOK | GMRF_SHUNTOK) const;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
 
 	virtual std::string GetTypeName() const override { return "Track Routing Point"; }
@@ -261,7 +269,7 @@ class autosignal : public genericsignal {
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
-	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const override;
+	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, unsigned int gmr_flags = GMRF_ROUTEOK | GMRF_SHUNTOK) const override;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const override;
 };
 
@@ -284,7 +292,7 @@ class routesignal : public genericsignal {
 
 	const route_restriction_set &GetRouteRestrictions() const { return restrictions; }
 
-	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias) const override;
+	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, unsigned int gmr_flags = GMRF_ROUTEOK | GMRF_SHUNTOK) const override;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const override;
 };
 

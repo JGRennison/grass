@@ -164,7 +164,7 @@ void future_reservetrack::Serialise(serialiser_output &so, error_collection &ec)
 }
 
 //return true on success
-bool action_reservetrack_base::TryReserveRoute(route *rt, world_time action_time) const {
+bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time action_time) const {
 	if(!rt->RouteReservation(RRF_TRYRESERVE)) return false;
 
 	//disallow if non-overlap route already set from start point in given direction
