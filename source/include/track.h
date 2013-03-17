@@ -389,6 +389,7 @@ class error_trackconnection_notfound : public layout_initialisation_error_obj {
 };
 
 std::ostream& operator<<(std::ostream& os, const generictrack& obj);
+std::ostream& operator<<(std::ostream& os, const generictrack* obj);
 std::ostream& operator<<(std::ostream& os, const track_target_ptr& obj);
 std::ostream& operator<<(std::ostream& os, const track_location& obj);
 

@@ -488,6 +488,12 @@ unsigned int track_reservation_state::ReservationEnumerationInDirection(EDGETYPE
 	return counter;
 }
 
+std::ostream& operator<<(std::ostream& os, const generictrack* obj) {
+	if(obj) os << obj->GetFriendlyName();
+	else os << "Null generictrack*";
+	return os;
+}
+
 std::ostream& operator<<(std::ostream& os, const generictrack& obj) {
 	os << obj.GetFriendlyName();
 	return os;

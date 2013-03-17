@@ -256,10 +256,10 @@ const route *genericsignal::GetCurrentForwardRoute() const {
 	const route *output = 0;
 
 	auto route_fetch = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags) {
-		if(reserved_route) output = reserved_route;
+		if(reserved_route && reserved_route->type != RTC_OVERLAP && reserved_route->type != RTC_NULL) output = reserved_route;
 	};
 
-	end_trs.ReservationEnumerationInDirection(EDGE_FRONT, route_fetch);
+	start_trs.ReservationEnumerationInDirection(EDGE_FRONT, route_fetch);
 	return output;
 }
 
@@ -381,9 +381,9 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 		}
 	};
 
-	if(!PostLayoutInitTrackScan(ec, 100, 0, 0, mkroutefunc)) return false;
+	bool scanresult = PostLayoutInitTrackScan(ec, 100, 0, 0, mkroutefunc);
 
-	if(signal_route.type == RTC_ROUTE) {
+	if(scanresult && signal_route.type == RTC_ROUTE) {
 		if(signal_route.RouteReservation(RRF_AUTOROUTE | RRF_TRYRESERVE)) {
 			signal_route.RouteReservation(RRF_AUTOROUTE | RRF_RESERVE);
 

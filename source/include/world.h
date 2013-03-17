@@ -95,6 +95,9 @@ class world : public named_futurable_obj {
 	void LayoutInit(error_collection &ec);
 	void PostLayoutInit(error_collection &ec);
 	generictrack *FindTrackByName(const std::string &name) const;
+	template <typename C> C *FindTrackByNameCast(const std::string &name) const {
+		return dynamic_cast<C*>(FindTrackByName(name));
+	}
 	track_circuit *FindOrMakeTrackCircuitByName(const std::string &name);
 	void InitFutureTypes();
 	world_time GetGameTime() const { return gametime; }

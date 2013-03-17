@@ -479,4 +479,3 @@ TEST_CASE( "track/deserialisation/ambiguouspartialconnection/3", "Test handling 
 	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() >= 1);
 }
-

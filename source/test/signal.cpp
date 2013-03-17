@@ -162,36 +162,43 @@ TEST_CASE( "signal/routing/general", "Test basic signal and routing connectivity
 	REQUIRE(s1->GetMatchingRoutes(routeset, c, via_list()) == 0);
 	REQUIRE(s1->GetMatchingRoutes(routeset, d, via_list()) == 1);
 	REQUIRE(s1->GetMatchingRoutes(routeset, e, via_list()) == 0);
+	REQUIRE(s1->GetMatchingRoutes(routeset, s1, via_list()) == 0);
 
 	REQUIRE(s2->GetMatchingRoutes(routeset, a, via_list()) == 0);
 	REQUIRE(s2->GetMatchingRoutes(routeset, b, via_list()) == 0);
 	REQUIRE(s2->GetMatchingRoutes(routeset, c, via_list()) == 1);
 	REQUIRE(s2->GetMatchingRoutes(routeset, d, via_list()) == 1);
 	REQUIRE(s2->GetMatchingRoutes(routeset, e, via_list()) == 0);
+	REQUIRE(s2->GetMatchingRoutes(routeset, s2, via_list()) == 0);
 
 	REQUIRE(s3->GetMatchingRoutes(routeset, a, via_list()) == 0);
 	REQUIRE(s3->GetMatchingRoutes(routeset, b, via_list()) == 1);
 	REQUIRE(s3->GetMatchingRoutes(routeset, c, via_list()) == 0);
 	REQUIRE(s3->GetMatchingRoutes(routeset, d, via_list()) == 0);
 	REQUIRE(s3->GetMatchingRoutes(routeset, e, via_list()) == 0);
+	REQUIRE(s3->GetMatchingRoutes(routeset, s3, via_list()) == 0);
 
 	REQUIRE(s4->GetMatchingRoutes(routeset, a, via_list()) == 0);
 	REQUIRE(s4->GetMatchingRoutes(routeset, b, via_list()) == 2);
 	REQUIRE(s4->GetMatchingRoutes(routeset, c, via_list()) == 0);
 	REQUIRE(s4->GetMatchingRoutes(routeset, d, via_list()) == 0);
 	REQUIRE(s4->GetMatchingRoutes(routeset, e, via_list()) == 0);
+	REQUIRE(s4->GetMatchingRoutes(routeset, s4, via_list()) == 0);
 
 	REQUIRE(s5->GetMatchingRoutes(routeset, a, via_list()) == 0);
 	REQUIRE(s5->GetMatchingRoutes(routeset, b, via_list()) == 0);
 	REQUIRE(s5->GetMatchingRoutes(routeset, c, via_list()) == 0);
 	REQUIRE(s5->GetMatchingRoutes(routeset, d, via_list()) == 0);
 	REQUIRE(s5->GetMatchingRoutes(routeset, e, via_list()) == 0);
+	REQUIRE(s5->GetMatchingRoutes(routeset, s4, via_list()) == 2);
+	REQUIRE(s5->GetMatchingRoutes(routeset, s5, via_list()) == 0);
 
 	REQUIRE(s6->GetMatchingRoutes(routeset, a, via_list()) == 2);
 	REQUIRE(s6->GetMatchingRoutes(routeset, b, via_list()) == 2);
 	REQUIRE(s6->GetMatchingRoutes(routeset, c, via_list()) == 0);
 	REQUIRE(s6->GetMatchingRoutes(routeset, d, via_list()) == 0);
 	REQUIRE(s6->GetMatchingRoutes(routeset, e, via_list()) == 0);
+	REQUIRE(s6->GetMatchingRoutes(routeset, s6, via_list()) == 0);
 
 	auto overlapcheck = [&](genericsignal *s, const std::string &target) {
 		routingpoint *rp = dynamic_cast<routingpoint *>(env.w.FindTrackByName(target));
@@ -210,4 +217,85 @@ TEST_CASE( "signal/routing/general", "Test basic signal and routing connectivity
 	overlapcheck(s2, "#18");
 	overlapcheck(s4, "#21");
 	overlapcheck(s6, "#13");
+}
+
+std::string autosig_test_str_1 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "4aspectauto", "basetype" : "autosignal", "content" : { "maxaspect" : 3 } }, )"
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "trackseg", "length" : 50000, "trackcircuit" : "T1" }, )"
+	R"({ "type" : "4aspectauto", "name" : "S1" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S1ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T2" }, )"
+	R"({ "type" : "4aspectauto", "name" : "S2" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S2ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T3" }, )"
+	R"({ "type" : "4aspectauto", "name" : "S3" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S3ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T4" }, )"
+	R"({ "type" : "4aspectauto", "name" : "S4" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S4ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T5" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S5" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S5ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T6" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S6" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S6ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T7" }, )"
+	R"({ "type" : "endofline", "name" : "B" } )"
+"] }";
+
+TEST_CASE( "signal/autosignal/propagation", "Test basic autosignal aspect propagation" ) {
+	test_fixture_world env(autosig_test_str_1);
+
+	env.w.LayoutInit(env.ec);
+	env.w.PostLayoutInit(env.ec);
+
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	genericsignal *s1 = env.w.FindTrackByNameCast<genericsignal>("S1");
+	genericsignal *s2 = env.w.FindTrackByNameCast<genericsignal>("S2");
+	genericsignal *s3 = env.w.FindTrackByNameCast<genericsignal>("S3");
+	genericsignal *s4 = env.w.FindTrackByNameCast<genericsignal>("S4");
+	genericsignal *s5 = env.w.FindTrackByNameCast<genericsignal>("S5");
+	genericsignal *s6 = env.w.FindTrackByNameCast<genericsignal>("S6");
+	routingpoint *a = env.w.FindTrackByNameCast<routingpoint>("A");
+	routingpoint *b = env.w.FindTrackByNameCast<routingpoint>("B");
+
+	auto checksignal = [&](routingpoint *signal, unsigned int aspect, ROUTE_CLASS aspect_type, routingpoint *aspect_target, routingpoint *aspect_route_target) {
+		REQUIRE(signal != 0);
+		SCOPED_INFO("Signal check for: " << signal->GetName() << ", at time: " << env.w.GetGameTime());
+
+		CHECK(signal->GetAspect() == aspect);
+		CHECK(signal->GetAspectType() == aspect_type);
+		CHECK(signal->GetNextAspectTarget() == aspect_target);
+		CHECK(signal->GetAspectSetRouteTarget() == aspect_route_target);
+	};
+
+	checksignal(a, 0, RTC_NULL, 0, 0);
+	checksignal(b, 0, RTC_NULL, 0, 0);
+	checksignal(s1, 0, RTC_NULL, 0, 0);
+	checksignal(s2, 0, RTC_NULL, 0, 0);
+	checksignal(s3, 0, RTC_NULL, 0, 0);
+	checksignal(s4, 0, RTC_NULL, 0, 0);
+	checksignal(s5, 0, RTC_NULL, 0, 0);
+	checksignal(s6, 0, RTC_NULL, 0, 0);
+
+	env.w.GameStep(1);
+
+	checksignal(a, 0, RTC_NULL, 0, 0);
+	checksignal(b, 0, RTC_NULL, 0, 0);
+	checksignal(s1, 3, RTC_ROUTE, s2, s2);
+	checksignal(s2, 3, RTC_ROUTE, s3, s3);
+	checksignal(s3, 2, RTC_ROUTE, s4, s4);
+	checksignal(s4, 1, RTC_ROUTE, s5, s5);
+	checksignal(s5, 0, RTC_NULL, 0, 0);
+	checksignal(s6, 0, RTC_NULL, 0, 0);
 }
