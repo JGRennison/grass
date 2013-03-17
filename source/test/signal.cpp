@@ -27,6 +27,7 @@
 #include "traverse.h"
 #include "deserialisation-test.h"
 #include "world-test.h"
+#include "trackcircuit.h"
 
 std::string track_test_str_1 =
 R"({ "content" : [ )"
@@ -295,6 +296,17 @@ TEST_CASE( "signal/autosignal/propagation", "Test basic autosignal aspect propag
 	checksignal(s1, 3, RTC_ROUTE, s2, s2);
 	checksignal(s2, 3, RTC_ROUTE, s3, s3);
 	checksignal(s3, 2, RTC_ROUTE, s4, s4);
+	checksignal(s4, 1, RTC_ROUTE, s5, s5);
+	checksignal(s5, 0, RTC_NULL, 0, 0);
+	checksignal(s6, 0, RTC_NULL, 0, 0);
+
+	track_circuit *s3ovlp = env.w.FindOrMakeTrackCircuitByName("S3ovlp");
+	s3ovlp->SetTCFlagsMasked(track_circuit::TCF_FORCEOCCUPIED, track_circuit::TCF_FORCEOCCUPIED);
+	env.w.GameStep(1);
+
+	checksignal(s1, 1, RTC_ROUTE, s2, s2);
+	checksignal(s2, 0, RTC_NULL, 0, 0);
+	checksignal(s3, 0, RTC_NULL, 0, 0);
 	checksignal(s4, 1, RTC_ROUTE, s5, s5);
 	checksignal(s5, 0, RTC_NULL, 0, 0);
 	checksignal(s6, 0, RTC_NULL, 0, 0);

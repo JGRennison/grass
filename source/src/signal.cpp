@@ -201,23 +201,38 @@ void genericsignal::UpdateSignalState() {
 
 	last_state_update = GetWorld().GetGameTime();
 
-	const route *set_route = GetCurrentForwardRoute();
-	if(!set_route) {
+	auto clear_route = [&]() {
 		aspect = 0;
 		aspect_target = 0;
 		aspect_route_target = 0;
 		aspect_type = RTC_NULL;
+	};
+
+	const route *set_route = GetCurrentForwardRoute();
+	if(!set_route) {
+		clear_route();
 		return;
 	}
 
 	if(!(GetSignalFlags() & GSF_REPEATER)) {
 		for(auto it = set_route->trackcircuits.begin(); it != set_route->trackcircuits.end(); ++it) {
 			if((*it)->Occupied()) {
-				aspect = 0;
-				aspect_target = 0;
-				aspect_route_target = 0;
-				aspect_type = RTC_NULL;
+				clear_route();
 				return;
+			}
+		}
+		if(set_route->end.track->GetFlags(set_route->end.direction) & GTF_SIGNAL) {
+			genericsignal *gs = dynamic_cast<genericsignal*>(set_route->end.track);
+			if(gs) {
+				const route *rt = gs->GetCurrentForwardOverlap();
+				if(rt) {
+					for(auto it = rt->trackcircuits.begin(); it != rt->trackcircuits.end(); ++it) {
+						if((*it)->Occupied()) {
+							clear_route();
+							return;
+						}
+					}
+				}
 			}
 		}
 	}
@@ -257,6 +272,18 @@ const route *genericsignal::GetCurrentForwardRoute() const {
 
 	auto route_fetch = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags) {
 		if(reserved_route && reserved_route->type != RTC_OVERLAP && reserved_route->type != RTC_NULL) output = reserved_route;
+	};
+
+	start_trs.ReservationEnumerationInDirection(EDGE_FRONT, route_fetch);
+	return output;
+}
+
+//this will only return the overlap, not the "real" route
+const route *genericsignal::GetCurrentForwardOverlap() const {
+	const route *output = 0;
+
+	auto route_fetch = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags) {
+		if(reserved_route && reserved_route->type == RTC_OVERLAP) output = reserved_route;
 	};
 
 	start_trs.ReservationEnumerationInDirection(EDGE_FRONT, route_fetch);

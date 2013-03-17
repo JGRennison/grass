@@ -230,6 +230,7 @@ class genericsignal : public trackroutingpoint {
 	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const override;
 
 	virtual const route *GetCurrentForwardRoute() const;	//this will not return the overlap, only the "real" route
+	virtual const route *GetCurrentForwardOverlap() const;	//this will only return the overlap, not the "real" route
 	virtual bool RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;

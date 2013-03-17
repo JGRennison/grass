@@ -31,18 +31,24 @@ class train;
 
 class track_circuit : public world_obj {
 	unsigned int traincount = 0;
+	unsigned int tc_flags = 0;
 
 	public:
+	enum {
+		TCF_FORCEOCCUPIED	= 1<<0,
+	};
 	track_circuit(world &w_, const std::string &name_) : world_obj(w_) { SetName(name_); }
 	track_circuit(world &w_) : world_obj(w_) { }
 	void TrainEnter(train *t);
 	void TrainLeave(train *t);
-	bool Occupied() const { return traincount > 0; }
-	
+	bool Occupied() const { return traincount > 0 || tc_flags & TCF_FORCEOCCUPIED; }
+	unsigned int GetTCFlags() const;
+	unsigned int SetTCFlagsMasked(unsigned int bits, unsigned int mask);
+
 	virtual std::string GetTypeName() const override { return "Track Circuit"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "trackcircuit"; }
 	virtual std::string GetTypeSerialisationClassName() const override { return GetTypeSerialisationClassNameStatic(); }
-	
+
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
