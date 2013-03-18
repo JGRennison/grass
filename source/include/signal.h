@@ -28,6 +28,7 @@
 
 #include "track.h"
 #include "traverse.h"
+#include "flags.h"
 
 typedef enum {
 	RTC_NULL,
@@ -44,6 +45,36 @@ typedef std::deque<routingpoint *> via_list;
 typedef std::deque<track_circuit *> tc_list;
 typedef std::deque<genericsignal *> sig_list;
 
+enum class RPRT {
+	ZERO			= 0,
+	SHUNTSTART		= 1<<0,
+	SHUNTEND		= 1<<1,
+	SHUNTTRANS		= 1<<2,
+	ROUTESTART		= 1<<3,
+	ROUTEEND		= 1<<4,
+	ROUTETRANS		= 1<<5,
+	VIA			= 1<<6,
+	OVERLAPSTART		= 1<<7,
+	OVERLAPEND		= 1<<8,
+	OVERLAPTRANS		= 1<<9,
+
+	MASK_SHUNT		= SHUNTSTART | SHUNTEND | SHUNTTRANS,
+	MASK_ROUTE		= ROUTESTART | ROUTEEND | ROUTETRANS,
+	MASK_OVERLAP		= OVERLAPSTART | OVERLAPEND | OVERLAPTRANS,
+	MASK_START		= SHUNTSTART | ROUTESTART | OVERLAPSTART,
+	MASK_END		= SHUNTEND | ROUTEEND | OVERLAPEND,
+	MASK_TRANS		= SHUNTTRANS | ROUTETRANS | OVERLAPTRANS,
+};
+template<> struct enum_traits< RPRT > {	static constexpr bool flags = true; };
+
+enum class GMRF {
+	ROUTEOK		= 1<<0,
+	SHUNTOK		= 1<<1,
+	OVERLAPOK	= 1<<2,
+	ALL		= ROUTEOK | SHUNTOK | OVERLAPOK,
+};
+template<> struct enum_traits< GMRF > {	static constexpr bool flags = true; };
+
 class routingpoint : public genericzlentrack {
 	protected:
 	unsigned int aspect = 0;
@@ -53,25 +84,6 @@ class routingpoint : public genericzlentrack {
 
 	public:
 	routingpoint(world &w_) : genericzlentrack(w_) { }
-	enum {
-		RPRT_SHUNTSTART		= 1<<0,
-		RPRT_SHUNTEND		= 1<<1,
-		RPRT_SHUNTTRANS		= 1<<2,
-		RPRT_ROUTESTART		= 1<<3,
-		RPRT_ROUTEEND		= 1<<4,
-		RPRT_ROUTETRANS		= 1<<5,
-		RPRT_VIA		= 1<<6,
-		RPRT_OVERLAPSTART	= 1<<7,
-		RPRT_OVERLAPEND		= 1<<8,
-		RPRT_OVERLAPTRANS	= 1<<9,
-
-		RPRT_MASK_SHUNT		= RPRT_SHUNTSTART | RPRT_SHUNTEND | RPRT_SHUNTTRANS,
-		RPRT_MASK_ROUTE		= RPRT_ROUTESTART | RPRT_ROUTEEND | RPRT_ROUTETRANS,
-		RPRT_MASK_OVERLAP	= RPRT_OVERLAPSTART | RPRT_OVERLAPEND | RPRT_OVERLAPTRANS,
-		RPRT_MASK_START		= RPRT_SHUNTSTART | RPRT_ROUTESTART | RPRT_OVERLAPSTART,
-		RPRT_MASK_END		= RPRT_SHUNTEND | RPRT_ROUTEEND | RPRT_OVERLAPEND,
-		RPRT_MASK_TRANS		= RPRT_SHUNTTRANS | RPRT_ROUTETRANS | RPRT_OVERLAPTRANS,
-	};
 
 	inline unsigned int GetAspect() const { return aspect; }
 	inline routingpoint *GetNextAspectTarget() const { return aspect_target; }
@@ -79,39 +91,32 @@ class routingpoint : public genericzlentrack {
 	inline ROUTE_CLASS GetAspectType() const { return aspect_type; }
 	virtual void UpdateRoutingPoint() { }
 
-	static inline unsigned int GetRouteClassRPRTMask(ROUTE_CLASS rc) {
+	static inline RPRT GetRouteClassRPRTMask(ROUTE_CLASS rc) {
 		switch(rc) {
-			case RTC_NULL: return 0;
-			case RTC_SHUNT: return RPRT_MASK_SHUNT;
-			case RTC_ROUTE: return RPRT_MASK_ROUTE;
-			case RTC_OVERLAP: return RPRT_MASK_OVERLAP;
-			default: return 0;
+			case RTC_NULL: return RPRT::ZERO;
+			case RTC_SHUNT: return RPRT::MASK_SHUNT;
+			case RTC_ROUTE: return RPRT::MASK_ROUTE;
+			case RTC_OVERLAP: return RPRT::MASK_OVERLAP;
+			default: return RPRT::ZERO;
 		}
 	}
 
-	static inline unsigned int GetTRSFlagsRPRTMask(unsigned int rr_flags) {
-		unsigned int result = 0;
-		if(rr_flags & RRF_STARTPIECE) result |= RPRT_MASK_START;
-		if(rr_flags & RRF_ENDPIECE) result |= RPRT_MASK_END;
-		if(!(rr_flags & (RRF_STARTPIECE | RRF_ENDPIECE))) result |= RPRT_MASK_TRANS;
+	static inline RPRT GetTRSFlagsRPRTMask(unsigned int rr_flags) {
+		RPRT result = RPRT::ZERO;
+		if(rr_flags & RRF_STARTPIECE) result |= RPRT::MASK_START;
+		if(rr_flags & RRF_ENDPIECE) result |= RPRT::MASK_END;
+		if(!(rr_flags & (RRF_STARTPIECE | RRF_ENDPIECE))) result |= RPRT::MASK_TRANS;
 		return result;
 	}
 
-	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const = 0;
-	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const = 0;
-
-	enum {
-		GMRF_ROUTEOK	= 1<<0,
-		GMRF_SHUNTOK	= 1<<1,
-		GMRF_OVERLAPOK	= 1<<2,
-		GMRF_ALL	= GMRF_ROUTEOK | GMRF_SHUNTOK | GMRF_OVERLAPOK,
-	};
+	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const = 0;
+	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const = 0;
 
 	virtual route *GetRouteByIndex(unsigned int index) = 0;
 	const route *FindBestOverlap() const;
-	const route *FindBestRoute(const routingpoint *end, unsigned int gmr_flags = GMRF_ROUTEOK | GMRF_SHUNTOK) const;
+	const route *FindBestRoute(const routingpoint *end, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK) const;
 
-	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, unsigned int gmr_flags = GMRF_ROUTEOK | GMRF_SHUNTOK) const;
+	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK) const;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
 
 	virtual std::string GetTypeName() const override { return "Track Routing Point"; }
@@ -186,11 +191,11 @@ class trackroutingpoint : public routingpoint {
 	protected:
 	track_target_ptr prev;
 	track_target_ptr next;
-	unsigned int availableroutetypes_forward;
-	unsigned int availableroutetypes_reverse;
+	RPRT availableroutetypes_forward;
+	RPRT availableroutetypes_reverse;
 
 	public:
-	trackroutingpoint(world &w_) : routingpoint(w_), availableroutetypes_forward(0), availableroutetypes_reverse(0) { }
+	trackroutingpoint(world &w_) : routingpoint(w_), availableroutetypes_forward(RPRT::ZERO), availableroutetypes_reverse(RPRT::ZERO) { }
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
 	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
@@ -234,8 +239,8 @@ class genericsignal : public trackroutingpoint {
 	virtual unsigned int GetSignalFlags() const;
 	virtual unsigned int SetSignalFlagsMasked(unsigned int set_flags, unsigned int mask_flags);
 
-	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const override;
-	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const override;
+	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
+	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
 
 	virtual const route *GetCurrentForwardRoute() const;	//this will not return the overlap, only the "real" route
 	virtual const route *GetCurrentForwardOverlap() const;	//this will only return the overlap, not the "real" route
@@ -257,7 +262,7 @@ class autosignal : public genericsignal {
 	route overlap_route;
 
 	public:
-	autosignal(world &w_) : genericsignal(w_) { availableroutetypes_forward |= RPRT_ROUTESTART | RPRT_SHUNTEND | RPRT_ROUTEEND; }
+	autosignal(world &w_) : genericsignal(w_) { availableroutetypes_forward |= RPRT::ROUTESTART | RPRT::SHUNTEND | RPRT::ROUTEEND; }
 	bool PostLayoutInit(error_collection &ec) override;
 	unsigned int GetFlags(EDGETYPE direction) const override;
 	virtual std::string GetTypeName() const override { return "Automatic Signal"; }
@@ -269,7 +274,7 @@ class autosignal : public genericsignal {
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
-	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, unsigned int gmr_flags = GMRF_ROUTEOK | GMRF_SHUNTOK) const override;
+	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK) const override;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const override;
 };
 
@@ -292,18 +297,18 @@ class routesignal : public genericsignal {
 
 	const route_restriction_set &GetRouteRestrictions() const { return restrictions; }
 
-	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, unsigned int gmr_flags = GMRF_ROUTEOK | GMRF_SHUNTOK) const override;
+	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK) const override;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const override;
 };
 
 class startofline : public routingpoint {
 	protected:
 	track_target_ptr connection;
-	unsigned int availableroutetypes;
+	RPRT availableroutetypes;
 	track_reservation_state trs;
 
 	public:
-	startofline(world &w_) : routingpoint(w_), availableroutetypes(RPRT_SHUNTEND | RPRT_ROUTEEND) { }
+	startofline(world &w_) : routingpoint(w_), availableroutetypes(RPRT::SHUNTEND | RPRT::ROUTEEND) { }
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
 	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
@@ -316,8 +321,8 @@ class startofline : public routingpoint {
 	void TrainEnter(EDGETYPE direction, train *t) override { }
 	void TrainLeave(EDGETYPE direction, train *t) override { }
 
-	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const override;
-	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const override;
+	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
+	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
 
 	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
@@ -351,8 +356,8 @@ class routingmarker : public trackroutingpoint {
 
 	public:
 	routingmarker(world &w_) : trackroutingpoint(w_) {
-		availableroutetypes_forward |= RPRT_SHUNTTRANS | RPRT_ROUTETRANS | RPRT_OVERLAPTRANS;
-		availableroutetypes_reverse |= RPRT_SHUNTTRANS | RPRT_ROUTETRANS | RPRT_OVERLAPTRANS;
+		availableroutetypes_forward |= RPRT::SHUNTTRANS | RPRT::ROUTETRANS | RPRT::OVERLAPTRANS;
+		availableroutetypes_reverse |= RPRT::SHUNTTRANS | RPRT::ROUTETRANS | RPRT::OVERLAPTRANS;
 	}
 	void TrainEnter(EDGETYPE direction, train *t) override { }
 	void TrainLeave(EDGETYPE direction, train *t) override { }
@@ -361,8 +366,8 @@ class routingmarker : public trackroutingpoint {
 	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
 
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) override;
-	virtual unsigned int GetAvailableRouteTypes(EDGETYPE direction) const override;
-	virtual unsigned int GetSetRouteTypes(EDGETYPE direction) const override;
+	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
+	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
 
 	virtual std::string GetTypeName() const override { return "Routing Marker"; }
 

@@ -24,6 +24,7 @@
 #ifndef INC_SERIALISABLE_IMPL_ALREADY
 #define INC_SERIALISABLE_IMPL_ALREADY
 
+#include "flags.h"
 #include "serialisable.h"
 #include "error.h"
 #include "util.h"
@@ -145,6 +146,18 @@ template <> inline const char *GetTypeFriendlyName<EDGETYPE>() { return "directi
 template <> inline const char *GetTypeFriendlyName<json_object>() { return "object"; }
 template <> inline const char *GetTypeFriendlyName<json_array>() { return "array"; }
 
+template <typename C, class Enable = void> struct flagtyperemover;
+
+template<typename C>
+struct flagtyperemover<C, typename std::enable_if<std::is_integral<C>::value>::type> {
+	typedef C type;
+};
+
+template<typename C>
+struct flagtyperemover<C, typename std::enable_if<enum_traits<C>::flags>::type> {
+	typedef typename std::underlying_type<C>::type type;
+};
+
 template <typename C> inline void CheckJsonTypeAndReportError(const deserialiser_input &di, const char *prop, const rapidjson::Value& subval, error_collection &ec, bool mandatory=false) {
 	if(!subval.IsNull()) {
 		ec.RegisterNewError<error_deserialisation>(di, string_format("JSON variable of wrong type: %s, expected: %s", prop, GetTypeFriendlyName<C>()));
@@ -175,17 +188,17 @@ template <typename C, typename D> inline bool CheckTransJsonValueDef(C &var, con
 template <typename C> struct flag_conflict_checker {
 	C set_bits;
 	C clear_bits;
-	flag_conflict_checker() : set_bits(0), clear_bits(0) { }
+	flag_conflict_checker() : set_bits(static_cast<C>(0)), clear_bits(static_cast<C>(0)) { }
 };
 
-template <typename C> inline bool CheckTransJsonValueFlag(C &var, C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec, flag_conflict_checker<C> *conflictcheck = 0) {
+template <typename C, typename D> inline bool CheckTransJsonValueFlag(C &var, D flagmask, const deserialiser_input &di, const char *prop, error_collection &ec, flag_conflict_checker<C> *conflictcheck = 0) {
 	const rapidjson::Value &subval=di.json[prop];
 	di.RegisterProp(prop);
 	bool res=IsType<bool>(subval);
 	if(res) {
 		bool set = GetType<bool>(subval);
-		if(set) var |= flagmask;
-		else var &= ~flagmask;
+		if(set) var = var | flagmask;
+		else var = var & ~flagmask;
 
 		if(conflictcheck) {
 			if(set) conflictcheck->set_bits |= flagmask;
@@ -195,18 +208,18 @@ template <typename C> inline bool CheckTransJsonValueFlag(C &var, C flagmask, co
 			}
 		}
 	}
-	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec);
+	else CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
 	return res;
 }
 
-template <typename C> inline bool CheckTransJsonValueDefFlag(C &var, C flagmask, const deserialiser_input &di, const char *prop, bool def, error_collection &ec) {
+template <typename C, typename D> inline bool CheckTransJsonValueDefFlag(C &var, D flagmask, const deserialiser_input &di, const char *prop, bool def, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
 	di.RegisterProp(prop);
 	bool res=IsType<bool>(subval);
 	bool flagval=res?GetType<bool>(subval):def;
-	if(flagval) var|=flagmask;
-	else var&=~flagmask;
-	if(!res) CheckJsonTypeAndReportError<C>(di, prop, subval, ec);
+	if(flagval) var = var | flagmask;
+	else var = var & ~flagmask;
+	if(!res) CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
 	return res;
 }
 

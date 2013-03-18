@@ -29,18 +29,18 @@
 void trackroutingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	routingpoint::Deserialise(di, ec);
 
-	flag_conflict_checker<unsigned int> conflictcheck_forward;
-	flag_conflict_checker<unsigned int> conflictcheck_reverse;
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_MASK_TRANS, di, "through", ec, &conflictcheck_forward);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_MASK_TRANS, di, "through_rev", ec, &conflictcheck_reverse);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTETRANS, di, "routethrough", ec, &conflictcheck_forward);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTTRANS, di, "shuntthrough", ec, &conflictcheck_forward);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_OVERLAPTRANS, di, "overlapthrough", ec, &conflictcheck_forward);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_ROUTETRANS, di, "routethrough_rev", ec, &conflictcheck_reverse);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_SHUNTTRANS, di, "shuntthrough_rev", ec, &conflictcheck_reverse);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_OVERLAPTRANS, di, "overlapthrough_rev", ec, &conflictcheck_reverse);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_OVERLAPEND, di, "overlapend", ec, &conflictcheck_forward);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_reverse, RPRT_OVERLAPEND, di, "overlapend_rev", ec, &conflictcheck_reverse);
+	flag_conflict_checker<RPRT> conflictcheck_forward;
+	flag_conflict_checker<RPRT> conflictcheck_reverse;
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::MASK_TRANS, di, "through", ec, &conflictcheck_forward);
+	CheckTransJsonValueFlag(availableroutetypes_reverse, RPRT::MASK_TRANS, di, "through_rev", ec, &conflictcheck_reverse);
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::ROUTETRANS, di, "routethrough", ec, &conflictcheck_forward);
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::SHUNTTRANS, di, "shuntthrough", ec, &conflictcheck_forward);
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::OVERLAPTRANS, di, "overlapthrough", ec, &conflictcheck_forward);
+	CheckTransJsonValueFlag(availableroutetypes_reverse, RPRT::ROUTETRANS, di, "routethrough_rev", ec, &conflictcheck_reverse);
+	CheckTransJsonValueFlag(availableroutetypes_reverse, RPRT::SHUNTTRANS, di, "shuntthrough_rev", ec, &conflictcheck_reverse);
+	CheckTransJsonValueFlag(availableroutetypes_reverse, RPRT::OVERLAPTRANS, di, "overlapthrough_rev", ec, &conflictcheck_reverse);
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::OVERLAPEND, di, "overlapend", ec, &conflictcheck_forward);
+	CheckTransJsonValueFlag(availableroutetypes_reverse, RPRT::OVERLAPEND, di, "overlapend_rev", ec, &conflictcheck_reverse);
 }
 
 void trackroutingpoint::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -52,14 +52,14 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 
 	CheckTransJsonSubObj(start_trs, di, "start_trs", "trs", ec);
 	CheckTransJsonSubObj(end_trs, di, "end_trs", "trs", ec);
-	flag_conflict_checker<unsigned int> conflictcheck;
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTSTART | RPRT_SHUNTEND, di, "shuntsignal", ec, &conflictcheck);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTESTART | RPRT_ROUTEEND | RPRT_SHUNTEND, di, "routesignal", ec, &conflictcheck);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTESTART | RPRT_SHUNTSTART | RPRT_ROUTEEND | RPRT_SHUNTEND, di, "routeshuntsignal", ec, &conflictcheck);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTSTART, di, "shuntstart", ec, &conflictcheck);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_SHUNTEND, di, "shuntend", ec, &conflictcheck);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTESTART, di, "routestart", ec, &conflictcheck);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes_forward, RPRT_ROUTEEND, di, "routeend", ec, &conflictcheck);
+	flag_conflict_checker<RPRT> conflictcheck;
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::SHUNTSTART | RPRT::SHUNTEND, di, "shuntsignal", ec, &conflictcheck);
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::ROUTESTART | RPRT::ROUTEEND | RPRT::SHUNTEND, di, "routesignal", ec, &conflictcheck);
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::ROUTESTART | RPRT::SHUNTSTART | RPRT::ROUTEEND | RPRT::SHUNTEND, di, "routeshuntsignal", ec, &conflictcheck);
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::SHUNTSTART, di, "shuntstart", ec, &conflictcheck);
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::SHUNTEND, di, "shuntend", ec, &conflictcheck);
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::ROUTESTART, di, "routestart", ec, &conflictcheck);
+	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::ROUTEEND, di, "routeend", ec, &conflictcheck);
 	CheckTransJsonValue(max_aspect, di, "maxaspect", ec);
 }
 
@@ -117,9 +117,9 @@ void startofline::Deserialise(const deserialiser_input &di, error_collection &ec
 	routingpoint::Deserialise(di, ec);
 
 	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_SHUNTEND, di, "shuntend", ec);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_ROUTEEND, di, "routeend", ec);
-	CheckTransJsonValueFlag<unsigned int>(availableroutetypes, RPRT_OVERLAPEND, di, "overlapend", ec);
+	CheckTransJsonValueFlag(availableroutetypes, RPRT::SHUNTEND, di, "shuntend", ec);
+	CheckTransJsonValueFlag(availableroutetypes, RPRT::ROUTEEND, di, "routeend", ec);
+	CheckTransJsonValueFlag(availableroutetypes, RPRT::OVERLAPEND, di, "overlapend", ec);
 }
 
 void startofline::Serialise(serialiser_output &so, error_collection &ec) const {

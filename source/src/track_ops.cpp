@@ -168,7 +168,7 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 	if(!rt->RouteReservation(RRF_TRYRESERVE)) return false;
 
 	//disallow if non-overlap route already set from start point in given direction
-	if(rt->start.track->GetSetRouteTypes(rt->start.direction) & (routingpoint::RPRT_MASK_START & ~routingpoint::RPRT_OVERLAPSTART)) return false;
+	if(rt->start.track->GetSetRouteTypes(rt->start.direction) & (RPRT::MASK_START & ~RPRT::OVERLAPSTART)) return false;
 
 	const route *best_overlap = 0;
 	if(rt->routeflags & route::RF_NEEDOVERLAP) {
