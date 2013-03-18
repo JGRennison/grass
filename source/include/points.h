@@ -51,9 +51,13 @@ class genericpoints : public genericzlentrack {
 	virtual std::string GetTypeName() const override { return "Generic Points"; }
 
 	inline bool IsFlagsOOC(PTF pflags) const;
-
 	inline bool IsOOC(unsigned int points_index) const {
 		return IsFlagsOOC(GetPointFlags(points_index));
+	}
+
+	inline bool IsFlagsImmovable(PTF pflags) const;
+	inline bool IsImmovable(unsigned int points_index) const {
+		return IsFlagsImmovable(GetPointFlags(points_index));
 	}
 };
 template<> struct enum_traits< genericpoints::PTF > {	static constexpr bool flags = true; };
@@ -62,6 +66,10 @@ inline bool genericpoints::IsFlagsOOC(PTF pflags) const {
 	if(pflags & PTF::OOC) return true;
 	if(pflags & PTF::REV && pflags & PTF::FAILEDREV) return true;
 	if(!(pflags & PTF::REV) && pflags & PTF::FAILEDNORM) return true;
+	return false;
+}
+inline bool genericpoints::IsFlagsImmovable(PTF pflags) const {
+	if(pflags & (PTF::LOCKED | PTF::REMINDER)) return true;
 	return false;
 }
 
@@ -84,7 +92,7 @@ class points : public genericpoints {
 	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) override;
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) override;
 	virtual void ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 
 	virtual std::string GetTypeName() const override { return "Points"; }
@@ -122,7 +130,7 @@ class catchpoints : public genericpoints {
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
 
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) override;
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) override;
 	virtual void ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 
 	virtual std::string GetTypeName() const override { return "Catch Points"; }
@@ -162,7 +170,7 @@ class springpoints : public genericzlentrack {
 	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override { return GetConnectingPiece(direction); }
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) override;
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 
 	virtual std::string GetTypeName() const override { return "Spring Points"; }
 
@@ -283,7 +291,7 @@ class doubleslip : public genericpoints {
 	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) override;
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) override;
 	virtual void ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 
 	virtual std::string GetTypeName() const  override{ return "Double Slip Points"; }

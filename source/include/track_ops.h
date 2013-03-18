@@ -70,19 +70,6 @@ class action_pointsaction : public action {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-class future_pointsactionmessage : public future_genericusermessage {
-	std::string reasonkey;
-
-	public:
-	future_pointsactionmessage(futurable_obj &targ, world_time ft, future_id_type id) : future_genericusermessage(targ, ft, id) { };
-	future_pointsactionmessage(futurable_obj &targ, world_time ft, world *w_, const std::string &textkey_, const std::string &reasonkey_) : future_genericusermessage(targ, ft, w_, textkey_), reasonkey(reasonkey_) { };
-	static std::string GetTypeSerialisationNameStatic() { return "future_pointsactionmessage"; }
-	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
-	virtual void PrepareVariables(message_formatter &mf, world &w) override;
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
-};
-
 class action_reservetrack_base;
 
 class future_reservetrack : public future {
@@ -103,7 +90,7 @@ class future_reservetrack : public future {
 class action_reservetrack_base : public action {
 	public:
 	action_reservetrack_base(world &w_) : action(w_) { }
-	bool TryReserveRoute(const route *rt, world_time action_time) const;
+	bool TryReserveRoute(const route *rt, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
 };
 
 class action_reservetrack : public action_reservetrack_base {

@@ -44,9 +44,13 @@ void textpool::Deserialise(const deserialiser_input &di, error_collection &ec) {
 
 
 defaultusermessagepool::defaultusermessagepool() {
-	RegisterNewText("track_ops/pointsunmovable", "Points $points not movable: $reason");
+	RegisterNewText("track_ops/pointsunmovable", "Points $target not movable: $reason");
 	RegisterNewText("points/locked", "Locked");
 	RegisterNewText("points/reminderset", "Reminder set");
 	RegisterNewText("track/reserved", "Reserved");
-	RegisterNewText("track/reservation/fail", "Cannot reserve route");
+	RegisterNewText("track/reservation/fail", "Cannot reserve route: $reason");
+	RegisterNewText("track/reservation/alreadyset", "Route already set from this signal");
+	RegisterNewText("track/reservation/overlap/noneavailable", "No overlap available");
+	RegisterNewText("track/reservation/conflict", "Conflicts with existing route");
+	RegisterNewText("generic/failurereason", "Failed");
 }

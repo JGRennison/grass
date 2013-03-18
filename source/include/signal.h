@@ -144,7 +144,7 @@ struct route {
 	route() : type(RTC_NULL), priority(0), routeflags(RF::ZERO), parent(0), index(0) { }
 	void FillLists();
 	bool TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const;
-	bool RouteReservation(RRF reserve_flags) const;
+	bool RouteReservation(RRF reserve_flags, std::string *failreasonkey = 0) const;
 	void RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const;
 };
 template<> struct enum_traits< route::RF > {	static constexpr bool flags = true; };
@@ -242,7 +242,7 @@ class genericsignal : public trackroutingpoint {
 	virtual void TrainEnter(EDGETYPE direction, train *t) override;
 	virtual void TrainLeave(EDGETYPE direction, train *t) override;
 
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) override;
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) override;
 
 	virtual std::string GetTypeName() const override { return "Generic Signal"; }
 
@@ -334,7 +334,7 @@ class startofline : public routingpoint {
 
 	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
 	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) override;
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 
 	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
 
@@ -376,7 +376,7 @@ class routingmarker : public trackroutingpoint {
 
 	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
 
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) override;
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
 	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
 

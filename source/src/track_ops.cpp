@@ -62,15 +62,15 @@ void action_pointsaction::ExecuteAction() const {
 
 	if(change_flags & genericpoints::PTF::REV) {
 		if(old_pflags & genericpoints::PTF::LOCKED) {
-			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "points/locked"));
+			ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(*target, action_time+1, &w, "track_ops/pointsunmovable", "points/locked"));
 			return;
 		}
 		else if(old_pflags & genericpoints::PTF::REMINDER) {
-			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "points/reminderset"));
+			ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(*target, action_time+1, &w, "track_ops/pointsunmovable", "points/reminderset"));
 			return;
 		}
 		else if(target->GetFlags(target->GetDefaultValidDirecton()) & GTF::ROUTESET) {
-			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "track/reserved"));
+			ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(*target, action_time+1, &w, "track_ops/pointsunmovable", "track/reserved"));
 			return;
 		}
 		else {
@@ -125,23 +125,6 @@ void action_pointsaction::Serialise(serialiser_output &so, error_collection &ec)
 	SerialiseValueJson(mask, so, "mask");
 }
 
-void future_pointsactionmessage::PrepareVariables(message_formatter &mf, world &w) {
-	mf.RegisterVariable("reason", [&](const std::string &in) { return w.GetUserMessageTextpool().GetTextByName(this->reasonkey); });
-
-	genericpoints *gp = dynamic_cast<genericpoints *>(&GetTarget());
-	if(gp) mf.RegisterVariable("points", [=](const std::string &in) { return gp->GetName(); });
-}
-
-void future_pointsactionmessage::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	future_genericusermessage::Deserialise(di, ec);
-	CheckTransJsonValue(reasonkey, di, "reasonkey", ec);
-}
-
-void future_pointsactionmessage::Serialise(serialiser_output &so, error_collection &ec) const {
-	future_genericusermessage::Serialise(so, ec);
-	SerialiseValueJson(reasonkey, so, "reasonkey");
-}
-
 void future_reservetrack::ExecuteAction() {
 	if(reserved_route) {
 		reserved_route->RouteReservation(RRF::RESERVE);
@@ -164,17 +147,27 @@ void future_reservetrack::Serialise(serialiser_output &so, error_collection &ec)
 }
 
 //return true on success
-bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time action_time) const {
-	if(!rt->RouteReservation(RRF::TRYRESERVE)) return false;
-
+bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const {
 	//disallow if non-overlap route already set from start point in given direction
-	if(rt->start.track->GetSetRouteTypes(rt->start.direction) & (RPRT::MASK_START & ~RPRT::OVERLAPSTART)) return false;
+	if(rt->start.track->GetSetRouteTypes(rt->start.direction) & (RPRT::MASK_START & ~RPRT::OVERLAPSTART)) {
+		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/reservation/fail", "track/reservation/alreadyset"));
+		return false;
+	}
+
+	std::string tryreservation_failreasonkey = "generic/failurereason";
+	if(!rt->RouteReservation(RRF::TRYRESERVE, &tryreservation_failreasonkey)) {
+		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/reservation/fail", tryreservation_failreasonkey));
+		return false;
+	}
 
 	const route *best_overlap = 0;
 	if(rt->routeflags & route::RF::NEEDOVERLAP) {
 		//need an overlap too
 		best_overlap = rt->end.track->FindBestOverlap();
-		if(!best_overlap) return false;
+		if(!best_overlap) {
+			error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/reservation/fail", "track/reservation/overlap/noneavailable"));
+			return false;
+		}
 	}
 
 	//route is OK, now reserve it
@@ -196,9 +189,9 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 void action_reservetrack::ExecuteAction() const {
 	if(!target) return;
 
-	if(!TryReserveRoute(target, action_time)) {
-		ActionSendReplyFuture(std::make_shared<future_genericusermessage>(w, action_time+1, &w, "track/reservation/fail"));
-	}
+	TryReserveRoute(target, action_time, [&](const std::shared_ptr<future> &f) {
+		ActionSendReplyFuture(f);
+	});
 }
 
 void action_reservetrack::Deserialise(const deserialiser_input &di, error_collection &ec) {

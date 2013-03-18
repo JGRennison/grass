@@ -282,7 +282,7 @@ trackseg & trackseg::SetTrackCircuit(track_circuit *tc) {
 	return *this;
 }
 
-bool trackseg::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) {
+bool trackseg::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
@@ -386,7 +386,7 @@ GTF crossover::GetFlags(EDGETYPE direction) const {
 	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-bool crossover::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) {
+bool crossover::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
@@ -406,11 +406,14 @@ error_trackconnection_notfound::error_trackconnection_notfound(const track_targe
 	msg << "Track Connection Error: Could Not Connect: " << targ1 << " to Unfound Target:" << targ2;
 }
 
-bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, RRF in_rr_flags, const route *resroute) {
+bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, RRF in_rr_flags, const route *resroute, std::string* failreasonkey) {
 	if(in_rr_flags & (RRF::RESERVE | RRF::TRYRESERVE)) {
 		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
 			if(it->rr_flags & RRF::RESERVE) {	//track already reserved
-				if(it->direction != in_dir || it->index != in_index) return false;	//reserved piece doesn't match
+				if(it->direction != in_dir || it->index != in_index) {
+					if(failreasonkey) *failreasonkey = "track/reservation/conflict";
+					return false;	//reserved piece doesn't match
+				}
 			}
 		}
 		if(in_rr_flags & RRF::RESERVE) {

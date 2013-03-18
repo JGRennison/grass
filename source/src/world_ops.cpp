@@ -23,6 +23,7 @@
 
 #include "common.h"
 #include "world_ops.h"
+#include "world_obj.h"
 #include "util.h"
 #include "serialisable_impl.h"
 #include "textpool.h"
@@ -38,7 +39,7 @@ void future_usermessage::Deserialise(const deserialiser_input &di, error_collect
 }
 
 void future_genericusermessage::PrepareVariables(message_formatter &mf, world &w) {
-	
+
 }
 
 void future_genericusermessage::ExecuteAction() {
@@ -58,4 +59,21 @@ void future_genericusermessage::Deserialise(const deserialiser_input &di, error_
 
 void future_genericusermessage::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(textkey, so, "textkey");
+}
+
+void future_genericusermessage_reason::PrepareVariables(message_formatter &mf, world &w) {
+	mf.RegisterVariable("reason", [&](const std::string &in) { return w.GetUserMessageTextpool().GetTextByName(this->reasonkey); });
+
+	world_obj *gt = dynamic_cast<world_obj*>(&GetTarget());
+	if(gt) mf.RegisterVariable("target", [=](const std::string &in) { return gt->GetName(); });
+}
+
+void future_genericusermessage_reason::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	future_genericusermessage::Deserialise(di, ec);
+	CheckTransJsonValue(reasonkey, di, "reasonkey", ec);
+}
+
+void future_genericusermessage_reason::Serialise(serialiser_output &so, error_collection &ec) const {
+	future_genericusermessage::Serialise(so, ec);
+	SerialiseValueJson(reasonkey, so, "reasonkey");
 }

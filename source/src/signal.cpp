@@ -185,7 +185,7 @@ genericsignal::GSF genericsignal::SetSignalFlagsMasked(genericsignal::GSF set_fl
 	return sflags;
 }
 
-bool genericsignal::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) {
+bool genericsignal::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	if(direction != EDGE_FRONT && rr_flags & (RRF::STARTPIECE | RRF::ENDPIECE)) {
 		return false;
 	}
@@ -582,14 +582,14 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 }
 
 //returns false on failure
-bool route::RouteReservation(RRF reserve_flags) const {
-	if(!start.track->Reservation(start.direction, 0, reserve_flags | RRF::STARTPIECE, this)) return false;
+bool route::RouteReservation(RRF reserve_flags, std::string *failreasonkey) const {
+	if(!start.track->Reservation(start.direction, 0, reserve_flags | RRF::STARTPIECE, this, failreasonkey)) return false;
 
 	for(auto it = pieces.begin(); it != pieces.end(); ++it) {
-		if(!it->location.track->Reservation(it->location.direction, it->connection_index, reserve_flags, this)) return false;
+		if(!it->location.track->Reservation(it->location.direction, it->connection_index, reserve_flags, this, failreasonkey)) return false;
 	}
 
-	if(!end.track->Reservation(end.direction, 0, reserve_flags | RRF::ENDPIECE, this)) return false;
+	if(!end.track->Reservation(end.direction, 0, reserve_flags | RRF::ENDPIECE, this, failreasonkey)) return false;
 	return true;
 }
 
@@ -718,7 +718,7 @@ void startofline::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_FRONT, connection) });
 }
 
-bool startofline::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) {
+bool startofline::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	if(rr_flags & RRF::STARTPIECE && direction == EDGE_BACK) {
 		return trs.Reservation(direction, index, rr_flags, resroute);
 	}
@@ -759,7 +759,7 @@ GTF routingmarker::GetFlags(EDGETYPE direction) const {
 	return GTF::ROUTINGPOINT | trs.GetGTReservationFlags(direction);
 }
 
-bool routingmarker::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) {
+bool routingmarker::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 

@@ -60,4 +60,17 @@ class future_genericusermessage : public future_usermessage {
 	virtual void PrepareVariables(message_formatter &mf, world &w);
 };
 
+class future_genericusermessage_reason : public future_genericusermessage {
+	std::string reasonkey;
+
+	public:
+	future_genericusermessage_reason(futurable_obj &targ, world_time ft, future_id_type id) : future_genericusermessage(targ, ft, id) { };
+	future_genericusermessage_reason(futurable_obj &targ, world_time ft, world *w_, const std::string &textkey_, const std::string &reasonkey_) : future_genericusermessage(targ, ft, w_, textkey_), reasonkey(reasonkey_) { };
+	static std::string GetTypeSerialisationNameStatic() { return "future_genericusermessage_reason"; }
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void PrepareVariables(message_formatter &mf, world &w) override;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+};
+
 #endif

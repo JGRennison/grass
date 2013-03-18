@@ -105,7 +105,7 @@ class track_reservation_state : public serialisable_obj {
 	std::vector<inner_track_reservation_state> itrss;
 
 	public:
-	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute);
+	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0);
 	GTF GetGTReservationFlags(EDGETYPE direction) const;
 	bool IsReserved() const;
 	unsigned int GetReservationCount() const;
@@ -157,7 +157,7 @@ class generictrack : public world_obj {
 	bool FullConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec);
 
 	//return true if reservation OK
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) = 0;
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) = 0;
 	virtual void ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) { }
 
 	virtual std::string GetTypeName() const { return "Generic Track"; }
@@ -317,7 +317,7 @@ class trackseg : public generictrack {
 	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
 	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) override;
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 
 	virtual std::string GetTypeName() const { return "Track Segment"; }
 
@@ -367,7 +367,7 @@ class crossover : public genericzlentrack {
 	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override { return GetConnectingPiece(direction); }
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) override;
+	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 
 	virtual std::string GetTypeName() const override { return "Crossover"; }
 

@@ -112,7 +112,7 @@ void world::LogUserMessageLocal(LOGCATEGORY lc, const std::string &message) {
 
 void world::InitFutureTypes() {
 	MakeFutureTypeWrapper<future_pointsaction>(future_types);
-	MakeFutureTypeWrapper<future_pointsactionmessage>(future_types);
+	MakeFutureTypeWrapper<future_genericusermessage_reason>(future_types);
 	MakeFutureTypeWrapper<future_genericusermessage>(future_types);
 	MakeFutureTypeWrapper<future_reservetrack>(future_types);
 }
