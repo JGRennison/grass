@@ -69,10 +69,14 @@ template <typename C> typename std::enable_if<enum_traits<C>::flags, flagwrapper
 template <typename C> typename std::enable_if<enum_traits<C>::flags, flagwrapper<C>>::type operator^(C l, const flagwrapper<C> &r) { return flagwrapper<C>(static_cast<C>(static_cast<typename std::underlying_type<C>::type >(l) ^ static_cast<typename std::underlying_type<C>::type >(r.get()))); }
 template <typename C> typename std::enable_if<enum_traits<C>::flags, C&>::type operator|=(C &l, C r) { l = static_cast<C>(static_cast<typename std::underlying_type<C>::type >(l) | static_cast<typename std::underlying_type<C>::type >(r)); return l; }
 template <typename C> typename std::enable_if<enum_traits<C>::flags, C&>::type operator&=(C &l, C r) { l = static_cast<C>(static_cast<typename std::underlying_type<C>::type >(l) & static_cast<typename std::underlying_type<C>::type >(r)); return l; }
+template <typename C> typename std::enable_if<enum_traits<C>::flags, C&>::type operator^=(C &l, C r) { l = static_cast<C>(static_cast<typename std::underlying_type<C>::type >(l) ^ static_cast<typename std::underlying_type<C>::type >(r)); return l; }
 template <typename C> typename std::enable_if<enum_traits<C>::flags, C&>::type operator|=(C &l, const flagwrapper<C> &r) { l = static_cast<C>(static_cast<typename std::underlying_type<C>::type >(l) | static_cast<typename std::underlying_type<C>::type >(r.get())); return l; }
 template <typename C> typename std::enable_if<enum_traits<C>::flags, C&>::type operator&=(C &l, const flagwrapper<C> &r) { l = static_cast<C>(static_cast<typename std::underlying_type<C>::type >(l) & static_cast<typename std::underlying_type<C>::type >(r.get())); return l; }
+template <typename C> typename std::enable_if<enum_traits<C>::flags, C&>::type operator^=(C &l, const flagwrapper<C> &r) { l = static_cast<C>(static_cast<typename std::underlying_type<C>::type >(l) ^ static_cast<typename std::underlying_type<C>::type >(r.get())); return l; }
 template <typename C> typename std::enable_if<enum_traits<C>::flags, flagwrapper<C>>::type operator~(C l) { return flagwrapper<C>(static_cast<C>(~static_cast<typename std::underlying_type<C>::type >(l))); }
 template <typename C> typename std::enable_if<enum_traits<C>::flags, bool>::type operator!(C l) { return !static_cast<typename std::underlying_type<C>::type >(l); }
+template <typename C> typename std::enable_if<enum_traits<C>::flags, bool>::type operator||(C l, C r) { return static_cast<typename std::underlying_type<C>::type >(l) || static_cast<typename std::underlying_type<C>::type >(r); }
+template <typename C> typename std::enable_if<enum_traits<C>::flags, bool>::type operator&&(C l, C r) { return static_cast<typename std::underlying_type<C>::type >(l) && static_cast<typename std::underlying_type<C>::type >(r); }
 
 template <typename C> typename std::enable_if<enum_traits<C>::flags, std::ostream&>::type
 operator<<(std::ostream& os, C val) {

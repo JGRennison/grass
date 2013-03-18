@@ -97,7 +97,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 		else connfunc(subdi);
 	}
 
-	CheckTransJsonValueFlag<unsigned int>(gt_privflags, GTPRIVF_REVERSEAUTOCONN, di, "reverseautoconnection", ec);
+	CheckTransJsonValueFlag(gt_privflags, GTPRIVF::REVERSEAUTOCONN, di, "reverseautoconnection", ec);
 }
 
 void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -123,22 +123,22 @@ void trackseg::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(traincount, so, "traincount");
 }
 
-void DeserialisePointFlags(unsigned int &pflags, const deserialiser_input &di, error_collection &ec) {
-	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_REV, di, "reverse", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_OOC, di, "ooc", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_LOCKED, di, "locked", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_REMINDER, di, "reminder", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_FAILEDNORM, di, "failednorm", ec);
-	CheckTransJsonValueFlag<unsigned int>(pflags, genericpoints::PTF_FAILEDREV, di, "failedrev", ec);
+void DeserialisePointFlags(genericpoints::PTF &pflags, const deserialiser_input &di, error_collection &ec) {
+	CheckTransJsonValueFlag(pflags, genericpoints::PTF::REV, di, "reverse", ec);
+	CheckTransJsonValueFlag(pflags, genericpoints::PTF::OOC, di, "ooc", ec);
+	CheckTransJsonValueFlag(pflags, genericpoints::PTF::LOCKED, di, "locked", ec);
+	CheckTransJsonValueFlag(pflags, genericpoints::PTF::REMINDER, di, "reminder", ec);
+	CheckTransJsonValueFlag(pflags, genericpoints::PTF::FAILEDNORM, di, "failednorm", ec);
+	CheckTransJsonValueFlag(pflags, genericpoints::PTF::FAILEDREV, di, "failedrev", ec);
 }
 
-void SerialisePointFlags(unsigned int pflags, serialiser_output &so, error_collection &ec) {
-	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_REV, so, "reverse");
-	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_OOC, so, "ooc");
-	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_LOCKED, so, "locked");
-	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_REMINDER, so, "reminder");
-	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_FAILEDNORM, so, "failednorm");
-	SerialiseFlagJson<unsigned int>(pflags, genericpoints::PTF_FAILEDREV, so, "failedrev");
+void SerialisePointFlags(genericpoints::PTF pflags, serialiser_output &so, error_collection &ec) {
+	SerialiseFlagJson(pflags, genericpoints::PTF::REV, so, "reverse");
+	SerialiseFlagJson(pflags, genericpoints::PTF::OOC, so, "ooc");
+	SerialiseFlagJson(pflags, genericpoints::PTF::LOCKED, so, "locked");
+	SerialiseFlagJson(pflags, genericpoints::PTF::REMINDER, so, "reminder");
+	SerialiseFlagJson(pflags, genericpoints::PTF::FAILEDNORM, so, "failednorm");
+	SerialiseFlagJson(pflags, genericpoints::PTF::FAILEDREV, so, "failedrev");
 }
 
 void points::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -195,12 +195,12 @@ void crossover::Serialise(serialiser_output &so, error_collection &ec) const {
 }
 
 class pointsflagssubobj : public serialisable_obj {
-	unsigned int *pflags;
-	unsigned int inpflags;
+	genericpoints::PTF *pflags;
+	genericpoints::PTF inpflags;
 
 	public:
-	pointsflagssubobj(unsigned int *pf) : pflags(pf), inpflags(*pf) { }
-	pointsflagssubobj(unsigned int pf) : pflags(0), inpflags(pf) { }
+	pointsflagssubobj(genericpoints::PTF *pf) : pflags(pf), inpflags(*pf) { }
+	pointsflagssubobj(genericpoints::PTF pf) : pflags(0), inpflags(pf) { }
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) {
 		if(pflags) DeserialisePointFlags(*pflags, di, ec);
@@ -220,12 +220,12 @@ void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec)
 		}
 	}
 
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_BL, di, "notrack_fl_bl", ec);
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_BL, di, "notrack_fr_bl", ec);
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FL_BR, di, "notrack_fl_br", ec);
-	CheckTransJsonValueFlag<unsigned int>(dsflags, DSF_NO_FR_BR, di, "notrack_fr_br", ec);
+	CheckTransJsonValueFlag(dsflags, DSF::NO_FL_BL, di, "notrack_fl_bl", ec);
+	CheckTransJsonValueFlag(dsflags, DSF::NO_FR_BL, di, "notrack_fr_bl", ec);
+	CheckTransJsonValueFlag(dsflags, DSF::NO_FL_BR, di, "notrack_fl_br", ec);
+	CheckTransJsonValueFlag(dsflags, DSF::NO_FR_BR, di, "notrack_fr_br", ec);
 
-	if(__builtin_popcount(dsflags&DSF_NO_TRACK_MASK) >= 2) {
+	if(__builtin_popcount(dsflags&DSF::NO_TRACK_MASK) >= 2) {
 		ec.RegisterNewError<error_deserialisation>(di, "Cannot remove more than one track edge from a double-slip, use points or a crossover instead");
 		return;
 	}
@@ -233,10 +233,10 @@ void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec)
 	UpdatePointsFixedStatesFromMissingTrackEdges();
 
 	auto deserialisepointsflags = [&](EDGETYPE direction, const char *prop) {
-		unsigned int pf = GetCurrentPointFlags(direction);
+		genericpoints::PTF pf = GetCurrentPointFlags(direction);
 		pointsflagssubobj ps(&pf);
 		CheckTransJsonSubObj(ps, di, prop, "", ec);
-		SetPointFlagsMasked(GetCurrentPointIndex(direction), pf, genericpoints::PTF_SERIALISABLE);
+		SetPointFlagsMasked(GetCurrentPointIndex(direction), pf, genericpoints::PTF::SERIALISABLE);
 	};
 	deserialisepointsflags(EDGE_DS_FL, "leftfrontpoints");
 	deserialisepointsflags(EDGE_DS_FR, "rightfrontpoints");

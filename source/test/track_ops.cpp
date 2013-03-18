@@ -40,21 +40,21 @@ struct test_fixture_world_ops_1 {
 TEST_CASE( "track/ops/points/movement", "Test basic points movement future" ) {
 	test_fixture_world_ops_1 env;
 
-	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF_REV, genericpoints::PTF_REV));
+	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
 
-	REQUIRE(env.p1.GetPointFlags(0) == 0);
+	REQUIRE(env.p1.GetPointFlags(0) == genericpoints::PTF::ZERO);
 	env.w.GameStep(500);
-	REQUIRE(env.p1.GetPointFlags(0) == (genericpoints::PTF_REV | genericpoints::PTF_OOC));
+	REQUIRE(env.p1.GetPointFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::OOC));
 	env.w.GameStep(4500);
-	REQUIRE(env.p1.GetPointFlags(0) == genericpoints::PTF_REV);
+	REQUIRE(env.p1.GetPointFlags(0) == genericpoints::PTF::REV);
 
-	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF_LOCKED, genericpoints::PTF_LOCKED));
+	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::LOCKED, genericpoints::PTF::LOCKED));
 	env.w.GameStep(50);
-	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF_REV, genericpoints::PTF_REV));
+	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
 	env.w.GameStep(50);
-	REQUIRE(env.p1.GetPointFlags(0) == (genericpoints::PTF_REV | genericpoints::PTF_LOCKED));
-	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, 0, genericpoints::PTF_REV));
+	REQUIRE(env.p1.GetPointFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
+	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::ZERO, genericpoints::PTF::REV));
 	env.w.GameStep(4900);
-	REQUIRE(env.p1.GetPointFlags(0) == (genericpoints::PTF_REV | genericpoints::PTF_LOCKED));
+	REQUIRE(env.p1.GetPointFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
 	REQUIRE(env.w.GetLogText() == "Points P1 not movable: Locked\n");
 }

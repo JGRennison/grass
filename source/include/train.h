@@ -65,13 +65,15 @@ struct vehicle_class {
 
 struct train_unit {
 	vehicle_class *vehtype;
-	unsigned int veh_multiplier;
-	unsigned int segment_total_mass;
-	unsigned int stflags;
-	enum {
-		STF_REV		= 1<<0,
+	unsigned int veh_multiplier = 0;
+	unsigned int segment_total_mass = 0;
+	enum class STF {
+		ZERO		= 0,
+		REV		= 1<<0,
 	};
+	STF stflags = STF::REV;
 };
+template<> struct enum_traits< train_unit::STF > {	static constexpr bool flags = true; };
 
 struct train_track_speed_limit_item {
 	unsigned int speed;
@@ -80,10 +82,11 @@ struct train_track_speed_limit_item {
 };
 
 class train : public world_obj  {
-	unsigned int tflags;
-	enum {
-		TF_CONSISTREVDIR	= 1<<0,
+	enum class TF {
+		ZERO		= 0,
+		CONSISTREVDIR	= 1<<0,
 	};
+	TF tflags = TF::ZERO;
 
 	std::list<train_unit> train_segments;
 	tractionset active_tractions;
@@ -92,25 +95,25 @@ class train : public world_obj  {
 
 	lookahead_set lookahead;
 
-	unsigned int total_length;
-	unsigned int veh_max_speed;
-	unsigned int current_max_speed;
-	unsigned int total_tractive_force;
-	unsigned int total_tractive_power;
-	unsigned int total_braking_force;
-	//unsigned int total_rail_traction_limit;
-	unsigned int total_drag_const;
-	unsigned int total_drag_v;
-	unsigned int total_drag_v2;
-	unsigned int total_mass;
-	unsigned int target_braking_deceleration; 	// m/s^2 << 8
+	unsigned int total_length = 0;
+	unsigned int veh_max_speed = 0;
+	unsigned int current_max_speed = 0;
+	unsigned int total_tractive_force = 0;
+	unsigned int total_tractive_power = 0;
+	unsigned int total_braking_force = 0;
+	//unsigned int total_rail_traction_limit = 0;
+	unsigned int total_drag_const = 0;
+	unsigned int total_drag_v = 0;
+	unsigned int total_drag_v2 = 0;
+	unsigned int total_mass = 0;
+	unsigned int target_braking_deceleration = 0; 	// m/s^2 << 8
 
 	track_location head_pos;
 	track_location tail_pos;
-	int head_relative_height;
-	int tail_relative_height;
+	int head_relative_height = 0;
+	int tail_relative_height = 0;
 
-	unsigned int current_speed;
+	unsigned int current_speed = 0;
 	std::string headcode;
 	timetable currenttimetable;
 
@@ -130,5 +133,6 @@ class train : public world_obj  {
 	inline std::string GetVehSpeedClass() const { return vehspeedclass; }
 	const tractionset &GetTractionTypes() const { return active_tractions; }
 };
+template<> struct enum_traits< train::TF > {	static constexpr bool flags = true; };
 
 #endif

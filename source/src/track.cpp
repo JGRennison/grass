@@ -114,8 +114,8 @@ class error_track_unconnected : public layout_initialisation_error_obj {
 
 bool generictrack::AutoConnections(error_collection &ec) {
 	if(prevtrack) {
-		EDGETYPE prevedge = prevtrack->GetAvailableAutoConnectionDirection(!(prevtrack->gt_privflags & GTPRIVF_REVERSEAUTOCONN));
-		EDGETYPE thisedge = GetAvailableAutoConnectionDirection(gt_privflags & GTPRIVF_REVERSEAUTOCONN);
+		EDGETYPE prevedge = prevtrack->GetAvailableAutoConnectionDirection(!(prevtrack->gt_privflags & GTPRIVF::REVERSEAUTOCONN));
+		EDGETYPE thisedge = GetAvailableAutoConnectionDirection(gt_privflags & GTPRIVF::REVERSEAUTOCONN);
 		if(prevedge != EDGE_NULL && thisedge != EDGE_NULL) {
 			if(!FullConnect(thisedge, track_target_ptr(prevtrack, prevedge), ec)) return false;
 		}
@@ -249,7 +249,7 @@ track_circuit *trackseg::GetTrackCircuit() const {
 	return tc;
 }
 
-unsigned int trackseg::GetFlags(EDGETYPE direction) const {
+GTF trackseg::GetFlags(EDGETYPE direction) const {
 	return trs.GetGTReservationFlags(direction);
 }
 
@@ -282,7 +282,7 @@ trackseg & trackseg::SetTrackCircuit(track_circuit *tc) {
 	return *this;
 }
 
-bool trackseg::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
+bool trackseg::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
@@ -382,11 +382,11 @@ bool crossover::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-unsigned int crossover::GetFlags(EDGETYPE direction) const {
-	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
+GTF crossover::GetFlags(EDGETYPE direction) const {
+	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-bool crossover::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
+bool crossover::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
@@ -406,27 +406,27 @@ error_trackconnection_notfound::error_trackconnection_notfound(const track_targe
 	msg << "Track Connection Error: Could Not Connect: " << targ1 << " to Unfound Target:" << targ2;
 }
 
-bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, unsigned int in_rr_flags, const route *resroute) {
-	if(in_rr_flags & (RRF_RESERVE | RRF_TRYRESERVE)) {
+bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, RRF in_rr_flags, const route *resroute) {
+	if(in_rr_flags & (RRF::RESERVE | RRF::TRYRESERVE)) {
 		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-			if(it->rr_flags & RRF_RESERVE) {	//track already reserved
+			if(it->rr_flags & RRF::RESERVE) {	//track already reserved
 				if(it->direction != in_dir || it->index != in_index) return false;	//reserved piece doesn't match
 			}
 		}
-		if(in_rr_flags & RRF_RESERVE) {
+		if(in_rr_flags & RRF::RESERVE) {
 			itrss.emplace_back();
 			inner_track_reservation_state &itrs = itrss.back();
 
-			itrs.rr_flags = in_rr_flags & RRF_SAVEMASK;
+			itrs.rr_flags = in_rr_flags & RRF::SAVEMASK;
 			itrs.direction = in_dir;
 			itrs.index = in_index;
 			itrs.reserved_route = resroute;
 		}
 		return true;
 	}
-	else if(in_rr_flags & RRF_UNRESERVE) {
+	else if(in_rr_flags & RRF::UNRESERVE) {
 		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-			if(it->rr_flags & RRF_RESERVE && it->direction == in_dir && it->index == in_index && it->reserved_route == resroute) {
+			if(it->rr_flags & RRF::RESERVE && it->direction == in_dir && it->index == in_index && it->reserved_route == resroute) {
 				itrss.erase(it);
 				return true;
 			}
@@ -437,7 +437,7 @@ bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index
 
 bool track_reservation_state::IsReserved() const {
 	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF_RESERVE) return true;
+		if(it->rr_flags & RRF::RESERVE) return true;
 	}
 	return false;
 }
@@ -445,31 +445,31 @@ bool track_reservation_state::IsReserved() const {
 unsigned int track_reservation_state::GetReservationCount() const {
 	unsigned int count = 0;
 	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF_RESERVE) count++;
+		if(it->rr_flags & RRF::RESERVE) count++;
 	}
 	return count;
 }
 
 bool track_reservation_state::IsReservedInDirection(EDGETYPE direction) const {
 	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF_RESERVE && it->direction == direction) return true;
+		if(it->rr_flags & RRF::RESERVE && it->direction == direction) return true;
 	}
 	return false;
 }
 
-unsigned int track_reservation_state::GetGTReservationFlags(EDGETYPE checkdirection) const {
-	unsigned int outputflags = 0;
+GTF track_reservation_state::GetGTReservationFlags(EDGETYPE checkdirection) const {
+	GTF outputflags = GTF::ZERO;
 	if(IsReserved()) {
-		outputflags |= generictrack::GTF_ROUTESET;
-		if(IsReservedInDirection(checkdirection)) outputflags |= generictrack::GTF_ROUTETHISDIR;
+		outputflags |= GTF::ROUTESET;
+		if(IsReservedInDirection(checkdirection)) outputflags |= GTF::ROUTETHISDIR;
 	}
 	return outputflags;
 }
 
-unsigned int track_reservation_state::ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags)> func) const {
+unsigned int track_reservation_state::ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func) const {
 	unsigned int counter = 0;
 	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF_RESERVE) {
+		if(it->rr_flags & RRF::RESERVE) {
 			func(it->reserved_route, it->direction, it->index, it->rr_flags);
 			counter++;
 		}
@@ -477,10 +477,10 @@ unsigned int track_reservation_state::ReservationEnumeration(std::function<void(
 	return counter;
 }
 
-unsigned int track_reservation_state::ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, unsigned int rr_flags)> func) const {
+unsigned int track_reservation_state::ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func) const {
 	unsigned int counter = 0;
 	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF_RESERVE && it->direction == direction) {
+		if(it->rr_flags & RRF::RESERVE && it->direction == direction) {
 			func(it->reserved_route, it->direction, it->index, it->rr_flags);
 			counter++;
 		}

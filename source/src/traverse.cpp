@@ -58,19 +58,19 @@ unsigned int AdvanceDisplacement(unsigned int displacement, track_location &trac
 	return 0;
 }
 
-void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, generic_route_recording_state *grrs, unsigned int &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece, generic_route_recording_state *grrs)> step_func) {
+void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, generic_route_recording_state *grrs, TSEF &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece, generic_route_recording_state *grrs)> step_func) {
 	while(true) {
 		if(!start_track.IsValid()) {
-			error_flags |= TSEF_OUTOFTRACK;
+			error_flags |= TSEF::OUTOFTRACK;
 			return;
 		}
 		if(max_pieces == 0) {
-			error_flags |= TSEF_LENGTHLIMIT;
+			error_flags |= TSEF::LENGTHLIMIT;
 			return;
 		}
-		if(start_track.track->GetFlags(start_track.direction) & generictrack::GTF_ROUTEFORK) {
+		if(start_track.track->GetFlags(start_track.direction) & GTF::ROUTEFORK) {
 			if(junction_max == 0) {
-				error_flags |= TSEF_JUNCTIONLIMITREACHED;
+				error_flags |= TSEF::JUNCTIONLIMITREACHED;
 				return;
 			}
 			else junction_max--;
@@ -80,7 +80,7 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 
 		unsigned int max_exit_pieces = start_track.track->GetMaxConnectingPieces(start_track.direction);
 		if(max_exit_pieces == 0) {
-			error_flags |= TSEF_OUTOFTRACK;
+			error_flags |= TSEF::OUTOFTRACK;
 			return;
 		}
 
@@ -95,7 +95,7 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 				TrackScan(max_pieces, junction_max, start_track.track->GetConnectingPieceByIndex(start_track.direction, i), route_pieces, temp_grrs, error_flags, step_func);
 				if(temp_grrs) delete temp_grrs;
 				route_pieces.resize(route_pieces_size);
-				if(error_flags) return;
+				if(error_flags != TSEF::ZERO) return;
 			}
 		}
 		route_pieces.emplace_back(start_track, 0);
@@ -104,15 +104,15 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 
 }
 
-std::string GetTrackScanErrorFlagsStr(unsigned int error_flags) {
+std::string GetTrackScanErrorFlagsStr(TSEF error_flags) {
 	std::string str;
-	if(error_flags & TSEF_OUTOFTRACK) {
+	if(error_flags & TSEF::OUTOFTRACK) {
 		str += "Ran out of track, ";
 	}
-	if(error_flags & TSEF_JUNCTIONLIMITREACHED) {
+	if(error_flags & TSEF::JUNCTIONLIMITREACHED) {
 		str += "Route junction limit exceeded, ";
 	}
-	if(error_flags & TSEF_LENGTHLIMIT) {
+	if(error_flags & TSEF::LENGTHLIMIT) {
 		str += "Maximum route length exceeded, ";
 	}
 	if(str.size()) str.resize(str.size()-2);

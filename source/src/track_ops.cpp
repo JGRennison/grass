@@ -40,8 +40,8 @@ void future_pointsaction::ExecuteAction() {
 void future_pointsaction::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	future::Deserialise(di, ec);
 	CheckTransJsonValueDef(index, di, "index", 0, ec);
-	CheckTransJsonValueDef(bits, di, "bits", 0, ec);
-	CheckTransJsonValueDef(mask, di, "mask", 0, ec);
+	CheckTransJsonValueDef(bits, di, "bits", genericpoints::PTF::ZERO, ec);
+	CheckTransJsonValueDef(mask, di, "mask", genericpoints::PTF::ZERO, ec);
 }
 
 void future_pointsaction::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -54,36 +54,36 @@ void future_pointsaction::Serialise(serialiser_output &so, error_collection &ec)
 void action_pointsaction::ExecuteAction() const {
 	if(!target) return;
 
-	unsigned int old_pflags = target->GetPointFlags(index);
-	unsigned int change_flags = (old_pflags ^ bits) & mask;
+	genericpoints::PTF old_pflags = target->GetPointFlags(index);
+	genericpoints::PTF change_flags = (old_pflags ^ bits) & mask;
 
-	unsigned int immediate_action_bits = 0;
-	unsigned int immediate_action_mask = 0;
+	genericpoints::PTF immediate_action_bits = genericpoints::PTF::ZERO;
+	genericpoints::PTF immediate_action_mask = genericpoints::PTF::ZERO;
 
-	if(change_flags & genericpoints::PTF_REV) {
-		if(old_pflags & genericpoints::PTF_LOCKED) {
+	if(change_flags & genericpoints::PTF::REV) {
+		if(old_pflags & genericpoints::PTF::LOCKED) {
 			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "points/locked"));
 			return;
 		}
-		else if(old_pflags & genericpoints::PTF_REMINDER) {
+		else if(old_pflags & genericpoints::PTF::REMINDER) {
 			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "points/reminderset"));
 			return;
 		}
-		else if(target->GetFlags(target->GetDefaultValidDirecton()) & generictrack::GTF_ROUTESET) {
+		else if(target->GetFlags(target->GetDefaultValidDirecton()) & GTF::ROUTESET) {
 			ActionSendReplyFuture(std::make_shared<future_pointsactionmessage>(*target, action_time+1, &w, "track_ops/pointsunmovable", "track/reserved"));
 			return;
 		}
 		else {
-			CancelFutures(index, 0, genericpoints::PTF_OOC);
-			immediate_action_bits |= (bits & genericpoints::PTF_REV) | genericpoints::PTF_OOC;
-			immediate_action_mask |= genericpoints::PTF_REV | genericpoints::PTF_OOC;
+			CancelFutures(index, genericpoints::PTF::ZERO, genericpoints::PTF::OOC);
+			immediate_action_bits |= (bits & genericpoints::PTF::REV) | genericpoints::PTF::OOC;
+			immediate_action_mask |= genericpoints::PTF::REV | genericpoints::PTF::OOC;
 
 			//code for random failures goes here
 
-			ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, GetPointsMovementCompletionTime(), index, 0, genericpoints::PTF_OOC));
+			ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, GetPointsMovementCompletionTime(), index, genericpoints::PTF::ZERO, genericpoints::PTF::OOC));
 		}
 	}
-	unsigned int immediate_change_flags = change_flags & (genericpoints::PTF_LOCKED | genericpoints::PTF_REMINDER);
+	genericpoints::PTF immediate_change_flags = change_flags & (genericpoints::PTF::LOCKED | genericpoints::PTF::REMINDER);
 	immediate_action_mask |= immediate_change_flags;
 	immediate_action_bits |= bits & immediate_change_flags;
 
@@ -94,15 +94,15 @@ world_time action_pointsaction::GetPointsMovementCompletionTime() const {
 	return action_time + 5000;
 }
 
-void action_pointsaction::CancelFutures(unsigned int index, unsigned int setmask, unsigned int clearmask) const {
+void action_pointsaction::CancelFutures(unsigned int index, genericpoints::PTF setmask, genericpoints::PTF clearmask) const {
 	auto func = [&](future &f) {
 		future_pointsaction *fp = dynamic_cast<future_pointsaction *>(&f);
 		if(!fp) return;
 		if(fp->index != index) return;
-		unsigned int foundset = fp->mask & fp->bits & setmask;
-		unsigned int foundunset = fp->mask & (~fp->bits) & clearmask;
+		genericpoints::PTF foundset = fp->mask & fp->bits & setmask;
+		genericpoints::PTF foundunset = fp->mask & (~fp->bits) & clearmask;
 		if(foundset || foundunset) {
-			unsigned int newmask = fp->mask & ~(foundset | foundunset);
+			flagwrapper<genericpoints::PTF> newmask = fp->mask & ~(foundset | foundunset);
 			if(newmask) {
 				ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, fp->GetTriggerTime(), index, fp->bits, newmask));
 			}
@@ -115,8 +115,8 @@ void action_pointsaction::CancelFutures(unsigned int index, unsigned int setmask
 
 void action_pointsaction::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonValueDef(index, di, "index", 0, ec);
-	CheckTransJsonValueDef(bits, di, "bits", 0, ec);
-	CheckTransJsonValueDef(mask, di, "mask", 0, ec);
+	CheckTransJsonValueDef(bits, di, "bits", genericpoints::PTF::ZERO, ec);
+	CheckTransJsonValueDef(mask, di, "mask", genericpoints::PTF::ZERO, ec);
 }
 
 void action_pointsaction::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -144,7 +144,7 @@ void future_pointsactionmessage::Serialise(serialiser_output &so, error_collecti
 
 void future_reservetrack::ExecuteAction() {
 	if(reserved_route) {
-		reserved_route->RouteReservation(RRF_RESERVE);
+		reserved_route->RouteReservation(RRF::RESERVE);
 	}
 }
 
@@ -165,13 +165,13 @@ void future_reservetrack::Serialise(serialiser_output &so, error_collection &ec)
 
 //return true on success
 bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time action_time) const {
-	if(!rt->RouteReservation(RRF_TRYRESERVE)) return false;
+	if(!rt->RouteReservation(RRF::TRYRESERVE)) return false;
 
 	//disallow if non-overlap route already set from start point in given direction
 	if(rt->start.track->GetSetRouteTypes(rt->start.direction) & (RPRT::MASK_START & ~RPRT::OVERLAPSTART)) return false;
 
 	const route *best_overlap = 0;
-	if(rt->routeflags & route::RF_NEEDOVERLAP) {
+	if(rt->routeflags & route::RF::NEEDOVERLAP) {
 		//need an overlap too
 		best_overlap = rt->end.track->FindBestOverlap();
 		if(!best_overlap) return false;
@@ -184,10 +184,10 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 		reservation_act.Execute();
 	};
 
-	rt->RouteReservationActions(RRF_RESERVE, actioncallback);
+	rt->RouteReservationActions(RRF::RESERVE, actioncallback);
 	ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, rt));
 	if(best_overlap) {
-		best_overlap->RouteReservationActions(RRF_RESERVE, actioncallback);
+		best_overlap->RouteReservationActions(RRF::RESERVE, actioncallback);
 		ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, best_overlap));
 	}
 	return true;

@@ -319,7 +319,7 @@ TEST_CASE( "signal/autosignal/propagation", "Test basic autosignal aspect propag
 	tenv.checksignal(tenv.s6, 0, RTC_NULL, 0, 0);
 
 	track_circuit *s3ovlp = env.w.FindOrMakeTrackCircuitByName("S3ovlp");
-	s3ovlp->SetTCFlagsMasked(track_circuit::TCF_FORCEOCCUPIED, track_circuit::TCF_FORCEOCCUPIED);
+	s3ovlp->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 	env.w.GameStep(1);
 
 	tenv.checksignal(tenv.s1, 1, RTC_ROUTE, tenv.s2, tenv.s2);

@@ -97,12 +97,12 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "targets", ec, rr.targets);
 			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "via", ec, rr.via);
 			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "notvia", ec, rr.notvia);
-			if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF_PRIORITYSET;
-			flag_conflict_checker<unsigned int> conflictcheck;
-			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOSHUNT, subdi, "denyshunt", ec, &conflictcheck);
-			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOROUTE, subdi, "denyroute", ec, &conflictcheck);
-			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOOVERLAP, subdi, "denyoverlap", ec, &conflictcheck);
-			CheckTransJsonValueFlag<unsigned int>(rr.denyflags, route_restriction::RRDF_NOSHUNT | route_restriction::RRDF_NOROUTE | route_restriction::RRDF_NOOVERLAP, subdi, "denyall", ec, &conflictcheck);
+			if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF::PRIORITYSET;
+			flag_conflict_checker<route_restriction::RRDF> conflictcheck;
+			CheckTransJsonValueFlag(rr.denyflags, route_restriction::RRDF::NOSHUNT, subdi, "denyshunt", ec, &conflictcheck);
+			CheckTransJsonValueFlag(rr.denyflags, route_restriction::RRDF::NOROUTE, subdi, "denyroute", ec, &conflictcheck);
+			CheckTransJsonValueFlag(rr.denyflags, route_restriction::RRDF::NOOVERLAP, subdi, "denyoverlap", ec, &conflictcheck);
+			CheckTransJsonValueFlag(rr.denyflags, route_restriction::RRDF::NOSHUNT | route_restriction::RRDF::NOROUTE | route_restriction::RRDF::NOOVERLAP, subdi, "denyall", ec, &conflictcheck);
 		}
 		else {
 			ec.RegisterNewError<error_deserialisation>(subdi, "Invalid route restriction definition");

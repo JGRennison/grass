@@ -38,7 +38,7 @@ void genericpoints::TrainLeave(EDGETYPE direction, train *t) { }
 const track_target_ptr & points::GetConnectingPiece(EDGETYPE direction) const {
 	if(IsOOC(0)) return empty_track_target;
 
-	bool pointsrev = pflags & PTF_REV;
+	bool pointsrev = pflags & PTF::REV;
 
 	switch(direction) {
 		case EDGE_PTS_FACE:
@@ -84,7 +84,7 @@ const track_target_ptr & points::GetConnectingPieceByIndex(EDGETYPE direction, u
 EDGETYPE points::GetReverseDirection(EDGETYPE direction) const {
 	if(IsOOC(0)) return EDGE_NULL;
 
-	bool pointsrev = pflags & PTF_REV;
+	bool pointsrev = pflags & PTF::REV;
 
 	switch(direction) {
 		case EDGE_PTS_FACE:
@@ -124,17 +124,17 @@ bool points::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-unsigned int points::GetFlags(EDGETYPE direction) const {
-	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
+GTF points::GetFlags(EDGETYPE direction) const {
+	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-unsigned int points::GetPointFlags(unsigned int points_index) const {
-	if(points_index != 0) return PTF_INVALID;
+genericpoints::PTF points::GetPointFlags(unsigned int points_index) const {
+	if(points_index != 0) return PTF::INVALID;
 	return pflags;
 }
 
-unsigned int points::SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags) {
-	if(points_index != 0) return PTF_INVALID;
+genericpoints::PTF points::SetPointFlagsMasked(unsigned int points_index, genericpoints::PTF set_flags, genericpoints::PTF mask_flags) {
+	if(points_index != 0) return PTF::INVALID;
 	pflags = (pflags & (~mask_flags)) | set_flags;
 	return pflags;
 }
@@ -152,21 +152,21 @@ bool IsPointsRoutingDirAndIndexRev(EDGETYPE direction, unsigned int index) {
 	}
 }
 
-bool points::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
-	unsigned int pflags = GetPointFlags(0);
-	bool rev = pflags & PTF_REV;
-	if(pflags & (PTF_LOCKED | PTF_REMINDER)) {
+bool points::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) {
+	PTF pflags = GetPointFlags(0);
+	bool rev = pflags & PTF::REV;
+	if(pflags & (PTF::LOCKED | PTF::REMINDER)) {
 		if(IsPointsRoutingDirAndIndexRev(direction, index) != rev) return false;
 	}
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-void points::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
-	if(rr_flags & (RRF_RESERVE | RRF_DUMMY_RESERVE)) {
-		bool rev = pflags & PTF_REV;
+void points::ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+	if(rr_flags & (RRF::RESERVE | RRF::DUMMY_RESERVE)) {
+		bool rev = pflags & PTF::REV;
 		bool newrev = IsPointsRoutingDirAndIndexRev(direction, index);
 		if(newrev != rev) {
-			submitaction(action_pointsaction(GetWorld(), *this, 0, newrev ? PTF_REV : 0, PTF_REV));
+			submitaction(action_pointsaction(GetWorld(), *this, 0, newrev ? PTF::REV : PTF::ZERO, PTF::REV));
 		}
 	}
 }
@@ -183,7 +183,7 @@ void points::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 
 const track_target_ptr & catchpoints::GetConnectingPiece(EDGETYPE direction) const {
 	if(IsOOC(0)) return empty_track_target;
-	if(pflags & PTF_REV) return empty_track_target;
+	if(pflags & PTF::REV) return empty_track_target;
 
 	switch(direction) {
 		case EDGE_FRONT:
@@ -222,7 +222,7 @@ const track_target_ptr & catchpoints::GetConnectingPieceByIndex(EDGETYPE directi
 
 EDGETYPE catchpoints::GetReverseDirection(EDGETYPE direction) const {
 	if(IsOOC(0)) return EDGE_NULL;
-	if(pflags & PTF_REV) return EDGE_NULL;
+	if(pflags & PTF::REV) return EDGE_NULL;
 
 	switch(direction) {
 		case EDGE_FRONT:
@@ -257,33 +257,33 @@ bool catchpoints::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-unsigned int catchpoints::GetFlags(EDGETYPE direction) const {
-	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
+GTF catchpoints::GetFlags(EDGETYPE direction) const {
+	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-unsigned int catchpoints::GetPointFlags(unsigned int points_index) const {
-	if(points_index != 0) return PTF_INVALID;
+genericpoints::PTF catchpoints::GetPointFlags(unsigned int points_index) const {
+	if(points_index != 0) return PTF::INVALID;
 	return pflags;
 }
 
-unsigned int catchpoints::SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags) {
-	if(points_index != 0) return PTF_INVALID;
+genericpoints::PTF catchpoints::SetPointFlagsMasked(unsigned int points_index, genericpoints::PTF set_flags, genericpoints::PTF mask_flags) {
+	if(points_index != 0) return PTF::INVALID;
 	pflags = (pflags & (~mask_flags)) | set_flags;
 	return pflags;
 }
 
-bool catchpoints::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
-	unsigned int pflags = GetPointFlags(0);
-	if(pflags & PTF_LOCKED && pflags & PTF_REV)  return false;
+bool catchpoints::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) {
+	genericpoints::PTF pflags = GetPointFlags(0);
+	if(pflags & PTF::LOCKED && pflags & PTF::REV)  return false;
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-void catchpoints::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
-	if(rr_flags & RRF_RESERVE && trs.GetReservationCount() == 0) {
-		submitaction(action_pointsaction(GetWorld(), *this, 0, 0, PTF_REV));
+void catchpoints::ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+	if(rr_flags & RRF::RESERVE && trs.GetReservationCount() == 0) {
+		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::ZERO, PTF::REV));
 	}
-	else if(rr_flags & RRF_UNRESERVE && trs.GetReservationCount() == 1) {
-		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF_REV, PTF_REV));
+	else if(rr_flags & RRF::UNRESERVE && trs.GetReservationCount() == 1) {
+		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::REV, PTF::REV));
 	}
 }
 
@@ -354,11 +354,11 @@ bool springpoints::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-unsigned int springpoints::GetFlags(EDGETYPE direction) const {
-	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
+GTF springpoints::GetFlags(EDGETYPE direction) const {
+	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-bool springpoints::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
+bool springpoints::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
@@ -382,13 +382,13 @@ const track_target_ptr & doubleslip::GetConnectingPiece(EDGETYPE direction) cons
 unsigned int doubleslip::GetMaxConnectingPieces(EDGETYPE direction) const {
 	switch(direction) {
 		case EDGE_DS_FL:
-			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_BL | DSF_NO_FL_BR));
+			return 2 - __builtin_popcount(dsflags&(DSF::NO_FL_BL | DSF::NO_FL_BR));
 		case EDGE_DS_FR:
-			return 2 - __builtin_popcount(dsflags&(DSF_NO_FR_BL | DSF_NO_FR_BR));
+			return 2 - __builtin_popcount(dsflags&(DSF::NO_FR_BL | DSF::NO_FR_BR));
 		case EDGE_DS_BR:
-			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_BR | DSF_NO_FR_BR));
+			return 2 - __builtin_popcount(dsflags&(DSF::NO_FL_BR | DSF::NO_FR_BR));
 		case EDGE_DS_BL:
-			return 2 - __builtin_popcount(dsflags&(DSF_NO_FL_BL | DSF_NO_FR_BL));
+			return 2 - __builtin_popcount(dsflags&(DSF::NO_FL_BL | DSF::NO_FR_BL));
 		default:
 			assert(false);
 			return 0;
@@ -396,22 +396,22 @@ unsigned int doubleslip::GetMaxConnectingPieces(EDGETYPE direction) const {
 }
 
 const track_target_ptr & doubleslip::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
-	unsigned int pf = GetCurrentPointFlags(direction);
-	bool isrev = (pf & PTF_FIXED) ? (pf & PTF_REV) : index;
+	genericpoints::PTF pf = GetCurrentPointFlags(direction);
+	bool isrev = (pf & PTF::FIXED) ? (pf & PTF::REV) : index;
 
 	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isrev);
 	return GetInputPieceOrEmpty(exitdirection);
 }
 
 EDGETYPE doubleslip::GetReverseDirection(EDGETYPE direction) const {
-	unsigned int pf = GetCurrentPointFlags(direction);
+	genericpoints::PTF pf = GetCurrentPointFlags(direction);
 	if(IsFlagsOOC(pf)) return EDGE_NULL;
 
-	EDGETYPE exitdirection = GetConnectingPointDirection(direction, pf & PTF_REV);
-	unsigned int exitpf = GetCurrentPointFlags(exitdirection);
+	EDGETYPE exitdirection = GetConnectingPointDirection(direction, pf & PTF::REV);
+	genericpoints::PTF exitpf = GetCurrentPointFlags(exitdirection);
 	if(IsFlagsOOC(exitpf)) return EDGE_NULL;
 
-	if(GetConnectingPointDirection(exitdirection, exitpf & PTF_REV) == direction) {
+	if(GetConnectingPointDirection(exitdirection, exitpf & PTF::REV) == direction) {
 		return exitdirection;
 	}
 	else return EDGE_NULL;
@@ -438,27 +438,27 @@ bool doubleslip::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-unsigned int doubleslip::GetFlags(EDGETYPE direction) const {
-	return GTF_ROUTEFORK | trs.GetGTReservationFlags(direction);
+GTF doubleslip::GetFlags(EDGETYPE direction) const {
+	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-unsigned int doubleslip::GetPointFlags(unsigned int points_index) const {
+genericpoints::PTF doubleslip::GetPointFlags(unsigned int points_index) const {
 	if(points_index < 4) return pflags[points_index];
 	else {
 		assert(false);
-		return PTF_INVALID;
+		return PTF::INVALID;
 	}
 }
 
-unsigned int doubleslip::SetPointFlagsMasked(unsigned int points_index, unsigned int set_flags, unsigned int mask_flags) {
+genericpoints::PTF doubleslip::SetPointFlagsMasked(unsigned int points_index, genericpoints::PTF set_flags, genericpoints::PTF mask_flags) {
 	if(points_index < 4) {
-		auto safe_set = [&](unsigned int &flagsvar, unsigned int newflags) {
-			if(!(flagsvar & PTF_FIXED)) flagsvar = (newflags & PTF_SERIALISABLE) | (flagsvar & ~PTF_SERIALISABLE);
+		auto safe_set = [&](genericpoints::PTF &flagsvar, genericpoints::PTF newflags) {
+			if(!(flagsvar & PTF::FIXED)) flagsvar = (newflags & PTF::SERIALISABLE) | (flagsvar & ~PTF::SERIALISABLE);
 		};
 
-		if(pflags[points_index] & PTF_FIXED) return pflags[points_index];
+		if(pflags[points_index] & PTF::FIXED) return pflags[points_index];
 
-		unsigned int newpointsflags = (pflags[points_index] & (~mask_flags)) | set_flags;
+		genericpoints::PTF newpointsflags = (pflags[points_index] & (~mask_flags)) | set_flags;
 		if(dof == 1) {
 			safe_set(pflags[0], newpointsflags);
 			safe_set(pflags[1], newpointsflags);
@@ -467,49 +467,49 @@ unsigned int doubleslip::SetPointFlagsMasked(unsigned int points_index, unsigned
 		}
 		else if(dof == 2) {
 			safe_set(pflags[points_index], newpointsflags);
-			safe_set(pflags[points_index ^ 1], newpointsflags ^ PTF_REV);
+			safe_set(pflags[points_index ^ 1], newpointsflags ^ PTF::REV);
 		}
 		else if(dof == 4) safe_set(pflags[points_index], newpointsflags);
 		return pflags[points_index];
 	}
 	else {
-		return PTF_INVALID;
+		return PTF::INVALID;
 	}
 }
 
-bool doubleslip::Reservation(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute) {
-	unsigned int pf = GetCurrentPointFlags(direction);
-	if(pf & PTF_LOCKED) {
-		if(!(pf & PTF_REV) != !index) return false;	//points locked in wrong direction
+bool doubleslip::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute) {
+	PTF pf = GetCurrentPointFlags(direction);
+	if(pf & PTF::LOCKED) {
+		if(!(pf & PTF::REV) != !index) return false;	//points locked in wrong direction
 	}
 
-	bool isrev = (pf & PTF_FIXED) ? (pf & PTF_REV) : index;
+	bool isrev = (pf & PTF::FIXED) ? (pf & PTF::REV) : index;
 	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isrev);
-	unsigned int exitpf = GetCurrentPointFlags(exitdirection);
+	PTF exitpf = GetCurrentPointFlags(exitdirection);
 	bool exitpointsrev = (GetConnectingPointDirection(exitdirection, true) == direction);
 
-	if(exitpf & PTF_LOCKED) {
-		if(!(exitpf & PTF_REV) != !exitpointsrev) return false;	//points locked in wrong direction
+	if(exitpf & PTF::LOCKED) {
+		if(!(exitpf & PTF::REV) != !exitpointsrev) return false;	//points locked in wrong direction
 	}
 
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
-void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, unsigned int rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
-	if(rr_flags & (RRF_RESERVE | RRF_DUMMY_RESERVE)) {
+void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+	if(rr_flags & (RRF::RESERVE | RRF::DUMMY_RESERVE)) {
 		unsigned int entranceindex = GetCurrentPointIndex(direction);
-		unsigned int entrancepf = GetCurrentPointFlags(direction);
-		bool isentrancerev = (entrancepf & PTF_FIXED) ? (entrancepf & PTF_REV) : index;
+		PTF entrancepf = GetCurrentPointFlags(direction);
+		bool isentrancerev = (entrancepf & PTF::FIXED) ? (entrancepf & PTF::REV) : index;
 
 		EDGETYPE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
 
 		unsigned int exitindex = GetCurrentPointIndex(exitdirection);
-		unsigned int exitpf = GetCurrentPointFlags(exitdirection);
+		PTF exitpf = GetCurrentPointFlags(exitdirection);
 
 		bool isexitrev = (GetConnectingPointDirection(exitdirection, true) == direction);
 
-		if(!(entrancepf & PTF_REV) != !(isentrancerev)) submitaction(action_pointsaction(GetWorld(), *this, entranceindex, isentrancerev ? PTF_REV : 0, PTF_REV));
-		if(!(exitpf & PTF_REV) != !(isexitrev)) submitaction(action_pointsaction(GetWorld(), *this, exitindex, isexitrev ? PTF_REV : 0, PTF_REV));
+		if(!(entrancepf & PTF::REV) != !(isentrancerev)) submitaction(action_pointsaction(GetWorld(), *this, entranceindex, isentrancerev ? PTF::REV : PTF::ZERO, PTF::REV));
+		if(!(exitpf & PTF::REV) != !(isexitrev)) submitaction(action_pointsaction(GetWorld(), *this, exitindex, isexitrev ? PTF::REV : PTF::ZERO, PTF::REV));
 	}
 }
 
@@ -520,26 +520,28 @@ void doubleslip::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 void doubleslip::UpdatePointsFixedStatesFromMissingTrackEdges() {
 	auto fixpoints = [&](EDGETYPE direction1, bool reverse1, EDGETYPE direction2, bool reverse2) {
 		auto fixpoints2 = [&](EDGETYPE direction, bool reverse) {
-			GetCurrentPointFlags(direction) |= PTF_FIXED;
-			GetCurrentPointFlags(direction) &= ~ PTF_REV;
-			GetCurrentPointFlags(direction) |= reverse ? PTF_REV : 0;
+			GetCurrentPointFlags(direction) |= PTF::FIXED;
+			GetCurrentPointFlags(direction) &= ~ PTF::REV;
+			GetCurrentPointFlags(direction) |= reverse ? PTF::REV : PTF::ZERO;
 		};
 		fixpoints2(direction1, reverse1);
 		fixpoints2(direction2, reverse2);
 	};
 
-	switch(dsflags&DSF_NO_TRACK_MASK) {
-		case DSF_NO_FL_BL:
+	switch(static_cast<DSF>(dsflags&DSF::NO_TRACK_MASK)) {
+		case DSF::NO_FL_BL:
 			fixpoints(EDGE_DS_FL, false, EDGE_DS_BL, false);
 			break;
-		case DSF_NO_FR_BL:
+		case DSF::NO_FR_BL:
 			fixpoints(EDGE_DS_FR, true, EDGE_DS_BL, true);
 			break;
-		case DSF_NO_FL_BR:
+		case DSF::NO_FL_BR:
 			fixpoints(EDGE_DS_FL, true, EDGE_DS_BR, true);
 			break;
-		case DSF_NO_FR_BR:
+		case DSF::NO_FR_BR:
 			fixpoints(EDGE_DS_FR, false, EDGE_DS_BR, false);
+			break;
+		default:
 			break;
 	}
 }

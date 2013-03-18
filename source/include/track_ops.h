@@ -25,6 +25,7 @@
 #include "serialisable.h"
 #include "action.h"
 #include "world_ops.h"
+#include "points.h"
 
 class genericpoints;
 class generictrack;
@@ -36,12 +37,12 @@ class future_pointsaction : public future {
 	friend action_pointsaction;
 
 	unsigned int index;
-	unsigned int bits;
-	unsigned int mask;
+	genericpoints::PTF bits;
+	genericpoints::PTF mask;
 
 	public:
 	future_pointsaction(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id) { };
-	future_pointsaction(futurable_obj &targ, world_time ft, unsigned int index_, unsigned int bits_, unsigned int mask_) : future(targ, ft, 0), index(index_), bits(bits_), mask(mask_) { };
+	future_pointsaction(futurable_obj &targ, world_time ft, unsigned int index_, genericpoints::PTF bits_, genericpoints::PTF mask_) : future(targ, ft, 0), index(index_), bits(bits_), mask(mask_) { };
 	static std::string GetTypeSerialisationNameStatic() { return "future_pointsaction"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() override;
@@ -52,16 +53,16 @@ class future_pointsaction : public future {
 class action_pointsaction : public action {
 	genericpoints *target;
 	unsigned int index;
-	unsigned int bits;
-	unsigned int mask;
+	genericpoints::PTF bits;
+	genericpoints::PTF mask;
 
 	private:
-	void CancelFutures(unsigned int index, unsigned int setmask, unsigned int clearmask) const;
+	void CancelFutures(unsigned int index, genericpoints::PTF setmask, genericpoints::PTF clearmask) const;
 	world_time GetPointsMovementCompletionTime() const;
 
 	public:
 	action_pointsaction(world &w_) : action(w_), target(0) { }
-	action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, unsigned int bits_, unsigned int mask_) : action(w_), target(&targ), index(index_), bits(bits_), mask(mask_) { }
+	action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, genericpoints::PTF bits_, genericpoints::PTF mask_) : action(w_), target(&targ), index(index_), bits(bits_), mask(mask_) { }
 	static std::string GetTypeSerialisationNameStatic() { return "action_pointsaction"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;

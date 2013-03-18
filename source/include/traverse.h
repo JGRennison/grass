@@ -30,11 +30,13 @@
 
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/, std::function<void(track_location & /*old*/, track_location & /*new*/)> func);
 
-enum {
-	TSEF_OUTOFTRACK			= 1<<0,
-	TSEF_JUNCTIONLIMITREACHED	= 1<<1,
-	TSEF_LENGTHLIMIT		= 1<<2,
+enum class TSEF {
+	ZERO			= 0,
+	OUTOFTRACK		= 1<<0,
+	JUNCTIONLIMITREACHED	= 1<<1,
+	LENGTHLIMIT		= 1<<2,
 };
+template<> struct enum_traits< TSEF > {	static constexpr bool flags = true; };
 
 struct route_recording_item {
 	track_target_ptr location;
@@ -50,7 +52,7 @@ struct generic_route_recording_state {
 	virtual generic_route_recording_state *Clone() const = 0;
 };
 
-void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, generic_route_recording_state *grrs, unsigned int &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece, generic_route_recording_state *grrs)> step_func);
-std::string GetTrackScanErrorFlagsStr(unsigned int error_flags);
+void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, generic_route_recording_state *grrs, TSEF &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece, generic_route_recording_state *grrs)> step_func);
+std::string GetTrackScanErrorFlagsStr(TSEF error_flags);
 
 #endif

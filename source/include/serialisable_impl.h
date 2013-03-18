@@ -158,6 +158,21 @@ struct flagtyperemover<C, typename std::enable_if<enum_traits<C>::flags>::type> 
 	typedef typename std::underlying_type<C>::type type;
 };
 
+template<typename C>
+struct flagtyperemover<C, typename std::enable_if<std::is_convertible<C, std::string>::value>::type> {
+	typedef C type;
+};
+
+template<typename C>
+struct flagtyperemover<C, typename std::enable_if<std::is_convertible<C, const char*>::value>::type> {
+	typedef C type;
+};
+
+template<typename C>
+struct flagtyperemover<C, typename std::enable_if<std::is_convertible<C, EDGETYPE>::value>::type> {
+	typedef C type;
+};
+
 template <typename C> inline void CheckJsonTypeAndReportError(const deserialiser_input &di, const char *prop, const rapidjson::Value& subval, error_collection &ec, bool mandatory=false) {
 	if(!subval.IsNull()) {
 		ec.RegisterNewError<error_deserialisation>(di, string_format("JSON variable of wrong type: %s, expected: %s", prop, GetTypeFriendlyName<C>()));
@@ -170,18 +185,18 @@ template <typename C> inline void CheckJsonTypeAndReportError(const deserialiser
 template <typename C> inline bool CheckTransJsonValue(C &var, const deserialiser_input &di, const char *prop, error_collection &ec, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
 	di.RegisterProp(prop);
-	bool res=IsType<C>(subval);
-	if(res) var=GetType<C>(subval);
-	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec, mandatory);
+	bool res=IsType<typename flagtyperemover<C>::type>(subval);
+	if(res) var=static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval));
+	else CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec, mandatory);
 	return res;
 }
 
 template <typename C, typename D> inline bool CheckTransJsonValueDef(C &var, const deserialiser_input &di, const char *prop, const D def, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
 	di.RegisterProp(prop);
-	bool res=IsType<C>(subval);
-	var=res?GetType<C>(subval):def;
-	if(!res) CheckJsonTypeAndReportError<C>(di, prop, subval, ec);
+	bool res=IsType<typename flagtyperemover<C>::type>(subval);
+	var=res?static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval)):def;
+	if(!res) CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
 	return res;
 }
 
@@ -216,7 +231,7 @@ template <typename C, typename D> inline bool CheckTransJsonValueDefFlag(C &var,
 	const rapidjson::Value &subval=di.json[prop];
 	di.RegisterProp(prop);
 	bool res=IsType<bool>(subval);
-	bool flagval=res?GetType<bool>(subval):def;
+	bool flagval=res?static_cast<C>(GetType<bool>(subval)):def;
 	if(flagval) var = var | flagmask;
 	else var = var & ~flagmask;
 	if(!res) CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
@@ -226,10 +241,10 @@ template <typename C, typename D> inline bool CheckTransJsonValueDefFlag(C &var,
 template <typename C, typename D> inline C CheckGetJsonValueDef(const deserialiser_input &di, const char *prop, const D def, error_collection &ec, bool *hadval=0) {
 	const rapidjson::Value &subval=di.json[prop];
 	di.RegisterProp(prop);
-	bool res=IsType<C>(subval);
+	bool res=IsType<typename flagtyperemover<C>::type>(subval);
 	if(hadval) *hadval=res;
-	if(!res) CheckJsonTypeAndReportError<C>(di, prop, subval, ec);
-	return res?GetType<C>(subval):def;
+	if(!res) CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
+	return res?static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval)):def;
 }
 
 template <typename C> inline void CheckTransJsonSubObj(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, bool mandatory=false) {
@@ -302,7 +317,7 @@ template <typename C> inline void SerialiseSubObjJson(const C &obj, serialiser_o
 
 template <typename C> inline void SerialiseValueJson(C value, serialiser_output &so, const char *prop) {
 	so.json_out.String(prop);
-	SetType(so.json_out, value);
+	SetType(so.json_out, static_cast<typename flagtyperemover<C>::type>(value));
 }
 
 template <typename C> inline void SerialiseFlagJson(C value, C mask, serialiser_output &so, const char *prop) {

@@ -43,11 +43,11 @@ void track_circuit::Serialise(serialiser_output &so, error_collection &ec) const
 	SerialiseValueJson(traincount, so, "traincount");
 }
 
-unsigned int track_circuit::GetTCFlags() const {
+track_circuit::TCF track_circuit::GetTCFlags() const {
 	return tc_flags;
 }
 
-unsigned int track_circuit::SetTCFlagsMasked(unsigned int bits, unsigned int mask) {
+track_circuit::TCF track_circuit::SetTCFlagsMasked(TCF bits, TCF mask) {
 	tc_flags = (tc_flags & ~mask) | (bits & mask);
 	return tc_flags;
 }

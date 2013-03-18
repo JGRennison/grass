@@ -45,11 +45,11 @@ struct connection_forward_declaration {
 	connection_forward_declaration(generictrack *t1, EDGETYPE d1, const std::string &n2, EDGETYPE d2) : track1(t1), dir1(d1), name2(n2), dir2(d2) { }
 };
 
-typedef enum {
-	GM_SINGLE,
-	GM_SERVER,
-	GM_CLIENT,
-} GAMEMODE;
+enum class GAMEMODE {
+	SINGLE,
+	SERVER,
+	CLIENT,
+};
 
 typedef enum {
 	LOG_NULL,
@@ -78,7 +78,7 @@ class world : public named_futurable_obj {
 	std::unordered_map<std::string, traction_type> traction_types;
 	std::deque<generictrack *> tick_update_list;
 	world_time gametime = 0;
-	GAMEMODE mode = GM_SINGLE;
+	GAMEMODE mode = GAMEMODE::SINGLE;
 
 	public:
 	future_deserialisation_type_factory future_types;

@@ -172,7 +172,7 @@ void train::CalculateCoveredTrackSpeedLimit() {
 }
 
 void train::ReverseDirection() {
-	tflags ^= TF_CONSISTREVDIR;
+	tflags ^= TF::CONSISTREVDIR;
 
 	track_location new_head = tail_pos;
 	tail_pos = head_pos;
