@@ -75,8 +75,9 @@ enum class RRF {
 	ENDPIECE			= 1<<5,
 
 	DUMMY_RESERVE			= 1<<6, //for generictrack::ReservationActions, produce actions as normal
+	PROVISIONAL_RESERVE		= 1<<7,	//for generictrack::RouteReservation, to prevent action/future race condition
 
-	SAVEMASK			= AUTOROUTE | STARTPIECE | ENDPIECE | RESERVE,
+	SAVEMASK			= AUTOROUTE | STARTPIECE | ENDPIECE | RESERVE | PROVISIONAL_RESERVE,
 };
 template<> struct enum_traits< RRF > {	static constexpr bool flags = true; };
 

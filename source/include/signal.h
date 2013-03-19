@@ -81,6 +81,8 @@ class routingpoint : public genericzlentrack {
 	routingpoint *aspect_target = 0;
 	routingpoint *aspect_route_target = 0;
 	ROUTE_CLASS aspect_type = RTC_NULL;
+	routingpoint *aspect_backwards_dependency = 0;
+	world_time aspect_backwards_dependency_lastset = 0;
 
 	public:
 	routingpoint(world &w_) : genericzlentrack(w_) { }
@@ -88,6 +90,7 @@ class routingpoint : public genericzlentrack {
 	inline unsigned int GetAspect() const { return aspect; }
 	inline routingpoint *GetNextAspectTarget() const { return aspect_target; }
 	inline routingpoint *GetAspectSetRouteTarget() const { return aspect_route_target; }
+	inline routingpoint *GetAspectBackwardsDependency() const { return aspect_backwards_dependency; }
 	inline ROUTE_CLASS GetAspectType() const { return aspect_type; }
 	virtual void UpdateRoutingPoint() { }
 
@@ -226,6 +229,8 @@ class genericsignal : public trackroutingpoint {
 		REPEATER		= 1<<0,
 		ASPECTEDREPEATER	= 1<<1,		//true for "standard" repeaters which show an aspect, not true for banner repeaters, etc.
 		NOOVERLAP		= 1<<2,
+		APPROACHCONTROLMODE	= 1<<3,		//route cancelled with train approaching, hold aspect at 0
+		AUTOSIGNAL		= 1<<4,
 	};
 
 	protected:
@@ -254,6 +259,7 @@ class genericsignal : public trackroutingpoint {
 
 	virtual const route *GetCurrentForwardRoute() const;	//this will not return the overlap, only the "real" route
 	virtual const route *GetCurrentForwardOverlap() const;	//this will only return the overlap, not the "real" route
+	virtual void EnumerateCurrentBackwardsRoutes(std::function<void (const route *)> func) const;	//this will return all routes which currently terminate here
 	virtual bool RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
@@ -273,7 +279,7 @@ class autosignal : public genericsignal {
 	route overlap_route;
 
 	public:
-	autosignal(world &w_) : genericsignal(w_) { availableroutetypes_forward |= RPRT::ROUTESTART | RPRT::SHUNTEND | RPRT::ROUTEEND; }
+	autosignal(world &w_) : genericsignal(w_) { availableroutetypes_forward |= RPRT::ROUTESTART | RPRT::SHUNTEND | RPRT::ROUTEEND; sflags |= GSF::AUTOSIGNAL; }
 	bool PostLayoutInit(error_collection &ec) override;
 	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual std::string GetTypeName() const override { return "Automatic Signal"; }

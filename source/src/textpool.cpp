@@ -48,9 +48,13 @@ defaultusermessagepool::defaultusermessagepool() {
 	RegisterNewText("points/locked", "Locked");
 	RegisterNewText("points/reminderset", "Reminder set");
 	RegisterNewText("track/reserved", "Reserved");
+	RegisterNewText("track/notreserved", "Not reserved");
 	RegisterNewText("track/reservation/fail", "Cannot reserve route: $reason");
 	RegisterNewText("track/reservation/alreadyset", "Route already set from this signal");
 	RegisterNewText("track/reservation/overlap/noneavailable", "No overlap available");
 	RegisterNewText("track/reservation/conflict", "Conflicts with existing route");
+	RegisterNewText("track/reservation/notsignal", "Not a signal");
+	RegisterNewText("track/unreservation/fail", "Cannot unreserve route: $reason");
+	RegisterNewText("track/unreservation/autosignal", "Automatic signal");
 	RegisterNewText("generic/failurereason", "Failed");
 }

@@ -30,6 +30,7 @@
 class genericpoints;
 class generictrack;
 class route;
+class routingpoint;
 
 class action_pointsaction;
 
@@ -91,6 +92,7 @@ class action_reservetrack_base : public action {
 	public:
 	action_reservetrack_base(world &w_) : action(w_) { }
 	bool TryReserveRoute(const route *rt, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
+	bool TryUnreserveRoute(routingpoint *startsig, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
 };
 
 class action_reservetrack : public action_reservetrack_base {
@@ -100,6 +102,19 @@ class action_reservetrack : public action_reservetrack_base {
 	action_reservetrack(world &w_) : action_reservetrack_base(w_), target(0) { }
 	action_reservetrack(world &w_, const route &targ) : action_reservetrack_base(w_), target(&targ) { }
 	static std::string GetTypeSerialisationNameStatic() { return "action_reservetrack"; }
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void ExecuteAction() const override;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+};
+
+class action_unreservetrack : public action_reservetrack_base {
+	const routingpoint *target;
+
+	public:
+	action_unreservetrack(world &w_) : action_reservetrack_base(w_), target(0) { }
+	action_unreservetrack(world &w_, const routingpoint &targ) : action_reservetrack_base(w_), target(&targ) { }
+	static std::string GetTypeSerialisationNameStatic() { return "action_unreservetrack"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;

@@ -407,16 +407,25 @@ error_trackconnection_notfound::error_trackconnection_notfound(const track_targe
 }
 
 bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, RRF in_rr_flags, const route *resroute, std::string* failreasonkey) {
-	if(in_rr_flags & (RRF::RESERVE | RRF::TRYRESERVE)) {
+	if(in_rr_flags & (RRF::RESERVE | RRF::TRYRESERVE | RRF::PROVISIONAL_RESERVE)) {
+		inner_track_reservation_state *prov_override = 0;
 		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-			if(it->rr_flags & RRF::RESERVE) {	//track already reserved
+			if(it->rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {	//track already reserved
 				if(it->direction != in_dir || it->index != in_index) {
 					if(failreasonkey) *failreasonkey = "track/reservation/conflict";
 					return false;	//reserved piece doesn't match
 				}
 			}
+			if(it->rr_flags & RRF::PROVISIONAL_RESERVE && in_rr_flags & RRF::RESERVE) {
+				if(it->reserved_route == resroute && (in_rr_flags & RRF::SAVEMASK & ~RRF::RESERVE) == (it->rr_flags & RRF::SAVEMASK & ~RRF::PROVISIONAL_RESERVE)) {
+					//we are now properly reserving what we already preliminarily reserved, reuse inner_track_reservation_state
+					it->rr_flags |= RRF::RESERVE;
+					it->rr_flags &= ~RRF::PROVISIONAL_RESERVE;
+					return true;
+				}
+			}
 		}
-		if(in_rr_flags & RRF::RESERVE) {
+		if(in_rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {
 			itrss.emplace_back();
 			inner_track_reservation_state &itrs = itrss.back();
 

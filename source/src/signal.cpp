@@ -223,6 +223,7 @@ RPRT genericsignal::GetSetRouteTypes(EDGETYPE direction) const {
 
 void genericsignal::UpdateSignalState() {
 	if(last_state_update == GetWorld().GetGameTime()) return;
+	if(aspect_backwards_dependency_lastset == last_state_update) aspect_backwards_dependency_lastset = 0;
 
 	last_state_update = GetWorld().GetGameTime();
 
@@ -258,6 +259,8 @@ void genericsignal::UpdateSignalState() {
 						}
 					}
 				}
+				gs->aspect_backwards_dependency = this;
+				gs->aspect_backwards_dependency_lastset = last_state_update;
 			}
 		}
 	}
@@ -315,6 +318,13 @@ const route *genericsignal::GetCurrentForwardOverlap() const {
 	return output;
 }
 
+void genericsignal::EnumerateCurrentBackwardsRoutes(std::function<void (const route *)> func) const {
+	auto enumfunc = [&](const route *rt, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+		if(rr_flags & RRF::ENDPIECE) func(rt);
+	};
+	end_trs.ReservationEnumerationInDirection(EDGE_FRONT, enumfunc);
+}
+
 bool genericsignal::RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const {
 	if(type == RTC_SHUNT) return true;
 	else if(type == RTC_ROUTE) {
@@ -343,7 +353,7 @@ unsigned int autosignal::GetMatchingRoutes(std::vector<const route *> &out, cons
 
 void autosignal::EnumerateRoutes(std::function<void (const route *)> func) const {
 	func(&signal_route);
-	func(&overlap_route);
+	if(overlap_route.type == RTC_OVERLAP) func(&overlap_route);
 };
 
 GTF routesignal::GetFlags(EDGETYPE direction) const {

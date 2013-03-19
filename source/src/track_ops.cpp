@@ -21,6 +21,7 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
+#include <memory>
 #include "common.h"
 #include "track_ops.h"
 #include "track.h"
@@ -28,7 +29,8 @@
 #include "serialisable_impl.h"
 #include "signal.h"
 #include "textpool.h"
-#include <memory>
+#include "trackcircuit.h"
+
 
 void future_pointsaction::ExecuteAction() {
 	genericpoints *gp = dynamic_cast<genericpoints *>(&GetTarget());
@@ -179,10 +181,70 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 
 	rt->RouteReservationActions(RRF::RESERVE, actioncallback);
 	ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, rt));
+	rt->RouteReservation(RRF::PROVISIONAL_RESERVE);
 	if(best_overlap) {
 		best_overlap->RouteReservationActions(RRF::RESERVE, actioncallback);
 		ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, best_overlap));
+		best_overlap->RouteReservation(RRF::PROVISIONAL_RESERVE);
 	}
+	return true;
+}
+
+//return true on success
+bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const {
+	genericsignal *sig = dynamic_cast<genericsignal*>(startsig);
+	if(!sig) {
+		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/unreservation/fail", "track/reservation/notsignal"));
+		return false;
+	}
+
+	if(sig->GetSignalFlags() & genericsignal::GSF::AUTOSIGNAL) {
+		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/unreservation/fail", "track/unreservation/autosignal"));
+		return false;
+	}
+
+	const route *rt = sig->GetCurrentForwardRoute();
+	if(!rt) {
+		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/unreservation/fail", "track/notreserved"));
+		return false;
+	}
+
+	//approach locking checks
+	if(sig->GetAspect() > 0) {
+
+		bool approachcontrol_engage = false;
+
+		//check route for occupation/reservation
+		auto routcheckfunc = [&](const route *rt) {
+			for(auto it = rt->pieces.rbegin(); it != rt->pieces.rend(); ++it) {
+				if(!(it->location.track->GetFlags(it->location.direction) & GTF::ROUTETHISDIR)) return;	//route not reserved, stop tracing
+				track_circuit *tc = it->location.track->GetTrackCircuit();
+				if(tc && tc->Occupied()) {
+					approachcontrol_engage = true;		//found an occupied piece, train is on approach
+					return;
+				}
+			}
+		};
+
+		unsigned int backaspect = 0;
+		routingpoint *backtarget = sig;
+		do {
+			if(backtarget->GetAspect() > backaspect) {	//cancelling route would reduce signal aspect
+
+				genericsignal *backsig = dynamic_cast<genericsignal*>(backtarget);
+				if(backsig) backsig->EnumerateCurrentBackwardsRoutes(routcheckfunc);
+			}
+
+			backaspect++;
+			backtarget = backtarget->GetAspectBackwardsDependency();
+
+		} while(backtarget && !approachcontrol_engage);
+
+		if(approachcontrol_engage) {
+			//code goes here
+		}
+	}
+
 	return true;
 }
 
@@ -208,4 +270,23 @@ void action_reservetrack::Deserialise(const deserialiser_input &di, error_collec
 void action_reservetrack::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(target->parent->GetSerialisationName(), so, "routeparent");
 	SerialiseValueJson(target->index, so, "routeindex");
+}
+
+void action_unreservetrack::ExecuteAction() const {
+	if(!target) return;
+
+
+}
+
+void action_unreservetrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	std::string targetname;
+	if(CheckTransJsonValue(targetname, di, "target", ec)) {
+		target = dynamic_cast<routingpoint *>(w.FindTrackByName(targetname));
+	}
+
+	if(!target) ec.RegisterNewError<error_deserialisation>(di, "Invalid track unreservation action definition");
+}
+
+void action_unreservetrack::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseValueJson(target->GetSerialisationName(), so, "target");
 }
