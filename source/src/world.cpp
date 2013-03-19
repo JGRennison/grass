@@ -115,6 +115,7 @@ void world::InitFutureTypes() {
 	MakeFutureTypeWrapper<future_genericusermessage_reason>(future_types);
 	MakeFutureTypeWrapper<future_genericusermessage>(future_types);
 	MakeFutureTypeWrapper<future_reservetrack>(future_types);
+	MakeFutureTypeWrapper<future_unreservetrack>(future_types);
 }
 
 void world::SubmitAction(const action &request) {
@@ -151,4 +152,8 @@ void world::RegisterTickUpdate(generictrack *targ) {
 
 void world::UnregisterTickUpdate(generictrack *targ) {
 	//this does not need to do anything, for now
+}
+
+void world::ExecuteIfActionScope(std::function<void()> func) {
+	if(IsAuthoritative()) func();
 }

@@ -69,13 +69,15 @@ enum class RRF {
 	ZERO				= 0,
 	RESERVE				= 1<<0,
 	UNRESERVE			= 1<<1,
-	AUTOROUTE			= 1<<2,
-	TRYRESERVE			= 1<<3,
-	STARTPIECE			= 1<<4,
-	ENDPIECE			= 1<<5,
+	TRYRESERVE			= 1<<2,
+	TRYUNRESERVE			= 1<<3,
+	AUTOROUTE			= 1<<4,
+	STARTPIECE			= 1<<5,
+	ENDPIECE			= 1<<6,
 
-	DUMMY_RESERVE			= 1<<6, //for generictrack::ReservationActions, produce actions as normal
-	PROVISIONAL_RESERVE		= 1<<7,	//for generictrack::RouteReservation, to prevent action/future race condition
+	DUMMY_RESERVE			= 1<<7, //for generictrack::ReservationActions, produce actions as normal
+	PROVISIONAL_RESERVE		= 1<<8,	//for generictrack::RouteReservation, to prevent action/future race condition
+	STOP_ON_OCCUPIED_TC		= 1<<9,	//for track dereservations, stop upon reaching an occupied track circuit
 
 	SAVEMASK			= AUTOROUTE | STARTPIECE | ENDPIECE | RESERVE | PROVISIONAL_RESERVE,
 };

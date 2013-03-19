@@ -133,12 +133,12 @@ void future_reservetrack::ExecuteAction() {
 	}
 }
 
-void future_reservetrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
+void future_routeoperation_base::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	future::Deserialise(di, ec);
 	DeserialiseRouteTargetByParentAndIndex(reserved_route, di, ec, false);
 }
 
-void future_reservetrack::Serialise(serialiser_output &so, error_collection &ec) const {
+void future_routeoperation_base::Serialise(serialiser_output &so, error_collection &ec) const {
 	future::Serialise(so, ec);
 	if(reserved_route) {
 		if(reserved_route->parent) {
@@ -146,6 +146,23 @@ void future_reservetrack::Serialise(serialiser_output &so, error_collection &ec)
 			SerialiseValueJson(reserved_route->index, so, "route_index");
 		}
 	}
+}
+
+void future_unreservetrack::ExecuteAction() {
+	genericsignal *sig = dynamic_cast<genericsignal*>(&GetTarget());
+	if(!sig) return;
+	const route *rt = sig->GetCurrentForwardRoute();
+	rt->RouteReservation(RRF::UNRESERVE | extraflags);
+}
+
+void future_unreservetrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	future_routeoperation_base::Deserialise(di, ec);
+	CheckTransJsonValueDef(extraflags, di, "extraflags", RRF::ZERO, ec);
+}
+
+void future_unreservetrack::Serialise(serialiser_output &so, error_collection &ec) const {
+	future_routeoperation_base::Serialise(so, ec);
+	SerialiseValueJson(extraflags, so, "extraflags");
 }
 
 //return true on success
@@ -212,69 +229,72 @@ bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_t
 	//approach locking checks
 	if(sig->GetAspect() > 0) {
 
-		bool approachcontrol_engage = false;
+		bool approachlocking_engage = false;
+		unsigned int backaspect = 0;
 
-		//check route for occupation/reservation
-		auto routcheckfunc = [&](const route *rt) {
-			for(auto it = rt->pieces.rbegin(); it != rt->pieces.rend(); ++it) {
-				if(!(it->location.track->GetFlags(it->location.direction) & GTF::ROUTETHISDIR)) return;	//route not reserved, stop tracing
-				track_circuit *tc = it->location.track->GetTrackCircuit();
-				if(tc && tc->Occupied()) {
-					approachcontrol_engage = true;		//found an occupied piece, train is on approach
-					return;
-				}
-			}
+		auto checksignal = [&](const genericsignal *gs) -> bool {
+			bool aspectchange = gs->GetAspect() > backaspect;	//cancelling route would reduce signal aspect
+			backaspect++;
+			return aspectchange;
 		};
 
-		unsigned int backaspect = 0;
-		routingpoint *backtarget = sig;
-		do {
-			if(backtarget->GetAspect() > backaspect) {	//cancelling route would reduce signal aspect
-
-				genericsignal *backsig = dynamic_cast<genericsignal*>(backtarget);
-				if(backsig) backsig->EnumerateCurrentBackwardsRoutes(routcheckfunc);
+		auto checkpiece = [&](const track_target_ptr &piece) -> bool {
+			track_circuit *tc = piece.track->GetTrackCircuit();
+			if(tc && tc->Occupied()) {
+				approachlocking_engage = true;		//found an occupied piece, train is on approach
+				return false;
 			}
+			else return true;
+		};
 
-			backaspect++;
-			backtarget = backtarget->GetAspectBackwardsDependency();
+		sig->BackwardsReservedTrackScan(checksignal, checkpiece);
 
-		} while(backtarget && !approachcontrol_engage);
-
-		if(approachcontrol_engage) {
+		if(approachlocking_engage) {
 			//code goes here
 		}
 	}
 
+	//now unreserve route
+
+	GenericRouteUnreservation(rt, sig, RRF::STOP_ON_OCCUPIED_TC);
+
 	return true;
 }
 
-void action_reservetrack::ExecuteAction() const {
-	if(!target) return;
+bool action_reservetrack_base::GenericRouteUnreservation(const route *targrt, routingpoint *targsig, RRF extraflags) const {
+	bool fullyunreserved = targrt->RouteReservation(RRF::TRYUNRESERVE | extraflags);
 
-	TryReserveRoute(target, action_time, [&](const std::shared_ptr<future> &f) {
+	ActionRegisterFuture(std::make_shared<future_unreservetrack>(*targsig, action_time + 1, targrt, extraflags));
+
+	auto actioncallback = [&](action &&reservation_act) {
+		reservation_act.action_time++;
+		reservation_act.Execute();
+	};
+	targrt->RouteReservationActions(RRF::UNRESERVE | extraflags, actioncallback);
+	return fullyunreserved;
+}
+
+void action_routereservetrackop::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	DeserialiseRouteTargetByParentAndIndex(targetroute, di, ec, false);
+
+	if(!targetroute) ec.RegisterNewError<error_deserialisation>(di, "Invalid track reservation action definition");
+}
+
+void action_routereservetrackop::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseValueJson(targetroute->parent->GetSerialisationName(), so, "routeparent");
+	SerialiseValueJson(targetroute->index, so, "routeindex");
+}
+
+void action_reservetrack::ExecuteAction() const {
+	if(!targetroute) return;
+
+	TryReserveRoute(targetroute, action_time, [&](const std::shared_ptr<future> &f) {
 		ActionSendReplyFuture(f);
 	});
 }
 
-void action_reservetrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	std::string routeparentname;
-	unsigned int index;
-	if(CheckTransJsonValue(routeparentname, di, "routeparent", ec) && CheckTransJsonValue(index, di, "routeindex", ec)) {
-		routingpoint *rp = dynamic_cast<routingpoint *>(w.FindTrackByName(routeparentname));
-		if(rp) target = rp->GetRouteByIndex(index);
-	}
-
-	if(!target) ec.RegisterNewError<error_deserialisation>(di, "Invalid track reservation action definition");
-}
-
-void action_reservetrack::Serialise(serialiser_output &so, error_collection &ec) const {
-	SerialiseValueJson(target->parent->GetSerialisationName(), so, "routeparent");
-	SerialiseValueJson(target->index, so, "routeindex");
-}
-
 void action_unreservetrack::ExecuteAction() const {
 	if(!target) return;
-
 
 }
 
@@ -289,4 +309,8 @@ void action_unreservetrack::Deserialise(const deserialiser_input &di, error_coll
 
 void action_unreservetrack::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(target->GetSerialisationName(), so, "target");
+}
+
+void action_unreservetrackroute::ExecuteAction() const {
+	GenericRouteUnreservation(targetroute, targetroute->start.track, RRF::STOP_ON_OCCUPIED_TC);
 }

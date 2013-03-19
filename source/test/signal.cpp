@@ -282,8 +282,8 @@ class autosig_test_class_1 {
 
 			CHECK(signal->GetAspect() == aspect);
 			CHECK(signal->GetAspectType() == aspect_type);
-			CHECK(signal->GetNextAspectTarget() == aspect_target);
-			CHECK(signal->GetAspectSetRouteTarget() == aspect_route_target);
+			CHECK(signal->GetAspectNextTarget() == aspect_target);
+			CHECK(signal->GetAspectRouteTarget() == aspect_route_target);
 		};
 	}
 };

@@ -103,6 +103,7 @@ class world : public named_futurable_obj {
 	world_time GetGameTime() const { return gametime; }
 	std::string FormatGameTime(world_time wt) const;
 	void SubmitAction(const action &request);
+	void ExecuteIfActionScope(std::function<void()> func);
 	named_futurable_obj *FindFuturableByName(const std::string &name);
 	virtual std::string GetTypeSerialisationClassName() const override { return ""; }
 	virtual std::string GetSerialisationName() const override { return "world"; }
@@ -111,6 +112,9 @@ class world : public named_futurable_obj {
 	virtual void GameStep(world_time delta);
 	void RegisterTickUpdate(generictrack *targ);
 	void UnregisterTickUpdate(generictrack *targ);
+	inline bool IsAuthoritative() const {
+		return mode == GAMEMODE::SINGLE || mode == GAMEMODE::SERVER;
+	}
 };
 
 template <typename C> void MakeFutureTypeWrapper(future_deserialisation_type_factory &future_types) {

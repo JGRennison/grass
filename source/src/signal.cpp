@@ -25,6 +25,7 @@
 #include "signal.h"
 #include "world.h"
 #include "trackcircuit.h"
+#include "track_ops.h"
 
 #include <algorithm>
 #include <iterator>
@@ -97,6 +98,17 @@ const route *routingpoint::FindBestRoute(const routingpoint *end, GMRF gmr_flags
 	};
 	EnumerateRoutes(route_finder);
 	return best_route;
+}
+
+void routingpoint::SetAspectNextTarget(routingpoint *target) {
+	if(target == aspect_target) return;
+	if(aspect_target && aspect_target->aspect_backwards_dependency == this) aspect_target->aspect_backwards_dependency = 0;
+	if(target) target->aspect_backwards_dependency = this;
+	aspect_target = target;
+}
+
+void routingpoint::SetAspectRouteTarget(routingpoint *target) {
+	aspect_route_target = target;
 }
 
 const track_target_ptr& trackroutingpoint::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
@@ -193,7 +205,14 @@ bool genericsignal::Reservation(EDGETYPE direction, unsigned int index, RRF rr_f
 		return start_trs.Reservation(direction, index, rr_flags, resroute);
 	}
 	else if(rr_flags & RRF::ENDPIECE) {
-		return end_trs.Reservation(direction, index, rr_flags, resroute);
+		bool result = end_trs.Reservation(direction, index, rr_flags, resroute);
+		if(rr_flags & RRF::UNRESERVE) {
+			GetWorld().ExecuteIfActionScope([&]() {
+				const route* ovlp = GetCurrentForwardOverlap();
+				if(ovlp) GetWorld().SubmitAction(action_unreservetrackroute(GetWorld(), *ovlp));
+			});
+		}
+		return result;
 	}
 	else {
 		return start_trs.Reservation(direction, index, rr_flags, resroute) && end_trs.Reservation(direction, index, rr_flags, resroute);
@@ -223,14 +242,13 @@ RPRT genericsignal::GetSetRouteTypes(EDGETYPE direction) const {
 
 void genericsignal::UpdateSignalState() {
 	if(last_state_update == GetWorld().GetGameTime()) return;
-	if(aspect_backwards_dependency_lastset == last_state_update) aspect_backwards_dependency_lastset = 0;
 
 	last_state_update = GetWorld().GetGameTime();
 
 	auto clear_route = [&]() {
 		aspect = 0;
-		aspect_target = 0;
-		aspect_route_target = 0;
+		SetAspectNextTarget(0);
+		SetAspectRouteTarget(0);
 		aspect_type = RTC_NULL;
 	};
 
@@ -259,15 +277,13 @@ void genericsignal::UpdateSignalState() {
 						}
 					}
 				}
-				gs->aspect_backwards_dependency = this;
-				gs->aspect_backwards_dependency_lastset = last_state_update;
 			}
 		}
 	}
 
 	aspect_type = set_route->type;
-	aspect_target = set_route->end.track;
-	aspect_route_target = set_route->end.track;
+	routingpoint *aspect_target = set_route->end.track;
+	routingpoint *aspect_route_target = set_route->end.track;
 
 	sig_list::const_iterator next_repeater;
 	if(set_route->start.track == this) {
@@ -292,6 +308,8 @@ void genericsignal::UpdateSignalState() {
 			aspect = std::min(max_aspect, aspect_target->GetAspect() + 1);
 		}
 	}
+	SetAspectNextTarget(aspect_target);
+	SetAspectRouteTarget(aspect_route_target);
 }
 
 //this will not return the overlap, only the "real" route
@@ -332,6 +350,41 @@ bool genericsignal::RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const
 	}
 	return false;
 }
+
+//function parameters: return true to continue, false to stop
+void genericsignal::BackwardsReservedTrackScan(std::function<bool(const genericsignal*)> checksignal, std::function<bool(const track_target_ptr&)> checkpiece) const {
+	const genericsignal *current = this;
+	const genericsignal *next = 0;
+	bool stop_tracing  = false;
+
+	auto routecheckfunc = [&](const route *rt) {
+		for(auto it = rt->pieces.rbegin(); it != rt->pieces.rend(); ++it) {
+			if(!(it->location.track->GetFlags(it->location.direction) & GTF::ROUTETHISDIR)) {
+				stop_tracing = true;
+				return;	//route not reserved, stop tracing
+			}
+			if(it->location.track == next) {
+				//found a repeater signal
+				current = next;
+				next = dynamic_cast<genericsignal*>(current->GetAspectBackwardsDependency());
+				if(!checksignal(current)) {
+					stop_tracing = true;
+					return;
+				}
+			}
+			else if(!checkpiece(it->location)) return;
+		}
+	};
+	do {
+		if(!checksignal(current)) return;
+		next = dynamic_cast<genericsignal*>(current->GetAspectBackwardsDependency());
+
+		current->EnumerateCurrentBackwardsRoutes(routecheckfunc);
+
+		current = next;
+	} while(current && !stop_tracing);
+}
+
 GTF autosignal::GetFlags(EDGETYPE direction) const {
 	GTF result = GTF::ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
 	if(direction == EDGE_FRONT) result |= GTF::SIGNAL;

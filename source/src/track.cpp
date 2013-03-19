@@ -408,7 +408,6 @@ error_trackconnection_notfound::error_trackconnection_notfound(const track_targe
 
 bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, RRF in_rr_flags, const route *resroute, std::string* failreasonkey) {
 	if(in_rr_flags & (RRF::RESERVE | RRF::TRYRESERVE | RRF::PROVISIONAL_RESERVE)) {
-		inner_track_reservation_state *prov_override = 0;
 		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
 			if(it->rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {	//track already reserved
 				if(it->direction != in_dir || it->index != in_index) {
@@ -436,10 +435,10 @@ bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index
 		}
 		return true;
 	}
-	else if(in_rr_flags & RRF::UNRESERVE) {
+	else if(in_rr_flags & (RRF::UNRESERVE | RRF::TRYUNRESERVE)) {
 		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
 			if(it->rr_flags & RRF::RESERVE && it->direction == in_dir && it->index == in_index && it->reserved_route == resroute) {
-				itrss.erase(it);
+				if(in_rr_flags & RRF::UNRESERVE) itrss.erase(it);
 				return true;
 			}
 		}

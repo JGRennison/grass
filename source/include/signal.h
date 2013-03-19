@@ -76,20 +76,22 @@ enum class GMRF {
 template<> struct enum_traits< GMRF > {	static constexpr bool flags = true; };
 
 class routingpoint : public genericzlentrack {
-	protected:
-	unsigned int aspect = 0;
 	routingpoint *aspect_target = 0;
 	routingpoint *aspect_route_target = 0;
-	ROUTE_CLASS aspect_type = RTC_NULL;
 	routingpoint *aspect_backwards_dependency = 0;
-	world_time aspect_backwards_dependency_lastset = 0;
+
+	protected:
+	unsigned int aspect = 0;
+	ROUTE_CLASS aspect_type = RTC_NULL;
+	void SetAspectNextTarget(routingpoint *target);
+	void SetAspectRouteTarget(routingpoint *target);
 
 	public:
 	routingpoint(world &w_) : genericzlentrack(w_) { }
 
 	inline unsigned int GetAspect() const { return aspect; }
-	inline routingpoint *GetNextAspectTarget() const { return aspect_target; }
-	inline routingpoint *GetAspectSetRouteTarget() const { return aspect_route_target; }
+	inline routingpoint *GetAspectNextTarget() const { return aspect_target; }
+	inline routingpoint *GetAspectRouteTarget() const { return aspect_route_target; }
 	inline routingpoint *GetAspectBackwardsDependency() const { return aspect_backwards_dependency; }
 	inline ROUTE_CLASS GetAspectType() const { return aspect_type; }
 	virtual void UpdateRoutingPoint() { }
@@ -268,6 +270,9 @@ class genericsignal : public trackroutingpoint {
 	virtual void UpdateSignalState();
 	virtual void UpdateRoutingPoint() override { UpdateSignalState(); }
 	virtual void TrackTick() override { UpdateSignalState(); }
+
+	//function parameters: return true to continue, false to stop
+	void BackwardsReservedTrackScan(std::function<bool(const genericsignal*)> checksignal, std::function<bool(const track_target_ptr&)> checkpiece) const;
 
 	protected:
 	bool PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(ROUTE_CLASS type, const track_target_ptr &piece)> mkblankroute);
