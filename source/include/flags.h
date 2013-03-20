@@ -25,6 +25,7 @@
 #define INC_FLAGS_ALREADY
 
 #include <type_traits>
+#include <ostream>
 
 template< typename enum_type >
 struct enum_traits {
