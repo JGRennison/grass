@@ -23,6 +23,7 @@
 
 #include "common.h"
 #include "track.h"
+#include "trackpiece.h"
 #include "points.h"
 #include "signal.h"
 #include "serialisable_impl.h"
@@ -289,41 +290,6 @@ void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deseria
 	}
 	output = 0;
 	return;
-}
-
-void track_reservation_state::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	itrss.clear();
-	CheckIterateJsonArrayOrType<json_object>(di, "reservations", "track_reservation", ec, [&](const deserialiser_input &innerdi, error_collection &ec) {
-		itrss.emplace_back();
-		inner_track_reservation_state &itrs = itrss.back();
-
-		DeserialiseRouteTargetByParentAndIndex(itrs.reserved_route, innerdi, ec, true);
-		CheckTransJsonValue(itrs.direction, innerdi, "direction", ec);
-		CheckTransJsonValue(itrs.index, innerdi, "index", ec);
-		CheckTransJsonValue(itrs.rr_flags, innerdi, "rr_flags", ec);
-		innerdi.PostDeserialisePropCheck(ec);
-	});
-}
-
-void track_reservation_state::Serialise(serialiser_output &so, error_collection &ec) const {
-	if(!itrss.empty()) {
-		so.json_out.String("reservations");
-		so.json_out.StartArray();
-		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-			so.json_out.StartObject();
-			if(it->reserved_route) {
-				if(it->reserved_route->parent) {
-					SerialiseValueJson(it->reserved_route->parent->GetName(), so, "route_parent");
-					SerialiseValueJson(it->reserved_route->index, so, "route_index");
-				}
-			}
-			SerialiseValueJson(it->direction, so, "direction");
-			SerialiseValueJson(it->index, so, "index");
-			SerialiseValueJson(it->rr_flags, so, "rr_flags");
-			so.json_out.EndObject();
-		}
-		so.json_out.EndArray();
-	}
 }
 
 void speedrestrictionset::Deserialise(const deserialiser_input &di, error_collection &ec) {

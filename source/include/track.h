@@ -46,6 +46,8 @@ class route;
 class action;
 class world_serialisation;
 class track_circuit;
+enum class RRF : unsigned int;
+enum class GTF : unsigned int;
 
 struct speed_restriction {
 	unsigned int speed;
@@ -61,61 +63,6 @@ class speedrestrictionset : public serialisable_obj {
 	inline void AddSpeedRestriction(const speed_restriction &sr) {
 		speeds.push_front(sr);
 	}
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
-};
-
-enum class RRF : unsigned int {
-	ZERO				= 0,
-	RESERVE				= 1<<0,
-	UNRESERVE			= 1<<1,
-	TRYRESERVE			= 1<<2,
-	TRYUNRESERVE			= 1<<3,
-	AUTOROUTE			= 1<<4,
-	STARTPIECE			= 1<<5,
-	ENDPIECE			= 1<<6,
-
-	PROVISIONAL_RESERVE		= 1<<8,	//for generictrack::RouteReservation, to prevent action/future race condition
-	STOP_ON_OCCUPIED_TC		= 1<<9,	//for track dereservations, stop upon reaching an occupied track circuit
-	IGNORE_OWN_OVERLAP		= 1<<10,//for overlap swinging checks
-
-	SAVEMASK			= AUTOROUTE | STARTPIECE | ENDPIECE | RESERVE | PROVISIONAL_RESERVE,
-};
-template<> struct enum_traits< RRF > {	static constexpr bool flags = true; };
-
-class track_reservation_state;
-
-class inner_track_reservation_state {
-	friend track_reservation_state;
-
-	const route *reserved_route = 0;
-	EDGETYPE direction = EDGE_NULL;
-	unsigned int index = 0;
-	RRF rr_flags = RRF::ZERO;
-};
-
-enum class GTF {
-	ZERO		= 0,
-	ROUTESET	= 1<<0,
-	ROUTETHISDIR	= 1<<1,
-	ROUTEFORK	= 1<<2,
-	ROUTINGPOINT	= 1<<3,
-	SIGNAL		= 1<<4,
-};
-template<> struct enum_traits< GTF > {	static constexpr bool flags = true; };
-
-class track_reservation_state : public serialisable_obj {
-	std::vector<inner_track_reservation_state> itrss;
-
-	public:
-	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0);
-	GTF GetGTReservationFlags(EDGETYPE direction) const;
-	bool IsReserved() const;
-	unsigned int GetReservationCount() const;
-	bool IsReservedInDirection(EDGETYPE direction) const;
-	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func) const;
-	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func) const;
-
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
@@ -288,57 +235,6 @@ class track_location {
 	track_location(generictrack *track_, EDGETYPE direction_, unsigned int offset_) : trackpiece(track_, direction_), offset(offset_) { }
 };
 
-class trackseg : public generictrack {
-	unsigned int length;
-	int elevationdelta;
-	speedrestrictionset speed_limits;
-	tractionset tractiontypes;
-	track_circuit *tc;
-	unsigned int traincount;
-	track_target_ptr next;
-	track_target_ptr prev;
-	track_reservation_state trs;
-
-	public:
-	trackseg(world &w_) : generictrack(w_), length(0), elevationdelta(0), tc(0), traincount(0) { }
-	void TrainEnter(EDGETYPE direction, train *t) override;
-	void TrainLeave(EDGETYPE direction, train *t) override;
-	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
-	virtual unsigned int GetStartOffset(EDGETYPE direction) const override;
-	virtual int GetElevationDelta(EDGETYPE direction) const override;
-	virtual unsigned int GetLength(EDGETYPE direction) const override;
-	virtual const speedrestrictionset *GetSpeedRestrictions() const override;
-	virtual const tractionset *GetTractionTypes() const override;
-	virtual unsigned int GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const override;
-	virtual unsigned int GetRemainingLength(EDGETYPE direction, unsigned int currentoffset) const override;
-	virtual track_circuit *GetTrackCircuit() const override;
-	virtual GTF GetFlags(EDGETYPE direction) const override;
-	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
-	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
-
-	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
-	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
-	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
-
-	virtual std::string GetTypeName() const { return "Track Segment"; }
-
-	virtual trackseg & SetLength(unsigned int length);
-	virtual trackseg & AddSpeedRestriction(speed_restriction sr);
-	virtual trackseg & SetElevationDelta(unsigned int elevationdelta);
-	virtual trackseg & SetTrackCircuit(track_circuit *tc);
-
-	static std::string GetTypeSerialisationNameStatic() { return "trackseg"; }
-	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
-
-	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
-};
-
 class genericzlentrack : public generictrack {
 	public:
 	genericzlentrack(world &w_) : generictrack(w_) { }
@@ -347,41 +243,6 @@ class genericzlentrack : public generictrack {
 	virtual unsigned int GetLength(EDGETYPE direction) const override;
 	virtual unsigned int GetStartOffset(EDGETYPE direction) const override;
 	virtual int GetElevationDelta(EDGETYPE direction) const override;
-};
-
-class crossover : public genericzlentrack {
-	track_target_ptr north;
-	track_target_ptr south;
-	track_target_ptr west;
-	track_target_ptr east;
-	track_reservation_state trs;
-
-	public:
-	crossover(world &w_) : genericzlentrack(w_) { }
-	virtual void TrainEnter(EDGETYPE direction, train *t) override { }
-	virtual void TrainLeave(EDGETYPE direction, train *t) override { }
-
-	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
-	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
-	virtual GTF GetFlags(EDGETYPE direction) const override;
-	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_X_N; }
-
-	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
-	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
-	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override { return GetConnectingPiece(direction); }
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
-
-	virtual std::string GetTypeName() const override { return "Crossover"; }
-
-	static std::string GetTypeSerialisationNameStatic() { return "crossover"; }
-	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
-
-	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override { return EDGE_NULL; }
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
 
 class layout_initialisation_error_obj : public error_obj {

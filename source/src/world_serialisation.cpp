@@ -28,6 +28,7 @@
 #include "util.h"
 #include "world_serialisation.h"
 #include "track.h"
+#include "trackpiece.h"
 #include "points.h"
 #include "signal.h"
 #include "trackcircuit.h"

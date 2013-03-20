@@ -23,6 +23,7 @@
 
 #include "common.h"
 #include "track.h"
+#include "trackpiece.h"
 #include "train.h"
 #include "error.h"
 #include "trackcircuit.h"
@@ -404,102 +405,6 @@ error_trackconnection::error_trackconnection(const track_target_ptr &targ1, cons
 
 error_trackconnection_notfound::error_trackconnection_notfound(const track_target_ptr &targ1, const std::string &targ2) {
 	msg << "Track Connection Error: Could Not Connect: " << targ1 << " to Unfound Target:" << targ2;
-}
-
-bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, RRF in_rr_flags, const route *resroute, std::string* failreasonkey) {
-	if(in_rr_flags & (RRF::RESERVE | RRF::TRYRESERVE | RRF::PROVISIONAL_RESERVE)) {
-		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-			if(it->rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {	//track already reserved
-				if(in_rr_flags & RRF::IGNORE_OWN_OVERLAP && it->reserved_route && it->reserved_route->start == resroute->start && it->reserved_route->type == RTC_OVERLAP) {
-					//do nothing, own overlap is being ignored
-				}
-				else if(it->direction != in_dir || it->index != in_index) {
-					if(failreasonkey) *failreasonkey = "track/reservation/conflict";
-					return false;	//reserved piece doesn't match
-				}
-			}
-			if(it->rr_flags & RRF::PROVISIONAL_RESERVE && in_rr_flags & RRF::RESERVE) {
-				if(it->reserved_route == resroute && (in_rr_flags & RRF::SAVEMASK & ~RRF::RESERVE) == (it->rr_flags & RRF::SAVEMASK & ~RRF::PROVISIONAL_RESERVE)) {
-					//we are now properly reserving what we already preliminarily reserved, reuse inner_track_reservation_state
-					it->rr_flags |= RRF::RESERVE;
-					it->rr_flags &= ~RRF::PROVISIONAL_RESERVE;
-					return true;
-				}
-			}
-		}
-		if(in_rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {
-			itrss.emplace_back();
-			inner_track_reservation_state &itrs = itrss.back();
-
-			itrs.rr_flags = in_rr_flags & RRF::SAVEMASK;
-			itrs.direction = in_dir;
-			itrs.index = in_index;
-			itrs.reserved_route = resroute;
-		}
-		return true;
-	}
-	else if(in_rr_flags & (RRF::UNRESERVE | RRF::TRYUNRESERVE)) {
-		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-			if(it->rr_flags & RRF::RESERVE && it->direction == in_dir && it->index == in_index && it->reserved_route == resroute) {
-				if(in_rr_flags & RRF::UNRESERVE) itrss.erase(it);
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-bool track_reservation_state::IsReserved() const {
-	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF::RESERVE) return true;
-	}
-	return false;
-}
-
-unsigned int track_reservation_state::GetReservationCount() const {
-	unsigned int count = 0;
-	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF::RESERVE) count++;
-	}
-	return count;
-}
-
-bool track_reservation_state::IsReservedInDirection(EDGETYPE direction) const {
-	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF::RESERVE && it->direction == direction) return true;
-	}
-	return false;
-}
-
-GTF track_reservation_state::GetGTReservationFlags(EDGETYPE checkdirection) const {
-	GTF outputflags = GTF::ZERO;
-	if(IsReserved()) {
-		outputflags |= GTF::ROUTESET;
-		if(IsReservedInDirection(checkdirection)) outputflags |= GTF::ROUTETHISDIR;
-	}
-	return outputflags;
-}
-
-unsigned int track_reservation_state::ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func) const {
-	unsigned int counter = 0;
-	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF::RESERVE) {
-			func(it->reserved_route, it->direction, it->index, it->rr_flags);
-			counter++;
-		}
-	}
-	return counter;
-}
-
-unsigned int track_reservation_state::ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func) const {
-	unsigned int counter = 0;
-	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF::RESERVE && it->direction == direction) {
-			func(it->reserved_route, it->direction, it->index, it->rr_flags);
-			counter++;
-		}
-	}
-	return counter;
 }
 
 std::ostream& operator<<(std::ostream& os, const generictrack* obj) {

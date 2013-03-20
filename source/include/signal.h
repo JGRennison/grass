@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "track.h"
+#include "trackreservation.h"
 #include "traverse.h"
 #include "flags.h"
 

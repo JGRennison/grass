@@ -23,6 +23,7 @@
 
 #include "catch.hpp"
 #include "track.h"
+#include "trackpiece.h"
 #include "points.h"
 #include "train.h"
 #include "traverse.h"

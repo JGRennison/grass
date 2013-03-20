@@ -25,6 +25,7 @@
 #define INC_POINTS_ALREADY
 
 #include "track.h"
+#include "trackreservation.h"
 
 class genericpoints : public genericzlentrack {
 	public:
