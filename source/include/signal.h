@@ -119,6 +119,7 @@ class routingpoint : public genericzlentrack {
 
 	virtual route *GetRouteByIndex(unsigned int index) = 0;
 	const route *FindBestOverlap() const;
+	void EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func) const;
 	const route *FindBestRoute(const routingpoint *end, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK) const;
 
 	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK) const;
@@ -151,6 +152,7 @@ struct route {
 	bool TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const;
 	bool RouteReservation(RRF reserve_flags, std::string *failreasonkey = 0) const;
 	void RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const;
+	bool IsRouteSubSet(const route *subset) const;
 };
 template<> struct enum_traits< route::RF > {	static constexpr bool flags = true; };
 
@@ -233,6 +235,7 @@ class genericsignal : public trackroutingpoint {
 		NOOVERLAP		= 1<<2,
 		APPROACHCONTROLMODE	= 1<<3,		//route cancelled with train approaching, hold aspect at 0
 		AUTOSIGNAL		= 1<<4,
+		OVERLAPSWINGABLE	= 1<<5,
 	};
 
 	protected:

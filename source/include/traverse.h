@@ -43,6 +43,12 @@ struct route_recording_item {
 	unsigned int connection_index;
 	route_recording_item() : connection_index(0) { }
 	route_recording_item(const track_target_ptr &loc, unsigned int index) : location(loc), connection_index(index) { }
+	inline bool operator ==(const route_recording_item &other) const {
+		return location == other.location && connection_index == other.connection_index;
+	}
+	inline bool operator !=(const route_recording_item &other) const {
+		return !(*this == other);
+	}
 };
 
 typedef std::deque<route_recording_item> route_recording_list;

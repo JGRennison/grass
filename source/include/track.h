@@ -65,7 +65,7 @@ class speedrestrictionset : public serialisable_obj {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-enum class RRF {
+enum class RRF : unsigned int {
 	ZERO				= 0,
 	RESERVE				= 1<<0,
 	UNRESERVE			= 1<<1,
@@ -75,9 +75,9 @@ enum class RRF {
 	STARTPIECE			= 1<<5,
 	ENDPIECE			= 1<<6,
 
-	DUMMY_RESERVE			= 1<<7, //for generictrack::ReservationActions, produce actions as normal
 	PROVISIONAL_RESERVE		= 1<<8,	//for generictrack::RouteReservation, to prevent action/future race condition
 	STOP_ON_OCCUPIED_TC		= 1<<9,	//for track dereservations, stop upon reaching an occupied track circuit
+	IGNORE_OWN_OVERLAP		= 1<<10,//for overlap swinging checks
 
 	SAVEMASK			= AUTOROUTE | STARTPIECE | ENDPIECE | RESERVE | PROVISIONAL_RESERVE,
 };
@@ -217,18 +217,18 @@ template <typename T> struct vartrack_target_ptr {
 	vartrack_target_ptr() { Reset(); }
 	vartrack_target_ptr(T *track_, EDGETYPE direction_) : track(track_), direction(direction_) { }
 	vartrack_target_ptr(const vartrack_target_ptr &in) : track(in.track), direction(in.direction) { }
-	inline bool operator==(const vartrack_target_ptr &other) const {
+	template <typename S> inline bool operator==(const vartrack_target_ptr<S> &other) const {
 		return track == other.track && direction == other.direction;
 	}
-	inline bool operator!=(const vartrack_target_ptr &other) const {
+	template <typename S> inline bool operator!=(const vartrack_target_ptr<S> &other) const {
 		return !(*this == other);
 	}
-	inline void operator=(const vartrack_target_ptr &other) {
+	template <typename S> inline void operator=(const vartrack_target_ptr<S> &other) {
 		track = other.track;
 		direction = other.direction;
 	}
-	template <typename S> inline operator vartrack_target_ptr<S>() {
-		return vartrack_target_ptr<S>(track, direction);
+	inline operator vartrack_target_ptr<generictrack>&&() {
+		return vartrack_target_ptr<generictrack>(track, direction);
 	}
 	const vartrack_target_ptr &GetConnectingPiece() const;
 };

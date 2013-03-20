@@ -56,6 +56,17 @@ void routingpoint::EnumerateRoutes(std::function<void (const route *)> func) con
 const route *routingpoint::FindBestOverlap() const {
 	int best_score = INT_MIN;
 	const route *best_overlap = 0;
+	EnumerateAvailableOverlaps([&](const route *r, int score){
+		if(score>best_score) {
+			best_score = score;
+			best_overlap = r;
+		}
+	});
+	return best_overlap;
+}
+
+void routingpoint::EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func) const {
+
 	auto overlap_finder = [&](const route *r) {
 		if(r->type != RTC_OVERLAP) return;
 		if(!r->RouteReservation(RRF::TRYRESERVE)) return;
@@ -64,15 +75,10 @@ const route *routingpoint::FindBestOverlap() const {
 		auto actioncounter = [&](action &&reservation_act) {
 			score -= 10;
 		};
-		r->RouteReservationActions(RRF::DUMMY_RESERVE, actioncounter);
-
-		if(score>best_score) {
-			best_score = score;
-			best_overlap = r;
-		}
+		r->RouteReservationActions(RRF::RESERVE, actioncounter);
+		func(r, score);
 	};
 	EnumerateRoutes(overlap_finder);
-	return best_overlap;
 }
 
 const route *routingpoint::FindBestRoute(const routingpoint *end, GMRF gmr_flags) const {
@@ -88,7 +94,7 @@ const route *routingpoint::FindBestRoute(const routingpoint *end, GMRF gmr_flags
 		auto actioncounter = [&](action &&reservation_act) {
 			score -= 10;
 		};
-		r->RouteReservationActions(RRF::DUMMY_RESERVE, actioncounter);
+		r->RouteReservationActions(RRF::RESERVE, actioncounter);
 
 		if(score == best_score && r->type == RTC_ROUTE && best_route->type == RTC_SHUNT) best_score--;	//prefer routes over shunts at the same priority
 		if(score>best_score) {
@@ -687,6 +693,36 @@ void route::FillLists() {
 
 bool route::TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const {
 	return checkend == end.track && checkvias == vias;
+}
+
+bool route::IsRouteSubSet(const route *subset) const {
+	const vartrack_target_ptr<routingpoint> &substart = subset->start;
+
+	auto this_it = pieces.begin();
+	if(substart != start) {		//scan along route for start
+		while(true) {
+			if(this_it->location == substart) break;
+			++this_it;
+			if(this_it == pieces.end()) return false;
+		}
+		++this_it;
+	}
+
+	auto sub_it = subset->pieces.begin();
+
+	//sub_it and this_it should now point to same track piece if route is a subset
+
+	for(; sub_it != subset->pieces.end() && this_it != pieces.end(); ++sub_it, ++this_it) {
+		if(*this_it != *sub_it) return false;
+	}
+
+	if(sub_it == subset->pieces.end()) {
+		return subset->end == end;
+	}
+	else {
+		++this_it;
+		return subset->end == this_it->location;
+	}
 }
 
 //return true if restriction applies

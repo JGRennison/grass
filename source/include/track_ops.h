@@ -21,6 +21,9 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
+#ifndef INC_TRACKOPS_ALREADY
+#define INC_TRACKOPS_ALREADY
+
 #include "future.h"
 #include "serialisable.h"
 #include "action.h"
@@ -111,6 +114,7 @@ class action_reservetrack_base : public action {
 	bool TryReserveRoute(const route *rt, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
 	bool TryUnreserveRoute(routingpoint *startsig, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
 	bool GenericRouteUnreservation(const route *targrt, routingpoint *targsig, RRF extraflags) const;
+	const route *TestSwingOverlapAndReserve(const route *target_route) const;
 };
 
 class action_routereservetrackop : public action_reservetrack_base {
@@ -153,3 +157,5 @@ class action_unreservetrack : public action_reservetrack_base {
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
+
+#endif

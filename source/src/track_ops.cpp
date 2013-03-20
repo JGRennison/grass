@@ -22,6 +22,7 @@
 //==========================================================================
 
 #include <memory>
+#include <algorithm>
 #include "common.h"
 #include "track_ops.h"
 #include "track.h"
@@ -165,6 +166,26 @@ void future_unreservetrack::Serialise(serialiser_output &so, error_collection &e
 	SerialiseValueJson(extraflags, so, "extraflags");
 }
 
+const route *action_reservetrack_base::TestSwingOverlapAndReserve(const route *target_route) const {
+	genericsignal *gs = dynamic_cast<genericsignal*>(target_route->start.track);
+	if(!gs) return 0;
+	if(!(gs->GetSignalFlags() & genericsignal::GSF::OVERLAPSWINGABLE)) return 0;
+
+	if(!target_route->RouteReservation(RRF::TRYRESERVE | RRF::IGNORE_OWN_OVERLAP)) return 0;	//can't reserve even when ignoring the overlap
+
+	std::vector<std::pair<int, const route *> > candidates;
+	gs->EnumerateAvailableOverlaps([&](const route *rt, int score){
+		candidates.push_back(std::make_pair(-score, rt));
+	});
+	std::sort(candidates.begin(), candidates.end());
+	for(auto it = candidates.begin(); it != candidates.end(); ++it) {
+		if(target_route->IsRouteSubSet(it->second)) {
+			return it->second;
+		}
+	}
+	return 0;
+}
+
 //return true on success
 bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const {
 	//disallow if non-overlap route already set from start point in given direction
@@ -173,8 +194,20 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 		return false;
 	}
 
+	const route *swing_this_overlap = 0;
+	const route *remove_prev_overlap = 0;
 	std::string tryreservation_failreasonkey = "generic/failurereason";
-	if(!rt->RouteReservation(RRF::TRYRESERVE, &tryreservation_failreasonkey)) {
+	bool success = rt->RouteReservation(RRF::TRYRESERVE, &tryreservation_failreasonkey);
+	if(!success) {
+		swing_this_overlap = TestSwingOverlapAndReserve(rt);
+		if(swing_this_overlap) {
+			success = true;
+			genericsignal *sig = dynamic_cast<genericsignal*>(rt->start.track);
+			if(sig) remove_prev_overlap = sig->GetCurrentForwardOverlap();
+		}
+	}
+
+	if(!success) {
 		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/reservation/fail", tryreservation_failreasonkey));
 		return false;
 	}
@@ -203,6 +236,15 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 		best_overlap->RouteReservationActions(RRF::RESERVE, actioncallback);
 		ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, best_overlap));
 		best_overlap->RouteReservation(RRF::PROVISIONAL_RESERVE);
+	}
+	if(remove_prev_overlap) {
+		remove_prev_overlap->RouteReservationActions(RRF::UNRESERVE, actioncallback);
+		ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, remove_prev_overlap));
+	}
+	if(swing_this_overlap) {
+		swing_this_overlap->RouteReservationActions(RRF::RESERVE, actioncallback);
+		ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, swing_this_overlap));
+		swing_this_overlap->RouteReservation(RRF::PROVISIONAL_RESERVE | RRF::IGNORE_OWN_OVERLAP);
 	}
 	return true;
 }

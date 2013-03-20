@@ -170,7 +170,7 @@ bool points::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, c
 }
 
 void points::ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
-	if(rr_flags & (RRF::RESERVE | RRF::DUMMY_RESERVE)) {
+	if(rr_flags & RRF::RESERVE) {
 		bool rev = pflags & PTF::REV;
 		bool newrev = IsPointsRoutingDirAndIndexRev(direction, index);
 		if(newrev != rev) {
@@ -513,7 +513,7 @@ bool doubleslip::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flag
 }
 
 void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
-	if(rr_flags & (RRF::RESERVE | RRF::DUMMY_RESERVE)) {
+	if(rr_flags & RRF::RESERVE) {
 		unsigned int entranceindex = GetCurrentPointIndex(direction);
 		PTF entrancepf = GetCurrentPointFlags(direction);
 		bool isentrancerev = (entrancepf & PTF::FIXED) ? (entrancepf & PTF::REV) : index;

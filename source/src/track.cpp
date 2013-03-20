@@ -410,7 +410,10 @@ bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index
 	if(in_rr_flags & (RRF::RESERVE | RRF::TRYRESERVE | RRF::PROVISIONAL_RESERVE)) {
 		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
 			if(it->rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {	//track already reserved
-				if(it->direction != in_dir || it->index != in_index) {
+				if(in_rr_flags & RRF::IGNORE_OWN_OVERLAP && it->reserved_route && it->reserved_route->start == resroute->start && it->reserved_route->type == RTC_OVERLAP) {
+					//do nothing, own overlap is being ignored
+				}
+				else if(it->direction != in_dir || it->index != in_index) {
 					if(failreasonkey) *failreasonkey = "track/reservation/conflict";
 					return false;	//reserved piece doesn't match
 				}
