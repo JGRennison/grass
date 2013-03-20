@@ -337,13 +337,14 @@ void action_reservetrack::ExecuteAction() const {
 
 void action_unreservetrack::ExecuteAction() const {
 	if(!target) return;
-
+	const route *rt = target->GetCurrentForwardRoute();
+	if(rt) GenericRouteUnreservation(rt, rt->start.track, RRF::STOP_ON_OCCUPIED_TC);
 }
 
 void action_unreservetrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	std::string targetname;
 	if(CheckTransJsonValue(targetname, di, "target", ec)) {
-		target = dynamic_cast<routingpoint *>(w.FindTrackByName(targetname));
+		target = dynamic_cast<genericsignal *>(w.FindTrackByName(targetname));
 	}
 
 	if(!target) ec.RegisterNewError<error_deserialisation>(di, "Invalid track unreservation action definition");

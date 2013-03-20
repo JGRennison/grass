@@ -72,7 +72,10 @@ enum class GMRF {
 	ROUTEOK		= 1<<0,
 	SHUNTOK		= 1<<1,
 	OVERLAPOK	= 1<<2,
-	ALL		= ROUTEOK | SHUNTOK | OVERLAPOK,
+	TRACKTEST	= 1<<3,
+	CHECKVIAS	= 1<<4,
+	DONTCLEARVECTOR	= 1<<5,
+	ALLROUTETYPES	= ROUTEOK | SHUNTOK | OVERLAPOK,
 };
 template<> struct enum_traits< GMRF > {	static constexpr bool flags = true; };
 
@@ -121,10 +124,13 @@ class routingpoint : public genericzlentrack {
 	virtual route *GetRouteByIndex(unsigned int index) = 0;
 	const route *FindBestOverlap() const;
 	void EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func) const;
-	const route *FindBestRoute(const routingpoint *end, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK) const;
-
-	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK) const;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
+
+	struct gmr_routeitem {
+		const route *rt;
+		int score;
+	};
+	unsigned int GetMatchingRoutes(std::vector<gmr_routeitem> &routes, const routingpoint *end, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK, RRF extraflags = RRF::ZERO, const via_list &vias = via_list()) const;
 
 	virtual std::string GetTypeName() const override { return "Track Routing Point"; }
 };
@@ -300,7 +306,6 @@ class autosignal : public genericsignal {
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
-	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK) const override;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const override;
 };
 
@@ -323,7 +328,6 @@ class routesignal : public genericsignal {
 
 	const route_restriction_set &GetRouteRestrictions() const { return restrictions; }
 
-	virtual unsigned int GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK) const override;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const override;
 };
 

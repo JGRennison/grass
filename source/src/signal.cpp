@@ -46,11 +46,6 @@ class error_signalinit_trackscan : public error_signalinit {
 	}
 };
 
-unsigned int routingpoint::GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, GMRF gmr_flags) const {
-	out.clear();
-	return 0;
-}
-
 void routingpoint::EnumerateRoutes(std::function<void (const route *)> func) const { }
 
 const route *routingpoint::FindBestOverlap() const {
@@ -81,29 +76,42 @@ void routingpoint::EnumerateAvailableOverlaps(std::function<void(const route *rt
 	EnumerateRoutes(overlap_finder);
 }
 
-const route *routingpoint::FindBestRoute(const routingpoint *end, GMRF gmr_flags) const {
-	int best_score = INT_MIN;
-	const route *best_route = 0;
+unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes, const routingpoint *end, GMRF gmr_flags, RRF extraflags, const via_list &vias) const {
+	if(!(gmr_flags & GMRF::DONTCLEARVECTOR)) routes.clear();
 	auto route_finder = [&](const route *r) {
 		if(r->type == RTC_SHUNT && !(gmr_flags & GMRF::SHUNTOK)) return;
 		if(r->type == RTC_ROUTE && !(gmr_flags & GMRF::ROUTEOK)) return;
-		if(r->end.track != end) return;
-		if(!r->RouteReservation(RRF::TRYRESERVE)) return;
+		if(r->type == RTC_OVERLAP && !(gmr_flags & GMRF::OVERLAPOK)) return;
+		if(gmr_flags & GMRF::CHECKVIAS && r->vias != vias) return;
+		if(end && r->end.track != end) return;
 
 		int score = r->priority;
-		auto actioncounter = [&](action &&reservation_act) {
-			score -= 10;
-		};
-		r->RouteReservationActions(RRF::RESERVE, actioncounter);
-
-		if(score == best_score && r->type == RTC_ROUTE && best_route->type == RTC_SHUNT) best_score--;	//prefer routes over shunts at the same priority
-		if(score>best_score) {
-			best_score = score;
-			best_route = r;
+		if(gmr_flags & GMRF::TRACKTEST) {
+			if(!r->RouteReservation(RRF::TRYRESERVE | extraflags)) return;
+			auto actioncounter = [&](action &&reservation_act) {
+				score -= 10;
+			};
+			r->RouteReservationActions(RRF::RESERVE | extraflags, actioncounter);
 		}
+		gmr_routeitem gmr;
+		gmr.rt = r;
+		gmr.score = score;
+		routes.push_back(gmr);
+
 	};
 	EnumerateRoutes(route_finder);
-	return best_route;
+	auto sortfunc = [&](const gmr_routeitem &a, const gmr_routeitem &b) -> bool {
+		if(a.score > b.score) return true;
+		if(a.score < b.score) return false;
+		if(a.rt->type == RTC_ROUTE && b.rt->type == RTC_SHUNT) return true;
+		if(a.rt->type == RTC_SHUNT && b.rt->type == RTC_ROUTE) return false;
+		if(a.rt->pieces.size() < b.rt->pieces.size()) return true;
+		if(a.rt->pieces.size() > b.rt->pieces.size()) return false;
+		if(a.rt->index < b.rt->index) return true;
+		return false;
+	};
+	std::sort(routes.begin(), routes.end(), sortfunc);
+	return routes.size();
 }
 
 void routingpoint::SetAspectNextTarget(routingpoint *target) {
@@ -403,13 +411,6 @@ route *autosignal::GetRouteByIndex(unsigned int index) {
 	else return 0;
 }
 
-unsigned int autosignal::GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, GMRF gmr_flags) const {
-	out.clear();
-	if(signal_route.TestRouteForMatch(end, vias)) out.push_back(&signal_route);
-	if(overlap_route.TestRouteForMatch(end, vias)) out.push_back(&overlap_route);
-	return out.size();
-}
-
 void autosignal::EnumerateRoutes(std::function<void (const route *)> func) const {
 	func(&signal_route);
 	if(overlap_route.type == RTC_OVERLAP) func(&overlap_route);
@@ -426,28 +427,6 @@ route *routesignal::GetRouteByIndex(unsigned int index) {
 		if(it->index == index) return &(*it);
 	}
 	return 0;
-}
-
-unsigned int routesignal::GetMatchingRoutes(std::vector<const route *> &out, const routingpoint *end, const via_list &vias, GMRF gmr_flags) const {
-	out.clear();
-	for(auto it = signal_routes.begin(); it != signal_routes.end(); ++it) {
-		if(it->type == RTC_ROUTE && !(gmr_flags & GMRF::ROUTEOK)) continue;
-		if(it->type == RTC_SHUNT && !(gmr_flags & GMRF::SHUNTOK)) continue;
-		if(it->type == RTC_OVERLAP && !(gmr_flags & GMRF::OVERLAPOK)) continue;
-		if(it->TestRouteForMatch(end, vias)) out.push_back(&*it);
-	}
-	auto sortfunc = [&](const route *a, const route *b) -> bool {
-		if(a->priority > b->priority) return true;
-		if(a->priority < b->priority) return false;
-		if(a->type == RTC_ROUTE && b->type == RTC_SHUNT) return true;
-		if(a->type == RTC_SHUNT && b->type == RTC_ROUTE) return false;
-		if(a->pieces.size() < b->pieces.size()) return true;
-		if(a->pieces.size() > b->pieces.size()) return false;
-		if(a->index < b->index) return true;
-		return false;
-	};
-	std::sort(out.begin(), out.end(), sortfunc);
-	return out.size();
 }
 
 void routesignal::EnumerateRoutes(std::function<void (const route *)> func) const {

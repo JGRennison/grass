@@ -32,6 +32,7 @@
 
 class genericpoints;
 class generictrack;
+class genericsignal;
 class route;
 class routingpoint;
 
@@ -146,11 +147,11 @@ class action_unreservetrackroute : public action_routereservetrackop {
 };
 
 class action_unreservetrack : public action_reservetrack_base {
-	const routingpoint *target;
+	const genericsignal *target;
 
 	public:
 	action_unreservetrack(world &w_) : action_reservetrack_base(w_), target(0) { }
-	action_unreservetrack(world &w_, const routingpoint &targ) : action_reservetrack_base(w_), target(&targ) { }
+	action_unreservetrack(world &w_, const genericsignal &targ) : action_reservetrack_base(w_), target(&targ) { }
 	static std::string GetTypeSerialisationNameStatic() { return "action_unreservetrack"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;
