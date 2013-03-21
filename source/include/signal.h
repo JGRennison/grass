@@ -68,7 +68,7 @@ enum class RPRT {
 };
 template<> struct enum_traits< RPRT > {	static constexpr bool flags = true; };
 
-enum class GMRF {
+enum class GMRF : unsigned int {
 	ROUTEOK		= 1<<0,
 	SHUNTOK		= 1<<1,
 	OVERLAPOK	= 1<<2,

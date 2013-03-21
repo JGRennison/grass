@@ -24,6 +24,7 @@
 #ifndef INC_TRACKOPS_ALREADY
 #define INC_TRACKOPS_ALREADY
 
+#include <deque>
 #include "future.h"
 #include "serialisable.h"
 #include "action.h"
@@ -35,6 +36,8 @@ class generictrack;
 class genericsignal;
 class route;
 class routingpoint;
+enum class GMRF : unsigned int;
+typedef std::deque<routingpoint *> via_list;
 
 class action_pointsaction;
 
@@ -135,6 +138,27 @@ class action_reservetrack : public action_routereservetrackop {
 	static std::string GetTypeSerialisationNameStatic() { return "action_reservetrack"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;
+};
+
+class action_reservepath : public action_reservetrack_base {
+	const routingpoint *start;
+	const routingpoint *end;
+	GMRF gmr_flags;
+	RRF extraflags;
+	via_list vias;
+
+
+	public:
+	action_reservepath(world &w_) : action_reservetrack_base(w_) { }
+	action_reservepath(world &w_, const routingpoint *start_, const routingpoint *end_);
+	action_reservepath &SetGmrFlags(GMRF gmr_flags_);
+	action_reservepath &SetExtraFlags(RRF extraflags_);
+	action_reservepath &SetVias(via_list vias_);
+	static std::string GetTypeSerialisationNameStatic() { return "action_reservepath"; }
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void ExecuteAction() const override;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 class action_unreservetrackroute : public action_routereservetrackop {

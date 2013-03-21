@@ -335,6 +335,72 @@ void action_reservetrack::ExecuteAction() const {
 	});
 }
 
+action_reservepath::action_reservepath(world &w_, const routingpoint *start_, const routingpoint *end_)
+: action_reservetrack_base(w_), start(start_), end(end_), gmr_flags(GMRF::ROUTEOK | GMRF::SHUNTOK), extraflags(RRF::IGNORE_OWN_OVERLAP) { }
+action_reservepath &action_reservepath::SetGmrFlags(GMRF gmr_flags_) { gmr_flags = gmr_flags_; return *this; }
+action_reservepath &action_reservepath::SetExtraFlags(RRF extraflags_) { extraflags = extraflags_; return *this; }
+action_reservepath &action_reservepath::SetVias(via_list vias_) { vias = vias_; return *this; }
+
+void action_reservepath::ExecuteAction() const {
+	if(!start) return;
+
+	std::vector<routingpoint::gmr_routeitem> routes;
+	unsigned int routecount = start->GetMatchingRoutes(routes, end, gmr_flags, extraflags, vias);
+
+	if(!routecount) {
+		ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/reservation/fail", "track/noroute"));
+		return;
+	}
+
+	std::vector<std::shared_ptr<future> > failmessages;
+
+	for(auto it = routes.begin(); it != routes.end(); ++it) {
+		bool success = TryReserveRoute(it->rt, action_time, [&](const std::shared_ptr<future> &f) {
+			if(it == routes.begin()) failmessages.push_back(f);
+		});
+		if(success) return;
+	}
+	for(auto it = failmessages.begin(); it != failmessages.end(); ++it) {
+		ActionSendReplyFuture(*it);
+	}
+}
+
+void action_reservepath::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	std::string targetname;
+	if(CheckTransJsonValue(targetname, di, "start", ec)) {
+		start = dynamic_cast<routingpoint *>(w.FindTrackByName(targetname));
+	}
+	if(CheckTransJsonValue(targetname, di, "end", ec)) {
+		end = dynamic_cast<routingpoint *>(w.FindTrackByName(targetname));
+	}
+	CheckTransJsonValue(gmr_flags, di, "gmr_flags", ec);
+	CheckTransJsonValue(extraflags, di, "extraflags", ec);
+
+	auto viaparser = [&](const deserialiser_input &di, error_collection &ec) {
+		routingpoint *rp = dynamic_cast<routingpoint *>(w.FindTrackByName(GetType<std::string>(di.json)));
+		if(rp) vias.push_back(rp);
+	};
+	vias.clear();
+	CheckIterateJsonArrayOrType<std::string>(di, "vias", "", ec, viaparser);
+
+	if(!start) ec.RegisterNewError<error_deserialisation>(di, "Invalid path reservation action definition");
+}
+
+void action_reservepath::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseValueJson(start->GetSerialisationName(), so, "start");
+	SerialiseValueJson(end->GetSerialisationName(), so, "end");
+	SerialiseValueJson(gmr_flags, so, "gmr_flags");
+	SerialiseValueJson(extraflags, so, "extraflags");
+	if(vias.size()) {
+		so.json_out.String("vias");
+		so.json_out.StartArray();
+		for(auto it = vias.begin(); it != vias.end(); ++it) {
+			so.json_out.String((*it)->GetSerialisationName());
+		}
+		so.json_out.EndArray();
+	}
+}
+
 void action_unreservetrack::ExecuteAction() const {
 	if(!target) return;
 	const route *rt = target->GetCurrentForwardRoute();
