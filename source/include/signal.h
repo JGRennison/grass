@@ -252,6 +252,7 @@ class genericsignal : public trackroutingpoint {
 
 	world_time last_state_update = 0;
 	unsigned int max_aspect = 1;
+	unsigned int overlapswingminaspectdistance = 1;
 
 	public:
 	genericsignal(world &w_);
@@ -280,6 +281,8 @@ class genericsignal : public trackroutingpoint {
 	virtual void UpdateSignalState();
 	virtual void UpdateRoutingPoint() override { UpdateSignalState(); }
 	virtual void TrackTick() override { UpdateSignalState(); }
+
+	inline unsigned int GetOverlapMinAspectDistance() const { return overlapswingminaspectdistance; }
 
 	//function parameters: return true to continue, false to stop
 	void BackwardsReservedTrackScan(std::function<bool(const genericsignal*)> checksignal, std::function<bool(const track_target_ptr&)> checkpiece) const;

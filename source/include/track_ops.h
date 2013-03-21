@@ -118,7 +118,7 @@ class action_reservetrack_base : public action {
 	bool TryReserveRoute(const route *rt, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
 	bool TryUnreserveRoute(routingpoint *startsig, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
 	bool GenericRouteUnreservation(const route *targrt, routingpoint *targsig, RRF extraflags) const;
-	const route *TestSwingOverlapAndReserve(const route *target_route) const;
+	const route *TestSwingOverlapAndReserve(const route *target_route, std::string *failreasonkey = 0) const;
 };
 
 class action_routereservetrackop : public action_reservetrack_base {

@@ -57,5 +57,6 @@ defaultusermessagepool::defaultusermessagepool() {
 	RegisterNewText("track/reservation/noroute", "No route between selected signals");
 	RegisterNewText("track/unreservation/fail", "Cannot unreserve route: $reason");
 	RegisterNewText("track/unreservation/autosignal", "Automatic signal");
+	RegisterNewText("track/reservation/overlapcantswing/trainapproaching", "Can't swing overlap: train on approach");
 	RegisterNewText("generic/failurereason", "Failed");
 }

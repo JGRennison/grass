@@ -61,6 +61,8 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::ROUTESTART, di, "routestart", ec, &conflictcheck);
 	CheckTransJsonValueFlag(availableroutetypes_forward, RPRT::ROUTEEND, di, "routeend", ec, &conflictcheck);
 	CheckTransJsonValue(max_aspect, di, "maxaspect", ec);
+	CheckTransJsonValueFlag(sflags, GSF::OVERLAPSWINGABLE, di, "overlapswingable", ec);
+	CheckTransJsonValue(max_aspect, di, "overlapswingminaspectdistance", ec);
 }
 
 void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {

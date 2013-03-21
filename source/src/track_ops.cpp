@@ -166,7 +166,7 @@ void future_unreservetrack::Serialise(serialiser_output &so, error_collection &e
 	SerialiseValueJson(extraflags, so, "extraflags");
 }
 
-const route *action_reservetrack_base::TestSwingOverlapAndReserve(const route *target_route) const {
+const route *action_reservetrack_base::TestSwingOverlapAndReserve(const route *target_route, std::string *failreasonkey) const {
 	genericsignal *gs = dynamic_cast<genericsignal*>(target_route->start.track);
 	if(!gs) return 0;
 	if(!(gs->GetSignalFlags() & genericsignal::GSF::OVERLAPSWINGABLE)) return 0;
@@ -178,12 +178,41 @@ const route *action_reservetrack_base::TestSwingOverlapAndReserve(const route *t
 		candidates.push_back(std::make_pair(-score, rt));
 	});
 	std::sort(candidates.begin(), candidates.end());
+
+	const route *result = 0;
 	for(auto it = candidates.begin(); it != candidates.end(); ++it) {
 		if(target_route->IsRouteSubSet(it->second)) {
-			return it->second;
+			result = it->second;
+			break;
 		}
 	}
-	return 0;
+
+	if(result) {
+		bool occupied = false;
+		unsigned int signalcount = 0;
+
+		auto checksignal = [&](const genericsignal *targ) -> bool {
+			signalcount++;
+			return signalcount <= gs->GetOverlapMinAspectDistance();
+		};
+
+		auto checkpiece = [&](const track_target_ptr &piece) -> bool {
+			track_circuit *tc = piece.track->GetTrackCircuit();
+			if(tc && tc->Occupied()) {
+				occupied = true;		//found an occupied piece, train is on approach
+				return false;
+			}
+			else return true;
+		};
+		gs->BackwardsReservedTrackScan(checksignal, checkpiece);
+
+		if(occupied) {
+			if(failreasonkey) *failreasonkey = "track/reservation/overlapcantswing/trainapproaching";
+			return 0;
+		}
+	}
+
+	return result;
 }
 
 //return true on success
@@ -199,7 +228,7 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 	std::string tryreservation_failreasonkey = "generic/failurereason";
 	bool success = rt->RouteReservation(RRF::TRYRESERVE, &tryreservation_failreasonkey);
 	if(!success) {
-		swing_this_overlap = TestSwingOverlapAndReserve(rt);
+		swing_this_overlap = TestSwingOverlapAndReserve(rt, &tryreservation_failreasonkey);
 		if(swing_this_overlap) {
 			success = true;
 			genericsignal *sig = dynamic_cast<genericsignal*>(rt->start.track);
