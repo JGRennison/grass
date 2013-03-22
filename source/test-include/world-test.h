@@ -32,7 +32,7 @@ class world_test : public world {
 	LOGCATEGORY lastlc = LOG_NULL;
 
 	public:
-	virtual void LogUserMessageLocal(LOGCATEGORY lc, const std::string &message) {
+	virtual void LogUserMessageLocal(LOGCATEGORY lc, const std::string &message) override {
 		lastlc = lc;
 		logtext << message << "\n";
 		//world::LogUserMessageLocal(lc, message);

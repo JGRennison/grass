@@ -59,10 +59,18 @@ class future_pointsaction : public future {
 };
 
 class action_pointsaction : public action {
+	public:
+	enum class APAF {
+		ZERO			= 0,
+		IGNORERESERVATION	= 1<<0,
+	};
+
+	private:
 	genericpoints *target;
 	unsigned int index;
 	genericpoints::PTF bits;
 	genericpoints::PTF mask;
+	APAF aflags = APAF::ZERO;
 
 	private:
 	void CancelFutures(unsigned int index, genericpoints::PTF setmask, genericpoints::PTF clearmask) const;
@@ -70,13 +78,15 @@ class action_pointsaction : public action {
 
 	public:
 	action_pointsaction(world &w_) : action(w_), target(0) { }
-	action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, genericpoints::PTF bits_, genericpoints::PTF mask_) : action(w_), target(&targ), index(index_), bits(bits_), mask(mask_) { }
+	action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, genericpoints::PTF bits_, genericpoints::PTF mask_, APAF aflags_ = APAF::ZERO) : action(w_), target(&targ), index(index_), bits(bits_), mask(mask_), aflags(aflags_) { }
 	static std::string GetTypeSerialisationNameStatic() { return "action_pointsaction"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+	void SetFlags(APAF aflags_) { aflags = aflags_; }
 };
+template<> struct enum_traits< action_pointsaction::APAF > {	static constexpr bool flags = true; };
 
 class action_reservetrack_base;
 
@@ -90,26 +100,26 @@ class future_routeoperation_base : public future {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-class future_reservetrack : public future_routeoperation_base {
-	public:
-	future_reservetrack(futurable_obj &targ, world_time ft, future_id_type id) : future_routeoperation_base(targ, ft, id, 0) { };
-	future_reservetrack(futurable_obj &targ, world_time ft, const route *reserved_route_) : future_routeoperation_base(targ, ft, 0, reserved_route_)  { };
-	static std::string GetTypeSerialisationNameStatic() { return "future_reservetrack"; }
-	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
-	virtual void ExecuteAction() override;
-};
-
-class future_unreservetrack : public future_routeoperation_base {
-	RRF extraflags = RRF::ZERO;
+class future_reservetrack_base : public future_routeoperation_base {
+	RRF rflags = RRF::ZERO;
 
 	public:
-	future_unreservetrack(futurable_obj &targ, world_time ft, future_id_type id) : future_routeoperation_base(targ, ft, id, 0) { };
-	future_unreservetrack(futurable_obj &targ, world_time ft, const route *reserved_route_, RRF extraflags_) : future_routeoperation_base(targ, ft, 0, reserved_route_), extraflags(extraflags_) { };
-	static std::string GetTypeSerialisationNameStatic() { return "future_unreservetrack"; }
+	future_reservetrack_base(futurable_obj &targ, world_time ft, future_id_type id) : future_routeoperation_base(targ, ft, id, 0) { };
+	future_reservetrack_base(futurable_obj &targ, world_time ft, const route *reserved_route_, RRF rflags_) : future_routeoperation_base(targ, ft, 0, reserved_route_), rflags(rflags_)  { };
+	static std::string GetTypeSerialisationNameStatic() { return "future_reservetrack_base"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() override;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+};
+
+class future_reservetrack : public future_reservetrack_base {
+	public:
+	future_reservetrack(futurable_obj &targ, world_time ft, const route *reserved_route_, RRF rflags_ = RRF::ZERO) : future_reservetrack_base(targ, ft, reserved_route_, rflags_ | RRF::RESERVE) { };
+};
+class future_unreservetrack : public future_reservetrack_base {
+	public:
+	future_unreservetrack(futurable_obj &targ, world_time ft, const route *reserved_route_, RRF rflags_ = RRF::ZERO) : future_reservetrack_base(targ, ft, reserved_route_, rflags_ | RRF::UNRESERVE) { };
 };
 
 class action_reservetrack_base : public action {

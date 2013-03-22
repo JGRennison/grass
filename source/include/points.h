@@ -107,6 +107,8 @@ class points : public genericpoints {
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
+	virtual bool IsTrackAlwaysPassable() const override { return false; }
+
 	protected:
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;

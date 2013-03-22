@@ -60,23 +60,24 @@ const route *routingpoint::FindBestOverlap() const {
 	return best_overlap;
 }
 
-void routingpoint::EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func) const {
+void routingpoint::EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags) const {
 
 	auto overlap_finder = [&](const route *r) {
 		if(r->type != RTC_OVERLAP) return;
-		if(!r->RouteReservation(RRF::TRYRESERVE)) return;
+		if(!r->RouteReservation(RRF::TRYRESERVE | extraflags)) return;
 
 		int score = r->priority;
 		auto actioncounter = [&](action &&reservation_act) {
 			score -= 10;
 		};
-		r->RouteReservationActions(RRF::RESERVE, actioncounter);
+		r->RouteReservationActions(RRF::RESERVE | extraflags, actioncounter);
 		func(r, score);
 	};
 	EnumerateRoutes(overlap_finder);
 }
 
 unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes, const routingpoint *end, GMRF gmr_flags, RRF extraflags, const via_list &vias) const {
+	unsigned int count = 0;
 	if(!(gmr_flags & GMRF::DONTCLEARVECTOR)) routes.clear();
 	auto route_finder = [&](const route *r) {
 		if(r->type == RTC_SHUNT && !(gmr_flags & GMRF::SHUNTOK)) return;
@@ -97,6 +98,7 @@ unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes,
 		gmr.rt = r;
 		gmr.score = score;
 		routes.push_back(gmr);
+		count++;
 
 	};
 	EnumerateRoutes(route_finder);
@@ -110,8 +112,8 @@ unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes,
 		if(a.rt->index < b.rt->index) return true;
 		return false;
 	};
-	std::sort(routes.begin(), routes.end(), sortfunc);
-	return routes.size();
+	if(!(gmr_flags & GMRF::DONTSORT)) std::sort(routes.begin(), routes.end(), sortfunc);
+	return count;
 }
 
 void routingpoint::SetAspectNextTarget(routingpoint *target) {
@@ -275,6 +277,12 @@ void genericsignal::UpdateSignalState() {
 	if(!(GetSignalFlags() & GSF::REPEATER)) {
 		for(auto it = set_route->trackcircuits.begin(); it != set_route->trackcircuits.end(); ++it) {
 			if((*it)->Occupied()) {
+				clear_route();
+				return;
+			}
+		}
+		for(auto it = set_route->passtestlist.begin(); it != set_route->passtestlist.end(); ++it) {
+			if(!it->location.track->IsTrackPassable(it->location.direction, it->connection_index)) {
 				clear_route();
 				return;
 			}
@@ -667,6 +675,9 @@ void route::FillLists() {
 			genericsignal *this_signal = dynamic_cast<genericsignal *>(target_routing_piece);
 			if(this_signal && this_signal->RepeaterAspectMeaningfulForRouteType(type)) repeatersignals.push_back(this_signal);
 		}
+		if(!it->location.track->IsTrackAlwaysPassable()) {
+			passtestlist.push_back(*it);
+		}
 	}
 }
 
@@ -696,11 +707,11 @@ bool route::IsRouteSubSet(const route *subset) const {
 	}
 
 	if(sub_it == subset->pieces.end()) {
-		return subset->end == end;
+		if(this_it == pieces.end()) return subset->end == end;
+		else return subset->end == this_it->location;
 	}
 	else {
-		++this_it;
-		return subset->end == this_it->location;
+		return false;
 	}
 }
 

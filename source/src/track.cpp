@@ -418,7 +418,7 @@ std::ostream& operator<<(std::ostream& os, const generictrack& obj) {
 	return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const track_target_ptr& obj) {
+std::ostream& StreamOutTrackPtr(std::ostream& os, const track_target_ptr& obj) {
 	if(obj.IsValid()) os << "Track Target: " << obj.track->GetFriendlyName() << ", " << obj.direction;
 	else os << "Invalid Track Target";
 	return os;

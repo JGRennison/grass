@@ -132,6 +132,9 @@ class generictrack : public world_obj {
 
 	virtual void TrackTick() { }
 
+	virtual bool IsTrackAlwaysPassable() const { return true; }
+	inline bool IsTrackPassable(EDGETYPE direction, unsigned int connection_index) const;
+	
 	protected:
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const = 0;
 	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
@@ -174,7 +177,7 @@ template <typename T> struct vartrack_target_ptr {
 		track = other.track;
 		direction = other.direction;
 	}
-	inline operator vartrack_target_ptr<generictrack>&&() {
+	inline operator vartrack_target_ptr<generictrack>() const {
 		return vartrack_target_ptr<generictrack>(track, direction);
 	}
 	const vartrack_target_ptr &GetConnectingPiece() const;
@@ -185,6 +188,10 @@ extern const track_target_ptr empty_track_target;
 
 template<> inline const vartrack_target_ptr<generictrack> &vartrack_target_ptr<generictrack>::GetConnectingPiece() const {
 	return track ? track->GetConnectingPiece(direction) : empty_track_target;
+}
+
+inline bool generictrack::IsTrackPassable(EDGETYPE direction, unsigned int connection_index) const {
+	return GetConnectingPiece(direction) == GetConnectingPieceByIndex(direction, connection_index);
 }
 
 class track_location {
@@ -262,7 +269,8 @@ class error_trackconnection_notfound : public layout_initialisation_error_obj {
 
 std::ostream& operator<<(std::ostream& os, const generictrack& obj);
 std::ostream& operator<<(std::ostream& os, const generictrack* obj);
-std::ostream& operator<<(std::ostream& os, const track_target_ptr& obj);
+std::ostream& StreamOutTrackPtr(std::ostream& os, const track_target_ptr& obj);
+template <typename C> std::ostream& operator<<(std::ostream& os, const vartrack_target_ptr<C>& obj) { return StreamOutTrackPtr(os, obj); }
 std::ostream& operator<<(std::ostream& os, const track_location& obj);
 
 #endif

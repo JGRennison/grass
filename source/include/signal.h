@@ -45,6 +45,7 @@ class genericsignal;
 typedef std::deque<routingpoint *> via_list;
 typedef std::deque<track_circuit *> tc_list;
 typedef std::deque<genericsignal *> sig_list;
+typedef std::deque<route_recording_item> passable_test_list;
 
 enum class RPRT {
 	ZERO			= 0,
@@ -75,6 +76,7 @@ enum class GMRF : unsigned int {
 	TRACKTEST	= 1<<3,
 	CHECKVIAS	= 1<<4,
 	DONTCLEARVECTOR	= 1<<5,
+	DONTSORT	= 1<<6,
 	ALLROUTETYPES	= ROUTEOK | SHUNTOK | OVERLAPOK,
 };
 template<> struct enum_traits< GMRF > {	static constexpr bool flags = true; };
@@ -123,7 +125,7 @@ class routingpoint : public genericzlentrack {
 
 	virtual route *GetRouteByIndex(unsigned int index) = 0;
 	const route *FindBestOverlap() const;
-	void EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func) const;
+	void EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags = RRF::ZERO) const;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
 
 	struct gmr_routeitem {
@@ -142,6 +144,7 @@ struct route {
 	via_list vias;
 	tc_list trackcircuits;
 	sig_list repeatersignals;
+	passable_test_list passtestlist;
 	ROUTE_CLASS type;
 	int priority;
 
