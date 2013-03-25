@@ -39,6 +39,7 @@ class world_test : public world {
 	}
 	std::string GetLogText() const { return logtext.str(); }
 	LOGCATEGORY GetLastLogCategory() const { return lastlc; }
+	void ResetLogText() { logtext.str(""); }
 };
 
 #endif

@@ -86,9 +86,7 @@ R"({ "content" : [ )"
 	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T4" }, )"
 	R"({ "type" : "endofline", "name" : "C" }, )"
 
-	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "P1ovlp_rev", "connect" : { "to" : "P2" } }, )"
-	R"({ "type" : "routingmarker", "name" : "Dovlp", "overlapend" : true }, )"
-	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T5" }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T5", "connect" : { "to" : "P2" } }, )"
 	R"({ "type" : "endofline", "name" : "D" } )"
 "] }";
 
@@ -138,7 +136,7 @@ class overlap_ops_test_class_1 {
 	}
 };
 
-TEST_CASE( "track/ops/overlap/swing", "Test basic points movement future" ) {
+TEST_CASE( "track/ops/overlap/swing", "Test track reservation overlap swinging" ) {
 	test_fixture_world env(overlap_ops_test_str_1);
 
 	env.w.LayoutInit(env.ec);
@@ -179,4 +177,24 @@ TEST_CASE( "track/ops/overlap/swing", "Test basic points movement future" ) {
 	tenv.checksignal(tenv.s1, 2, RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 1, RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
 
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.b));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() != "");
+	CHECK(tenv.p1->GetPointFlags(0) == genericpoints::PTF::REV);
+	tenv.checksignal(tenv.s1, 2, RTC_ROUTE, tenv.s2, tenv.s2, 0);
+	tenv.checksignal(tenv.s2, 1, RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
+	env.w.ResetLogText();
+
+	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s2));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() == "");
+	tenv.checksignal(tenv.s1, 1, RTC_ROUTE, tenv.s2, tenv.s2, 0);
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.covlp);
+
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.d));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() != "");
+	tenv.checksignal(tenv.s1, 1, RTC_ROUTE, tenv.s2, tenv.s2, 0);
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.covlp);
+	env.w.ResetLogText();
 }
