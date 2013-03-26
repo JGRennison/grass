@@ -321,14 +321,14 @@ unsigned int genericzlentrack::GetLength(EDGETYPE direction) const {
 
 const track_target_ptr & crossover::GetConnectingPiece(EDGETYPE direction) const {
 	switch(direction) {
-		case EDGE_X_N:
-			return north;
-		case EDGE_X_S:
-			return south;
-		case EDGE_X_W:
-			return west;
-		case EDGE_X_E:
-			return east;
+		case EDGE_X_LEFT:
+			return left;
+		case EDGE_X_RIGHT:
+			return right;
+		case EDGE_FRONT:
+			return front;
+		case EDGE_BACK:
+			return back;
 		default:
 			assert(false);
 			return empty_track_target;
@@ -341,14 +341,14 @@ unsigned int crossover::GetMaxConnectingPieces(EDGETYPE direction) const {
 
 EDGETYPE crossover::GetReverseDirection(EDGETYPE direction) const {
 	switch(direction) {
-		case EDGE_X_N:
-			return EDGE_X_S;
-		case EDGE_X_S:
-			return EDGE_X_N;
-		case EDGE_X_W:
-			return EDGE_X_E;
-		case EDGE_X_E:
-			return EDGE_X_W;
+		case EDGE_X_LEFT:
+			return EDGE_X_RIGHT;
+		case EDGE_X_RIGHT:
+			return EDGE_X_LEFT;
+		case EDGE_FRONT:
+			return EDGE_BACK;
+		case EDGE_BACK:
+			return EDGE_FRONT;
 		default:
 			assert(false);
 			return EDGE_NULL;
@@ -357,14 +357,14 @@ EDGETYPE crossover::GetReverseDirection(EDGETYPE direction) const {
 
 const track_target_ptr& crossover::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
 	switch(edgeid) {
-		case EDGE_X_N:
-			return north;
-		case EDGE_X_S:
-			return south;
-		case EDGE_X_W:
-			return west;
-		case EDGE_X_E:
-			return east;
+		case EDGE_X_LEFT:
+			return left;
+		case EDGE_X_RIGHT:
+			return right;
+		case EDGE_FRONT:
+			return front;
+		case EDGE_BACK:
+			return back;
 		default:
 			assert(false);
 			return empty_track_target;
@@ -373,10 +373,10 @@ const track_target_ptr& crossover::GetEdgeConnectingPiece(EDGETYPE edgeid) const
 
 bool crossover::IsEdgeValid(EDGETYPE edge) const {
 	switch(edge) {
-		case EDGE_X_N:
-		case EDGE_X_S:
-		case EDGE_X_W:
-		case EDGE_X_E:
+		case EDGE_X_LEFT:
+		case EDGE_X_RIGHT:
+		case EDGE_FRONT:
+		case EDGE_BACK:
 			return true;
 		default:
 			return false;
@@ -392,7 +392,13 @@ bool crossover::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags
 }
 
 void crossover::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
-	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_X_N, north), edgelistitem(EDGE_X_S, south), edgelistitem(EDGE_X_W, west), edgelistitem(EDGE_X_E, east) });
+	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_X_LEFT, left), edgelistitem(EDGE_X_RIGHT, right), edgelistitem(EDGE_FRONT, front), edgelistitem(EDGE_BACK, back) });
+}
+
+EDGETYPE crossover::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
+	if(forwardconnection && !back.IsValid()) return EDGE_BACK;
+	if(!forwardconnection && !front.IsValid()) return EDGE_FRONT;
+	return EDGE_NULL;
 }
 
 layout_initialisation_error_obj::layout_initialisation_error_obj() {
@@ -443,10 +449,8 @@ const direction_name dirnames[] = {
 	{ EDGE_PTS_FACE, "facing", "Points: facing edge/input direction" },
 	{ EDGE_PTS_NORMAL, "normal", "Points: normal edge/input direction" },
 	{ EDGE_PTS_REVERSE, "reverse", "Points: reverse edge/input direction" },
-	{ EDGE_X_N, "north", "Cross-over: North edge/input direction" },
-	{ EDGE_X_S, "south", "Cross-over: South edge/input direction" },
-	{ EDGE_X_W, "west", "Cross-over: West edge/input direction" },
-	{ EDGE_X_E, "east", "Cross-over: East edge/input direction" },
+	{ EDGE_X_LEFT, "left", "Cross-over: Left edge/input direction (seen from front)" },
+	{ EDGE_X_RIGHT, "right", "Cross-over: Right edge/input direction (seen from front)" },
 	{ EDGE_DS_FL, "leftfront", "Double-slip: Forward direction: Front edge: Left track" },
 	{ EDGE_DS_FR, "rightfront", "Double-slip: Forward direction: Front edge: Right track" },
 	{ EDGE_DS_BL, "leftback", "Double-slip: Reverse direction: Back edge: Right track (seen from front)" },

@@ -33,10 +33,8 @@ typedef enum {
 	EDGE_PTS_NORMAL,	//points: normal trailing direction
 	EDGE_PTS_REVERSE,	//points: reverse trailing direction
 
-	EDGE_X_N,		//crossover: North face (connects South)
-	EDGE_X_S,		//crossover: South face (connects North)
-	EDGE_X_W,		//crossover: West face (connects East)
-	EDGE_X_E,		//crossover: East face (connects West)
+	EDGE_X_LEFT,		//crossover: Left edge (seen from front)
+	EDGE_X_RIGHT,		//crossover: Right edge (seen from front)
 
 	EDGE_DS_FL,		//double-slip: front edge, left track
 	EDGE_DS_FR,		//double-slip: front edge, right track

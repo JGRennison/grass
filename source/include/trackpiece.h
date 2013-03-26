@@ -81,10 +81,10 @@ class trackseg : public generictrack {
 };
 
 class crossover : public genericzlentrack {
-	track_target_ptr north;
-	track_target_ptr south;
-	track_target_ptr west;
-	track_target_ptr east;
+	track_target_ptr left;
+	track_target_ptr right;
+	track_target_ptr front;
+	track_target_ptr back;
 	track_reservation_state trs;
 
 	public:
@@ -95,7 +95,7 @@ class crossover : public genericzlentrack {
 	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual GTF GetFlags(EDGETYPE direction) const override;
-	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_X_N; }
+	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_X_LEFT; }
 
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
 	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
@@ -113,7 +113,7 @@ class crossover : public genericzlentrack {
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override { outputlist.push_back(&trs); return 1; }
 
 	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override { return EDGE_NULL; }
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 };
 
