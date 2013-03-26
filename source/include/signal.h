@@ -285,7 +285,10 @@ class genericsignal : public trackroutingpoint {
 	virtual void UpdateRoutingPoint() override { UpdateSignalState(); }
 	virtual void TrackTick() override { UpdateSignalState(); }
 
+	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override;
+
 	inline unsigned int GetOverlapMinAspectDistance() const { return overlapswingminaspectdistance; }
+	bool IsOverlapSwingPermitted(std::string *failreasonkey = 0) const;
 
 	//function parameters: return true to continue, false to stop
 	void BackwardsReservedTrackScan(std::function<bool(const genericsignal*)> checksignal, std::function<bool(const track_target_ptr&)> checkpiece) const;

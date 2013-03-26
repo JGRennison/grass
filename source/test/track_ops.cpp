@@ -136,7 +136,7 @@ class overlap_ops_test_class_1 {
 	}
 };
 
-TEST_CASE( "track/ops/overlap/swing", "Test track reservation overlap swinging" ) {
+TEST_CASE( "track/ops/overlap/reservationswing", "Test track reservation overlap swinging" ) {
 	test_fixture_world env(overlap_ops_test_str_1);
 
 	env.w.LayoutInit(env.ec);
@@ -197,4 +197,49 @@ TEST_CASE( "track/ops/overlap/swing", "Test track reservation overlap swinging" 
 	tenv.checksignal(tenv.s1, 1, RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.covlp);
 	env.w.ResetLogText();
+}
+
+TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swinging" ) {
+	test_fixture_world env(overlap_ops_test_str_1);
+
+	env.w.LayoutInit(env.ec);
+	env.w.PostLayoutInit(env.ec);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	overlap_ops_test_class_1 tenv(env.w);
+
+	env.w.GameStep(1);
+	tenv.checksignal(tenv.s1, 1, RTC_ROUTE, tenv.s2, tenv.s2, 0);
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.bovlp);
+
+	REQUIRE(tenv.p1 != 0);
+	env.w.SubmitAction(action_pointsaction(env.w, *tenv.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	env.w.GameStep(1);
+
+	CHECK(env.w.GetLogText() == "");
+	CHECK(tenv.p1->GetPointFlags(0) == (genericpoints::PTF::OOC | genericpoints::PTF::REV));
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.covlp);
+
+	REQUIRE(tenv.p2 != 0);
+	env.w.SubmitAction(action_pointsaction(env.w, *tenv.p2, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	env.w.GameStep(1);
+
+	CHECK(env.w.GetLogText() != "");
+	CHECK(tenv.p1->GetPointFlags(0) == (genericpoints::PTF::OOC | genericpoints::PTF::REV));
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.covlp);
+	env.w.ResetLogText();
+
+	env.w.SubmitAction(action_pointsaction(env.w, *tenv.p1, 0, genericpoints::PTF::ZERO, genericpoints::PTF::REV));
+	env.w.GameStep(1);
+	env.w.SubmitAction(action_pointsaction(env.w, *tenv.p2, 0, genericpoints::PTF::REV | genericpoints::PTF::REMINDER, genericpoints::PTF::REV | genericpoints::PTF::REMINDER));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() == "");
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.bovlp);
+
+	env.w.SubmitAction(action_pointsaction(env.w, *tenv.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() != "");
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.bovlp);
 }

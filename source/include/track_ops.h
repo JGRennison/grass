@@ -63,6 +63,7 @@ class action_pointsaction : public action {
 	enum class APAF {
 		ZERO			= 0,
 		IGNORERESERVATION	= 1<<0,
+		NOOVERLAPSWING		= 1<<1,
 	};
 
 	private:
@@ -75,6 +76,7 @@ class action_pointsaction : public action {
 	private:
 	void CancelFutures(unsigned int index, genericpoints::PTF setmask, genericpoints::PTF clearmask) const;
 	world_time GetPointsMovementCompletionTime() const;
+	bool TrySwingOverlap(std::function<void()> &overlap_callback, bool settingreverse, std::string *failreasonkey = 0) const;
 
 	public:
 	action_pointsaction(world &w_) : action(w_), target(0) { }
@@ -84,9 +86,11 @@ class action_pointsaction : public action {
 	virtual void ExecuteAction() const override;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
-	void SetFlags(APAF aflags_) { aflags = aflags_; }
+	inline APAF SetFlagsMasked(APAF flags, APAF mask);
 };
 template<> struct enum_traits< action_pointsaction::APAF > {	static constexpr bool flags = true; };
+
+inline action_pointsaction::APAF action_pointsaction::SetFlagsMasked(action_pointsaction::APAF flags, action_pointsaction::APAF mask) { aflags = (aflags & (~mask)) | flags; return aflags; }
 
 class action_reservetrack_base;
 

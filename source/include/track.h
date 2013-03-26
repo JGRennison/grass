@@ -46,6 +46,7 @@ class route;
 class action;
 class world_serialisation;
 class track_circuit;
+class track_reservation_state;
 enum class RRF : unsigned int;
 enum class GTF : unsigned int;
 
@@ -134,7 +135,7 @@ class generictrack : public world_obj {
 
 	virtual bool IsTrackAlwaysPassable() const { return true; }
 	inline bool IsTrackPassable(EDGETYPE direction, unsigned int connection_index) const;
-	
+
 	protected:
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const = 0;
 	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
@@ -147,6 +148,8 @@ class generictrack : public world_obj {
 	};
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const = 0;
 	virtual bool IsEdgeValid(EDGETYPE edge) const = 0;
+
+	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) { return 0; }
 
 	private:
 	static bool TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target);

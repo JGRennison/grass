@@ -34,6 +34,10 @@ class train;
 void genericpoints::TrainEnter(EDGETYPE direction, train *t) { }
 void genericpoints::TrainLeave(EDGETYPE direction, train *t) { }
 
+GTF genericpoints::GetFlags(EDGETYPE direction) const {
+	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
+}
+
 
 const track_target_ptr & points::GetConnectingPiece(EDGETYPE direction) const {
 	if(IsOOC(0)) return empty_track_target;
@@ -124,10 +128,6 @@ bool points::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-GTF points::GetFlags(EDGETYPE direction) const {
-	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
-}
-
 genericpoints::PTF points::GetPointFlags(unsigned int points_index) const {
 	if(points_index != 0) return PTF::INVALID;
 	return pflags;
@@ -174,7 +174,7 @@ void points::ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_f
 		bool rev = pflags & PTF::REV;
 		bool newrev = IsPointsRoutingDirAndIndexRev(direction, index);
 		if(newrev != rev) {
-			submitaction(action_pointsaction(GetWorld(), *this, 0, newrev ? PTF::REV : PTF::ZERO, PTF::REV));
+			submitaction(action_pointsaction(GetWorld(), *this, 0, newrev ? PTF::REV : PTF::ZERO, PTF::REV, action_pointsaction::APAF::NOOVERLAPSWING));
 		}
 	}
 }
@@ -265,10 +265,6 @@ bool catchpoints::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-GTF catchpoints::GetFlags(EDGETYPE direction) const {
-	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
-}
-
 genericpoints::PTF catchpoints::GetPointFlags(unsigned int points_index) const {
 	if(points_index != 0) return PTF::INVALID;
 	return pflags;
@@ -291,10 +287,10 @@ bool catchpoints::Reservation(EDGETYPE direction, unsigned int index, RRF rr_fla
 
 void catchpoints::ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
 	if(rr_flags & RRF::RESERVE && trs.GetReservationCount() == 0) {
-		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::ZERO, PTF::REV));
+		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::ZERO, PTF::REV, action_pointsaction::APAF::NOOVERLAPSWING));
 	}
 	else if(rr_flags & RRF::UNRESERVE && trs.GetReservationCount() == 1) {
-		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::REV, PTF::REV));
+		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::REV, PTF::REV, action_pointsaction::APAF::NOOVERLAPSWING));
 	}
 }
 
@@ -449,10 +445,6 @@ bool doubleslip::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-GTF doubleslip::GetFlags(EDGETYPE direction) const {
-	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
-}
-
 genericpoints::PTF doubleslip::GetPointFlags(unsigned int points_index) const {
 	if(points_index < 4) return pflags[points_index];
 	else {
@@ -525,8 +517,8 @@ void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, RRF 
 
 		bool isexitrev = (GetConnectingPointDirection(exitdirection, true) == direction);
 
-		if(!(entrancepf & PTF::REV) != !(isentrancerev)) submitaction(action_pointsaction(GetWorld(), *this, entranceindex, isentrancerev ? PTF::REV : PTF::ZERO, PTF::REV));
-		if(!(exitpf & PTF::REV) != !(isexitrev)) submitaction(action_pointsaction(GetWorld(), *this, exitindex, isexitrev ? PTF::REV : PTF::ZERO, PTF::REV));
+		if(!(entrancepf & PTF::REV) != !(isentrancerev)) submitaction(action_pointsaction(GetWorld(), *this, entranceindex, isentrancerev ? PTF::REV : PTF::ZERO, PTF::REV, action_pointsaction::APAF::NOOVERLAPSWING));
+		if(!(exitpf & PTF::REV) != !(isexitrev)) submitaction(action_pointsaction(GetWorld(), *this, exitindex, isexitrev ? PTF::REV : PTF::ZERO, PTF::REV, action_pointsaction::APAF::NOOVERLAPSWING));
 	}
 }
 

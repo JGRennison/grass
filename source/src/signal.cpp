@@ -407,6 +407,44 @@ void genericsignal::BackwardsReservedTrackScan(std::function<bool(const generics
 	} while(current && !stop_tracing);
 }
 
+bool genericsignal::IsOverlapSwingPermitted(std::string *failreasonkey) const {
+	if(!(GetSignalFlags() & genericsignal::GSF::OVERLAPSWINGABLE)) {
+		if(failreasonkey) *failreasonkey = "track/reservation/overlapcantswing/notpermitted";
+		return false;
+	}
+
+	bool occupied = false;
+	unsigned int signalcount = 0;
+
+	auto checksignal = [&](const genericsignal *targ) -> bool {
+		signalcount++;
+		return signalcount <= GetOverlapMinAspectDistance();
+	};
+
+	auto checkpiece = [&](const track_target_ptr &piece) -> bool {
+		track_circuit *tc = piece.track->GetTrackCircuit();
+		if(tc && tc->Occupied()) {
+			occupied = true;		//found an occupied piece, train is on approach
+			return false;
+		}
+		else return true;
+	};
+	BackwardsReservedTrackScan(checksignal, checkpiece);
+
+	if(occupied) {
+		if(failreasonkey) *failreasonkey = "track/reservation/overlapcantswing/trainapproaching";
+		return 0;
+	}
+
+	return true;
+}
+
+unsigned int genericsignal::GetTRSList(std::vector<track_reservation_state *> &outputlist) {
+	outputlist.push_back(&start_trs);
+	outputlist.push_back(&end_trs);
+	return 2;
+}
+
 GTF autosignal::GetFlags(EDGETYPE direction) const {
 	GTF result = GTF::ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
 	if(direction == EDGE_FRONT) result |= GTF::SIGNAL;

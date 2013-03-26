@@ -28,6 +28,9 @@
 #include "trackreservation.h"
 
 class genericpoints : public genericzlentrack {
+	protected:
+	track_reservation_state trs;
+
 	public:
 	enum class PTF {
 		ZERO		= 0,
@@ -60,6 +63,9 @@ class genericpoints : public genericzlentrack {
 	inline bool IsImmovable(unsigned int points_index) const {
 		return IsFlagsImmovable(GetPointFlags(points_index));
 	}
+
+	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override { outputlist.push_back(&trs); return 1; }
+	virtual GTF GetFlags(EDGETYPE direction) const override;
 };
 template<> struct enum_traits< genericpoints::PTF > {	static constexpr bool flags = true; };
 
@@ -79,13 +85,11 @@ class points : public genericpoints {
 	track_target_ptr normal;
 	track_target_ptr reverse;
 	PTF pflags = PTF::ZERO;
-	track_reservation_state trs;
 
 	public:
 	points(world &w_) : genericpoints(w_) { }
 
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
-	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
 
 	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
@@ -124,7 +128,6 @@ class catchpoints : public genericpoints {
 	catchpoints(world &w_) : genericpoints(w_), pflags(PTF::REV) { }
 
 	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
-	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
 
 	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
@@ -287,7 +290,6 @@ class doubleslip : public genericpoints {
 
 	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
-	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_DS_FL; }
 
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
