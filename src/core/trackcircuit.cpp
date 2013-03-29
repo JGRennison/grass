@@ -26,21 +26,38 @@
 
 void track_circuit::TrainEnter(train *t) {
 	traincount++;
+	for(auto it = occupying_trains.begin(); it != occupying_trains.end(); ++it) {
+		if(it->t == t) {
+			it->count++;
+			return;
+		}
+	}
+	occupying_trains.emplace_back(t, 1);
 }
 void track_circuit::TrainLeave(train *t) {
 	traincount--;
+	for(auto it = occupying_trains.begin(); it != occupying_trains.end(); ++it) {
+		if(it->t == t) {
+			it->count--;
+			if(it->count == 0) {
+				*it = *occupying_trains.rbegin();
+				occupying_trains.pop_back();
+			}
+			return;
+		}
+	}
 }
 
 void track_circuit::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	world_obj::Deserialise(di, ec);
 
-	CheckTransJsonValue(traincount, di, "traincount", ec);
+	//CheckTransJsonValue(traincount, di, "traincount", ec);
 }
 
 void track_circuit::Serialise(serialiser_output &so, error_collection &ec) const {
 	world_obj::Serialise(so, ec);
 
-	SerialiseValueJson(traincount, so, "traincount");
+	//SerialiseValueJson(traincount, so, "traincount");
 }
 
 track_circuit::TCF track_circuit::GetTCFlags() const {

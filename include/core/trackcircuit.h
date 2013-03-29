@@ -25,13 +25,21 @@
 #define INC_TRACKCIRCUIT_ALREADY
 
 #include <string>
+#include <vector>
 #include "world_obj.h"
 #include "flags.h"
 
 class train;
 
+struct train_ref {
+	train *t;
+	unsigned int count;
+	train_ref(train *t_, unsigned int count_) : t(t_), count(count_) { }
+};
+
 class track_circuit : public world_obj {
 	unsigned int traincount = 0;
+	std::vector<train_ref> occupying_trains;
 
 	public:
 	enum class TCF {
@@ -51,6 +59,7 @@ class track_circuit : public world_obj {
 	inline bool Occupied() const;
 	TCF GetTCFlags() const;
 	TCF SetTCFlagsMasked(TCF bits, TCF mask);
+	unsigned int GetTrainOccupationCount() const { return occupying_trains.size(); }
 
 	virtual std::string GetTypeName() const override { return "Track Circuit"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "trackcircuit"; }
