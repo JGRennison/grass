@@ -24,6 +24,7 @@
 #include <memory>
 #include <algorithm>
 #include "common.h"
+#include "trackreservation.h"
 #include "track_ops.h"
 #include "track.h"
 #include "points.h"
@@ -125,24 +126,19 @@ void action_pointsaction::CancelFutures(unsigned int index, genericpoints::PTF s
 bool action_pointsaction::TrySwingOverlap(std::function<void()> &overlap_callback, bool settingreverse, std::string *failreasonkey) const {
 	if(aflags & APAF::NOOVERLAPSWING) return false;
 
-	std::vector<track_reservation_state *> pointstrslist;
-	target->GetTRSList(pointstrslist);
 	const route *foundoverlap = 0;
 	bool failed = false;
-	for(auto it = pointstrslist.begin(); it != pointstrslist.end(); ++it) {
-		(*it)->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-			if(! (rr_flags & RRF::RESERVE)) return;
-			if(reserved_route->type != RTC_OVERLAP) {
-				failed = true;
-				return;
-			}
-			if(foundoverlap) {
-				failed = true;
-				return;
-			}
-			foundoverlap = reserved_route;
-		});
-	}
+	target->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+		if(reserved_route->type != RTC_OVERLAP) {
+			failed = true;
+			return;
+		}
+		if(foundoverlap) {
+			failed = true;
+			return;
+		}
+		foundoverlap = reserved_route;
+	}, RRF::RESERVE | RRF::PROVISIONAL_RESERVE);
 	if(failed || !foundoverlap) return false;
 
 	genericsignal *start = dynamic_cast<genericsignal*>(foundoverlap->start.track);
@@ -256,9 +252,23 @@ const route *action_reservetrack_base::TestSwingOverlapAndReserve(const route *t
 //return true on success
 bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const {
 	//disallow if non-overlap route already set from start point in given direction
-	if(rt->start.track->GetSetRouteTypes(rt->start.direction) & (RPRT::MASK_START & ~RPRT::OVERLAPSTART)) {
-		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/reservation/fail", "track/reservation/alreadyset"));
-		return false;
+	//but silently accept if the set route is identical to the one trying to be set
+	bool found_route = false;
+	bool route_conflict = false;
+	rt->start.track->ReservationEnumerationInDirection(rt->start.direction, [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+		if(reserved_route->type == RTC_OVERLAP) return;
+		if(! (rr_flags & RRF::STARTPIECE)) return;
+		found_route = true;
+		if(reserved_route != rt) route_conflict = true;
+	}, RRF::RESERVE | RRF::PROVISIONAL_RESERVE);
+	if(found_route) {
+		if(route_conflict) {
+			error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/reservation/fail", "track/reservation/alreadyset"));
+			return false;
+		}
+		else {
+			return true;
+		}
 	}
 
 	const route *swing_this_overlap = 0;

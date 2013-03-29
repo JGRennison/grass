@@ -26,6 +26,7 @@
 
 #include <string>
 #include <functional>
+#include <vector>
 #include "flags.h"
 #include "edgetype.h"
 #include "serialisable.h"
@@ -81,8 +82,8 @@ class track_reservation_state : public serialisable_obj {
 	bool IsReserved() const;
 	unsigned int GetReservationCount() const;
 	bool IsReservedInDirection(EDGETYPE direction) const;
-	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func) const;
-	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func) const;
+	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask = RRF::RESERVE) const;
+	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask = RRF::RESERVE) const;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;

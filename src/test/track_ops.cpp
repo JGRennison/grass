@@ -243,3 +243,44 @@ TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swingi
 	CHECK(env.w.GetLogText() != "");
 	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.bovlp);
 }
+
+TEST_CASE( "track/ops/reservation/overset", "Test overset track reservation and dereservation" ) {
+	test_fixture_world env(overlap_ops_test_str_1);
+
+	env.w.LayoutInit(env.ec);
+	env.w.PostLayoutInit(env.ec);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	overlap_ops_test_class_1 tenv(env.w);
+
+	env.w.GameStep(1);
+	tenv.checksignal(tenv.s1, 1, RTC_ROUTE, tenv.s2, tenv.s2, 0);
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.bovlp);
+
+	CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 2);
+
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.c));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.c));
+	env.w.GameStep(100000);
+	CHECK(env.w.GetLogText() == "");
+	tenv.checksignal(tenv.s1, 2, RTC_ROUTE, tenv.s2, tenv.s2, 0);
+	tenv.checksignal(tenv.s2, 1, RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
+
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.c));
+	env.w.GameStep(100000);
+	CHECK(env.w.GetLogText() == "");
+	tenv.checksignal(tenv.s1, 2, RTC_ROUTE, tenv.s2, tenv.s2, 0);
+	tenv.checksignal(tenv.s2, 1, RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
+
+	CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 3);
+
+	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s2));
+	env.w.GameStep(100000);
+	CHECK(env.w.GetLogText() == "");
+	tenv.checksignal(tenv.s1, 1, RTC_ROUTE, tenv.s2, tenv.s2, 0);
+	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.covlp);
+
+	CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 2);
+}

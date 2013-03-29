@@ -145,6 +145,26 @@ bool generictrack::PostLayoutInit(error_collection &ec) {
 	return true;
 }
 
+unsigned int generictrack::ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask) {
+	unsigned int counter = 0;
+	std::vector<track_reservation_state *> trslist;
+	GetTRSList(trslist);
+	for(auto it = trslist.begin(); it != trslist.end(); ++it) {
+		counter += (*it)->ReservationEnumeration(func, checkmask);
+	}
+	return counter;
+}
+
+unsigned int generictrack::ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask) {
+	unsigned int counter = 0;
+	std::vector<track_reservation_state *> trslist;
+	GetTRSList(trslist);
+	for(auto it = trslist.begin(); it != trslist.end(); ++it) {
+		counter += (*it)->ReservationEnumerationInDirection(direction, func, checkmask);
+	}
+	return counter;
+}
+
 void trackseg::TrainEnter(EDGETYPE direction, train *t) {
 	traincount++;
 	track_circuit *tc = GetTrackCircuit();

@@ -22,6 +22,7 @@
 //==========================================================================
 
 #include "common.h"
+#include "trackreservation.h"
 #include "signal.h"
 #include "world.h"
 #include "trackcircuit.h"

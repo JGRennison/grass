@@ -136,6 +136,9 @@ class generictrack : public world_obj {
 	virtual bool IsTrackAlwaysPassable() const { return true; }
 	inline bool IsTrackPassable(EDGETYPE direction, unsigned int connection_index) const;
 
+	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask);
+	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask);
+
 	protected:
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const = 0;
 	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
