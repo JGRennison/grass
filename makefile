@@ -154,11 +154,11 @@ $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch: | $(call GENERIC_OBJ_DIR,test)/p
 $(DIRS):
 	-$(MKDIR) $(subst /,$(PATHSEP),$@)
 
--include $(ALL_OBJS:.o=.d)
-
 .PHONY: clean install uninstall all main test
 
 ALL_OBJS:=$(call LIST_OBJS,$(SRC_DIRS))
+-include $(ALL_OBJS:.o=.d)
+
 clean:
 	rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.ii) $(ALL_OBJS:.o=.lst) $(ALL_OBJS:.o=.d) $(ALL_OBJS:.o=.s) $(OUTNAME)$(SUFFIX) $(TESTOUTNAME)$(SUFFIX) $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch
 
