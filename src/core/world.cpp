@@ -115,6 +115,8 @@ void world::InitFutureTypes() {
 	MakeFutureTypeWrapper<future_genericusermessage_reason>(future_types);
 	MakeFutureTypeWrapper<future_genericusermessage>(future_types);
 	MakeFutureTypeWrapper<future_reservetrack_base>(future_types);
+	MakeFutureTypeWrapper<future_signalflags>(future_types);
+	MakeFutureTypeWrapper<future_action_wrapper>(future_types);
 }
 
 void world::SubmitAction(const action &request) {

@@ -36,6 +36,26 @@ void action::ActionRegisterFuture(const std::shared_ptr<future> &f) const {
 	w.futures.RegisterFuture(f);
 }
 
+void action::ActionRegisterLocalFuture(const std::shared_ptr<future> &f) const {
+	w.futures.RegisterFuture(f);
+}
+
 void action::ActionCancelFuture(future &f) const {
 	w.futures.RemoveFuture(f);
+}
+
+void action::ActionRegisterFutureAction(futurable_obj &targ, world_time ft, std::unique_ptr<action> &&a) const {
+	ActionRegisterLocalFuture(std::make_shared<future_action_wrapper>(targ, ft, std::move(a)));
+}
+
+void future_action_wrapper::ExecuteAction() {
+	if(act) act->Execute();
+}
+
+void future_action_wrapper::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	//TODO: fill this in
+}
+
+void future_action_wrapper::Serialise(serialiser_output &so, error_collection &ec) const {
+	//TODO: fill this in
 }

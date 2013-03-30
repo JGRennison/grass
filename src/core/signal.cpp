@@ -192,6 +192,10 @@ void trackroutingpoint::GetListOfEdges(std::vector<edgelistitem> &outputlist) co
 	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_BACK, next), edgelistitem(EDGE_FRONT, prev) });
 }
 
+RPRT trackroutingpoint::GetAvailableRouteTypes(EDGETYPE direction) const {
+	return (direction == EDGE_FRONT) ? availableroutetypes_forward : availableroutetypes_reverse;
+}
+
 
 genericsignal::genericsignal(world &w_) : trackroutingpoint(w_), sflags(GSF::ZERO) {
 	availableroutetypes_reverse |= RPRT::SHUNTTRANS | RPRT::ROUTETRANS;
@@ -205,11 +209,11 @@ genericsignal::~genericsignal() {
 void genericsignal::TrainEnter(EDGETYPE direction, train *t) { }
 void genericsignal::TrainLeave(EDGETYPE direction, train *t) { }
 
-genericsignal::GSF genericsignal::GetSignalFlags() const {
+GSF genericsignal::GetSignalFlags() const {
 	return sflags;
 }
 
-genericsignal::GSF genericsignal::SetSignalFlagsMasked(genericsignal::GSF set_flags, genericsignal::GSF mask_flags) {
+GSF genericsignal::SetSignalFlagsMasked(GSF set_flags, GSF mask_flags) {
 	sflags = (sflags & (~mask_flags)) | set_flags;
 	return sflags;
 }
@@ -236,10 +240,6 @@ bool genericsignal::Reservation(EDGETYPE direction, unsigned int index, RRF rr_f
 	}
 }
 
-RPRT genericsignal::GetAvailableRouteTypes(EDGETYPE direction) const {
-	return (direction == EDGE_FRONT) ? availableroutetypes_forward : availableroutetypes_reverse;
-}
-
 RPRT genericsignal::GetSetRouteTypes(EDGETYPE direction) const {
 	RPRT result = RPRT::ZERO;
 
@@ -264,6 +264,7 @@ void genericsignal::UpdateSignalState() {
 
 	auto clear_route = [&]() {
 		aspect = 0;
+		reserved_aspect = 0;
 		SetAspectNextTarget(0);
 		SetAspectRouteTarget(0);
 		aspect_type = RTC_NULL;
@@ -275,7 +276,7 @@ void genericsignal::UpdateSignalState() {
 		return;
 	}
 
-	if(!(GetSignalFlags() & GSF::REPEATER)) {
+	if(!(GetSignalFlags() & GSF::REPEATER) && !(sflags & GSF::APPROACHLOCKINGMODE)) {
 		for(auto it = set_route->trackcircuits.begin(); it != set_route->trackcircuits.end(); ++it) {
 			if((*it)->Occupied()) {
 				clear_route();
@@ -323,16 +324,23 @@ void genericsignal::UpdateSignalState() {
 		aspect_target = *next_repeater;
 	}
 
-	if(set_route->type == RTC_SHUNT) aspect = std::min((unsigned int) 1, max_aspect);
+	if(set_route->type == RTC_SHUNT) reserved_aspect = aspect = std::min((unsigned int) 1, max_aspect);
 	else {
-		if(max_aspect <= 1) aspect = max_aspect;
+		if(max_aspect <= 1) reserved_aspect = aspect = max_aspect;
 		else {
 			aspect_target->UpdateRoutingPoint();
-			aspect = std::min(max_aspect, aspect_target->GetAspect() + 1);
+			if(set_route->type == RTC_ROUTE && aspect_target->GetAspectType() == RTC_SHUNT) reserved_aspect = aspect = 1;
+			else {
+				aspect = std::min(max_aspect, aspect_target->GetAspect() + 1);
+				reserved_aspect = std::min(max_aspect, aspect_target->GetReservedAspect() + 1);
+			}
 		}
 	}
 	SetAspectNextTarget(aspect_target);
 	SetAspectRouteTarget(aspect_route_target);
+	if(sflags & GSF::APPROACHLOCKINGMODE) {
+		aspect = 0;
+	}
 }
 
 //this will not return the overlap, only the "real" route
@@ -409,7 +417,7 @@ void genericsignal::BackwardsReservedTrackScan(std::function<bool(const generics
 }
 
 bool genericsignal::IsOverlapSwingPermitted(std::string *failreasonkey) const {
-	if(!(GetSignalFlags() & genericsignal::GSF::OVERLAPSWINGABLE)) {
+	if(!(GetSignalFlags() & GSF::OVERLAPSWINGABLE)) {
 		if(failreasonkey) *failreasonkey = "track/reservation/overlapcantswing/notpermitted";
 		return false;
 	}
@@ -613,6 +621,8 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						rt->start = vartrack_target_ptr<routingpoint>(this, EDGE_FRONT);
 						rt->pieces = route_pieces;
 						rt->end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
+						if(type == RTC_SHUNT) rt->approachcontrol_timeout = approachcontrol_default_shunt_timeout;
+						if(type == RTC_ROUTE) rt->approachcontrol_timeout = approachcontrol_default_route_timeout;
 						rt->FillLists();
 						rt->parent = this;
 
@@ -776,6 +786,7 @@ bool route_restriction::CheckRestriction(RRDF &restriction_flags, const route_re
 
 void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::PRIORITYSET) rt.priority = priority;
+	if(routerestrictionflags & RRF::ACTIMEOUTSET) rt.approachcontrol_timeout = approachcontrol_timeout;
 }
 
 route_restriction::RRDF route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {

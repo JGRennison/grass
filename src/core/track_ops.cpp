@@ -267,6 +267,8 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 			return false;
 		}
 		else {
+			genericsignal *sig = dynamic_cast<genericsignal *>(rt->start.track);
+			if(sig) CancelApproachLocking(sig);
 			return true;
 		}
 	}
@@ -335,7 +337,7 @@ bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_t
 		return false;
 	}
 
-	if(sig->GetSignalFlags() & genericsignal::GSF::AUTOSIGNAL) {
+	if(sig->GetSignalFlags() & GSF::AUTOSIGNAL) {
 		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/unreservation/fail", "track/unreservation/autosignal"));
 		return false;
 	}
@@ -346,14 +348,16 @@ bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_t
 		return false;
 	}
 
+	if(sig->GetSignalFlags() & GSF::APPROACHLOCKINGMODE) return true;	//don't try to unreserve again
+
 	//approach locking checks
 	if(sig->GetAspect() > 0) {
-
 		bool approachlocking_engage = false;
 		unsigned int backaspect = 0;
 
 		auto checksignal = [&](const genericsignal *gs) -> bool {
-			bool aspectchange = gs->GetAspect() > backaspect;	//cancelling route would reduce signal aspect
+			bool aspectchange = gs->GetReservedAspect() > backaspect;	//cancelling route would reduce signal aspect
+											//this includes existing approach control aspects
 			backaspect++;
 			return aspectchange;
 		};
@@ -370,7 +374,9 @@ bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_t
 		sig->BackwardsReservedTrackScan(checksignal, checkpiece);
 
 		if(approachlocking_engage) {
-			//code goes here
+			ActionRegisterFuture(std::make_shared<future_signalflags>(*sig, action_time+1, GSF::APPROACHLOCKINGMODE, GSF::APPROACHLOCKINGMODE));
+			ActionRegisterFutureAction(*sig, action_time + rt->approachcontrol_timeout, std::unique_ptr<action>(new action_approachlockingtimeout(w, *sig)));
+			return true;
 		}
 	}
 
@@ -394,15 +400,42 @@ bool action_reservetrack_base::GenericRouteUnreservation(const route *targrt, ro
 	return fullyunreserved;
 }
 
-void action_routereservetrackop::Deserialise(const deserialiser_input &di, error_collection &ec) {
+void action_reservetrack_base::CancelApproachLocking(genericsignal *sig) const {
+	sig->SetSignalFlagsMasked(GSF::ZERO, GSF::APPROACHLOCKINGMODE);
+
+	auto func = [&](future &f) {
+		future_action_wrapper *fa = dynamic_cast<future_action_wrapper *>(&f);
+		if(!fa) return;
+
+		action_approachlockingtimeout *act = dynamic_cast<action_approachlockingtimeout *>(fa->act.get());
+
+		if(act) ActionCancelFuture(f);
+	};
+	sig->EnumerateFutures(func);
+}
+
+void action_reservetrack_routeop::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	DeserialiseRouteTargetByParentAndIndex(targetroute, di, ec, false);
 
 	if(!targetroute) ec.RegisterNewError<error_deserialisation>(di, "Invalid track reservation action definition");
 }
 
-void action_routereservetrackop::Serialise(serialiser_output &so, error_collection &ec) const {
+void action_reservetrack_routeop::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(targetroute->parent->GetSerialisationName(), so, "routeparent");
 	SerialiseValueJson(targetroute->index, so, "routeindex");
+}
+
+void action_reservetrack_sigop::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	std::string targetname;
+	if(CheckTransJsonValue(targetname, di, "target", ec)) {
+		target = dynamic_cast<genericsignal *>(w.FindTrackByName(targetname));
+	}
+
+	if(!target) ec.RegisterNewError<error_deserialisation>(di, "Invalid track reservation action definition");
+}
+
+void action_reservetrack_sigop::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseValueJson(target->GetSerialisationName(), so, "target");
 }
 
 void action_reservetrack::ExecuteAction() const {
@@ -483,24 +516,37 @@ void action_reservepath::Serialise(serialiser_output &so, error_collection &ec) 
 }
 
 void action_unreservetrack::ExecuteAction() const {
-	if(!target) return;
-	const route *rt = target->GetCurrentForwardRoute();
-	if(rt) GenericRouteUnreservation(rt, rt->start.track, RRF::STOP_ON_OCCUPIED_TC);
-}
-
-void action_unreservetrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	std::string targetname;
-	if(CheckTransJsonValue(targetname, di, "target", ec)) {
-		target = dynamic_cast<genericsignal *>(w.FindTrackByName(targetname));
-	}
-
-	if(!target) ec.RegisterNewError<error_deserialisation>(di, "Invalid track unreservation action definition");
-}
-
-void action_unreservetrack::Serialise(serialiser_output &so, error_collection &ec) const {
-	SerialiseValueJson(target->GetSerialisationName(), so, "target");
+	if(target) TryUnreserveRoute(target, action_time, [&](const std::shared_ptr<future> &f) {
+		ActionSendReplyFuture(f);
+	});
 }
 
 void action_unreservetrackroute::ExecuteAction() const {
 	GenericRouteUnreservation(targetroute, targetroute->start.track, RRF::STOP_ON_OCCUPIED_TC);
+}
+
+
+void future_signalflags::ExecuteAction() {
+	genericsignal *sig = dynamic_cast<genericsignal *>(&GetTarget());
+	if(sig) {
+		sig->SetSignalFlagsMasked(bits, mask);
+	}
+}
+
+void future_signalflags::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	future::Deserialise(di, ec);
+	CheckTransJsonValueDef(bits, di, "bits", GSF::ZERO, ec);
+	CheckTransJsonValueDef(mask, di, "mask", GSF::ZERO, ec);
+}
+
+void future_signalflags::Serialise(serialiser_output &so, error_collection &ec) const {
+	future::Serialise(so, ec);
+	SerialiseValueJson(bits, so, "bits");
+	SerialiseValueJson(mask, so, "mask");
+}
+
+void action_approachlockingtimeout::ExecuteAction() const {
+	ActionRegisterFuture(std::make_shared<future_signalflags>(*target, action_time+1, GSF::ZERO, GSF::APPROACHLOCKINGMODE));
+	const route *rt = target->GetCurrentForwardRoute();
+	if(rt) GenericRouteUnreservation(rt, target, RRF::STOP_ON_OCCUPIED_TC);
 }

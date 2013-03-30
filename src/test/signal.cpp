@@ -289,7 +289,7 @@ class autosig_test_class_1 {
 	}
 };
 
-TEST_CASE( "signal/autosignal/propagation", "Test basic autosignal aspect propagation" ) {
+TEST_CASE( "signal/propagation/autosignal", "Test basic autosignal aspect propagation" ) {
 	test_fixture_world env(autosig_test_str_1);
 
 	env.w.LayoutInit(env.ec);
@@ -331,12 +331,86 @@ TEST_CASE( "signal/autosignal/propagation", "Test basic autosignal aspect propag
 	tenv.checksignal(tenv.s6, 0, RTC_NULL, 0, 0);
 }
 
+std::string signalmixture_test_str_1 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "trackseg", "length" : 50000, "trackcircuit" : "T1" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S1" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S1ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T2" }, )"
+	R"({ "type" : "routesignal", "name" : "S2", "shuntsignal" : true }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S2ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T3" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S3" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S3ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T4" }, )"
+	R"({ "type" : "routesignal", "name" : "S4", "shuntsignal" : true, "routeend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S4ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T5" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S5" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S5ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T6" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S6" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S6ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T7" }, )"
+	R"({ "type" : "endofline", "name" : "B" } )"
+"] }";
+
+TEST_CASE( "signal/propagation/typemixture", "Test aspect propagation and route creation with a mixture of signal types" ) {
+	test_fixture_world env(signalmixture_test_str_1);
+
+	env.w.LayoutInit(env.ec);
+	env.w.PostLayoutInit(env.ec);
+
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	autosig_test_class_1 tenv(env.w);
+
+	std::vector<routingpoint::gmr_routeitem> routeset;
+	CHECK(tenv.s1->GetMatchingRoutes(routeset, tenv.s2, GMRF::ALLROUTETYPES) == 0);
+	if(routeset.size()) {
+		WARN("First route found has type: " << routeset[0].rt->type);
+	}
+
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s1, tenv.s2));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() != "");
+
+	env.w.ResetLogText();
+
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.s3));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s3, tenv.s4));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s4, tenv.s5));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s5, tenv.s6));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s6, tenv.b));
+
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() == "");
+
+	tenv.checksignal(tenv.a, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.b, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s1, 0, RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s2, 1, RTC_SHUNT, tenv.s3, tenv.s3);
+	tenv.checksignal(tenv.s3, 1, RTC_ROUTE, tenv.s4, tenv.s4);
+	tenv.checksignal(tenv.s4, 1, RTC_SHUNT, tenv.s5, tenv.s5);
+	tenv.checksignal(tenv.s5, 2, RTC_ROUTE, tenv.s6, tenv.s6);
+	tenv.checksignal(tenv.s6, 1, RTC_ROUTE, tenv.b, tenv.b);
+}
+
 TEST_CASE( "signal/routesignal/reserveaction", "Test basic routesignal reservation action and aspect propagation" ) {
 	test_fixture_world env(autosig_test_str_1);
 
 	env.w.LayoutInit(env.ec);
 	env.w.PostLayoutInit(env.ec);
 
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	autosig_test_class_1 tenv(env.w);
@@ -382,4 +456,216 @@ TEST_CASE( "signal/routesignal/reserveaction", "Test basic routesignal reservati
 	tenv.checksignal(tenv.s4, 3, RTC_ROUTE, tenv.s5, tenv.s5);
 	tenv.checksignal(tenv.s5, 2, RTC_ROUTE, tenv.s6, tenv.s6);
 	tenv.checksignal(tenv.s6, 1, RTC_ROUTE, tenv.b, tenv.b);
+}
+
+std::string approachcontrol_test_str_1 =
+R"({ "content" : [ )"
+
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "trackseg", "length" : 50000, "trackcircuit" : "T1" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S1" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S1ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T2" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S2" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S2ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T3" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S3" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S3ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T4" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S4", "approachcontroltimeout" : 1000, "routerestrictions" : [ { "approachcontroltimeout" : 120000, "targets" : "S5" } ] }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S4ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T5" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S5", "approachcontroltimeout_route" : 60000, "approachcontroltimeout_shunt" : 1000 }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S5ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T6" }, )"
+	R"({ "type" : "routesignal", "name" : "S6", "shuntsignal" : true, "routeend" : true, "approachcontroltimeout" : 45000 }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S6ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T7" }, )"
+	R"({ "type" : "endofline", "name" : "B" } )"
+"] }";
+
+TEST_CASE( "signal/approachcontrol/general", "Test basic approach control route locking, timing and parameter serialisation" ) {
+	test_fixture_world env(approachcontrol_test_str_1);
+
+	env.w.LayoutInit(env.ec);
+	env.w.PostLayoutInit(env.ec);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	autosig_test_class_1 tenv(env.w);
+
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s1, tenv.s2));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.s3));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s3, tenv.s4));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s4, tenv.s5));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s5, tenv.s6));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s6, tenv.b));
+
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() == "");
+
+	auto checksignal2 = [&](routingpoint *signal, unsigned int aspect, unsigned int reserved_aspect, ROUTE_CLASS aspect_type, routingpoint *target, bool approachlocking) {
+		tenv.checksignal(signal, aspect, aspect_type, target, target);
+		SCOPED_INFO("Signal check for: " << signal->GetName() << ", at time: " << env.w.GetGameTime());
+		CHECK(signal->GetReservedAspect() == reserved_aspect);
+		genericsignal *sig = dynamic_cast<genericsignal*>(signal);
+		if(sig) {
+			CHECK(approachlocking == ((bool) (sig->GetSignalFlags() & GSF::APPROACHLOCKINGMODE)));
+		}
+	};
+
+	checksignal2(tenv.a, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.b, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s1, 3, 3, RTC_ROUTE, tenv.s2, false);
+	checksignal2(tenv.s2, 3, 3, RTC_ROUTE, tenv.s3, false);
+	checksignal2(tenv.s3, 3, 3, RTC_ROUTE, tenv.s4, false);
+	checksignal2(tenv.s4, 2, 2, RTC_ROUTE, tenv.s5, false);
+	checksignal2(tenv.s5, 1, 1, RTC_ROUTE, tenv.s6, false);
+	checksignal2(tenv.s6, 1, 1, RTC_SHUNT, tenv.b, false);
+
+	auto routecheck = [&](genericsignal *s, routingpoint *backtarget, routingpoint *forwardtarget, world_time timeout) {
+		SCOPED_INFO("Signal route check for: " << s->GetName());
+		unsigned int count = 0;
+		s->EnumerateCurrentBackwardsRoutes([&](const route *rt){
+			count++;
+			CHECK(rt->start.track == backtarget);
+		});
+		CHECK(count == 1);
+		const route *rt = s->GetCurrentForwardRoute();
+		REQUIRE(rt != 0);
+		CHECK(rt->approachcontrol_timeout == timeout);
+		CHECK(rt->end.track == forwardtarget);
+	};
+	routecheck(tenv.s4, tenv.s3, tenv.s5, 120000);
+	routecheck(tenv.s5, tenv.s4, tenv.s6, 60000);
+	routecheck(tenv.s6, tenv.s5, tenv.b, 45000);
+
+	env.w.FindOrMakeTrackCircuitByName("T3")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.FindOrMakeTrackCircuitByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.GameStep(1);
+
+	checksignal2(tenv.s1, 1, 1, RTC_ROUTE, tenv.s2, false);
+	checksignal2(tenv.s2, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s3, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s4, 2, 2, RTC_ROUTE, tenv.s5, false);
+	checksignal2(tenv.s5, 1, 1, RTC_ROUTE, tenv.s6, false);
+	checksignal2(tenv.s6, 1, 1, RTC_SHUNT, tenv.b, false);
+
+	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s1));
+	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s4));
+	env.w.GameStep(1);
+
+	checksignal2(tenv.s1, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s2, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s3, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s4, 0, 2, RTC_ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 1, 1, RTC_ROUTE, tenv.s6, false);
+	checksignal2(tenv.s6, 1, 1, RTC_SHUNT, tenv.b, false);
+
+	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s5));
+	env.w.GameStep(1);
+
+	checksignal2(tenv.s1, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s2, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s3, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s4, 0, 2, RTC_ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, RTC_ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 1, 1, RTC_SHUNT, tenv.b, false);
+
+	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s6));
+	env.w.GameStep(1);
+
+	checksignal2(tenv.s1, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s2, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s3, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s4, 0, 2, RTC_ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, RTC_ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 0, 0, RTC_NULL, 0, false);
+
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s6, tenv.b));
+	env.w.FindOrMakeTrackCircuitByName("T6")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.GameStep(1);
+	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s6));
+	env.w.GameStep(1);
+
+	checksignal2(tenv.s1, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s2, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s3, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s4, 0, 2, RTC_ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, RTC_ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 0, 1, RTC_SHUNT, tenv.b, true);
+
+	//timing
+
+	tenv.s6->EnumerateFutures([&](const future &f){
+		CHECK(f.GetTriggerTime() > 45000);
+		CHECK(f.GetTriggerTime() < 45100);
+		CHECK(f.GetTypeSerialisationName() == "future_action_wrapper");
+	});
+	CHECK(tenv.s6->HaveFutures() == true);
+
+	env.w.GameStep(44500);
+
+	checksignal2(tenv.s1, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s2, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s3, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s4, 0, 2, RTC_ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, RTC_ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 0, 1, RTC_SHUNT, tenv.b, true);
+
+	env.w.GameStep(1000);
+	env.w.GameStep(1);
+
+	checksignal2(tenv.s1, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s2, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s3, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s4, 0, 2, RTC_ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, RTC_ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 0, 0, RTC_NULL, 0, false);
+
+	env.w.GameStep(14000);
+
+	checksignal2(tenv.s1, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s2, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s3, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s4, 0, 2, RTC_ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, RTC_ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 0, 0, RTC_NULL, 0, false);
+
+	env.w.GameStep(1000);
+	env.w.GameStep(1);
+
+	checksignal2(tenv.s1, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s2, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s3, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s4, 0, 1, RTC_ROUTE, tenv.s5, true);	//TODO: would 2 be better than 1?
+	checksignal2(tenv.s5, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s6, 0, 0, RTC_NULL, 0, false);
+
+	env.w.GameStep(59000);
+
+	checksignal2(tenv.s1, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s2, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s3, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s4, 0, 1, RTC_ROUTE, tenv.s5, true);	//TODO: would 2 be better than 1?
+	checksignal2(tenv.s5, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s6, 0, 0, RTC_NULL, 0, false);
+
+	env.w.GameStep(1000);
+	env.w.GameStep(1);
+
+	checksignal2(tenv.s1, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s2, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s3, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s4, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s5, 0, 0, RTC_NULL, 0, false);
+	checksignal2(tenv.s6, 0, 0, RTC_NULL, 0, false);
 }

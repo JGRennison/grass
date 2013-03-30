@@ -68,11 +68,17 @@ void future_set::RemoveFuture(future &f) {
 
 void future_set::ExecuteUpTo(world_time ft) {
 	auto past_end = futures.upper_bound(ft);
+	std::vector<std::shared_ptr<future> > current_execs;
 	for(auto it = futures.begin(); it != past_end; ++it) {
-		it->second->Execute();
-		it->second->GetTarget().DeregisterFuture(it->second.get());
+		current_execs.emplace_back(std::move(it->second));
 	}
 	futures.erase(futures.begin(), past_end);
+
+	//do it this way as futures could themselves insert items into the future set
+	for(auto it = current_execs.begin(); it != current_execs.end(); ++it) {
+		(*it)->Execute();
+		(*it)->GetTarget().DeregisterFuture(it->get());
+	}
 }
 
 void futurable_obj::RegisterFuture(future *f) {

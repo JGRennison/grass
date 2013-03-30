@@ -117,13 +117,4 @@ class world : public named_futurable_obj {
 	}
 };
 
-template <typename C> void MakeFutureTypeWrapper(future_deserialisation_type_factory &future_types) {
-	auto func = [&](const deserialiser_input &di, error_collection &ec, future_container &fc, serialisable_futurable_obj &sfo, world_time ft, future_id_type fid) {
-		std::shared_ptr<C> f = std::make_shared<C>(sfo, ft, fid);
-		f->DeserialiseObject(di, ec);
-		fc.RegisterFuture(f);
-	};
-	future_types.RegisterType(C::GetTypeSerialisationNameStatic(), func);
-}
-
 #endif
