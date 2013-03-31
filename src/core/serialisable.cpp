@@ -24,6 +24,7 @@
 #include "common.h"
 #include "serialisable_impl.h"
 #include "error.h"
+#include "utf8.h"
 #include <algorithm>
 
 error_deserialisation::error_deserialisation(const deserialiser_input &di, const std::string &str) {
@@ -55,19 +56,19 @@ error_jsonparse::error_jsonparse(const std::string &json, size_t erroroffset, co
 
 	bool trail_start = false;
 	bool trail_end = false;
-	size_t linelen = lineend - linestart;
+	size_t linelen = strboundedlen_utf8(json, linestart, lineend);
 	if(linelen > 77) {
-		if(lineend-erroroffset <= 36) {
+		if(strboundedlen_utf8(json, erroroffset, lineend) <= 36) {
 			trail_start = true;
-			linestart += linelen - 71;
+			linestart = stroffset_utf8(json, linestart, linelen - 71);
 		}
-		else if(erroroffset-linestart <= 37) {
+		else if(strboundedlen_utf8(json, linestart, erroroffset) <= 37) {
 			trail_end = true;
-			lineend -= linelen - 71;
+			lineend = stroffset_utf8(json, linestart, -(linelen - 71));
 		}
 		else {
-			lineend = erroroffset + 36;
-			linestart = erroroffset - 37;
+			lineend = stroffset_utf8(json, erroroffset, 36);
+			linestart = stroffset_utf8(json, erroroffset, -37);
 			trail_start = trail_end = true;
 		}
 	}
@@ -79,7 +80,7 @@ error_jsonparse::error_jsonparse(const std::string &json, size_t erroroffset, co
 	msg << "\"";
 	if(trail_end) msg << "...";
 	msg << "\n";
-	msg << std::string(1 + erroroffset - linestart + (trail_start?3:0), '.');
+	msg << std::string(1 + strboundedlen_utf8(json, linestart, erroroffset) + (trail_start?3:0), '.');
 	msg << "^\n";
 }
 
