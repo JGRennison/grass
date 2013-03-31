@@ -48,6 +48,41 @@ error_deserialisation::error_deserialisation(const std::string &str) {
 	msg << "JSON deserialisation error: " << str;
 }
 
+error_jsonparse::error_jsonparse(const std::string &json, size_t erroroffset, const char *parseerror) {
+	size_t linestart = 0;
+	size_t lineend = 0;
+	size_t lineno = GetLineNumberOfStringOffset(json, erroroffset, &linestart, &lineend);
+
+	bool trail_start = false;
+	bool trail_end = false;
+	size_t linelen = lineend - linestart;
+	if(linelen > 77) {
+		if(lineend-erroroffset <= 36) {
+			trail_start = true;
+			linestart += linelen - 71;
+		}
+		else if(erroroffset-linestart <= 37) {
+			trail_end = true;
+			lineend -= linelen - 71;
+		}
+		else {
+			lineend = erroroffset + 36;
+			linestart = erroroffset - 37;
+			trail_start = trail_end = true;
+		}
+	}
+
+	msg << string_format("JSON Parsing error at offset: %d (line: %d), Error: %s\n", erroroffset, lineno, parseerror);
+	if(trail_start) msg << "...";
+	msg << "\"";
+	msg << json.substr(linestart, lineend-linestart);
+	msg << "\"";
+	if(trail_end) msg << "...";
+	msg << "\n";
+	msg << std::string(1 + erroroffset - linestart + (trail_start?3:0), '.');
+	msg << "^\n";
+}
+
 void serialisable_obj::DeserialisePrePost(const char *name, const deserialiser_input &di, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[name];
 	if(subval.IsNull()) return;

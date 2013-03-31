@@ -91,6 +91,11 @@ class error_deserialisation : public error_obj {
 	error_deserialisation(const std::string &str = "");
 };
 
+class error_jsonparse : public error_obj {
+	public:
+	error_jsonparse(const std::string &json, size_t erroroffset, const char *parseerror);
+};
+
 struct json_object { };
 struct json_array { };
 

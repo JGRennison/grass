@@ -38,7 +38,7 @@ void world_serialisation::ParseInputString(const std::string &input, error_colle
 	parsed_inputs.emplace_front();
 	rapidjson::Document &dc =  parsed_inputs.front();
 	if (dc.Parse<0>(input.c_str()).HasParseError()) {
-		ec.RegisterNewError<generic_error_obj>(string_format("JSON Parsing error at offset: %d, Error: %s", dc.GetErrorOffset(), dc.GetParseError()));
+		ec.RegisterNewError<error_jsonparse>(input, dc.GetErrorOffset(), dc.GetParseError());
 	}
 	else LoadGame(deserialiser_input("", "[root]", dc, &w, this, 0), ec);
 }
