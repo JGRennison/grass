@@ -669,3 +669,136 @@ TEST_CASE( "signal/approachcontrol/general", "Test basic approach control route 
 	checksignal2(tenv.s5, 0, 0, RTC_NULL, 0, false);
 	checksignal2(tenv.s6, 0, 0, RTC_NULL, 0, false);
 }
+
+std::string overlaptimeout_test_str_1 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "2aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 1, "routesignal" : true } }, )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "trackseg", "length" : 50000, "trackcircuit" : "T1" }, )"
+	R"({ "type" : "autosignal", "name" : "S1" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S1ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T2" }, )"
+	R"({ "type" : "autosignal", "name" : "S2" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S2ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T3" }, )"
+	R"({ "type" : "2aspectroute", "name" : "S3", "overlaptimeout" : 30000 }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S3ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T4" }, )"
+	R"({ "type" : "2aspectroute", "name" : "S4", "routerestrictions" : [ { "overlaptimeout" : 90000, "targets" : "S4ovlpend" } ] }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S4ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true, "name" : "S4ovlpend" }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T5" }, )"
+	R"({ "type" : "2aspectroute", "name" : "S5", "overlaptimeout" : 30000 }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S5ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T6" }, )"
+	R"({ "type" : "2aspectroute", "name" : "S6", "overlaptimeout" : 0 }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S6ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T7" }, )"
+	R"({ "type" : "endofline", "name" : "B" } )"
+"] }";
+
+TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
+	test_fixture_world env(overlaptimeout_test_str_1);
+
+	env.w.LayoutInit(env.ec);
+	env.w.PostLayoutInit(env.ec);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	autosig_test_class_1 tenv(env.w);
+
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s3, tenv.s4));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s4, tenv.s5));
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s5, tenv.s6));
+
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() == "");
+
+	auto overlapparamcheck = [&](genericsignal *s, world_time timeout) {
+		SCOPED_INFO("Overlap parameter check for signal: " << s->GetName());
+		const route *ovlp = s->GetCurrentForwardOverlap();
+		REQUIRE(ovlp != 0);
+		CHECK(ovlp->overlap_timeout == timeout);
+	};
+	overlapparamcheck(tenv.s4, 90000);
+	overlapparamcheck(tenv.s5, 30000);
+	overlapparamcheck(tenv.s6, 0);
+
+	auto occupytcandcancelroute = [&](std::string tc, genericsignal *s) {
+		env.w.FindOrMakeTrackCircuitByName(tc)->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+		env.w.SubmitAction(action_unreservetrack(env.w, *s));
+		env.w.GameStep(1);
+	};
+
+	occupytcandcancelroute("T6", tenv.s5);
+	occupytcandcancelroute("T5", tenv.s4);
+	occupytcandcancelroute("T4", tenv.s3);
+	CHECK(env.w.GetLogText() == "");
+
+	//timing
+
+	auto overlapcheck = [&](genericsignal *s, bool exists) {
+		SCOPED_INFO("Overlap check for signal: " << s->GetName() << ", at time: " << env.w.GetGameTime());
+		const route *ovlp = s->GetCurrentForwardOverlap();
+		if(exists) {
+			CHECK(ovlp != 0);
+		}
+		else {
+			CHECK(ovlp == 0);
+		}
+	};
+
+	overlapcheck(tenv.s2, true);
+	overlapcheck(tenv.s3, true);
+	overlapcheck(tenv.s4, true);
+	overlapcheck(tenv.s5, true);
+	overlapcheck(tenv.s6, true);
+
+	env.w.GameStep(29500);
+
+	overlapcheck(tenv.s2, true);
+	overlapcheck(tenv.s3, true);
+	overlapcheck(tenv.s4, true);
+	overlapcheck(tenv.s5, true);
+	overlapcheck(tenv.s6, true);
+
+	env.w.GameStep(1000);
+	env.w.GameStep(1);
+
+	overlapcheck(tenv.s2, true);
+	overlapcheck(tenv.s3, true);
+	overlapcheck(tenv.s4, true);
+	overlapcheck(tenv.s5, false);
+	overlapcheck(tenv.s6, true);
+
+	env.w.GameStep(59000);
+
+	overlapcheck(tenv.s2, true);
+	overlapcheck(tenv.s3, true);
+	overlapcheck(tenv.s4, true);
+	overlapcheck(tenv.s5, false);
+	overlapcheck(tenv.s6, true);
+
+	env.w.GameStep(1000);
+	env.w.GameStep(1);
+
+	overlapcheck(tenv.s2, true);
+	overlapcheck(tenv.s3, true);
+	overlapcheck(tenv.s4, false);
+	overlapcheck(tenv.s5, false);
+	overlapcheck(tenv.s6, true);
+
+	env.w.GameStep(1000000);
+
+	overlapcheck(tenv.s2, true);
+	overlapcheck(tenv.s3, true);
+	overlapcheck(tenv.s4, false);
+	overlapcheck(tenv.s5, false);
+	overlapcheck(tenv.s6, true);
+}

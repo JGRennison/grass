@@ -388,16 +388,13 @@ bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_t
 }
 
 bool action_reservetrack_base::GenericRouteUnreservation(const route *targrt, routingpoint *targsig, RRF extraflags) const {
-	bool fullyunreserved = targrt->RouteReservation(RRF::TRYUNRESERVE | extraflags);
-
 	ActionRegisterFuture(std::make_shared<future_unreservetrack>(*targsig, action_time + 1, targrt, extraflags));
 
 	auto actioncallback = [&](action &&reservation_act) {
 		reservation_act.action_time++;
 		reservation_act.Execute();
 	};
-	targrt->RouteReservationActions(RRF::UNRESERVE | extraflags, actioncallback);
-	return fullyunreserved;
+	return targrt->PartialRouteReservationWithActions(RRF::TRYUNRESERVE | extraflags, 0, RRF::UNRESERVE | extraflags, actioncallback);
 }
 
 void action_reservetrack_base::CancelApproachLocking(genericsignal *sig) const {

@@ -63,6 +63,9 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonValue(max_aspect, di, "maxaspect", ec);
 	CheckTransJsonValueFlag(sflags, GSF::OVERLAPSWINGABLE, di, "overlapswingable", ec);
 	CheckTransJsonValue(overlapswingminaspectdistance, di, "overlapswingminaspectdistance", ec);
+	CheckTransJsonValueFlag(sflags, GSF::APPROACHLOCKINGMODE, di, "approachlockingmode", ec);
+	CheckTransJsonValueFlag(sflags, GSF::OVERLAPTIMEOUTSTARTED, di, "overlaptimeoutstarted", ec);
+	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) CheckTransJsonValue(overlap_timeout_start, di, "overlap_timeout_start", ec);
 
 	unsigned int approachcontrol_timeout;
 	if(CheckTransJsonValue(approachcontrol_timeout, di, "approachcontroltimeout", ec)) {
@@ -72,6 +75,7 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 		CheckTransJsonValue(approachcontrol_default_shunt_timeout, di, "approachcontroltimeout_shunt", ec);
 		CheckTransJsonValue(approachcontrol_default_route_timeout, di, "approachcontroltimeout_route", ec);
 	}
+	CheckTransJsonValue(overlap_default_timeout, di, "overlaptimeout", ec);
 }
 
 void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -79,6 +83,11 @@ void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const
 
 	SerialiseSubObjJson(start_trs, so, "start_trs", ec);
 	SerialiseSubObjJson(end_trs, so, "end_trs", ec);
+	if(sflags & GSF::APPROACHLOCKINGMODE) SerialiseValueJson<bool>(true, so, "approachlockingmode");
+	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) {
+		SerialiseValueJson(overlap_timeout_start, so, "overlap_timeout_start");
+		SerialiseValueJson<bool>(true, so, "approachlockingmode");
+	}
 }
 
 void autosignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -110,6 +119,7 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "notvia", ec, rr.notvia);
 			if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF::PRIORITYSET;
 			if(CheckTransJsonValue(rr.approachcontrol_timeout, subdi, "approachcontroltimeout", ec)) rr.routerestrictionflags |= route_restriction::RRF::ACTIMEOUTSET;
+			if(CheckTransJsonValue(rr.overlap_timeout, subdi, "overlaptimeout", ec)) rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTIMEOUTSET;
 			flag_conflict_checker<route_restriction::RRDF> conflictcheck;
 			CheckTransJsonValueFlag(rr.denyflags, route_restriction::RRDF::NOSHUNT, subdi, "denyshunt", ec, &conflictcheck);
 			CheckTransJsonValueFlag(rr.denyflags, route_restriction::RRDF::NOROUTE, subdi, "denyroute", ec, &conflictcheck);

@@ -304,6 +304,7 @@ trackseg & trackseg::SetTrackCircuit(track_circuit *tc) {
 }
 
 bool trackseg::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
+	if(rr_flags & RRF::STOP_ON_OCCUPIED_TC && GetTrackCircuit() && GetTrackCircuit()->Occupied()) return false;
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 

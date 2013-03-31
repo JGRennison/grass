@@ -270,6 +270,38 @@ void genericsignal::UpdateSignalState() {
 		aspect_type = RTC_NULL;
 	};
 
+	const route *own_overlap = GetCurrentForwardOverlap();
+	bool overlap_timeout_set = false;
+	if(own_overlap && own_overlap->overlap_timeout) {
+		bool can_timeout_overlap = false;
+		bool start_anchored = false;
+		EnumerateCurrentBackwardsRoutes([&](const route *r) {
+			if(r->IsStartAnchored()) start_anchored = true;
+			if(!r->trackcircuits.empty()) {
+				if(r->trackcircuits.back()->Occupied()) can_timeout_overlap = true;
+			}
+		});
+		if(can_timeout_overlap && !start_anchored) {
+			if(GetSignalFlags() & GSF::OVERLAPTIMEOUTSTARTED) {
+				if(overlap_timeout_start + own_overlap->overlap_timeout <= GetWorld().GetGameTime()) {
+					//overlap has timed out
+					if(GetWorld().IsAuthoritative()) {
+						GetWorld().SubmitAction(action_unreservetrackroute(GetWorld(), *own_overlap));
+					}
+				}
+			}
+			else {
+				overlap_timeout_start = GetWorld().GetGameTime();
+				SetSignalFlagsMasked(GSF::OVERLAPTIMEOUTSTARTED, GSF::OVERLAPTIMEOUTSTARTED);
+			}
+			overlap_timeout_set = true;
+		}
+	}
+	if(!overlap_timeout_set) {
+		SetSignalFlagsMasked(GSF::ZERO, GSF::OVERLAPTIMEOUTSTARTED);
+		overlap_timeout_start = 0;
+	}
+
 	const route *set_route = GetCurrentForwardRoute();
 	if(!set_route) {
 		clear_route();
@@ -623,6 +655,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						rt->end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
 						if(type == RTC_SHUNT) rt->approachcontrol_timeout = approachcontrol_default_shunt_timeout;
 						if(type == RTC_ROUTE) rt->approachcontrol_timeout = approachcontrol_default_route_timeout;
+						if(type == RTC_OVERLAP) rt->overlap_timeout = overlap_default_timeout;
 						rt->FillLists();
 						rt->parent = this;
 
@@ -686,7 +719,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 	return continue_initing;
 }
 
-//returns false on failure
+//returns false on failure/partial completion
 bool route::RouteReservation(RRF reserve_flags, std::string *failreasonkey) const {
 	if(!start.track->Reservation(start.direction, 0, reserve_flags | RRF::STARTPIECE, this, failreasonkey)) return false;
 
@@ -695,6 +728,21 @@ bool route::RouteReservation(RRF reserve_flags, std::string *failreasonkey) cons
 	}
 
 	if(!end.track->Reservation(end.direction, 0, reserve_flags | RRF::ENDPIECE, this, failreasonkey)) return false;
+	return true;
+}
+
+//returns false on failure/partial completion
+bool route::PartialRouteReservationWithActions(RRF reserve_flags, std::string *failreasonkey, RRF action_reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const {
+	if(!start.track->Reservation(start.direction, 0, reserve_flags | RRF::STARTPIECE, this, failreasonkey)) return false;
+	start.track->ReservationActions(start.direction, 0, action_reserve_flags | RRF::STARTPIECE, this, actioncallback);
+
+	for(auto it = pieces.begin(); it != pieces.end(); ++it) {
+		if(!it->location.track->Reservation(it->location.direction, it->connection_index, reserve_flags, this, failreasonkey)) return false;
+		it->location.track->ReservationActions(it->location.direction, it->connection_index, action_reserve_flags, this, actioncallback);
+	}
+
+	if(!end.track->Reservation(end.direction, 0, reserve_flags | RRF::ENDPIECE, this, failreasonkey)) return false;
+	end.track->ReservationActions(end.direction, 0, action_reserve_flags | RRF::ENDPIECE, this, actioncallback);
 	return true;
 }
 
@@ -764,6 +812,16 @@ bool route::IsRouteSubSet(const route *subset) const {
 	}
 }
 
+bool route::IsStartAnchored(RRF checkmask) const {
+	bool anchored = false;
+	start.track->ReservationEnumerationInDirection(start.direction, [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+		if(rr_flags && RRF::STARTPIECE && reserved_route == this) {
+			anchored = true;
+		}
+	}, checkmask);
+	return anchored;
+}
+
 //return true if restriction applies
 bool route_restriction::CheckRestriction(RRDF &restriction_flags, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
 	if(!targets.empty() && std::find(targets.begin(), targets.end(), piece.track->GetName()) == targets.end()) return false;
@@ -787,6 +845,7 @@ bool route_restriction::CheckRestriction(RRDF &restriction_flags, const route_re
 void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::PRIORITYSET) rt.priority = priority;
 	if(routerestrictionflags & RRF::ACTIMEOUTSET) rt.approachcontrol_timeout = approachcontrol_timeout;
+	if(routerestrictionflags & RRF::OVERLAPTIMEOUTSET) rt.overlap_timeout = overlap_timeout;
 }
 
 route_restriction::RRDF route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {

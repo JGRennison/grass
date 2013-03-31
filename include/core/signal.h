@@ -150,6 +150,7 @@ struct route {
 	ROUTE_CLASS type;
 	int priority;
 	unsigned int approachcontrol_timeout;
+	unsigned int overlap_timeout;
 
 	enum class RF {
 		ZERO			= 0,
@@ -160,12 +161,14 @@ struct route {
 	routingpoint *parent;
 	unsigned int index;
 
-	route() : type(RTC_NULL), priority(0), approachcontrol_timeout(0), routeflags(RF::ZERO), parent(0), index(0) { }
+	route() : type(RTC_NULL), priority(0), approachcontrol_timeout(0), overlap_timeout(0), routeflags(RF::ZERO), parent(0), index(0) { }
 	void FillLists();
 	bool TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const;
 	bool RouteReservation(RRF reserve_flags, std::string *failreasonkey = 0) const;
+	bool PartialRouteReservationWithActions(RRF reserve_flags, std::string *failreasonkey, RRF action_reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const;
 	void RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const;
 	bool IsRouteSubSet(const route *subset) const;
+	bool IsStartAnchored(RRF checkmask = RRF::RESERVE) const;
 };
 template<> struct enum_traits< route::RF > {	static constexpr bool flags = true; };
 
@@ -179,10 +182,12 @@ class route_restriction {
 	std::vector<std::string> notvia;
 	int priority = 0;
 	unsigned int approachcontrol_timeout;
+	unsigned int overlap_timeout;
 	enum class RRF {
-		ZERO		= 0,
-		PRIORITYSET	= 1<<0,
-		ACTIMEOUTSET	= 1<<1,
+		ZERO			= 0,
+		PRIORITYSET		= 1<<0,
+		ACTIMEOUTSET		= 1<<1,
+		OVERLAPTIMEOUTSET	= 1<<2,
 	};
 	RRF routerestrictionflags = RRF::ZERO;
 
@@ -250,11 +255,13 @@ enum class GSF : unsigned int {
 	APPROACHLOCKINGMODE	= 1<<3,		//route cancelled with train approaching, hold aspect at 0
 	AUTOSIGNAL		= 1<<4,
 	OVERLAPSWINGABLE	= 1<<5,
+	OVERLAPTIMEOUTSTARTED	= 1<<6,
 };
 template<> struct enum_traits< GSF > {	static constexpr bool flags = true; };
 
 class genericsignal : public trackroutingpoint {
-	public:
+	private:
+	world_time overlap_timeout_start = 0;
 
 	protected:
 	GSF sflags;
@@ -267,6 +274,7 @@ class genericsignal : public trackroutingpoint {
 
 	unsigned int approachcontrol_default_shunt_timeout = 30000;
 	unsigned int approachcontrol_default_route_timeout = 90000;
+	unsigned int overlap_default_timeout = 0;
 
 	public:
 	genericsignal(world &w_);
