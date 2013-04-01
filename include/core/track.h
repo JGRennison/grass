@@ -139,10 +139,6 @@ class generictrack : public world_obj {
 	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask);
 	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask);
 
-	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const = 0;
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
-
 	struct edgelistitem {
 		EDGETYPE edge;
 		const track_target_ptr *target;
@@ -151,6 +147,10 @@ class generictrack : public world_obj {
 	};
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const = 0;
 	virtual bool IsEdgeValid(EDGETYPE edge) const = 0;
+
+	protected:
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const = 0;
+	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
 
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) { return 0; }
 

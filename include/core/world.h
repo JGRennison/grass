@@ -79,6 +79,8 @@ class world : public named_futurable_obj {
 	std::deque<generictrack *> tick_update_list;
 	world_time gametime = 0;
 	GAMEMODE mode = GAMEMODE::SINGLE;
+	error_collection ec;
+	unsigned int auto_seq_item = 0;
 
 	public:
 	future_deserialisation_type_factory future_types;
@@ -115,6 +117,8 @@ class world : public named_futurable_obj {
 	inline bool IsAuthoritative() const {
 		return mode == GAMEMODE::SINGLE || mode == GAMEMODE::SERVER;
 	}
+	error_collection &GetEC() { return ec; }
+	void CapAllTrackPieceUnconnectedEdges();
 };
 
 #endif

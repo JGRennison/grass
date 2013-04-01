@@ -346,4 +346,6 @@ class doubleslip : public genericpoints {
 
 template<> struct enum_traits< doubleslip::DSF > {	static constexpr bool flags = true; };
 
+void DeserialisePointsCoupling(const deserialiser_input &di, error_collection &ec);
+
 #endif

@@ -218,7 +218,8 @@ void world_serialisation::InitObjectTypes() {
 	object_types.RegisterType("template", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTemplate(di, ec); });
 	object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTypeDefinition(di, ec); });
 	object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTractionType(di, ec); });
-	object_types.RegisterType("tractkcircuit", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTrackCircuit(di, ec); });
+	object_types.RegisterType("trackcircuit", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTrackCircuit(di, ec); });
+	object_types.RegisterType("couplepoints", [&](const deserialiser_input &di, error_collection &ec) { DeserialisePointsCoupling(di, ec); });
 }
 
 void world_serialisation::DeserialiseObject(const deserialiser_input &di, error_collection &ec) {

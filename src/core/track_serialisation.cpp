@@ -309,3 +309,64 @@ void speedrestrictionset::Deserialise(const deserialiser_input &di, error_collec
 void speedrestrictionset::Serialise(serialiser_output &so, error_collection &ec) const {
 	return;
 }
+
+void DeserialisePointsCoupling(const deserialiser_input &di, error_collection &ec) {
+	bool ok = true;
+	deserialiser_input subdi(di.json["points"], "pointscouplingarray", "points", di);
+	if(subdi.json.IsArray() && subdi.json.Size() >= 2) {
+		di.RegisterProp("points");
+		auto params = std::make_shared<std::vector<std::pair<std::string, EDGETYPE> > >();
+		for(rapidjson::SizeType i = 0; i < subdi.json.Size(); i++) {
+			deserialiser_input itemdi(subdi.json[i], "pointscoupling", MkArrayRefName(i), subdi);
+			std::string name;
+			EDGETYPE direction;
+			if(itemdi.json.IsObject() && CheckTransJsonValueDef(name, itemdi, "name", "", ec) && CheckTransJsonValueDef(direction, itemdi, "edge", EDGE_NULL, ec)) {
+				params->emplace_back(name, direction);
+			}
+			else ok = false;
+		}
+		if(ok) {
+			world *w = di.w;
+			w->layout_init_final_fixups.AddFixup([params, w](error_collection &ec) {
+				std::vector<vartrack_target_ptr<genericpoints> > points_list;
+				points_list.reserve(params->size());
+				for(auto it : *params) {
+					genericpoints* p = dynamic_cast<genericpoints*>(w->FindTrackByName(it.first));
+					if(!p) {
+						ec.RegisterNewError<generic_error_obj>("Points coupling: no such points: " + it.first);
+						return;
+					}
+					if(!p->IsCoupleable(it.second)) {
+						ec.RegisterNewError<generic_error_obj>("Points coupling: points cannot be coupled: " + it.first);
+						return;
+					}
+					points_list.emplace_back(p, it.second);
+				}
+				for(auto it = points_list.begin(); it != points_list.end(); ++it) {
+					for(auto jt = it + 1; jt != points_list.end(); ++jt) {
+						std::vector<genericpoints::points_coupling> pci;
+						std::vector<genericpoints::points_coupling> pcj;
+						it->track->GetCouplingPointsFlagsByEdge(it->direction, pci);
+						jt->track->GetCouplingPointsFlagsByEdge(jt->direction, pcj);
+						for(auto kt : pci) {
+							for(auto lt : pcj) {
+								genericpoints::PTF xormask = kt.xormask ^ lt.xormask;
+								kt.targ->CouplePointsFlagsAtIndexTo(kt.index, genericpoints::points_coupling(lt.pflags, xormask, lt.targ, lt.index));
+								lt.targ->CouplePointsFlagsAtIndexTo(lt.index, genericpoints::points_coupling(kt.pflags, xormask, kt.targ, kt.index));
+							}
+						}
+					}
+					for(unsigned int i = 0; i < it->track->GetPointsCount(); i++) {
+						it->track->SetPointsFlagsMasked(i, it->track->GetPointsFlags(i)&genericpoints::PTF::SERIALISABLE, genericpoints::PTF::SERIALISABLE);
+					}
+				}
+			});
+		}
+	}
+	else ok = false;
+
+
+	if(!ok) {
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid points coupling definition");
+	}
+}

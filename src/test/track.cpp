@@ -300,6 +300,7 @@ R"({ "content" : [ )"
 	R"({ "type" : "doubleslip", "name" : "DS7", "notrack_fr_br" : true, "degreesoffreedom" : 1, "leftfrontpoints" : { "reverse" : true } }, )"
 	R"({ "type" : "doubleslip", "name" : "DS8", "notrack_fr_bl" : true, "degreesoffreedom" : 4 }, )"
 	R"({ "type" : "doubleslip", "name" : "DS9", "degreesoffreedom" : 1, "leftbackpoints" : { "locked" : true, "reverse" : true } }, )"
+	R"({ "type" : "doubleslip", "name" : "DS10", "degreesoffreedom" : 2, "leftbackpoints" : { "failedrev" : true, "reverse" : true } }, )"
 	R"({ "type" : "endofline", "name" : "FL" }, )"
 	R"({ "type" : "endofline", "name" : "FR" }, )"
 	R"({ "type" : "endofline", "name" : "BL" }, )"
@@ -332,7 +333,7 @@ TEST_CASE( "track/deserialisation/doubleslip", "Test basic doubleslip deserialis
 	checkds("DS7", points::PTF::REV, points::PTF::FIXED, points::PTF::REV, points::PTF::FIXED);
 	checkds("DS8", genericpoints::PTF::ZERO, points::PTF::FIXED | points::PTF::REV, points::PTF::FIXED | points::PTF::REV, genericpoints::PTF::ZERO);
 	checkds("DS9", points::PTF::LOCKED | points::PTF::REV, points::PTF::LOCKED | points::PTF::REV, points::PTF::LOCKED | points::PTF::REV, points::PTF::LOCKED | points::PTF::REV);
-
+	checkds("DS10", points::PTF::ZERO, points::PTF::REV, points::PTF::FAILEDREV | points::PTF::REV, points::PTF::FAILEDNORM);
 }
 
 class test_doubleslip {
@@ -479,4 +480,47 @@ TEST_CASE( "track/deserialisation/ambiguouspartialconnection/3", "Test handling 
 
 	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() >= 1);
+}
+
+std::string track_test_str_coupling =
+R"({ "content" : [ )"
+	R"({ "type" : "couplepoints", "points" : [ { "name" : "P1", "edge" : "reverse"}, { "name" : "P2", "edge" : "normal"}, { "name" : "DS1", "edge" : "rightfront"} ] }, )"
+	R"({ "type" : "couplepoints", "points" : [ { "name" : "DS2", "edge" : "rightfront"}, { "name" : "DS1", "edge" : "rightback"} ] }, )"
+	R"({ "type" : "doubleslip", "name" : "DS1", "degreesoffreedom" : 2 }, )"
+	R"({ "type" : "doubleslip", "name" : "DS2", "notrack_fl_bl" : true, "rightfrontpoints" : { "reverse" : true } }, )"
+	R"({ "type" : "points", "name" : "P1" }, )"
+	R"({ "type" : "points", "name" : "P2" } )"
+"] }";
+
+TEST_CASE( "track/points/coupling", "Test points coupling" ) {
+	test_fixture_world env(track_test_str_coupling);
+
+	env.w.CapAllTrackPieceUnconnectedEdges();
+	env.w.LayoutInit(env.ec);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	auto checkds = [&](const char *name, genericpoints::PTF pffl, genericpoints::PTF pffr, genericpoints::PTF pfbl, genericpoints::PTF pfbr) {
+		SCOPED_INFO("Double-slip check for: " << name);
+
+		doubleslip *ds = dynamic_cast<doubleslip *>(env.w.FindTrackByName(name));
+		REQUIRE(ds != 0);
+		CHECK(ds->GetCurrentPointFlags(EDGE_DS_FL) == pffl);
+		CHECK(ds->GetCurrentPointFlags(EDGE_DS_FR) == pffr);
+		CHECK(ds->GetCurrentPointFlags(EDGE_DS_BL) == pfbl);
+		CHECK(ds->GetCurrentPointFlags(EDGE_DS_BR) == pfbr);
+	};
+	auto checkp = [&](const char *name, genericpoints::PTF pflags) {
+		SCOPED_INFO("Points check for: " << name);
+
+		points *p = dynamic_cast<points *>(env.w.FindTrackByName(name));
+		REQUIRE(p != 0);
+		CHECK(p->GetPointsFlags(0) == pflags);
+	};
+	checkp("P1", genericpoints::PTF::ZERO);
+	checkp("P2", genericpoints::PTF::REV);
+	checkds("DS1", genericpoints::PTF::REV, points::PTF::ZERO, points::PTF::REV, genericpoints::PTF::ZERO);
+	checkds("DS2", genericpoints::PTF::FIXED, genericpoints::PTF::REV, genericpoints::PTF::FIXED, genericpoints::PTF::ZERO);
+
 }

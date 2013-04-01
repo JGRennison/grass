@@ -30,6 +30,7 @@
 #include "action.h"
 #include "util.h"
 #include "textpool.h"
+#include "signal.h"
 #include <iostream>
 
 world::world() {
@@ -157,4 +158,27 @@ void world::UnregisterTickUpdate(generictrack *targ) {
 
 void world::ExecuteIfActionScope(std::function<void()> func) {
 	if(IsAuthoritative()) func();
+}
+
+void world::CapAllTrackPieceUnconnectedEdges() {
+	layout_init_final_fixups.AddFixup([this](error_collection &ec) {
+		std::deque<startofline *> newpieces;
+		for(auto it = all_pieces.begin(); it != all_pieces.end(); ++it) {
+			std::vector<generictrack::edgelistitem> edgelist;
+			it->second->GetListOfEdges(edgelist);
+			for(auto jt = edgelist.begin(); jt != edgelist.end(); ++jt) {
+				if(! jt->target->IsValid()) {
+					std::string name = string_format("#edge%d", this->auto_seq_item);
+					this->auto_seq_item++;
+					startofline *sol = new startofline(*this);
+					sol->SetName(name);
+					newpieces.push_back(sol);
+					sol->FullConnect(EDGE_FRONT, track_target_ptr(it->second.get(), jt->edge), ec);
+				}
+			}
+		}
+		for(auto it : newpieces) {
+			this->all_pieces[it->GetName()].reset(it);
+		}
+	});
 }

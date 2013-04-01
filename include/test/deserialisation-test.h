@@ -34,7 +34,7 @@ struct test_fixture_world {
 	world_test w;
 	world_serialisation ws;
 	error_collection ec;
-	
+
 	test_fixture_world(std::string input) : ws(w) {
 		ws.ParseInputString(input, ec);
 	}

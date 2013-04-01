@@ -208,7 +208,7 @@ void points::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 }
 
 bool points::IsCoupleable(EDGETYPE direction) const {
-	return (direction == EDGE_PTS_NORMAL || direction == EDGE_PTS_REVERSE);
+	return (direction == EDGE_PTS_NORMAL || direction == EDGE_PTS_REVERSE) && !(pflags & PTF::COUPLED);
 }
 
 void points::GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<points_coupling> &output) {
@@ -574,7 +574,8 @@ void doubleslip::UpdateInternalCoupling() {
 }
 
 bool doubleslip::IsCoupleable(EDGETYPE direction) const {
-	return dof == 2;
+	if(dof != 2) return false;
+	return !(GetCurrentPointFlags(GetConnectingPointDirection(direction, true)) & PTF::COUPLED || GetCurrentPointFlags(GetConnectingPointDirection(direction, false)) & PTF::COUPLED);
 }
 
 void doubleslip::GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<points_coupling> &output) {

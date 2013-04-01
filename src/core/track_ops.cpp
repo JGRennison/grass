@@ -105,22 +105,33 @@ world_time action_pointsaction::GetPointsMovementCompletionTime() const {
 }
 
 void action_pointsaction::CancelFutures(unsigned int index, genericpoints::PTF setmask, genericpoints::PTF clearmask) const {
-	auto func = [&](future &f) {
-		future_pointsaction *fp = dynamic_cast<future_pointsaction *>(&f);
-		if(!fp) return;
-		if(fp->index != index) return;
-		genericpoints::PTF foundset = fp->mask & fp->bits & setmask;
-		genericpoints::PTF foundunset = fp->mask & (~fp->bits) & clearmask;
-		if(foundset || foundunset) {
-			flagwrapper<genericpoints::PTF> newmask = fp->mask & ~(foundset | foundunset);
-			if(newmask) {
-				ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, fp->GetTriggerTime(), index, fp->bits, newmask));
-			}
-			ActionCancelFuture(f);
-		}
-	};
 
-	target->EnumerateFutures(func);
+	auto check_instance = [&](genericpoints *p, unsigned int index, genericpoints::PTF setmask, genericpoints::PTF clearmask) {
+		auto func = [&](future &f) {
+			future_pointsaction *fp = dynamic_cast<future_pointsaction *>(&f);
+			if(!fp) return;
+			if(fp->index != index) return;
+			genericpoints::PTF foundset = fp->mask & fp->bits & setmask;
+			genericpoints::PTF foundunset = fp->mask & (~fp->bits) & clearmask;
+			if(foundset || foundunset) {
+				flagwrapper<genericpoints::PTF> newmask = fp->mask & ~(foundset | foundunset);
+				if(newmask) {
+					ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, fp->GetTriggerTime(), index, fp->bits, newmask));
+				}
+				ActionCancelFuture(f);
+			}
+		};
+
+		p->EnumerateFutures(func);
+	};
+	check_instance(target, index, setmask, clearmask);
+	std::vector<genericpoints::points_coupling> *coupling = target->GetCouplingVector(index);
+	if(coupling) {
+		for(auto &it : *coupling) {
+			genericpoints::PTF rev = (setmask ^ clearmask) & it.xormask;
+			check_instance(it.targ, it.index, setmask ^ rev, clearmask ^ rev);
+		}
+	}
 }
 
 bool action_pointsaction::TrySwingOverlap(std::function<void()> &overlap_callback, bool settingreverse, std::string *failreasonkey) const {
