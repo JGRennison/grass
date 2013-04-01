@@ -42,26 +42,45 @@ class genericpoints : public genericzlentrack {
 		FAILEDREV	= 1<<5,
 		INVALID		= 1<<6,
 		FIXED		= 1<<7,
+		COUPLED		= 1<<8,
 		SERIALISABLE	= REV | OOC | LOCKED | REMINDER | FAILEDNORM | FAILEDREV,
 	};
 
+	protected:
+	PTF fail_pflags = PTF::INVALID;
+
+	public:
 	genericpoints(world &w_) : genericzlentrack(w_) { }
 	virtual void TrainEnter(EDGETYPE direction, train *t) override;
 	virtual void TrainLeave(EDGETYPE direction, train *t) override;
-	virtual unsigned int GetPointCount() const = 0;
-	virtual PTF GetPointFlags(unsigned int points_index) const = 0;
-	virtual PTF SetPointFlagsMasked(unsigned int points_index, PTF set_flags, PTF mask_flags)  = 0;
+	virtual unsigned int GetPointsCount() const = 0;
+	virtual const PTF &GetPointsFlagsRef(unsigned int points_index) const = 0;
+	inline PTF &GetPointsFlagsRef(unsigned int points_index) { return const_cast<PTF &>(const_cast<const genericpoints*>(this)->GetPointsFlagsRef(points_index)); }
+	inline PTF GetPointsFlags(unsigned int points_index) const { return GetPointsFlagsRef(points_index); }
+	PTF SetPointsFlagsMasked(unsigned int points_index, PTF set_flags, PTF mask_flags);
+	virtual unsigned int GetPointsIndexByEdge(EDGETYPE direction) const { return 0; }
+	virtual bool IsCoupleable(EDGETYPE direction) const { return false; }
+	struct points_coupling {
+		PTF *pflags;
+		PTF xormask;
+		genericpoints *targ;
+		unsigned int index;
+		points_coupling(PTF *p, PTF x, genericpoints *t, unsigned int i) : pflags(p), xormask(x), targ(t), index(i) { }
+	};
+	virtual void GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<points_coupling> &output) { }
+	virtual void CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) { }
+	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) { return 0; }
 
 	virtual std::string GetTypeName() const override { return "Generic Points"; }
 
 	inline bool IsFlagsOOC(PTF pflags) const;
 	inline bool IsOOC(unsigned int points_index) const {
-		return IsFlagsOOC(GetPointFlags(points_index));
+		return IsFlagsOOC(GetPointsFlags(points_index));
 	}
 
 	inline bool IsFlagsImmovable(PTF pflags) const;
 	inline bool IsImmovable(unsigned int points_index) const {
-		return IsFlagsImmovable(GetPointFlags(points_index));
+		return IsFlagsImmovable(GetPointsFlags(points_index));
 	}
 
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override { outputlist.push_back(&trs); return 1; }
@@ -85,6 +104,7 @@ class points : public genericpoints {
 	track_target_ptr normal;
 	track_target_ptr reverse;
 	PTF pflags = PTF::ZERO;
+	std::vector<points_coupling> couplings;
 
 	public:
 	points(world &w_) : genericpoints(w_) { }
@@ -102,9 +122,8 @@ class points : public genericpoints {
 
 	virtual std::string GetTypeName() const override { return "Points"; }
 
-	virtual unsigned int GetPointCount() const override { return 1; }
-	virtual PTF GetPointFlags(unsigned int points_index) const override;
-	virtual PTF SetPointFlagsMasked(unsigned int points_index, PTF set_flags, PTF mask_flags) override;
+	virtual unsigned int GetPointsCount() const override { return 1; }
+	virtual const PTF &GetPointsFlagsRef(unsigned int points_index) const override;
 
 	static std::string GetTypeSerialisationNameStatic() { return "points"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
@@ -112,6 +131,11 @@ class points : public genericpoints {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	virtual bool IsTrackAlwaysPassable() const override { return false; }
+
+	virtual bool IsCoupleable(EDGETYPE direction) const override;
+	virtual void GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<points_coupling> &output) override;
+	virtual void CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) override;
+	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) override { return &couplings; }
 
 	protected:
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
@@ -141,9 +165,8 @@ class catchpoints : public genericpoints {
 
 	virtual std::string GetTypeName() const override { return "Catch Points"; }
 
-	virtual unsigned int GetPointCount() const override { return 1; }
-	virtual PTF GetPointFlags(unsigned int points_index) const override;
-	virtual PTF SetPointFlagsMasked(unsigned int points_index, PTF set_flags, PTF mask_flags) override;
+	virtual unsigned int GetPointsCount() const override { return 1; }
+	virtual const PTF &GetPointsFlagsRef(unsigned int points_index) const override;
 
 	static std::string GetTypeSerialisationNameStatic() { return "catchpoints"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
@@ -203,9 +226,9 @@ class doubleslip : public genericpoints {
 	track_target_ptr backright;
 	track_target_ptr backleft;
 	PTF pflags[4] = { PTF::ZERO, PTF::ZERO, PTF::ZERO, PTF::ZERO };
+	std::vector<points_coupling> couplings[4];
 	track_reservation_state trs;
 	unsigned int dof = 2;
-	PTF fail_pflags = PTF::INVALID;
 
 	enum class DSF {
 		ZERO		= 0,
@@ -217,8 +240,10 @@ class doubleslip : public genericpoints {
 	};
 	DSF dsflags;
 	void UpdatePointsFixedStatesFromMissingTrackEdges();
+	void UpdateInternalCoupling();
 
-	inline unsigned int GetCurrentPointIndex(EDGETYPE direction) const {
+	private:
+	inline unsigned int GetPointsIndexByEdgeIntl(EDGETYPE direction) const {
 		switch(direction) {
 			case EDGE_DS_FL:
 				return 0;
@@ -233,9 +258,8 @@ class doubleslip : public genericpoints {
 		}
 	}
 
-	private:
 	inline const PTF &GetCurrentPointFlagsIntl(EDGETYPE direction) const {
-		unsigned int index = GetCurrentPointIndex(direction);
+		unsigned int index = GetPointsIndexByEdgeIntl(direction);
 		if(index < 4) return pflags[index];
 		else return fail_pflags;
 	}
@@ -243,6 +267,7 @@ class doubleslip : public genericpoints {
 	public:
 	inline PTF &GetCurrentPointFlags(EDGETYPE direction) { return const_cast<PTF &>(GetCurrentPointFlagsIntl(direction)); }
 	inline PTF GetCurrentPointFlags(EDGETYPE direction) const { return GetCurrentPointFlagsIntl(direction); }
+	virtual unsigned int GetPointsIndexByEdge(EDGETYPE direction) const override { return GetPointsIndexByEdgeIntl(direction); }
 
 	inline EDGETYPE GetConnectingPointDirection(EDGETYPE direction, bool reverse) const {
 		switch(direction) {
@@ -301,14 +326,18 @@ class doubleslip : public genericpoints {
 
 	virtual std::string GetTypeName() const  override{ return "Double Slip Points"; }
 
-	virtual unsigned int GetPointCount() const override { return 4; }
-	virtual PTF GetPointFlags(unsigned int points_index) const override;
-	virtual PTF SetPointFlagsMasked(unsigned int points_index, PTF set_flags, PTF mask_flags) override;
+	virtual unsigned int GetPointsCount() const override { return 4; }
+	virtual const PTF &GetPointsFlagsRef(unsigned int points_index) const override;
 
 	static std::string GetTypeSerialisationNameStatic() { return "doubleslip"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+
+	virtual bool IsCoupleable(EDGETYPE direction) const override;
+	virtual void GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<points_coupling> &output) override;
+	virtual void CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) override;
+	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) override { return &couplings[index]; }
 
 	protected:
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const  override{ return EDGE_NULL; }

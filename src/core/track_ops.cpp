@@ -37,7 +37,7 @@
 void future_pointsaction::ExecuteAction() {
 	genericpoints *gp = dynamic_cast<genericpoints *>(&GetTarget());
 	if(gp) {
-		gp->SetPointFlagsMasked(index, bits, mask);
+		gp->SetPointsFlagsMasked(index, bits, mask);
 	}
 }
 
@@ -58,7 +58,7 @@ void future_pointsaction::Serialise(serialiser_output &so, error_collection &ec)
 void action_pointsaction::ExecuteAction() const {
 	if(!target) return;
 
-	genericpoints::PTF old_pflags = target->GetPointFlags(index);
+	genericpoints::PTF old_pflags = target->GetPointsFlags(index);
 	genericpoints::PTF change_flags = (old_pflags ^ bits) & mask;
 
 	genericpoints::PTF immediate_action_bits = genericpoints::PTF::ZERO;
@@ -146,7 +146,7 @@ bool action_pointsaction::TrySwingOverlap(std::function<void()> &overlap_callbac
 	if(!start->IsOverlapSwingPermitted(failreasonkey)) return false;
 
 	//temporarily "move" points
-	genericpoints::PTF saved_pflags = target->SetPointFlagsMasked(index, settingreverse ? genericpoints::PTF::REV : genericpoints::PTF::ZERO, genericpoints::PTF::REV);
+	genericpoints::PTF saved_pflags = target->SetPointsFlagsMasked(index, settingreverse ? genericpoints::PTF::REV : genericpoints::PTF::ZERO, genericpoints::PTF::REV);
 
 	const route *best_new_overlap = 0;
 	int best_overlap_score = INT_MIN;
@@ -158,7 +158,7 @@ bool action_pointsaction::TrySwingOverlap(std::function<void()> &overlap_callbac
 	}, RRF::IGNORE_OWN_OVERLAP);
 
 	//move back
-	target->SetPointFlagsMasked(index, saved_pflags, ~genericpoints::PTF::ZERO);
+	target->SetPointsFlagsMasked(index, saved_pflags, ~genericpoints::PTF::ZERO);
 
 	bool result = false;
 

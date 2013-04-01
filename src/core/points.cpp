@@ -26,6 +26,7 @@
 #include "points.h"
 #include "error.h"
 #include "track_ops.h"
+#include "util.h"
 
 #include <cassert>
 
@@ -36,6 +37,29 @@ void genericpoints::TrainLeave(EDGETYPE direction, train *t) { }
 
 GTF genericpoints::GetFlags(EDGETYPE direction) const {
 	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
+}
+
+genericpoints::PTF genericpoints::SetPointsFlagsMasked(unsigned int points_index, genericpoints::PTF set_flags, genericpoints::PTF mask_flags) {
+	PTF &pflags = GetPointsFlagsRef(points_index);
+
+	if(pflags & PTF::FIXED || pflags & PTF::INVALID) return pflags;
+
+	pflags = (pflags & (~mask_flags)) | (set_flags & mask_flags);
+
+	std::vector<points_coupling> *couplings = GetCouplingVector(points_index);
+	if(couplings) {
+		for(auto it = couplings->begin(); it != couplings->end(); ++it) {
+			PTF curmask = mask_flags;
+			PTF curbits = set_flags;
+			if(it->xormask & PTF::REV) {
+				curmask = swap_single_bits(curmask, PTF::FAILEDNORM, PTF::FAILEDREV);
+				curbits = swap_single_bits(curbits, PTF::FAILEDNORM, PTF::FAILEDREV);
+			}
+			curbits ^= it->xormask;
+			*(it->pflags) = (*(it->pflags) & (~curmask)) | (curbits & curmask);
+		}
+	}
+	return pflags;
 }
 
 
@@ -128,14 +152,8 @@ bool points::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-genericpoints::PTF points::GetPointFlags(unsigned int points_index) const {
-	if(points_index != 0) return PTF::INVALID;
-	return pflags;
-}
-
-genericpoints::PTF points::SetPointFlagsMasked(unsigned int points_index, genericpoints::PTF set_flags, genericpoints::PTF mask_flags) {
-	if(points_index != 0) return PTF::INVALID;
-	pflags = (pflags & (~mask_flags)) | set_flags;
+const genericpoints::PTF &points::GetPointsFlagsRef(unsigned int points_index) const {
+	if(points_index != 0) return fail_pflags;
 	return pflags;
 }
 
@@ -158,7 +176,7 @@ bool IsPointsRoutingDirAndIndexRev(EDGETYPE direction, unsigned int index) {
 }
 
 bool points::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
-	PTF pflags = GetPointFlags(0);
+	PTF pflags = GetPointsFlags(0);
 	bool rev = pflags & PTF::REV;
 	if(IsFlagsImmovable(pflags)) {
 		if(IsPointsRoutingDirAndIndexRev(direction, index) != rev) {
@@ -187,6 +205,18 @@ EDGETYPE points::GetAvailableAutoConnectionDirection(bool forwardconnection) con
 
 void points::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_PTS_FACE, prev), edgelistitem(EDGE_PTS_NORMAL, normal), edgelistitem(EDGE_PTS_REVERSE, reverse) });
+}
+
+bool points::IsCoupleable(EDGETYPE direction) const {
+	return (direction == EDGE_PTS_NORMAL || direction == EDGE_PTS_REVERSE);
+}
+
+void points::GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<points_coupling> &output) {
+	output.emplace_back(&pflags, (direction == EDGE_PTS_REVERSE)?PTF::REV:PTF::ZERO, this, 0);
+}
+
+void points::CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) {
+	couplings.push_back(pc);
 }
 
 const track_target_ptr & catchpoints::GetConnectingPiece(EDGETYPE direction) const {
@@ -265,19 +295,13 @@ bool catchpoints::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-genericpoints::PTF catchpoints::GetPointFlags(unsigned int points_index) const {
-	if(points_index != 0) return PTF::INVALID;
-	return pflags;
-}
-
-genericpoints::PTF catchpoints::SetPointFlagsMasked(unsigned int points_index, genericpoints::PTF set_flags, genericpoints::PTF mask_flags) {
-	if(points_index != 0) return PTF::INVALID;
-	pflags = (pflags & (~mask_flags)) | set_flags;
+const genericpoints::PTF &catchpoints::GetPointsFlagsRef(unsigned int points_index) const {
+	if(points_index != 0) return fail_pflags;
 	return pflags;
 }
 
 bool catchpoints::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
-	genericpoints::PTF pflags = GetPointFlags(0);
+	genericpoints::PTF pflags = GetPointsFlags(0);
 	if(IsFlagsImmovable(pflags) && pflags & PTF::REV) {
 		GetReservationFailureReason(pflags, failreasonkey);
 		return false;
@@ -445,38 +469,11 @@ bool doubleslip::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-genericpoints::PTF doubleslip::GetPointFlags(unsigned int points_index) const {
+const genericpoints::PTF &doubleslip::GetPointsFlagsRef(unsigned int points_index) const {
 	if(points_index < 4) return pflags[points_index];
 	else {
 		assert(false);
-		return PTF::INVALID;
-	}
-}
-
-genericpoints::PTF doubleslip::SetPointFlagsMasked(unsigned int points_index, genericpoints::PTF set_flags, genericpoints::PTF mask_flags) {
-	if(points_index < 4) {
-		auto safe_set = [&](genericpoints::PTF &flagsvar, genericpoints::PTF newflags) {
-			if(!(flagsvar & PTF::FIXED)) flagsvar = (newflags & PTF::SERIALISABLE) | (flagsvar & ~PTF::SERIALISABLE);
-		};
-
-		if(pflags[points_index] & PTF::FIXED) return pflags[points_index];
-
-		genericpoints::PTF newpointsflags = (pflags[points_index] & (~mask_flags)) | set_flags;
-		if(dof == 1) {
-			safe_set(pflags[0], newpointsflags);
-			safe_set(pflags[1], newpointsflags);
-			safe_set(pflags[2], newpointsflags);
-			safe_set(pflags[3], newpointsflags);
-		}
-		else if(dof == 2) {
-			safe_set(pflags[points_index], newpointsflags);
-			safe_set(pflags[points_index ^ 1], newpointsflags ^ PTF::REV);
-		}
-		else if(dof == 4) safe_set(pflags[points_index], newpointsflags);
-		return pflags[points_index];
-	}
-	else {
-		return PTF::INVALID;
+		return fail_pflags;
 	}
 }
 
@@ -506,13 +503,13 @@ bool doubleslip::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flag
 
 void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
 	if(rr_flags & RRF::RESERVE) {
-		unsigned int entranceindex = GetCurrentPointIndex(direction);
+		unsigned int entranceindex = GetPointsIndexByEdge(direction);
 		PTF entrancepf = GetCurrentPointFlags(direction);
 		bool isentrancerev = (entrancepf & PTF::FIXED) ? (entrancepf & PTF::REV) : index;
 
 		EDGETYPE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
 
-		unsigned int exitindex = GetCurrentPointIndex(exitdirection);
+		unsigned int exitindex = GetPointsIndexByEdge(exitdirection);
 		PTF exitpf = GetCurrentPointFlags(exitdirection);
 
 		bool isexitrev = (GetConnectingPointDirection(exitdirection, true) == direction);
@@ -553,4 +550,44 @@ void doubleslip::UpdatePointsFixedStatesFromMissingTrackEdges() {
 		default:
 			break;
 	}
+}
+
+void doubleslip::UpdateInternalCoupling() {
+	for(unsigned int i = 0; i < 4; i++) {
+		couplings[i].clear();
+		if(pflags[i] & PTF::FIXED) continue;
+
+		auto couple_with = [&](unsigned int index, PTF xormask) {
+			if(! (pflags[index] & PTF::FIXED)) couplings[i].emplace_back(&pflags[index], xormask, this, index);
+		};
+
+		if(dof == 1) {
+			couple_with(i^1, PTF::ZERO);
+			couple_with(i^2, PTF::ZERO);
+			couple_with(i^3, PTF::ZERO);
+		}
+		else if(dof == 2) {
+			couple_with(i^1, PTF::REV);
+		}
+		SetPointsFlagsMasked(i, pflags[i]&PTF::SERIALISABLE, PTF::SERIALISABLE);
+	}
+}
+
+bool doubleslip::IsCoupleable(EDGETYPE direction) const {
+	return dof == 2;
+}
+
+void doubleslip::GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<points_coupling> &output) {
+	auto docoupling = [&](bool reverse) {
+		EDGETYPE oppositeedge = GetConnectingPointDirection(direction, reverse);
+		if(GetCurrentPointFlags(oppositeedge) & PTF::FIXED) return;
+		bool revforaccess = (GetConnectingPointDirection(oppositeedge, true) == direction);
+		output.emplace_back(&GetCurrentPointFlags(oppositeedge), revforaccess?PTF::REV:PTF::ZERO, this, GetPointsIndexByEdge(oppositeedge));
+	};
+	docoupling(true);
+	docoupling(false);
+}
+
+void doubleslip::CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) {
+	couplings[index].push_back(pc);
 }

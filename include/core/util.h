@@ -49,4 +49,10 @@ std::string gr_strftime(const std::string &format, const struct tm *tm, time_t t
 unsigned int GetMilliTime();
 size_t GetLineNumberOfStringOffset(const std::string &input, size_t offset, size_t *linestart = 0, size_t *lineend = 0);
 
+template <typename I> I swap_single_bits(I in, I bit1, I bit2) {
+	bool rev = !(in & bit1) != !(in & bit2);
+	if(rev) return in ^ (bit1 | bit2);
+	else return in;
+}
+
 #endif

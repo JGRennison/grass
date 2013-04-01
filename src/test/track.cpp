@@ -97,7 +97,7 @@ TEST_CASE( "track/conn/track", "Test basic track segment connectivity" ) {
 TEST_CASE( "track/conn/points", "Test basic points connectivity" ) {
 	test_fixture_track_2 env;
 
-	REQUIRE(env.pt1.GetPointFlags(0) == genericpoints::PTF::ZERO);
+	REQUIRE(env.pt1.GetPointsFlags(0) == genericpoints::PTF::ZERO);
 	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT) == track_target_ptr(&env.pt1, EDGE_PTS_FACE));
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.pt1, EDGE_PTS_NORMAL));
 	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.pt1, EDGE_PTS_REVERSE));
@@ -106,12 +106,12 @@ TEST_CASE( "track/conn/points", "Test basic points connectivity" ) {
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE_BACK));
 	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
 	//reverse
-	env.pt1.SetPointFlagsMasked(0, points::PTF::REV, points::PTF::REV);
+	env.pt1.SetPointsFlagsMasked(0, points::PTF::REV, points::PTF::REV);
 	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr(&env.track3, EDGE_FRONT));
 	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE_BACK));
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
 	//OOC
-	env.pt1.SetPointFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
+	env.pt1.SetPointsFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
 	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr());
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
 	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
@@ -120,18 +120,18 @@ TEST_CASE( "track/conn/points", "Test basic points connectivity" ) {
 TEST_CASE( "track/conn/catchpoints", "Test basic catchpoints connectivity" ) {
 	test_fixture_track_3 env;
 
-	REQUIRE(env.cp1.GetPointFlags(0) == catchpoints::PTF::REV);
+	REQUIRE(env.cp1.GetPointsFlags(0) == catchpoints::PTF::REV);
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT) == track_target_ptr(&env.cp1, EDGE_FRONT));
 	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.cp1, EDGE_BACK));
 	//reverse
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr());
 	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
 	//normal
-	env.cp1.SetPointFlagsMasked(0, genericpoints::PTF::ZERO, points::PTF::REV);
+	env.cp1.SetPointsFlagsMasked(0, genericpoints::PTF::ZERO, points::PTF::REV);
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr(&env.track4, EDGE_FRONT));
 	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track2, EDGE_BACK));
 	//OOC
-	env.cp1.SetPointFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
+	env.cp1.SetPointsFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr());
 	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
 }
@@ -202,7 +202,7 @@ TEST_CASE( "track/traverse/points", "Test basic points traversal" ) {
 	REQUIRE(loc == track_location(&env.pt1, EDGE_PTS_REVERSE, 0));
 
 	//reverse
-	env.pt1.SetPointFlagsMasked(0, points::PTF::REV, points::PTF::REV);
+	env.pt1.SetPointsFlagsMasked(0, points::PTF::REV, points::PTF::REV);
 
 	loc.SetTargetStartLocation(&env.track1, EDGE_FRONT);
 	leftover = AdvanceDisplacement(60000, loc, 0, stub);
@@ -220,7 +220,7 @@ TEST_CASE( "track/traverse/points", "Test basic points traversal" ) {
 	REQUIRE(loc == track_location(&env.pt1, EDGE_PTS_NORMAL, 0));
 
 	//OOC
-	env.pt1.SetPointFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
+	env.pt1.SetPointsFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
 	loc.SetTargetStartLocation(&env.track1, EDGE_FRONT);
 	leftover = AdvanceDisplacement(60000, loc, 0, stub);
 	REQUIRE(leftover == 10000);
@@ -271,7 +271,7 @@ TEST_CASE( "track/deserialisation/points", "Test basic points deserialisation" )
 
 	points *p = dynamic_cast<points *>(env.w.FindTrackByName("P1"));
 	REQUIRE(p != 0);
-	REQUIRE(p->GetPointFlags(0) == (points::PTF::REV | points::PTF::REMINDER));
+	REQUIRE(p->GetPointsFlags(0) == (points::PTF::REV | points::PTF::REMINDER));
 }
 
 TEST_CASE( "track/deserialisation/autoname", "Test deserialisation automatic naming" ) {
@@ -341,7 +341,7 @@ class test_doubleslip {
 		return ds->HalfConnect(this_entrance_direction, target_entrance);
 	}
 	static inline unsigned int GetCurrentPointIndex(doubleslip *ds, EDGETYPE direction) {
-		return ds->GetCurrentPointIndex(direction);
+		return ds->GetPointsIndexByEdge(direction);
 	}
 };
 
@@ -378,7 +378,7 @@ TEST_CASE( "track/conn/doubleslip", "Test basic doubleslip connectivity" ) {
 		doubleslip *ds = dynamic_cast<doubleslip *>(env.w.FindTrackByName(name));
 		REQUIRE(ds != 0);
 
-		ds->SetPointFlagsMasked(test_doubleslip::GetCurrentPointIndex(ds, direction), rev ? genericpoints::PTF::REV : genericpoints::PTF::ZERO, genericpoints::PTF::REV);
+		ds->SetPointsFlagsMasked(test_doubleslip::GetCurrentPointIndex(ds, direction), rev ? genericpoints::PTF::REV : genericpoints::PTF::ZERO, genericpoints::PTF::REV);
 	};
 
 	checkdstraverse("DS1", br, 0, 0, fl);

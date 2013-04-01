@@ -232,12 +232,13 @@ void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec)
 	}
 
 	UpdatePointsFixedStatesFromMissingTrackEdges();
+	UpdateInternalCoupling();
 
 	auto deserialisepointsflags = [&](EDGETYPE direction, const char *prop) {
 		genericpoints::PTF pf = GetCurrentPointFlags(direction);
 		pointsflagssubobj ps(&pf);
 		CheckTransJsonSubObj(ps, di, prop, "", ec);
-		SetPointFlagsMasked(GetCurrentPointIndex(direction), pf, genericpoints::PTF::SERIALISABLE);
+		SetPointsFlagsMasked(GetPointsIndexByEdge(direction), pf, genericpoints::PTF::SERIALISABLE);
 	};
 	deserialisepointsflags(EDGE_DS_FL, "leftfrontpoints");
 	deserialisepointsflags(EDGE_DS_FR, "rightfrontpoints");

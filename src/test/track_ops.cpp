@@ -44,20 +44,20 @@ TEST_CASE( "track/ops/points/movement", "Test basic points movement future" ) {
 
 	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
 
-	REQUIRE(env.p1.GetPointFlags(0) == genericpoints::PTF::ZERO);
+	REQUIRE(env.p1.GetPointsFlags(0) == genericpoints::PTF::ZERO);
 	env.w.GameStep(500);
-	REQUIRE(env.p1.GetPointFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::OOC));
+	REQUIRE(env.p1.GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::OOC));
 	env.w.GameStep(4500);
-	REQUIRE(env.p1.GetPointFlags(0) == genericpoints::PTF::REV);
+	REQUIRE(env.p1.GetPointsFlags(0) == genericpoints::PTF::REV);
 
 	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::LOCKED, genericpoints::PTF::LOCKED));
 	env.w.GameStep(50);
 	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
 	env.w.GameStep(50);
-	REQUIRE(env.p1.GetPointFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
+	REQUIRE(env.p1.GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
 	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::ZERO, genericpoints::PTF::REV));
 	env.w.GameStep(4900);
-	REQUIRE(env.p1.GetPointFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
+	REQUIRE(env.p1.GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
 	REQUIRE(env.w.GetLogText() == "Points P1 not movable: Locked\n");
 }
 
@@ -167,20 +167,20 @@ TEST_CASE( "track/ops/overlap/reservationswing", "Test track reservation overlap
 	env.w.GameStep(1);
 	CHECK(env.w.GetLogText() == "");
 	REQUIRE(tenv.p1 != 0);
-	CHECK(tenv.p1->GetPointFlags(0) == (genericpoints::PTF::OOC | genericpoints::PTF::REV));
+	CHECK(tenv.p1->GetPointsFlags(0) == (genericpoints::PTF::OOC | genericpoints::PTF::REV));
 	tenv.checksignal(tenv.s1, 1, RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.covlp);
 
 	env.w.GameStep(100000);
 	CHECK(env.w.GetLogText() == "");
-	CHECK(tenv.p1->GetPointFlags(0) == genericpoints::PTF::REV);
+	CHECK(tenv.p1->GetPointsFlags(0) == genericpoints::PTF::REV);
 	tenv.checksignal(tenv.s1, 2, RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 1, RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
 
 	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.b));
 	env.w.GameStep(1);
 	CHECK(env.w.GetLogText() != "");
-	CHECK(tenv.p1->GetPointFlags(0) == genericpoints::PTF::REV);
+	CHECK(tenv.p1->GetPointsFlags(0) == genericpoints::PTF::REV);
 	tenv.checksignal(tenv.s1, 2, RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 1, RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
 	env.w.ResetLogText();
@@ -219,7 +219,7 @@ TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swingi
 	env.w.GameStep(1);
 
 	CHECK(env.w.GetLogText() == "");
-	CHECK(tenv.p1->GetPointFlags(0) == (genericpoints::PTF::OOC | genericpoints::PTF::REV));
+	CHECK(tenv.p1->GetPointsFlags(0) == (genericpoints::PTF::OOC | genericpoints::PTF::REV));
 	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.covlp);
 
 	REQUIRE(tenv.p2 != 0);
@@ -227,7 +227,7 @@ TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swingi
 	env.w.GameStep(1);
 
 	CHECK(env.w.GetLogText() != "");
-	CHECK(tenv.p1->GetPointFlags(0) == (genericpoints::PTF::OOC | genericpoints::PTF::REV));
+	CHECK(tenv.p1->GetPointsFlags(0) == (genericpoints::PTF::OOC | genericpoints::PTF::REV));
 	tenv.checksignal(tenv.s2, 0, RTC_NULL, 0, 0, tenv.covlp);
 	env.w.ResetLogText();
 
