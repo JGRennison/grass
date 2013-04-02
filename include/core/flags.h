@@ -26,6 +26,7 @@
 
 #include <type_traits>
 #include <ostream>
+#include <ios>
 
 template< typename enum_type >
 struct enum_traits {
@@ -81,7 +82,9 @@ template <typename C> typename std::enable_if<enum_traits<C>::flags, bool>::type
 
 template <typename C> typename std::enable_if<enum_traits<C>::flags, std::ostream&>::type
 operator<<(std::ostream& os, C val) {
-	os << static_cast<typename std::underlying_type<C>::type>(val);
+	auto prev = os.flags();
+	os << "0x" << std::hex << std::uppercase << static_cast<typename std::underlying_type<C>::type>(val);
+	os.flags(prev);
 	return os;
 }
 
