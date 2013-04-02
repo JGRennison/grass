@@ -31,6 +31,7 @@
 #include "world_serialisation.h"
 #include "deserialisation-test.h"
 #include "world-test.h"
+#include "track_ops.h"
 
 
 struct test_fixture_track_1 {
@@ -502,7 +503,7 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	auto checkds = [&](const char *name, genericpoints::PTF pffl, genericpoints::PTF pffr, genericpoints::PTF pfbl, genericpoints::PTF pfbr) {
-		SCOPED_INFO("Double-slip check for: " << name);
+		SCOPED_INFO("Double-slip check for: " << name << ", at time: " << env.w.GetGameTime());
 
 		doubleslip *ds = dynamic_cast<doubleslip *>(env.w.FindTrackByName(name));
 		REQUIRE(ds != 0);
@@ -512,7 +513,7 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 		CHECK(ds->GetCurrentPointFlags(EDGE_DS_BR) == pfbr);
 	};
 	auto checkp = [&](const char *name, genericpoints::PTF pflags) {
-		SCOPED_INFO("Points check for: " << name);
+		SCOPED_INFO("Points check for: " << name << ", at time: " << env.w.GetGameTime());
 
 		points *p = dynamic_cast<points *>(env.w.FindTrackByName(name));
 		REQUIRE(p != 0);
@@ -520,7 +521,41 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 	};
 	checkp("P1", genericpoints::PTF::ZERO);
 	checkp("P2", genericpoints::PTF::REV);
-	checkds("DS1", genericpoints::PTF::REV, points::PTF::ZERO, points::PTF::REV, genericpoints::PTF::ZERO);
+	checkds("DS1", genericpoints::PTF::REV, genericpoints::PTF::ZERO, genericpoints::PTF::REV, genericpoints::PTF::ZERO);
+	checkds("DS2", genericpoints::PTF::FIXED, genericpoints::PTF::REV, genericpoints::PTF::FIXED, genericpoints::PTF::ZERO);
+
+	points *p1 = dynamic_cast<points *>(env.w.FindTrackByName("P1"));
+	points *p2 = dynamic_cast<points *>(env.w.FindTrackByName("P2"));
+
+	env.w.SubmitAction(action_pointsaction(env.w, *p1, 0, points::PTF::REV, points::PTF::REV));
+	env.w.GameStep(1);
+
+	p1->SetPointsFlagsMasked(0, points::PTF::FAILEDNORM, points::PTF::FAILEDNORM);
+
+	checkp("P1", genericpoints::PTF::REV | genericpoints::PTF::OOC | genericpoints::PTF::FAILEDNORM);
+	checkp("P2",  genericpoints::PTF::OOC | genericpoints::PTF::FAILEDREV);
+	checkds("DS1", genericpoints::PTF::REV, genericpoints::PTF::ZERO, genericpoints::PTF::OOC | genericpoints::PTF::FAILEDREV, genericpoints::PTF::REV | genericpoints::PTF::OOC | genericpoints::PTF::FAILEDNORM);
+	checkds("DS2", genericpoints::PTF::FIXED, genericpoints::PTF::REV, genericpoints::PTF::FIXED, genericpoints::PTF::ZERO);
+
+	env.w.GameStep(4000);
+
+	CHECK(p1->HaveFutures() == true);
+	env.w.SubmitAction(action_pointsaction(env.w, *p2, 0, points::PTF::REV, points::PTF::REV));
+	env.w.GameStep(1);
+	CHECK(p1->HaveFutures() == false);
+
+	env.w.GameStep(4000);
+
+	checkp("P1", genericpoints::PTF::OOC | genericpoints::PTF::FAILEDNORM);
+	checkp("P2",  genericpoints::PTF::REV | genericpoints::PTF::OOC | genericpoints::PTF::FAILEDREV);
+	checkds("DS1", genericpoints::PTF::REV, genericpoints::PTF::ZERO, genericpoints::PTF::REV | genericpoints::PTF::OOC | genericpoints::PTF::FAILEDREV, genericpoints::PTF::OOC | genericpoints::PTF::FAILEDNORM);
+	checkds("DS2", genericpoints::PTF::FIXED, genericpoints::PTF::REV, genericpoints::PTF::FIXED, genericpoints::PTF::ZERO);
+
+	env.w.GameStep(2000);
+
+	checkp("P1", genericpoints::PTF::FAILEDNORM);
+	checkp("P2",  genericpoints::PTF::REV | genericpoints::PTF::FAILEDREV);
+	checkds("DS1", genericpoints::PTF::REV, genericpoints::PTF::ZERO, genericpoints::PTF::REV | genericpoints::PTF::FAILEDREV, genericpoints::PTF::FAILEDNORM);
 	checkds("DS2", genericpoints::PTF::FIXED, genericpoints::PTF::REV, genericpoints::PTF::FIXED, genericpoints::PTF::ZERO);
 
 }
