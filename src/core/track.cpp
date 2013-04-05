@@ -44,7 +44,7 @@ unsigned int speedrestrictionset::GetTrackSpeedLimitByClass(const std::string &s
 	return default_max;
 }
 
-unsigned int speedrestrictionset::GetTrainTrackSpeedLimit(train *t) const {
+unsigned int speedrestrictionset::GetTrainTrackSpeedLimit(const train *t) const {
 	return GetTrackSpeedLimitByClass(t->GetVehSpeedClass(), t->GetMaxVehSpeed());
 }
 
