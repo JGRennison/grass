@@ -322,15 +322,13 @@ void genericsignal::UpdateSignalState() {
 			}
 		}
 		if(set_route->end.track->GetFlags(set_route->end.direction) & GTF::SIGNAL) {
-			genericsignal *gs = dynamic_cast<genericsignal*>(set_route->end.track);
-			if(gs) {
-				const route *rt = gs->GetCurrentForwardOverlap();
-				if(rt) {
-					for(auto it = rt->trackcircuits.begin(); it != rt->trackcircuits.end(); ++it) {
-						if((*it)->Occupied()) {
-							clear_route();
-							return;
-						}
+			genericsignal *gs = static_cast<genericsignal*>(set_route->end.track);
+			const route *rt = gs->GetCurrentForwardOverlap();
+			if(rt) {
+				for(auto it = rt->trackcircuits.begin(); it != rt->trackcircuits.end(); ++it) {
+					if((*it)->Occupied()) {
+						clear_route();
+						return;
 					}
 				}
 			}
@@ -429,7 +427,7 @@ void genericsignal::BackwardsReservedTrackScan(std::function<bool(const generics
 			if(it->location.track == next) {
 				//found a repeater signal
 				current = next;
-				next = dynamic_cast<genericsignal*>(current->GetAspectBackwardsDependency());
+				next = FastSignalCast(current->GetAspectBackwardsDependency());
 				if(!checksignal(current)) {
 					stop_tracing = true;
 					return;
@@ -440,7 +438,7 @@ void genericsignal::BackwardsReservedTrackScan(std::function<bool(const generics
 	};
 	do {
 		if(!checksignal(current)) return;
-		next = dynamic_cast<genericsignal*>(current->GetAspectBackwardsDependency());
+		next = FastSignalCast(current->GetAspectBackwardsDependency());
 
 		current->EnumerateCurrentBackwardsRoutes(routecheckfunc);
 
@@ -578,7 +576,7 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 		if(signal_route.RouteReservation(RRF::AUTOROUTE | RRF::TRYRESERVE)) {
 			signal_route.RouteReservation(RRF::AUTOROUTE | RRF::RESERVE);
 
-			genericsignal *end_signal = dynamic_cast<genericsignal *>(signal_route.end.track);
+			genericsignal *end_signal = FastSignalCast(signal_route.end.track, signal_route.end.direction);
 			if(end_signal && ! (end_signal->GetSignalFlags() & GSF::NOOVERLAP)) {	//reserve an overlap beyond the end signal too if needed
 				end_signal->PostLayoutInit(ec);					//make sure that the end piece is inited
 				const route *best_overlap = end_signal->FindBestOverlap();
@@ -627,13 +625,8 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 
 		GTF pieceflags = piece.track->GetFlags(piece.direction);
 		if(pieceflags & GTF::ROUTINGPOINT) {
-			routingpoint *target_routing_piece = dynamic_cast<routingpoint *>(piece.track);
-			if(!target_routing_piece) {
-				ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Track piece claims to be routingpoint but not downcastable");
-				continue_initing = false;
-				return true;
-			}
-
+			routingpoint *target_routing_piece = static_cast<routingpoint *>(piece.track);
+			
 			RPRT availableroutetypes = target_routing_piece->GetAvailableRouteTypes(piece.direction);
 			if(availableroutetypes & (RPRT::ROUTEEND | RPRT::SHUNTEND | RPRT::OVERLAPEND)) {
 				if(target_routing_piece->GetSetRouteTypes(piece.direction) & (RPRT::ROUTEEND | RPRT::SHUNTEND | RPRT::VIA)) {
@@ -660,7 +653,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						rt->parent = this;
 
 						if(type == RTC_ROUTE) {
-							genericsignal *rt_sig = dynamic_cast<genericsignal *>(target_routing_piece);
+							genericsignal *rt_sig = FastSignalCast(target_routing_piece, piece.direction);
 							if(rt_sig && !(rt_sig->GetSignalFlags()&GSF::NOOVERLAP)) rt->routeflags |= route::RF::NEEDOVERLAP;
 						}
 
@@ -764,13 +757,13 @@ void route::FillLists() {
 			last_tc = this_tc;
 			trackcircuits.push_back(this_tc);
 		}
-		routingpoint *target_routing_piece = dynamic_cast<routingpoint *>(it->location.track);
+		routingpoint *target_routing_piece = FastRoutingpointCast(it->location.track, it->location.direction);
 		if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(it->location.direction) & RPRT::VIA) {
 			vias.push_back(target_routing_piece);
 		}
-		if(target_routing_piece && target_routing_piece->GetFlags(it->location.direction) & GTF::SIGNAL) {
-			genericsignal *this_signal = dynamic_cast<genericsignal *>(target_routing_piece);
-			if(this_signal && this_signal->RepeaterAspectMeaningfulForRouteType(type)) repeatersignals.push_back(this_signal);
+		genericsignal *this_signal = FastSignalCast(target_routing_piece, it->location.direction);
+		if(this_signal && this_signal->RepeaterAspectMeaningfulForRouteType(type)) {
+			repeatersignals.push_back(this_signal);
 		}
 		if(!it->location.track->IsTrackAlwaysPassable()) {
 			passtestlist.push_back(*it);

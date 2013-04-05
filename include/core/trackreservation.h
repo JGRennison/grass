@@ -68,8 +68,8 @@ enum class GTF : unsigned int {
 	ROUTESET	= 1<<0,
 	ROUTETHISDIR	= 1<<1,
 	ROUTEFORK	= 1<<2,
-	ROUTINGPOINT	= 1<<3,
-	SIGNAL		= 1<<4,
+	ROUTINGPOINT	= 1<<3,		//this track object **MUST** be static_castable to routingpoint
+	SIGNAL		= 1<<4,		//this track object **MUST** be static_castable to genericsignal
 };
 template<> struct enum_traits< GTF > {	static constexpr bool flags = true; };
 

@@ -272,7 +272,7 @@ void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deseria
 		};
 
 		if(di.w) {
-			routingpoint *rp = dynamic_cast<routingpoint *>(di.w->FindTrackByName(targname));
+			routingpoint *rp = FastRoutingpointCast(di.w->FindTrackByName(targname));
 			if(rp) {
 				output = rp->GetRouteByIndex(index);
 				return;
@@ -280,7 +280,7 @@ void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deseria
 			else if(after_layout_init_resolve) {
 				world *w = di.w;
 				auto resolveroutetarget = [w, targname, index, &output, routetargetresolutionerror](error_collection &ec) {
-					routingpoint *rp = dynamic_cast<routingpoint *>(w->FindTrackByName(targname));
+					routingpoint *rp = FastRoutingpointCast(w->FindTrackByName(targname));
 					if(rp) output = rp->GetRouteByIndex(index);
 					else routetargetresolutionerror(ec, targname);
 				};

@@ -433,4 +433,21 @@ class routingmarker : public trackroutingpoint {
 
 const char * SerialiseRouteType(const ROUTE_CLASS& type);
 
+inline genericsignal* FastSignalCast(generictrack *gt, EDGETYPE direction) {
+	if(gt && gt->GetFlags(direction) & GTF::SIGNAL) return static_cast<genericsignal*>(gt);
+	return 0;
+}
+inline genericsignal* FastSignalCast(generictrack *gt) {
+	if(gt) return FastSignalCast(gt, gt->GetDefaultValidDirecton());
+	else return 0;
+}
+inline routingpoint* FastRoutingpointCast(generictrack *gt, EDGETYPE direction) {
+	if(gt && gt->GetFlags(direction) & GTF::ROUTINGPOINT) return static_cast<routingpoint*>(gt);
+	return 0;
+}
+inline routingpoint* FastRoutingpointCast(generictrack *gt) {
+	if(gt) return FastRoutingpointCast(gt, gt->GetDefaultValidDirecton());
+	else return 0;
+}
+
 #endif
