@@ -157,7 +157,7 @@ class catchpoints : public genericpoints {
 	catchpoints(world &w_) : genericpoints(w_), pflags(PTF::REV) { InitSightingDistances(); }
 
 	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
-	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
+	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
 
 	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
