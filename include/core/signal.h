@@ -81,6 +81,12 @@ enum class GMRF : unsigned int {
 };
 template<> struct enum_traits< GMRF > {	static constexpr bool flags = true; };
 
+enum class ASPECT_FLAGS : unsigned int {
+	ZERO		= 0,
+	MAXNOTBINDING	= 1<<0,		//for banner repeaters, etc. the aspect does not override any previous longer aspect
+};
+template<> struct enum_traits< ASPECT_FLAGS > {	static constexpr bool flags = true; };
+
 class routingpoint : public genericzlentrack {
 	routingpoint *aspect_target = 0;
 	routingpoint *aspect_route_target = 0;
@@ -102,6 +108,7 @@ class routingpoint : public genericzlentrack {
 	inline routingpoint *GetAspectRouteTarget() const { return aspect_route_target; }
 	inline routingpoint *GetAspectBackwardsDependency() const { return aspect_backwards_dependency; }
 	inline ROUTE_CLASS GetAspectType() const { return aspect_type; }
+	virtual ASPECT_FLAGS GetAspectFlags() const { return ASPECT_FLAGS::ZERO; }
 	virtual void UpdateRoutingPoint() { }
 
 	static inline RPRT GetRouteClassRPRTMask(ROUTE_CLASS rc) {
@@ -250,7 +257,7 @@ class trackroutingpoint : public routingpoint {
 enum class GSF : unsigned int {
 	ZERO			= 0,
 	REPEATER		= 1<<0,
-	ASPECTEDREPEATER	= 1<<1,		//true for "standard" repeaters which show an aspect, not true for banner repeaters, etc.
+	NONASPECTEDREPEATER	= 1<<1,		//true for banner repeaters, etc. not true for "standard" repeaters which show an aspect
 	NOOVERLAP		= 1<<2,
 	APPROACHLOCKINGMODE	= 1<<3,		//route cancelled with train approaching, hold aspect at 0
 	AUTOSIGNAL		= 1<<4,
@@ -307,6 +314,8 @@ class genericsignal : public trackroutingpoint {
 
 	inline unsigned int GetOverlapMinAspectDistance() const { return overlapswingminaspectdistance; }
 	bool IsOverlapSwingPermitted(std::string *failreasonkey = 0) const;
+
+	virtual ASPECT_FLAGS GetAspectFlags() const override;
 
 	//function parameters: return true to continue, false to stop
 	void BackwardsReservedTrackScan(std::function<bool(const genericsignal*)> checksignal, std::function<bool(const track_target_ptr&)> checkpiece) const;

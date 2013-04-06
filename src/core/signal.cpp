@@ -407,7 +407,7 @@ void genericsignal::EnumerateCurrentBackwardsRoutes(std::function<void (const ro
 bool genericsignal::RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const {
 	if(type == RTC_SHUNT) return true;
 	else if(type == RTC_ROUTE) {
-		if(GetSignalFlags() & GSF::REPEATER && GetSignalFlags() & GSF::ASPECTEDREPEATER) return true;
+		if(GetSignalFlags() & GSF::REPEATER && !(GetSignalFlags() & GSF::NONASPECTEDREPEATER)) return true;
 	}
 	return false;
 }
@@ -482,6 +482,10 @@ unsigned int genericsignal::GetTRSList(std::vector<track_reservation_state *> &o
 	outputlist.push_back(&start_trs);
 	outputlist.push_back(&end_trs);
 	return 2;
+}
+
+ASPECT_FLAGS genericsignal::GetAspectFlags() const {
+	return (sflags & GSF::NONASPECTEDREPEATER) ? ASPECT_FLAGS::MAXNOTBINDING : ASPECT_FLAGS::ZERO;
 }
 
 GTF autosignal::GetFlags(EDGETYPE direction) const {
@@ -626,7 +630,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 		GTF pieceflags = piece.track->GetFlags(piece.direction);
 		if(pieceflags & GTF::ROUTINGPOINT) {
 			routingpoint *target_routing_piece = static_cast<routingpoint *>(piece.track);
-			
+
 			RPRT availableroutetypes = target_routing_piece->GetAvailableRouteTypes(piece.direction);
 			if(availableroutetypes & (RPRT::ROUTEEND | RPRT::SHUNTEND | RPRT::OVERLAPEND)) {
 				if(target_routing_piece->GetSetRouteTypes(piece.direction) & (RPRT::ROUTEEND | RPRT::SHUNTEND | RPRT::VIA)) {
