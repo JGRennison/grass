@@ -28,6 +28,7 @@
 #include <vector>
 #include "world_obj.h"
 #include "flags.h"
+#include "world.h"
 
 class train;
 
@@ -40,6 +41,7 @@ struct train_ref {
 class track_circuit : public world_obj {
 	unsigned int traincount = 0;
 	std::vector<train_ref> occupying_trains;
+	world_time last_change;
 
 	public:
 	enum class TCF {
@@ -52,14 +54,15 @@ class track_circuit : public world_obj {
 
 	public:
 
-	track_circuit(world &w_, const std::string &name_) : world_obj(w_) { SetName(name_); }
-	track_circuit(world &w_) : world_obj(w_) { }
+	track_circuit(world &w_, const std::string &name_) : world_obj(w_), last_change(w_.GetGameTime()) { SetName(name_); }
+	track_circuit(world &w_) : world_obj(w_), last_change(w_.GetGameTime()) { }
 	void TrainEnter(train *t);
 	void TrainLeave(train *t);
 	inline bool Occupied() const;
 	TCF GetTCFlags() const;
 	TCF SetTCFlagsMasked(TCF bits, TCF mask);
 	unsigned int GetTrainOccupationCount() const { return occupying_trains.size(); }
+	world_time GetLastOccupationStateChangeTime() const { return last_change; }
 
 	virtual std::string GetTypeName() const override { return "Track Circuit"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "trackcircuit"; }

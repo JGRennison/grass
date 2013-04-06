@@ -25,7 +25,11 @@
 #include "serialisable_impl.h"
 
 void track_circuit::TrainEnter(train *t) {
+	bool prevoccupied = Occupied();
 	traincount++;
+	if(prevoccupied != Occupied()) {
+		last_change = GetWorld().GetGameTime();
+	}
 	for(auto it = occupying_trains.begin(); it != occupying_trains.end(); ++it) {
 		if(it->t == t) {
 			it->count++;
@@ -35,7 +39,11 @@ void track_circuit::TrainEnter(train *t) {
 	occupying_trains.emplace_back(t, 1);
 }
 void track_circuit::TrainLeave(train *t) {
+	bool prevoccupied = Occupied();
 	traincount--;
+	if(prevoccupied != Occupied()) {
+		last_change = GetWorld().GetGameTime();
+	}
 	for(auto it = occupying_trains.begin(); it != occupying_trains.end(); ++it) {
 		if(it->t == t) {
 			it->count--;
@@ -51,13 +59,15 @@ void track_circuit::TrainLeave(train *t) {
 void track_circuit::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	world_obj::Deserialise(di, ec);
 
-	//CheckTransJsonValue(traincount, di, "traincount", ec);
+	CheckTransJsonValueFlag(tc_flags, TCF::FORCEOCCUPIED, di, "forceoccupied", ec);
+	CheckTransJsonValue(last_change, di, "last_change", ec);
 }
 
 void track_circuit::Serialise(serialiser_output &so, error_collection &ec) const {
 	world_obj::Serialise(so, ec);
 
-	//SerialiseValueJson(traincount, so, "traincount");
+	SerialiseFlagJson(tc_flags, TCF::FORCEOCCUPIED, so, "forceoccupied");
+	SerialiseValueJson(last_change, so, "last_change");
 }
 
 track_circuit::TCF track_circuit::GetTCFlags() const {
@@ -65,6 +75,10 @@ track_circuit::TCF track_circuit::GetTCFlags() const {
 }
 
 track_circuit::TCF track_circuit::SetTCFlagsMasked(TCF bits, TCF mask) {
+	bool prevoccupied = Occupied();
 	tc_flags = (tc_flags & ~mask) | (bits & mask);
+	if(prevoccupied != Occupied()) {
+		last_change = GetWorld().GetGameTime();
+	}
 	return tc_flags;
 }
