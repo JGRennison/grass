@@ -27,4 +27,7 @@
 #define ACCEL_BRAKE_CAP		380		// m/s^2 << 8, ±1.5 m/s^2
 #define CREEP_SPEED		400		// mm/s, 400mm/s ~= 0.9 mph
 
+#define SIGHTING_DISTANCE_SIG		200000
+#define SIGHTING_DISTANCE_POINTS	50000
+
 #endif

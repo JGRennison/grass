@@ -32,6 +32,7 @@
 #include "deserialisation-test.h"
 #include "world-test.h"
 #include "track_ops.h"
+#include "param.h"
 
 
 struct test_fixture_track_1 {
@@ -483,17 +484,17 @@ TEST_CASE( "track/deserialisation/ambiguouspartialconnection/3", "Test handling 
 	REQUIRE(env.ec.GetErrorCount() >= 1);
 }
 
-std::string track_test_str_coupling =
-R"({ "content" : [ )"
-	R"({ "type" : "couplepoints", "points" : [ { "name" : "P1", "edge" : "reverse"}, { "name" : "P2", "edge" : "normal"}, { "name" : "DS1", "edge" : "rightfront"} ] }, )"
-	R"({ "type" : "couplepoints", "points" : [ { "name" : "DS2", "edge" : "rightfront"}, { "name" : "DS1", "edge" : "rightback"} ] }, )"
-	R"({ "type" : "doubleslip", "name" : "DS1", "degreesoffreedom" : 2 }, )"
-	R"({ "type" : "doubleslip", "name" : "DS2", "notrack_fl_bl" : true, "rightfrontpoints" : { "reverse" : true } }, )"
-	R"({ "type" : "points", "name" : "P1" }, )"
-	R"({ "type" : "points", "name" : "P2" } )"
-"] }";
-
 TEST_CASE( "track/points/coupling", "Test points coupling" ) {
+	std::string track_test_str_coupling =
+	R"({ "content" : [ )"
+		R"({ "type" : "couplepoints", "points" : [ { "name" : "P1", "edge" : "reverse"}, { "name" : "P2", "edge" : "normal"}, { "name" : "DS1", "edge" : "rightfront"} ] }, )"
+		R"({ "type" : "couplepoints", "points" : [ { "name" : "DS2", "edge" : "rightfront"}, { "name" : "DS1", "edge" : "rightback"} ] }, )"
+		R"({ "type" : "doubleslip", "name" : "DS1", "degreesoffreedom" : 2 }, )"
+		R"({ "type" : "doubleslip", "name" : "DS2", "notrack_fl_bl" : true, "rightfrontpoints" : { "reverse" : true } }, )"
+		R"({ "type" : "points", "name" : "P1" }, )"
+		R"({ "type" : "points", "name" : "P2" } )"
+	"] }";
+
 	test_fixture_world env(track_test_str_coupling);
 
 	env.w.CapAllTrackPieceUnconnectedEdges();
@@ -557,5 +558,64 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 	checkp("P2",  genericpoints::PTF::REV | genericpoints::PTF::FAILEDREV);
 	checkds("DS1", genericpoints::PTF::REV, genericpoints::PTF::ZERO, genericpoints::PTF::REV | genericpoints::PTF::FAILEDREV, genericpoints::PTF::FAILEDNORM);
 	checkds("DS2", genericpoints::PTF::FIXED, genericpoints::PTF::REV, genericpoints::PTF::FIXED, genericpoints::PTF::ZERO);
+
+}
+
+TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisation" ) {
+	std::string track_test_str_sighting =
+	R"({ "content" : [ )"
+		R"({ "type" : "points", "name" : "P1", "sighting" : 40000 }, )"
+		R"({ "type" : "points", "name" : "P2", "sighting" : { "direction" : "normal", "distance" : 40000 } }, )"
+		R"({ "type" : "points", "name" : "P3", "sighting" : [ { "direction" : "normal", "distance" : 40000 }, { "direction" : "reverse", "distance" : 30000 } ] }, )"
+		R"({ "type" : "routesignal", "name" : "S1", "sighting" : 50000 }, )"
+		R"({ "type" : "routesignal", "name" : "S2", "sighting" : { "direction" : "front", "distance" : 50000 } }, )"
+		R"({ "type" : "routesignal", "name" : "S3" } )"
+	"] }";
+
+	test_fixture_world env(track_test_str_sighting);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	auto checkpoints = [&](const std::string &name, unsigned int norm_dist, unsigned int rev_dist, unsigned int face_dist) {
+		SCOPED_INFO("Points check for: " << name);
+		generictrack *p = env.w.FindTrackByName(name);
+		REQUIRE(p != 0);
+		CHECK(p->GetSightingDistance(EDGE_PTS_NORMAL) == norm_dist);
+		CHECK(p->GetSightingDistance(EDGE_PTS_REVERSE) == rev_dist);
+		CHECK(p->GetSightingDistance(EDGE_PTS_FACE) == face_dist);
+		CHECK(p->GetSightingDistance(EDGE_FRONT) == 0);
+	};
+	auto checksig = [&](const std::string &name, unsigned int dist) {
+		SCOPED_INFO("Signal check for: " << name);
+		generictrack *s = env.w.FindTrackByName(name);
+		REQUIRE(s != 0);
+		CHECK(s->GetSightingDistance(EDGE_FRONT) == dist);
+		CHECK(s->GetSightingDistance(EDGE_BACK) == 0);
+	};
+	checkpoints("P1", 40000, 40000, 40000);
+	checkpoints("P2", 40000, SIGHTING_DISTANCE_POINTS, SIGHTING_DISTANCE_POINTS);
+	checkpoints("P3", 40000, 30000, SIGHTING_DISTANCE_POINTS);
+	checksig("S1", 50000);
+	checksig("S2", 50000);
+	checksig("S3", SIGHTING_DISTANCE_SIG);
+
+	auto check_parse_err = [&](const std::string &str) {
+		test_fixture_world env_err(str);
+		//if(env_err.ec.GetErrorCount()) { WARN("Error Collection: " << env_err.ec); }
+		REQUIRE(env_err.ec.GetErrorCount() == 1);
+	};
+	check_parse_err(R"({ "content" : [ )"
+		R"({ "type" : "points", "name" : "P1", "sighting" : "front" } )"
+	"] }");
+	check_parse_err(R"({ "content" : [ )"
+		R"({ "type" : "points", "name" : "P1", "sighting" : { "direction" : "reverse" } } )"
+	"] }");
+	check_parse_err(R"({ "content" : [ )"
+		R"({ "type" : "points", "name" : "P1", "sighting" : { "distance" : 40000 } } )"
+	"] }");
+	check_parse_err(R"({ "content" : [ )"
+		R"({ "type" : "points", "name" : "P1", "sighting" : { "direction" : "front", "distance" : 40000 } } )"
+	"] }");
 
 }

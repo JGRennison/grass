@@ -27,6 +27,7 @@
 #include "error.h"
 #include "track_ops.h"
 #include "util.h"
+#include "param.h"
 
 #include <cassert>
 
@@ -224,6 +225,12 @@ void points::CouplePointsFlagsAtIndexTo(unsigned int index, const points_couplin
 	couplings.push_back(pc);
 }
 
+void points::InitSightingDistances() {
+	sighting_distances.emplace_back(EDGE_PTS_FACE, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE_PTS_NORMAL, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE_PTS_REVERSE, SIGHTING_DISTANCE_POINTS);
+}
+
 const track_target_ptr & catchpoints::GetConnectingPiece(EDGETYPE direction) const {
 	if(IsOOC(0)) return empty_track_target;
 	if(pflags & PTF::REV) return empty_track_target;
@@ -331,6 +338,11 @@ EDGETYPE catchpoints::GetAvailableAutoConnectionDirection(bool forwardconnection
 
 void catchpoints::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_BACK, next), edgelistitem(EDGE_FRONT, prev) });
+}
+
+void catchpoints::InitSightingDistances() {
+	sighting_distances.emplace_back(EDGE_BACK, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE_FRONT, SIGHTING_DISTANCE_POINTS);
 }
 
 const track_target_ptr & springpoints::GetConnectingPiece(EDGETYPE direction) const {
@@ -602,4 +614,11 @@ void doubleslip::GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<po
 
 void doubleslip::CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) {
 	couplings[index].push_back(pc);
+}
+
+void doubleslip::InitSightingDistances() {
+	sighting_distances.emplace_back(EDGE_DS_FL, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE_DS_FR, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE_DS_BL, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE_DS_BR, SIGHTING_DISTANCE_POINTS);
 }

@@ -33,6 +33,46 @@
 void generictrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	world_obj::Deserialise(di, ec);
 
+	deserialiser_input sddi(di.json["sighting"], "sighting", "sighting", di);
+	if(!sddi.json.IsNull()) {
+		di.RegisterProp("sighting");
+
+		auto sightingfunc = [&](const deserialiser_input &funcdi) {
+			bool ok = false;
+
+			if(funcdi.json.IsObject()) {
+				EDGETYPE dir;
+				unsigned int distance;
+				if(CheckTransJsonValue(dir, funcdi, "direction", ec) && CheckTransJsonValue(distance, funcdi, "distance", ec)) {
+					for(auto &it : sighting_distances) {
+						if(it.first == dir) {
+							it.second = distance;
+							ok = true;
+							break;
+						}
+					}
+				}
+			}
+
+			if(!ok) {
+				ec.RegisterNewError<error_deserialisation>(funcdi, "Invalid sighting distance definition");
+			}
+		};
+
+		if(sddi.json.IsUint()) {
+			unsigned int distance = sddi.json.GetUint();
+			for(auto &it : sighting_distances) {
+				it.second = distance;
+			}
+		}
+		else if(sddi.json.IsArray()) {
+			for(rapidjson::SizeType i = 0; i < sddi.json.Size(); i++) {
+				sightingfunc(deserialiser_input(sddi.json[i], MkArrayRefName(i), sddi));
+			}
+		}
+		else sightingfunc(sddi);
+	}
+
 	deserialiser_input subdi(di.json["connect"], "trackconnection", "connect", di);
 
 	if(!subdi.json.IsNull() && subdi.w) {

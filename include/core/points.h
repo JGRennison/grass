@@ -106,8 +106,10 @@ class points : public genericpoints {
 	PTF pflags = PTF::ZERO;
 	std::vector<points_coupling> couplings;
 
+	void InitSightingDistances();
+
 	public:
-	points(world &w_) : genericpoints(w_) { }
+	points(world &w_) : genericpoints(w_) { InitSightingDistances(); }
 
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
@@ -149,8 +151,10 @@ class catchpoints : public genericpoints {
 	PTF pflags;
 	track_reservation_state trs;
 
+	void InitSightingDistances();
+
 	public:
-	catchpoints(world &w_) : genericpoints(w_), pflags(PTF::REV) { }
+	catchpoints(world &w_) : genericpoints(w_), pflags(PTF::REV) { InitSightingDistances(); }
 
 	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
@@ -243,6 +247,8 @@ class doubleslip : public genericpoints {
 	void UpdatePointsFixedStatesFromMissingTrackEdges();
 	void UpdateInternalCoupling();
 
+	void InitSightingDistances();
+
 	private:
 	inline unsigned int GetPointsIndexByEdgeIntl(EDGETYPE direction) const {
 		switch(direction) {
@@ -312,7 +318,7 @@ class doubleslip : public genericpoints {
 	}
 
 	public:
-	doubleslip(world &w_) : genericpoints(w_), dsflags(DSF::ZERO) { }
+	doubleslip(world &w_) : genericpoints(w_), dsflags(DSF::ZERO) { InitSightingDistances(); }
 
 	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;

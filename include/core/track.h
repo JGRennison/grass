@@ -83,6 +83,9 @@ class generictrack : public world_obj {
 	friend world_serialisation;
 	void SetPreviousTrackPiece(generictrack *prev) { prevtrack = prev; }
 
+	protected:
+	std::vector<std::pair<EDGETYPE, unsigned int> > sighting_distances;
+
 	public:
 	generictrack(world &w_) : world_obj(w_), prevtrack(0) { }
 	virtual const speedrestrictionset *GetSpeedRestrictions() const;
@@ -103,6 +106,7 @@ class generictrack : public world_obj {
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const = 0;
 	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const = 0;
 	virtual unsigned int GetCurrentNominalConnectionIndex(EDGETYPE direction) const { return 0; }
+	unsigned int GetSightingDistance(EDGETYPE direction) const;
 
 	inline track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) {  return const_cast<track_target_ptr &>(const_cast<const generictrack*>(this)->GetEdgeConnectingPiece(edgeid)); }
 

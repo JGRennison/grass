@@ -165,6 +165,13 @@ unsigned int generictrack::ReservationEnumerationInDirection(EDGETYPE direction,
 	return counter;
 }
 
+unsigned int generictrack::GetSightingDistance(EDGETYPE direction) const {
+	for(auto it : sighting_distances) {
+		if(it.first == direction) return it.second;
+	}
+	return 0;
+}
+
 void trackseg::TrainEnter(EDGETYPE direction, train *t) {
 	traincount++;
 	track_circuit *tc = GetTrackCircuit();

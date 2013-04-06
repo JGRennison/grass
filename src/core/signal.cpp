@@ -27,6 +27,7 @@
 #include "world.h"
 #include "trackcircuit.h"
 #include "track_ops.h"
+#include "param.h"
 
 #include <algorithm>
 #include <iterator>
@@ -200,6 +201,7 @@ RPRT trackroutingpoint::GetAvailableRouteTypes(EDGETYPE direction) const {
 genericsignal::genericsignal(world &w_) : trackroutingpoint(w_), sflags(GSF::ZERO) {
 	availableroutetypes_reverse |= RPRT::SHUNTTRANS | RPRT::ROUTETRANS;
 	w_.RegisterTickUpdate(this);
+	sighting_distances.emplace_back(EDGE_FRONT, SIGHTING_DISTANCE_SIG);
 }
 
 genericsignal::~genericsignal() {
