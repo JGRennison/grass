@@ -74,7 +74,6 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 	}
 
 	deserialiser_input subdi(di.json["connect"], "trackconnection", "connect", di);
-
 	if(!subdi.json.IsNull() && subdi.w) {
 		di.RegisterProp("connect");
 		auto connfunc = [&](const deserialiser_input &funcdi) {
@@ -131,7 +130,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 		};
 
 		if(subdi.json.IsArray()) {
-			for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
+			for(rapidjson::SizeType i = 0; i < subdi.json.Size(); i++) {
 				connfunc(deserialiser_input(subdi.json[i], MkArrayRefName(i), subdi));
 			}
 		}
