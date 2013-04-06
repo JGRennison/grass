@@ -74,10 +74,8 @@ void train::TrainMoveStep(unsigned int ms) {
 
 	unsigned int current_max_tractive_force = total_tractive_power / current_speed;
 	if(current_max_tractive_force > total_tractive_force) current_max_tractive_force = total_tractive_force;
-	//if(current_max_tractive_force > total_rail_traction_limit) current_max_tractive_force = total_rail_traction_limit;
 
 	int current_max_braking_force = total_braking_force;
-	//if(current_max_braking_force > total_rail_traction_limit) current_max_braking_force = total_rail_traction_limit;
 
 	int max_total_force = current_max_tractive_force + slopeforce - dragforce;
 	int min_total_force = -current_max_braking_force + slopeforce - dragforce;
@@ -100,7 +98,7 @@ void train::TrainMoveStep(unsigned int ms) {
 	else current_speed = new_speed;
 }
 
-void train::CalculateTrainMotionProperties() {
+void train::CalculateTrainMotionProperties(unsigned int weatherfactor_shl8) {
 	total_length = 0;
 	total_drag_const = 0;
 	total_drag_v = 0;
@@ -125,15 +123,15 @@ void train::CalculateTrainMotionProperties() {
 
 		unsigned int segment_tractive_force = it->vehtype->tractive_force;
 		unsigned int segment_braking_force = it->vehtype->braking_force;
-		unsigned int segment_traction_limit = it->vehtype->nominal_rail_traction_limit; // * weather factor
+		unsigned int segment_traction_limit = (it->vehtype->nominal_rail_traction_limit * weatherfactor_shl8) >> 8;
 		total_tractive_force += std::min(segment_tractive_force, segment_traction_limit);
 		total_braking_force += std::min(segment_braking_force, segment_traction_limit);
 
 		if(it == train_segments.begin() || veh_max_speed > it->vehtype->max_speed) veh_max_speed = it->vehtype->max_speed;
 
 	}
-	total_drag_v2 += train_segments.begin()->vehtype->face_drag_v2;
-	total_drag_v2 += train_segments.end()->vehtype->face_drag_v2;
+	total_drag_v2 += train_segments.front().vehtype->face_drag_v2;
+	total_drag_v2 += train_segments.back().vehtype->face_drag_v2;
 }
 
 void train::AddCoveredTrackSpeedLimit(unsigned int speed) {
@@ -227,7 +225,7 @@ void train::DropTrainIntoPosition(const track_location &position) {
 void train::UprootTrain() {
 
 	auto func = [this](track_location &old_track, track_location &new_track) {
-		new_track.GetTrack()->TrainEnter(new_track.GetTrack()->GetReverseDirection(new_track.GetDirection()), this);
+		new_track.GetTrack()->TrainLeave(new_track.GetTrack()->GetReverseDirection(new_track.GetDirection()), this);
 	};
 
 	track_location temp;

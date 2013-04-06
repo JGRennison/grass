@@ -120,7 +120,7 @@ class train : public world_obj  {
 	public:
 	train(world &w_) : world_obj(w_) { }
 	void TrainMoveStep(unsigned int ms);
-	void CalculateTrainMotionProperties();
+	void CalculateTrainMotionProperties(unsigned int weatherfactor_shl8);
 	void AddCoveredTrackSpeedLimit(unsigned int speed);
 	void RemoveCoveredTrackSpeedLimit(unsigned int speed);
 	void CalculateCoveredTrackSpeedLimit();
