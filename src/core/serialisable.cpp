@@ -53,6 +53,7 @@ error_jsonparse::error_jsonparse(const std::string &json, size_t erroroffset, co
 	size_t linestart = 0;
 	size_t lineend = 0;
 	size_t lineno = GetLineNumberOfStringOffset(json, erroroffset, &linestart, &lineend);
+	size_t reallinestart = linestart;
 
 	bool trail_start = false;
 	bool trail_end = false;
@@ -73,7 +74,7 @@ error_jsonparse::error_jsonparse(const std::string &json, size_t erroroffset, co
 		}
 	}
 
-	msg << string_format("JSON Parsing error at offset: %d (line: %d), Error: %s\n", erroroffset, lineno, parseerror);
+	msg << string_format("JSON Parsing error at offset: %d (line: %d, column: %d), Error: %s\n", erroroffset, lineno, strboundedlen_utf8(json, reallinestart, erroroffset) + 1, parseerror);
 	if(trail_start) msg << "...";
 	msg << "\"";
 	msg << json.substr(linestart, lineend-linestart);
