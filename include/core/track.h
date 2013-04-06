@@ -102,6 +102,7 @@ class generictrack : public world_obj {
 	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const = 0;
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const = 0;
 	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const = 0;
+	virtual unsigned int GetCurrentNominalConnectionIndex(EDGETYPE direction) const { return 0; }
 
 	inline track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) {  return const_cast<track_target_ptr &>(const_cast<const generictrack*>(this)->GetEdgeConnectingPiece(edgeid)); }
 

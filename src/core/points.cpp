@@ -109,6 +109,11 @@ const track_target_ptr & points::GetConnectingPieceByIndex(EDGETYPE direction, u
 	}
 }
 
+unsigned int points::GetCurrentNominalConnectionIndex(EDGETYPE direction) const {
+	if(direction == EDGE_PTS_FACE && pflags & PTF::REV) return 1;
+	else return 0;
+}
+
 EDGETYPE points::GetReverseDirection(EDGETYPE direction) const {
 	if(IsOOC(0)) return EDGE_NULL;
 
@@ -432,6 +437,12 @@ const track_target_ptr & doubleslip::GetConnectingPieceByIndex(EDGETYPE directio
 
 	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isrev);
 	return GetInputPieceOrEmpty(exitdirection);
+}
+
+unsigned int doubleslip::GetCurrentNominalConnectionIndex(EDGETYPE direction) const {
+	genericpoints::PTF pf = GetCurrentPointFlags(direction);
+	if(!(pf & PTF::FIXED) && pf & PTF::REV) return 1;
+	else return 0;
 }
 
 EDGETYPE doubleslip::GetReverseDirection(EDGETYPE direction) const {
