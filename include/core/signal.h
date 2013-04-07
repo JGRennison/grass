@@ -30,13 +30,7 @@
 #include "trackreservation.h"
 #include "traverse.h"
 #include "flags.h"
-
-typedef enum {
-	RTC_NULL,
-	RTC_SHUNT,
-	RTC_ROUTE,
-	RTC_OVERLAP,
-} ROUTE_CLASS;
+#include "routetypes.h"
 
 class route;
 class routingpoint;
@@ -47,7 +41,7 @@ typedef std::deque<track_circuit *> tc_list;
 typedef std::deque<genericsignal *> sig_list;
 typedef std::deque<route_recording_item> passable_test_list;
 
-enum class RPRT {
+/*enum class RPRT {
 	ZERO			= 0,
 	SHUNTSTART		= 1<<0,
 	SHUNTEND		= 1<<1,
@@ -68,16 +62,18 @@ enum class RPRT {
 	MASK_TRANS		= SHUNTTRANS | ROUTETRANS | OVERLAPTRANS,
 };
 template<> struct enum_traits< RPRT > {	static constexpr bool flags = true; };
+ * */
 
 enum class GMRF : unsigned int {
-	ROUTEOK		= 1<<0,
-	SHUNTOK		= 1<<1,
-	OVERLAPOK	= 1<<2,
+	ZERO		= 0,
+//	ROUTEOK		= 1<<0,
+//	SHUNTOK		= 1<<1,
+//	OVERLAPOK	= 1<<2,
 	TRACKTEST	= 1<<3,
 	CHECKVIAS	= 1<<4,
 	DONTCLEARVECTOR	= 1<<5,
 	DONTSORT	= 1<<6,
-	ALLROUTETYPES	= ROUTEOK | SHUNTOK | OVERLAPOK,
+//	ALLROUTETYPES	= ROUTEOK | SHUNTOK | OVERLAPOK,
 };
 template<> struct enum_traits< GMRF > {	static constexpr bool flags = true; };
 
@@ -87,6 +83,31 @@ enum class ASPECT_FLAGS : unsigned int {
 };
 template<> struct enum_traits< ASPECT_FLAGS > {	static constexpr bool flags = true; };
 
+enum class RPRT_FLAGS {
+	ZERO			= 0,
+	VIA			= 1<<0,
+};
+template<> struct enum_traits< RPRT_FLAGS > {	static constexpr bool flags = true; };
+
+struct RPRT {
+	route_class::set start;
+	route_class::set through;
+	route_class::set end;
+	RPRT_FLAGS flags;
+	inline route_class::set &GetRCSByRRF(RRF rr_flags) {
+		if(rr_flags & RRF::STARTPIECE) return start;
+		else if(rr_flags & RRF::ENDPIECE) return end;
+		else return through;
+	}
+	RPRT() : start(0), through(0), end(0), flags(RPRT_FLAGS::ZERO) { }
+	RPRT(route_class::set start_, route_class::set through_, route_class::set end_, RPRT_FLAGS flags_ = RPRT_FLAGS::ZERO)
+		: start(start_), through(through_), end(end_), flags(flags_) { }
+};
+inline bool operator==(const RPRT &l, const RPRT &r) {
+	return l.end == r.end && l.start == r.start && l.through == r.through && l.flags == r.flags;
+}
+std::ostream& operator<<(std::ostream& os, const RPRT& obj);
+
 class routingpoint : public genericzlentrack {
 	routingpoint *aspect_target = 0;
 	routingpoint *aspect_route_target = 0;
@@ -95,7 +116,7 @@ class routingpoint : public genericzlentrack {
 	protected:
 	unsigned int aspect = 0;
 	unsigned int reserved_aspect = 0;
-	ROUTE_CLASS aspect_type = RTC_NULL;
+	route_class::ID aspect_type  = route_class::RTC_NULL;
 	void SetAspectNextTarget(routingpoint *target);
 	void SetAspectRouteTarget(routingpoint *target);
 
@@ -107,11 +128,11 @@ class routingpoint : public genericzlentrack {
 	inline routingpoint *GetAspectNextTarget() const { return aspect_target; }
 	inline routingpoint *GetAspectRouteTarget() const { return aspect_route_target; }
 	inline routingpoint *GetAspectBackwardsDependency() const { return aspect_backwards_dependency; }
-	inline ROUTE_CLASS GetAspectType() const { return aspect_type; }
+	inline route_class::ID GetAspectType() const { return aspect_type; }
 	virtual ASPECT_FLAGS GetAspectFlags() const { return ASPECT_FLAGS::ZERO; }
 	virtual void UpdateRoutingPoint() { }
 
-	static inline RPRT GetRouteClassRPRTMask(ROUTE_CLASS rc) {
+	/*static inline RPRT GetRouteClassRPRTMask(ROUTE_CLASS rc) {
 		switch(rc) {
 			case RTC_NULL: return RPRT::ZERO;
 			case RTC_SHUNT: return RPRT::MASK_SHUNT;
@@ -127,7 +148,7 @@ class routingpoint : public genericzlentrack {
 		if(rr_flags & RRF::ENDPIECE) result |= RPRT::MASK_END;
 		if(!(rr_flags & (RRF::STARTPIECE | RRF::ENDPIECE))) result |= RPRT::MASK_TRANS;
 		return result;
-	}
+	}*/
 
 	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const = 0;
 	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const = 0;
@@ -141,7 +162,7 @@ class routingpoint : public genericzlentrack {
 		const route *rt;
 		int score;
 	};
-	unsigned int GetMatchingRoutes(std::vector<gmr_routeitem> &routes, const routingpoint *end, GMRF gmr_flags = GMRF::ROUTEOK | GMRF::SHUNTOK, RRF extraflags = RRF::ZERO, const via_list &vias = via_list()) const;
+	unsigned int GetMatchingRoutes(std::vector<gmr_routeitem> &routes, const routingpoint *end, route_class::set rc_mask = route_class::AllNonOverlaps(), GMRF gmr_flags = GMRF::ZERO, RRF extraflags = RRF::ZERO, const via_list &vias = via_list()) const;
 
 	virtual std::string GetTypeName() const override { return "Track Routing Point"; }
 };
@@ -154,7 +175,7 @@ struct route {
 	tc_list trackcircuits;
 	sig_list repeatersignals;
 	passable_test_list passtestlist;
-	ROUTE_CLASS type;
+	route_class::ID type;
 	int priority;
 	unsigned int approachcontrol_timeout;
 	unsigned int overlap_timeout;
@@ -168,7 +189,7 @@ struct route {
 	routingpoint *parent;
 	unsigned int index;
 
-	route() : type(RTC_NULL), priority(0), approachcontrol_timeout(0), overlap_timeout(0), routeflags(RF::ZERO), parent(0), index(0) { }
+	route() : type(route_class::RTC_NULL), priority(0), approachcontrol_timeout(0), overlap_timeout(0), routeflags(RF::ZERO), parent(0), index(0) { }
 	void FillLists();
 	bool TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const;
 	bool RouteReservation(RRF reserve_flags, std::string *failreasonkey = 0) const;
@@ -197,29 +218,19 @@ class route_restriction {
 		OVERLAPTIMEOUTSET	= 1<<2,
 	};
 	RRF routerestrictionflags = RRF::ZERO;
+	route_class::set allowedtypes = route_class::All();
 
 	public:
-	enum class RRDF {
-		ZERO		= 0,
-		NOSHUNT		= 1<<0,
-		NOROUTE		= 1<<1,
-		NOOVERLAP	= 1<<2,
-	};
-	private:
-	RRDF denyflags = RRDF::ZERO;
-
-	public:
-	bool CheckRestriction(RRDF &restriction_flags, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
+	bool CheckRestriction(route_class::set &allowed_routes, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
 	void ApplyRestriction(route &rt) const;
 };
 template<> struct enum_traits< route_restriction::RRF> {	static constexpr bool flags = true; };
-template<> struct enum_traits< route_restriction::RRDF > {	static constexpr bool flags = true; };
 
 class route_restriction_set : public serialisable_obj {
 	std::vector<route_restriction> restrictions;
 
 	public:
-	route_restriction::RRDF CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
+	route_class::set CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
@@ -236,7 +247,7 @@ class trackroutingpoint : public routingpoint {
 	RPRT availableroutetypes_reverse;
 
 	public:
-	trackroutingpoint(world &w_) : routingpoint(w_), availableroutetypes_forward(RPRT::ZERO), availableroutetypes_reverse(RPRT::ZERO) { }
+	trackroutingpoint(world &w_) : routingpoint(w_) { }
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
 	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
@@ -279,8 +290,7 @@ class genericsignal : public trackroutingpoint {
 	unsigned int max_aspect = 1;
 	unsigned int overlapswingminaspectdistance = 1;
 
-	unsigned int approachcontrol_default_shunt_timeout = 30000;
-	unsigned int approachcontrol_default_route_timeout = 90000;
+	std::array<unsigned int, route_class::LAST_RTC> approachcontrol_default_timeouts;
 	unsigned int overlap_default_timeout = 0;
 
 	public:
@@ -301,7 +311,7 @@ class genericsignal : public trackroutingpoint {
 	virtual const route *GetCurrentForwardRoute() const;	//this will not return the overlap, only the "real" route
 	virtual const route *GetCurrentForwardOverlap() const;	//this will only return the overlap, not the "real" route
 	virtual void EnumerateCurrentBackwardsRoutes(std::function<void (const route *)> func) const;	//this will return all routes which currently terminate here
-	virtual bool RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const;
+	virtual bool RepeaterAspectMeaningfulForRouteType(route_class::ID type) const;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
@@ -321,7 +331,7 @@ class genericsignal : public trackroutingpoint {
 	void BackwardsReservedTrackScan(std::function<bool(const genericsignal*)> checksignal, std::function<bool(const track_target_ptr&)> checkpiece) const;
 
 	protected:
-	bool PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(ROUTE_CLASS type, const track_target_ptr &piece)> mkblankroute);
+	bool PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(route_class::ID type, const track_target_ptr &piece)> mkblankroute);
 };
 
 class autosignal : public genericsignal {
@@ -329,7 +339,7 @@ class autosignal : public genericsignal {
 	route overlap_route;
 
 	public:
-	autosignal(world &w_) : genericsignal(w_) { availableroutetypes_forward |= RPRT::ROUTESTART | RPRT::SHUNTEND | RPRT::ROUTEEND; sflags |= GSF::AUTOSIGNAL; }
+	autosignal(world &w_) : genericsignal(w_) { availableroutetypes_forward.start |= route_class::Flag(route_class::RTC_ROUTE); availableroutetypes_forward.end |= route_class::AllNonOverlaps(); sflags |= GSF::AUTOSIGNAL; }
 	bool PostLayoutInit(error_collection &ec) override;
 	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual std::string GetTypeName() const override { return "Automatic Signal"; }
@@ -373,7 +383,7 @@ class startofline : public routingpoint {
 	track_reservation_state trs;
 
 	public:
-	startofline(world &w_) : routingpoint(w_), availableroutetypes(RPRT::SHUNTEND | RPRT::ROUTEEND) { }
+	startofline(world &w_) : routingpoint(w_) { availableroutetypes.end |= route_class::AllNonOverlaps(); }
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
 	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
 	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
@@ -421,8 +431,8 @@ class routingmarker : public trackroutingpoint {
 
 	public:
 	routingmarker(world &w_) : trackroutingpoint(w_) {
-		availableroutetypes_forward |= RPRT::SHUNTTRANS | RPRT::ROUTETRANS | RPRT::OVERLAPTRANS;
-		availableroutetypes_reverse |= RPRT::SHUNTTRANS | RPRT::ROUTETRANS | RPRT::OVERLAPTRANS;
+		availableroutetypes_forward.through = route_class::All();
+		availableroutetypes_reverse.through = route_class::All();
 	}
 	virtual void TrainEnter(EDGETYPE direction, train *t) override { }
 	virtual void TrainLeave(EDGETYPE direction, train *t) override { }
@@ -439,8 +449,6 @@ class routingmarker : public trackroutingpoint {
 	static std::string GetTypeSerialisationNameStatic() { return "routingmarker"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 };
-
-const char * SerialiseRouteType(const ROUTE_CLASS& type);
 
 inline genericsignal* FastSignalCast(generictrack *gt, EDGETYPE direction) {
 	if(gt && gt->GetFlags(direction) & GTF::SIGNAL) return static_cast<genericsignal*>(gt);

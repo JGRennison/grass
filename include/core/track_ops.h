@@ -30,6 +30,7 @@
 #include "action.h"
 #include "world_ops.h"
 #include "points.h"
+#include "routetypes.h"
 
 class genericpoints;
 class generictrack;
@@ -171,6 +172,7 @@ class action_reservetrack : public action_reservetrack_routeop {
 class action_reservepath : public action_reservetrack_base {
 	const routingpoint *start;
 	const routingpoint *end;
+	route_class::set allowed_route_types;
 	GMRF gmr_flags;
 	RRF extraflags;
 	via_list vias;
@@ -179,6 +181,7 @@ class action_reservepath : public action_reservetrack_base {
 	public:
 	action_reservepath(world &w_) : action_reservetrack_base(w_) { }
 	action_reservepath(world &w_, const routingpoint *start_, const routingpoint *end_);
+	action_reservepath &SetAllowedRouteTypes(route_class::set s);
 	action_reservepath &SetGmrFlags(GMRF gmr_flags_);
 	action_reservepath &SetExtraFlags(RRF extraflags_);
 	action_reservepath &SetVias(via_list vias_);

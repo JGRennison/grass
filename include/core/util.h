@@ -55,4 +55,14 @@ template <typename I> I swap_single_bits(I in, I bit1, I bit2) {
 	else return in;
 }
 
+template <typename I> I SetOrClearBits(I in, I bits, bool set) {
+	if(set) return in | bits;
+	else in &= ~bits;
+	return in;
+}
+
+template <typename I> void SetOrClearBitsRef(I &in, I bits, bool set) {
+	in = SetOrClearBits(in, bits, set);
+}
+
 #endif

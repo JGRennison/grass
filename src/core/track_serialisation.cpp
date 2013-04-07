@@ -338,6 +338,7 @@ void speedrestrictionset::Deserialise(const deserialiser_input &di, error_collec
 		speed_restriction sr;
 		if(subdi.json.IsObject() && CheckTransJsonValueDef(sr.speedclass, subdi, "speedclass", "", ec) && CheckTransJsonValueDef(sr.speed, subdi, "speed", 0, ec)) {
 			AddSpeedRestriction(sr);
+			subdi.PostDeserialisePropCheck(ec);
 		}
 		else {
 			ec.RegisterNewError<error_deserialisation>(subdi, "Invalid speed restriction definition");
@@ -361,6 +362,7 @@ void DeserialisePointsCoupling(const deserialiser_input &di, error_collection &e
 			EDGETYPE direction;
 			if(itemdi.json.IsObject() && CheckTransJsonValueDef(name, itemdi, "name", "", ec) && CheckTransJsonValueDef(direction, itemdi, "edge", EDGE_NULL, ec)) {
 				params->emplace_back(name, direction);
+				itemdi.PostDeserialisePropCheck(ec);
 			}
 			else ok = false;
 		}

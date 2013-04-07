@@ -189,7 +189,7 @@ template <typename C> inline void CheckJsonTypeAndReportError(const deserialiser
 
 template <typename C> inline bool CheckTransJsonValue(C &var, const deserialiser_input &di, const char *prop, error_collection &ec, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
-	di.RegisterProp(prop);
+	if(!subval.IsNull()) di.RegisterProp(prop);
 	bool res=IsType<typename flagtyperemover<C>::type>(subval);
 	if(res) var=static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval));
 	else CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec, mandatory);
@@ -198,7 +198,7 @@ template <typename C> inline bool CheckTransJsonValue(C &var, const deserialiser
 
 template <typename C, typename D> inline bool CheckTransJsonValueDef(C &var, const deserialiser_input &di, const char *prop, const D def, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
-	di.RegisterProp(prop);
+	if(!subval.IsNull()) di.RegisterProp(prop);
 	bool res=IsType<typename flagtyperemover<C>::type>(subval);
 	var=res?static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval)):def;
 	if(!res) CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
@@ -208,25 +208,39 @@ template <typename C, typename D> inline bool CheckTransJsonValueDef(C &var, con
 template <typename C> struct flag_conflict_checker {
 	C set_bits;
 	C clear_bits;
+
 	flag_conflict_checker() : set_bits(static_cast<C>(0)), clear_bits(static_cast<C>(0)) { }
+
+	void RegisterFlags(bool set, C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec) {
+		if(set) set_bits |= flagmask;
+		else clear_bits |= flagmask;
+		if(set_bits & clear_bits & flagmask) {
+			ec.RegisterNewError<error_deserialisation>(di, string_format("Flag variable: %s, contradicts earlier declarations in same scope", prop));
+		}
+	}
+
+	void RegisterAndProcessFlags(C &val, bool set, C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec) {
+		if(set) val |= flagmask;
+		else val &= ~flagmask;
+		RegisterFlags(set, flagmask, di, prop, ec);
+	}
+
+	void Ban(C mask) {
+		set_bits |= mask;
+		clear_bits |= mask;
+	}
 };
 
 template <typename C, typename D> inline bool CheckTransJsonValueFlag(C &var, D flagmask, const deserialiser_input &di, const char *prop, error_collection &ec, flag_conflict_checker<C> *conflictcheck = 0) {
 	const rapidjson::Value &subval=di.json[prop];
-	di.RegisterProp(prop);
+	if(!subval.IsNull()) di.RegisterProp(prop);
 	bool res=IsType<bool>(subval);
 	if(res) {
 		bool set = GetType<bool>(subval);
 		if(set) var = var | flagmask;
 		else var = var & ~flagmask;
 
-		if(conflictcheck) {
-			if(set) conflictcheck->set_bits |= flagmask;
-			else conflictcheck->clear_bits |= flagmask;
-			if(conflictcheck->set_bits & conflictcheck->clear_bits & flagmask) {
-				ec.RegisterNewError<error_deserialisation>(di, string_format("Flag variable: %s, contradicts earlier declarations in same scope", prop));
-			}
-		}
+		if(conflictcheck) conflictcheck->RegisterFlags(set, flagmask, di, prop, ec);
 	}
 	else CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
 	return res;
@@ -234,7 +248,7 @@ template <typename C, typename D> inline bool CheckTransJsonValueFlag(C &var, D 
 
 template <typename C, typename D> inline bool CheckTransJsonValueDefFlag(C &var, D flagmask, const deserialiser_input &di, const char *prop, bool def, error_collection &ec) {
 	const rapidjson::Value &subval=di.json[prop];
-	di.RegisterProp(prop);
+	if(!subval.IsNull()) di.RegisterProp(prop);
 	bool res=IsType<bool>(subval);
 	bool flagval=res?static_cast<C>(GetType<bool>(subval)):def;
 	if(flagval) var = var | flagmask;
@@ -245,7 +259,7 @@ template <typename C, typename D> inline bool CheckTransJsonValueDefFlag(C &var,
 
 template <typename C, typename D> inline C CheckGetJsonValueDef(const deserialiser_input &di, const char *prop, const D def, error_collection &ec, bool *hadval=0) {
 	const rapidjson::Value &subval=di.json[prop];
-	di.RegisterProp(prop);
+	if(!subval.IsNull()) di.RegisterProp(prop);
 	bool res=IsType<typename flagtyperemover<C>::type>(subval);
 	if(hadval) *hadval=res;
 	if(!res) CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
@@ -254,7 +268,7 @@ template <typename C, typename D> inline C CheckGetJsonValueDef(const deserialis
 
 template <typename C> inline void CheckTransJsonSubObj(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
-	di.RegisterProp(prop);
+	if(!subval.IsNull()) di.RegisterProp(prop);
 	if(subval.IsObject()) obj.DeserialiseObject(deserialiser_input(type_name, prop, subval), ec);
 	else {
 		CheckJsonTypeAndReportError<json_object>(di, prop, subval, ec, mandatory);
@@ -263,7 +277,7 @@ template <typename C> inline void CheckTransJsonSubObj(C &obj, const deserialise
 
 template <typename C> inline void CheckTransJsonSubArray(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
-	di.RegisterProp(prop);
+	if(!subval.IsNull()) di.RegisterProp(prop);
 	if(subval.IsArray()) obj.Deserialise(deserialiser_input(type_name, prop, subval), ec);
 	else {
 		CheckJsonTypeAndReportError<json_array>(di, prop, subval, ec, mandatory);
@@ -272,7 +286,7 @@ template <typename C> inline void CheckTransJsonSubArray(C &obj, const deseriali
 
 template <typename C> inline void CheckIterateJsonArrayOrType(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func) {
 	deserialiser_input subdi(di.json[prop], type_name, prop, di);
-	di.RegisterProp(prop);
+	if(!subdi.json.IsNull()) di.RegisterProp(prop);
 
 	auto innerfunc = [&](const deserialiser_input &inner_di) {
 		if(IsType<C>(inner_di.json)) {
@@ -300,7 +314,7 @@ template <typename C> inline void CheckFillTypeVectorFromJsonArrayOrType(const d
 
 template <typename C> inline bool CheckTransRapidjsonValue(const rapidjson::Value *&val, const deserialiser_input &di, const char *prop, error_collection &ec, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
-	di.RegisterProp(prop);
+	if(!subval.IsNull()) di.RegisterProp(prop);
 	bool res=IsType<C>(subval);
 	if(res) val=&subval;
 	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec, mandatory);

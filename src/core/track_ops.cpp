@@ -140,7 +140,7 @@ bool action_pointsaction::TrySwingOverlap(std::function<void()> &overlap_callbac
 	const route *foundoverlap = 0;
 	bool failed = false;
 	target->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if(reserved_route->type != RTC_OVERLAP) {
+		if(!route_class::IsOverlap(reserved_route->type)) {
 			failed = true;
 			return;
 		}
@@ -267,7 +267,7 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 	bool found_route = false;
 	bool route_conflict = false;
 	rt->start.track->ReservationEnumerationInDirection(rt->start.direction, [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if(reserved_route->type == RTC_OVERLAP) return;
+		if(route_class::IsOverlap(reserved_route->type)) return;
 		if(! (rr_flags & RRF::STARTPIECE)) return;
 		found_route = true;
 		if(reserved_route != rt) route_conflict = true;
@@ -455,8 +455,9 @@ void action_reservetrack::ExecuteAction() const {
 }
 
 action_reservepath::action_reservepath(world &w_, const routingpoint *start_, const routingpoint *end_)
-: action_reservetrack_base(w_), start(start_), end(end_), gmr_flags(GMRF::ROUTEOK | GMRF::SHUNTOK), extraflags(RRF::IGNORE_OWN_OVERLAP) { }
+: action_reservetrack_base(w_), start(start_), end(end_), allowed_route_types(route_class::AllNonOverlaps()), gmr_flags(GMRF::ZERO), extraflags(RRF::IGNORE_OWN_OVERLAP) { }
 action_reservepath &action_reservepath::SetGmrFlags(GMRF gmr_flags_) { gmr_flags = gmr_flags_; return *this; }
+action_reservepath &action_reservepath::SetAllowedRouteTypes(route_class::set s) { allowed_route_types = s; return *this; }
 action_reservepath &action_reservepath::SetExtraFlags(RRF extraflags_) { extraflags = extraflags_; return *this; }
 action_reservepath &action_reservepath::SetVias(via_list vias_) { vias = vias_; return *this; }
 
@@ -467,7 +468,7 @@ void action_reservepath::ExecuteAction() const {
 	}
 
 	std::vector<routingpoint::gmr_routeitem> routes;
-	unsigned int routecount = start->GetMatchingRoutes(routes, end, gmr_flags, extraflags, vias);
+	unsigned int routecount = start->GetMatchingRoutes(routes, end, allowed_route_types, gmr_flags, extraflags, vias);
 
 	if(!routecount) {
 		ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/reservation/fail", "track/reservation/noroute"));

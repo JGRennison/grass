@@ -28,6 +28,7 @@
 #include "trackcircuit.h"
 #include "track_ops.h"
 #include "param.h"
+#include "routetypes.h"
 
 #include <algorithm>
 #include <iterator>
@@ -65,7 +66,7 @@ const route *routingpoint::FindBestOverlap() const {
 void routingpoint::EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags) const {
 
 	auto overlap_finder = [&](const route *r) {
-		if(r->type != RTC_OVERLAP) return;
+		if(!route_class::IsOverlap(r->type)) return;
 		if(!r->RouteReservation(RRF::TRYRESERVE | extraflags)) return;
 
 		int score = r->priority;
@@ -78,13 +79,11 @@ void routingpoint::EnumerateAvailableOverlaps(std::function<void(const route *rt
 	EnumerateRoutes(overlap_finder);
 }
 
-unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes, const routingpoint *end, GMRF gmr_flags, RRF extraflags, const via_list &vias) const {
+unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes, const routingpoint *end, route_class::set rc_mask, GMRF gmr_flags, RRF extraflags, const via_list &vias) const {
 	unsigned int count = 0;
 	if(!(gmr_flags & GMRF::DONTCLEARVECTOR)) routes.clear();
 	auto route_finder = [&](const route *r) {
-		if(r->type == RTC_SHUNT && !(gmr_flags & GMRF::SHUNTOK)) return;
-		if(r->type == RTC_ROUTE && !(gmr_flags & GMRF::ROUTEOK)) return;
-		if(r->type == RTC_OVERLAP && !(gmr_flags & GMRF::OVERLAPOK)) return;
+		if(! (route_class::Flag(r->type) & rc_mask)) return;
 		if(gmr_flags & GMRF::CHECKVIAS && r->vias != vias) return;
 		if(end && r->end.track != end) return;
 
@@ -107,8 +106,8 @@ unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes,
 	auto sortfunc = [&](const gmr_routeitem &a, const gmr_routeitem &b) -> bool {
 		if(a.score > b.score) return true;
 		if(a.score < b.score) return false;
-		if(a.rt->type == RTC_ROUTE && b.rt->type == RTC_SHUNT) return true;
-		if(a.rt->type == RTC_SHUNT && b.rt->type == RTC_ROUTE) return false;
+		if(route_class::IsRoute(a.rt->type) && route_class::IsShunt(b.rt->type)) return true;
+		if(route_class::IsShunt(a.rt->type) && route_class::IsRoute(b.rt->type)) return false;
 		if(a.rt->pieces.size() < b.rt->pieces.size()) return true;
 		if(a.rt->pieces.size() > b.rt->pieces.size()) return false;
 		if(a.rt->index < b.rt->index) return true;
@@ -197,11 +196,11 @@ RPRT trackroutingpoint::GetAvailableRouteTypes(EDGETYPE direction) const {
 	return (direction == EDGE_FRONT) ? availableroutetypes_forward : availableroutetypes_reverse;
 }
 
-
 genericsignal::genericsignal(world &w_) : trackroutingpoint(w_), sflags(GSF::ZERO) {
-	availableroutetypes_reverse |= RPRT::SHUNTTRANS | RPRT::ROUTETRANS;
+	availableroutetypes_reverse.through |= route_class::AllNonOverlaps();
 	w_.RegisterTickUpdate(this);
 	sighting_distances.emplace_back(EDGE_FRONT, SIGHTING_DISTANCE_SIG);
+	std::copy(route_class::default_approach_control_timeouts.begin(), route_class::default_approach_control_timeouts.end(), approachcontrol_default_timeouts.begin());
 }
 
 genericsignal::~genericsignal() {
@@ -243,10 +242,10 @@ bool genericsignal::Reservation(EDGETYPE direction, unsigned int index, RRF rr_f
 }
 
 RPRT genericsignal::GetSetRouteTypes(EDGETYPE direction) const {
-	RPRT result = RPRT::ZERO;
+	RPRT result;
 
 	auto result_flag_adds = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if(reserved_route) result = result | (GetRouteClassRPRTMask(reserved_route->type) & GetTRSFlagsRPRTMask(rr_flags));
+		if(reserved_route) result.GetRCSByRRF(rr_flags) |= route_class::Flag(reserved_route->type);
 	};
 
 	if(direction == EDGE_FRONT) {
@@ -269,7 +268,7 @@ void genericsignal::UpdateSignalState() {
 		reserved_aspect = 0;
 		SetAspectNextTarget(0);
 		SetAspectRouteTarget(0);
-		aspect_type = RTC_NULL;
+		aspect_type = route_class::RTC_NULL;
 	};
 
 	const route *own_overlap = GetCurrentForwardOverlap();
@@ -356,16 +355,16 @@ void genericsignal::UpdateSignalState() {
 		aspect_target = *next_repeater;
 	}
 
-	if(set_route->type == RTC_SHUNT) reserved_aspect = aspect = std::min((unsigned int) 1, max_aspect);
+	if(route_class::IsAspectLimitedToUnity(set_route->type)) reserved_aspect = aspect = std::min((unsigned int) 1, max_aspect);
 	else {
 		if(max_aspect <= 1) reserved_aspect = aspect = max_aspect;
 		else {
 			aspect_target->UpdateRoutingPoint();
-			if(set_route->type == RTC_ROUTE && aspect_target->GetAspectType() == RTC_SHUNT) reserved_aspect = aspect = 1;
-			else {
+			if(route_class::IsAspectDirectlyPropagatable(set_route->type, aspect_target->GetAspectType())) {
 				aspect = std::min(max_aspect, aspect_target->GetAspect() + 1);
 				reserved_aspect = std::min(max_aspect, aspect_target->GetReservedAspect() + 1);
 			}
+			else reserved_aspect = aspect = 1;
 		}
 	}
 	SetAspectNextTarget(aspect_target);
@@ -380,7 +379,7 @@ const route *genericsignal::GetCurrentForwardRoute() const {
 	const route *output = 0;
 
 	auto route_fetch = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if(reserved_route && reserved_route->type != RTC_OVERLAP && reserved_route->type != RTC_NULL) output = reserved_route;
+		if(reserved_route && !route_class::IsOverlap(reserved_route->type) && route_class::IsValid(reserved_route->type)) output = reserved_route;
 	};
 
 	start_trs.ReservationEnumerationInDirection(EDGE_FRONT, route_fetch);
@@ -392,7 +391,7 @@ const route *genericsignal::GetCurrentForwardOverlap() const {
 	const route *output = 0;
 
 	auto route_fetch = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if(reserved_route && reserved_route->type == RTC_OVERLAP) output = reserved_route;
+		if(reserved_route && route_class::IsOverlap(reserved_route->type)) output = reserved_route;
 	};
 
 	start_trs.ReservationEnumerationInDirection(EDGE_FRONT, route_fetch);
@@ -406,9 +405,9 @@ void genericsignal::EnumerateCurrentBackwardsRoutes(std::function<void (const ro
 	end_trs.ReservationEnumerationInDirection(EDGE_FRONT, enumfunc);
 }
 
-bool genericsignal::RepeaterAspectMeaningfulForRouteType(ROUTE_CLASS type) const {
-	if(type == RTC_SHUNT) return true;
-	else if(type == RTC_ROUTE) {
+bool genericsignal::RepeaterAspectMeaningfulForRouteType(route_class::ID type) const {
+	if(route_class::IsShunt(type)) return true;
+	else if(route_class::IsRoute(type)) {
 		if(GetSignalFlags() & GSF::REPEATER && !(GetSignalFlags() & GSF::NONASPECTEDREPEATER)) return true;
 	}
 	return false;
@@ -504,7 +503,7 @@ route *autosignal::GetRouteByIndex(unsigned int index) {
 
 void autosignal::EnumerateRoutes(std::function<void (const route *)> func) const {
 	func(&signal_route);
-	if(overlap_route.type == RTC_OVERLAP) func(&overlap_route);
+	if(overlap_route.type == route_class::RTC_OVERLAP) func(&overlap_route);
 };
 
 GTF routesignal::GetFlags(EDGETYPE direction) const {
@@ -527,37 +526,27 @@ void routesignal::EnumerateRoutes(std::function<void (const route *)> func) cons
 };
 
 struct signal_route_recording_state : public generic_route_recording_state {
-
-	enum class RRRSF {
-		ZERO		= 0,
-		SHUNTOK		= 1<<0,
-		ROUTEOK		= 1<<1,
-		OVERLAPOK	= 1<<2,
-
-		SCANTYPES	= SHUNTOK | ROUTEOK | OVERLAPOK,
-	};
-	RRRSF rrrs_flags;
+	route_class::set allowed_routeclasses;
 
 	virtual ~signal_route_recording_state() { }
-	signal_route_recording_state() : rrrs_flags(RRRSF::ZERO) { }
+	signal_route_recording_state() : allowed_routeclasses(0) { }
 	virtual signal_route_recording_state *Clone() const {
 		signal_route_recording_state *rrrs = new signal_route_recording_state;
-		rrrs->rrrs_flags = rrrs_flags;
+		rrrs->allowed_routeclasses = allowed_routeclasses;
 		return rrrs;
 	}
 };
-template<> struct enum_traits< signal_route_recording_state::RRRSF > {	static constexpr bool flags = true; };
 
 bool autosignal::PostLayoutInit(error_collection &ec) {
 	if(! genericsignal::PostLayoutInit(ec)) return false;
 
-	auto mkroutefunc = [&](ROUTE_CLASS type, const track_target_ptr &piece) -> route* {
+	auto mkroutefunc = [&](route_class::ID type, const track_target_ptr &piece) -> route* {
 		route *candidate = 0;
-		if(type == RTC_ROUTE) {
+		if(type == route_class::RTC_ROUTE) {
 			candidate = &this->signal_route;
 			candidate->index = 0;
 		}
-		else if(type == RTC_OVERLAP) {
+		else if(type == route_class::RTC_OVERLAP) {
 			candidate = &this->overlap_route;
 			candidate->index = 1;
 		}
@@ -566,7 +555,7 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 			return 0;
 		}
 
-		if(candidate->type != RTC_NULL) {
+		if(candidate->type != route_class::RTC_NULL) {
 			ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Autosignal already has a route of the corresponding type");
 			return 0;
 		}
@@ -578,7 +567,7 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 
 	bool scanresult = PostLayoutInitTrackScan(ec, 100, 0, 0, mkroutefunc);
 
-	if(scanresult && signal_route.type == RTC_ROUTE) {
+	if(scanresult && signal_route.type == route_class::RTC_ROUTE) {
 		if(signal_route.RouteReservation(RRF::AUTOROUTE | RRF::TRYRESERVE)) {
 			signal_route.RouteReservation(RRF::AUTOROUTE | RRF::RESERVE);
 
@@ -611,7 +600,7 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 	if(! genericsignal::PostLayoutInit(ec)) return false;
 
 	unsigned int route_index = 0;
-	return PostLayoutInitTrackScan(ec, 100, 10, &restrictions, [&](ROUTE_CLASS type, const track_target_ptr &piece) -> route* {
+	return PostLayoutInitTrackScan(ec, 100, 10, &restrictions, [&](route_class::ID type, const track_target_ptr &piece) -> route* {
 		this->signal_routes.emplace_back();
 		route *rt = &this->signal_routes.back();
 		rt->index = route_index;
@@ -621,7 +610,7 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 	});
 }
 
-bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(ROUTE_CLASS type, const track_target_ptr &piece)> mkblankroute) {
+bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(route_class::ID type, const track_target_ptr &piece)> mkblankroute) {
 	bool continue_initing = true;
 
 	bool foundoverlap = false;
@@ -634,31 +623,31 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 			routingpoint *target_routing_piece = static_cast<routingpoint *>(piece.track);
 
 			RPRT availableroutetypes = target_routing_piece->GetAvailableRouteTypes(piece.direction);
-			if(availableroutetypes & (RPRT::ROUTEEND | RPRT::SHUNTEND | RPRT::OVERLAPEND)) {
-				if(target_routing_piece->GetSetRouteTypes(piece.direction) & (RPRT::ROUTEEND | RPRT::SHUNTEND | RPRT::VIA)) {
+			if(availableroutetypes.end) {
+				RPRT current = target_routing_piece->GetSetRouteTypes(piece.direction);
+				if(current.end || current.through) {
 					ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Signal route already reserved");
 					continue_initing = false;
 					return true;
 				}
 
 				std::vector<const route_restriction*> matching_restrictions;
-				route_restriction::RRDF restriction_denyflags;
-				if(restrictions) restriction_denyflags = restrictions->CheckAllRestrictions(matching_restrictions, route_pieces, piece);
-				else restriction_denyflags = route_restriction::RRDF::ZERO;
+				route_class::set restriction_permitted_types;
+				if(restrictions) restriction_permitted_types = restrictions->CheckAllRestrictions(matching_restrictions, route_pieces, piece);
+				else restriction_permitted_types = route_class::All();
 
-				auto mk_route = [&](ROUTE_CLASS type) {
+				auto mk_route = [&](route_class::ID type) {
 					route *rt = mkblankroute(type, piece);
 					if(rt) {
 						rt->start = vartrack_target_ptr<routingpoint>(this, EDGE_FRONT);
 						rt->pieces = route_pieces;
 						rt->end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
-						if(type == RTC_SHUNT) rt->approachcontrol_timeout = approachcontrol_default_shunt_timeout;
-						if(type == RTC_ROUTE) rt->approachcontrol_timeout = approachcontrol_default_route_timeout;
-						if(type == RTC_OVERLAP) rt->overlap_timeout = overlap_default_timeout;
+						if(route_class::IsOverlap(type)) rt->overlap_timeout = overlap_default_timeout;
+						else rt->approachcontrol_timeout = approachcontrol_default_timeouts[type];
 						rt->FillLists();
 						rt->parent = this;
 
-						if(type == RTC_ROUTE) {
+						if(route_class::NeedsOverlap(type)) {
 							genericsignal *rt_sig = FastSignalCast(target_routing_piece, piece.direction);
 							if(rt_sig && !(rt_sig->GetSignalFlags()&GSF::NOOVERLAP)) rt->routeflags |= route::RF::NEEDOVERLAP;
 						}
@@ -668,24 +657,22 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						}
 					}
 					else {
-						ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Unable to make new route of type: " + std::string(SerialiseRouteType(type)));
+						ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Unable to make new route of type: " + route_class::GetRouteTypeFriendlyName(type));
 					}
 				};
-
-				if(rrrs->rrrs_flags & signal_route_recording_state::RRRSF::ROUTEOK && availableroutetypes & RPRT::ROUTEEND && !(restriction_denyflags & route_restriction::RRDF::NOROUTE)) mk_route(RTC_ROUTE);
-				if(rrrs->rrrs_flags & signal_route_recording_state::RRRSF::SHUNTOK && availableroutetypes & RPRT::SHUNTEND && !(restriction_denyflags & route_restriction::RRDF::NOSHUNT)) mk_route(RTC_SHUNT);
-				if(rrrs->rrrs_flags & signal_route_recording_state::RRRSF::OVERLAPOK && availableroutetypes & RPRT::OVERLAPEND && !(restriction_denyflags & route_restriction::RRDF::NOOVERLAP)) {
-					mk_route(RTC_OVERLAP);
-					rrrs->rrrs_flags &= ~signal_route_recording_state::RRRSF::OVERLAPOK;	//don't look for more overlap ends beyond the end of the first
-					foundoverlap = true;
+				route_class::set found_types = rrrs->allowed_routeclasses & availableroutetypes.end & restriction_permitted_types;
+				while(found_types) {
+					route_class::set bit = found_types & (found_types ^ (found_types - 1));
+					route_class::ID type = static_cast<route_class::ID>(__builtin_ffs(bit) - 1);
+					found_types ^= bit;
+					mk_route(type);
+					if(route_class::IsNotEndExtendable(type)) rrrs->allowed_routeclasses &= ~bit;	//don't look for more overlap ends beyond the end of the first
+					if(route_class::IsOverlap(type)) foundoverlap = true;
 				}
 			}
+			rrrs->allowed_routeclasses &= availableroutetypes.through;
 
-			if(! (availableroutetypes & RPRT::SHUNTTRANS)) rrrs->rrrs_flags &= ~signal_route_recording_state::RRRSF::SHUNTOK;
-			if(! (availableroutetypes & RPRT::ROUTETRANS)) rrrs->rrrs_flags &= ~signal_route_recording_state::RRRSF::ROUTEOK;
-			if(! (availableroutetypes & RPRT::OVERLAPTRANS)) rrrs->rrrs_flags &= ~signal_route_recording_state::RRRSF::OVERLAPOK;
-
-			if(! (rrrs->rrrs_flags & signal_route_recording_state::RRRSF::SCANTYPES)) return true;	//nothing left to scan for
+			if(!rrrs->allowed_routeclasses) return true;	//nothing left to scan for
 		}
 		if(pieceflags & GTF::ROUTESET) {
 			ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Piece already reserved");
@@ -699,12 +686,13 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 	route_recording_list pieces;
 	signal_route_recording_state rrrs;
 	bool needoverlap = false;
-	if(GetAvailableRouteTypes(EDGE_FRONT) & RPRT::ROUTESTART) rrrs.rrrs_flags |= signal_route_recording_state::RRRSF::ROUTEOK;
-	if(GetAvailableRouteTypes(EDGE_FRONT) & RPRT::ROUTEEND && ! (GetSignalFlags() & GSF::NOOVERLAP)) {
-		rrrs.rrrs_flags |= signal_route_recording_state::RRRSF::OVERLAPOK;
+
+	RPRT allowed = GetAvailableRouteTypes(EDGE_FRONT);
+	rrrs.allowed_routeclasses |= allowed.start & route_class::AllNonOverlaps();
+	if(allowed.end & route_class::AllNeedingOverlap() && !(GetSignalFlags() & GSF::NOOVERLAP)) {
+		rrrs.allowed_routeclasses |= route_class::AllOverlaps();
 		needoverlap = true;
 	}
-	if(GetAvailableRouteTypes(EDGE_FRONT) & RPRT::SHUNTSTART) rrrs.rrrs_flags |= signal_route_recording_state::RRRSF::SHUNTOK;
 	TrackScan(max_pieces, junction_max, GetConnectingPieceByIndex(EDGE_FRONT, 0), pieces, &rrrs, error_flags, func);
 
 	if(error_flags != TSEF::ZERO) {
@@ -764,7 +752,7 @@ void route::FillLists() {
 			trackcircuits.push_back(this_tc);
 		}
 		routingpoint *target_routing_piece = FastRoutingpointCast(it->location.track, it->location.direction);
-		if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(it->location.direction) & RPRT::VIA) {
+		if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(it->location.direction).flags & RPRT_FLAGS::VIA) {
 			vias.push_back(target_routing_piece);
 		}
 		genericsignal *this_signal = FastSignalCast(target_routing_piece, it->location.direction);
@@ -822,7 +810,7 @@ bool route::IsStartAnchored(RRF checkmask) const {
 }
 
 //return true if restriction applies
-bool route_restriction::CheckRestriction(RRDF &restriction_flags, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
+bool route_restriction::CheckRestriction(route_class::set &allowed_routes, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
 	if(!targets.empty() && std::find(targets.begin(), targets.end(), piece.track->GetName()) == targets.end()) return false;
 
 	auto via_start = via.begin();
@@ -837,7 +825,7 @@ bool route_restriction::CheckRestriction(RRDF &restriction_flags, const route_re
 	}
 	if(via_start != via.end()) return false;
 
-	restriction_flags |= denyflags;
+	allowed_routes &= allowedtypes;
 	return true;
 }
 
@@ -847,12 +835,12 @@ void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::OVERLAPTIMEOUTSET) rt.overlap_timeout = overlap_timeout;
 }
 
-route_restriction::RRDF route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
-	route_restriction::RRDF restriction_flags = route_restriction::RRDF::ZERO;
+route_class::set route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
+	route_class::set allowed = route_class::All();
 	for(auto it = restrictions.begin(); it != restrictions.end(); ++it) {
-		if(it->CheckRestriction(restriction_flags, route_pieces, piece)) matching_restrictions.push_back(&(*it));
+		if(it->CheckRestriction(allowed, route_pieces, piece)) matching_restrictions.push_back(&(*it));
 	}
-	return restriction_flags;
+	return allowed;
 }
 
 const track_target_ptr& startofline::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
@@ -932,14 +920,14 @@ GTF startofline::GetFlags(EDGETYPE direction) const {
 }
 
 RPRT startofline::GetAvailableRouteTypes(EDGETYPE direction) const {
-	return (direction == EDGE_FRONT) ? availableroutetypes : RPRT::ZERO;
+	return (direction == EDGE_FRONT) ? availableroutetypes : RPRT();
 }
 
 RPRT startofline::GetSetRouteTypes(EDGETYPE direction) const {
-	RPRT result = RPRT::ZERO;
+	RPRT result;
 
 	auto result_flag_adds = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if(reserved_route) result = result | (GetRouteClassRPRTMask(reserved_route->type) & GetTRSFlagsRPRTMask(rr_flags) & RPRT::MASK_END);
+		if(reserved_route) result.GetRCSByRRF(rr_flags) |= route_class::Flag(reserved_route->type);
 	};
 
 	if(direction == EDGE_FRONT) {
@@ -965,22 +953,23 @@ RPRT routingmarker::GetAvailableRouteTypes(EDGETYPE direction) const {
 }
 
 RPRT routingmarker::GetSetRouteTypes(EDGETYPE direction) const {
-	RPRT result = RPRT::ZERO;
+	RPRT result;
 
 	auto result_flag_adds = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if(reserved_route) result = result | (GetRouteClassRPRTMask(reserved_route->type) & GetTRSFlagsRPRTMask(rr_flags));
+		if(reserved_route) result.GetRCSByRRF(rr_flags) |= route_class::Flag(reserved_route->type);
 	};
 
 	trs.ReservationEnumerationInDirection(direction, result_flag_adds);
 	return result;
 }
 
-const char * SerialiseRouteType(const ROUTE_CLASS& type) {
-	switch(type) {
-		case RTC_NULL: return "Null Route Type";
-		case RTC_SHUNT: return "Shunt";
-		case RTC_ROUTE: return "Route";
-		case RTC_OVERLAP: return "Overlap";
-		default: return "Unknown Route Type";
-	}
+std::ostream& operator<<(std::ostream& os, const RPRT& obj) {
+	os << "RPRT(start: [";
+	route_class::StreamOutRouteClassSet(os, obj.start);
+	os << "], through: [";
+	route_class::StreamOutRouteClassSet(os, obj.through);
+	os << "], end: [";
+	route_class::StreamOutRouteClassSet(os, obj.end);
+	os << "], flags: [" << obj.flags << "])";
+	return os;
 }
