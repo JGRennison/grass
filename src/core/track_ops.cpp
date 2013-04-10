@@ -386,7 +386,7 @@ bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_t
 
 		if(approachlocking_engage) {
 			ActionRegisterFuture(std::make_shared<future_signalflags>(*sig, action_time+1, GSF::APPROACHLOCKINGMODE, GSF::APPROACHLOCKINGMODE));
-			ActionRegisterFutureAction(*sig, action_time + rt->approachcontrol_timeout, std::unique_ptr<action>(new action_approachlockingtimeout(w, *sig)));
+			ActionRegisterFutureAction(*sig, action_time + rt->approachlocking_timeout, std::unique_ptr<action>(new action_approachlockingtimeout(w, *sig)));
 			return true;
 		}
 	}

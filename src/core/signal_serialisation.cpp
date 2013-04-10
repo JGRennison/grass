@@ -82,9 +82,9 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonValueFlag(sflags, GSF::OVERLAPTIMEOUTSTARTED, di, "overlaptimeoutstarted", ec);
 	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) CheckTransJsonValue(overlap_timeout_start, di, "overlap_timeout_start", ec);
 
-	deserialiser_input sddi(di.json["approachcontroltimeout"], "approachcontroltimeout", "approachcontroltimeout", di);
+	deserialiser_input sddi(di.json["approachlockingtimeout"], "approachlockingtimeout", "approachlockingtimeout", di);
 	if(!sddi.json.IsNull()) {
-		di.RegisterProp("approachcontroltimeout");
+		di.RegisterProp("approachlockingtimeout");
 
 		auto acfunc = [&](const deserialiser_input &funcdi) {
 			bool ok = false;
@@ -95,7 +95,7 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 				if(CheckTransJsonValue(rc, funcdi, "routeclass", ec) && CheckTransJsonValue(timeout, funcdi, "timeout", ec)) {
 					for(int i = 0; i < route_class::LAST_RTC; i++) {
 						route_class::ID type = static_cast<route_class::ID>(i);
-						if(route_class::IsValidForApproachControl(type) && route_class::GetRouteTypeName(type) == rc) {
+						if(route_class::IsValidForApproachLocking(type) && route_class::GetRouteTypeName(type) == rc) {
 							approachcontrol_default_timeouts[type] = timeout;
 							ok = true;
 							break;
@@ -106,7 +106,7 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 			}
 
 			if(!ok) {
-				ec.RegisterNewError<error_deserialisation>(funcdi, "Invalid approach control time definition");
+				ec.RegisterNewError<error_deserialisation>(funcdi, "Invalid approach locking timeout definition");
 			}
 		};
 
@@ -114,7 +114,7 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 			unsigned int value = sddi.json.GetUint();
 			for(int i = 0; i < route_class::LAST_RTC; i++) {
 				route_class::ID type = static_cast<route_class::ID>(i);
-				if(route_class::IsValidForApproachControl(type)) approachcontrol_default_timeouts[type] = value;
+				if(route_class::IsValidForApproachLocking(type)) approachcontrol_default_timeouts[type] = value;
 			}
 		}
 		else if(sddi.json.IsArray()) {
@@ -167,7 +167,7 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "via", ec, rr.via);
 			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "notvia", ec, rr.notvia);
 			if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF::PRIORITYSET;
-			if(CheckTransJsonValue(rr.approachcontrol_timeout, subdi, "approachcontroltimeout", ec)) rr.routerestrictionflags |= route_restriction::RRF::ACTIMEOUTSET;
+			if(CheckTransJsonValue(rr.approachlocking_timeout, subdi, "approachlockingtimeout", ec)) rr.routerestrictionflags |= route_restriction::RRF::APLOCK_TIMEOUTSET;
 			if(CheckTransJsonValue(rr.overlap_timeout, subdi, "overlaptimeout", ec)) rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTIMEOUTSET;
 
 			route_class::DeserialiseGroup(rr.allowedtypes, subdi, ec);

@@ -463,7 +463,7 @@ TEST_CASE( "signal/routesignal/reserveaction", "Test basic routesignal reservati
 	tenv.checksignal(tenv.s6, 1, route_class::RTC_ROUTE, tenv.b, tenv.b);
 }
 
-std::string approachcontrol_test_str_1 =
+std::string approachlocking_test_str_1 =
 R"({ "content" : [ )"
 
 	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
@@ -481,23 +481,23 @@ R"({ "content" : [ )"
 	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S3ovlp" }, )"
 	R"({ "type" : "routingmarker", "overlapend" : true }, )"
 	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T4" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S4", "approachcontroltimeout" : 1000, "routerestrictions" : [ { "approachcontroltimeout" : 120000, "targets" : "S5" } ] }, )"
+	R"({ "type" : "4aspectroute", "name" : "S4", "approachlockingtimeout" : 1000, "routerestrictions" : [ { "approachlockingtimeout" : 120000, "targets" : "S5" } ] }, )"
 	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S4ovlp" }, )"
 	R"({ "type" : "routingmarker", "overlapend" : true }, )"
 	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T5" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S5", "approachcontroltimeout" : [ { "routeclass" : "shunt", "timeout" : 1000 }, { "routeclass" : "route", "timeout" : 60000 } ] }, )"
+	R"({ "type" : "4aspectroute", "name" : "S5", "approachlockingtimeout" : [ { "routeclass" : "shunt", "timeout" : 1000 }, { "routeclass" : "route", "timeout" : 60000 } ] }, )"
 	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S5ovlp" }, )"
 	R"({ "type" : "routingmarker", "overlapend" : true }, )"
 	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T6" }, )"
-	R"({ "type" : "routesignal", "name" : "S6", "shuntsignal" : true, "end" : { "allow" : "route" }, "approachcontroltimeout" : 45000 }, )"
+	R"({ "type" : "routesignal", "name" : "S6", "shuntsignal" : true, "end" : { "allow" : "route" }, "approachlockingtimeout" : 45000 }, )"
 	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S6ovlp" }, )"
 	R"({ "type" : "routingmarker", "overlapend" : true }, )"
 	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T7" }, )"
 	R"({ "type" : "endofline", "name" : "B" } )"
 "] }";
 
-TEST_CASE( "signal/approachcontrol/general", "Test basic approach control route locking, timing and parameter serialisation" ) {
-	test_fixture_world env(approachcontrol_test_str_1);
+TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route locking, timing and parameter serialisation" ) {
+	test_fixture_world env(approachlocking_test_str_1);
 
 	env.w.LayoutInit(env.ec);
 	env.w.PostLayoutInit(env.ec);
@@ -546,7 +546,7 @@ TEST_CASE( "signal/approachcontrol/general", "Test basic approach control route 
 		CHECK(count == 1);
 		const route *rt = s->GetCurrentForwardRoute();
 		REQUIRE(rt != 0);
-		CHECK(rt->approachcontrol_timeout == timeout);
+		CHECK(rt->approachlocking_timeout == timeout);
 		CHECK(rt->end.track == forwardtarget);
 	};
 	routecheck(tenv.s4, tenv.s3, tenv.s5, 120000);

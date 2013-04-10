@@ -643,7 +643,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						rt->pieces = route_pieces;
 						rt->end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
 						if(route_class::IsOverlap(type)) rt->overlap_timeout = overlap_default_timeout;
-						else rt->approachcontrol_timeout = approachcontrol_default_timeouts[type];
+						else rt->approachlocking_timeout = approachcontrol_default_timeouts[type];
 						rt->FillLists();
 						rt->parent = this;
 
@@ -831,7 +831,7 @@ bool route_restriction::CheckRestriction(route_class::set &allowed_routes, const
 
 void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::PRIORITYSET) rt.priority = priority;
-	if(routerestrictionflags & RRF::ACTIMEOUTSET) rt.approachcontrol_timeout = approachcontrol_timeout;
+	if(routerestrictionflags & RRF::APLOCK_TIMEOUTSET) rt.approachlocking_timeout = approachlocking_timeout;
 	if(routerestrictionflags & RRF::OVERLAPTIMEOUTSET) rt.overlap_timeout = overlap_timeout;
 }
 

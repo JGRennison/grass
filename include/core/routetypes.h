@@ -52,7 +52,7 @@ namespace route_class {
 	inline bool IsShunt(ID id) { return id == RTC_SHUNT; }
 	inline bool IsRoute(ID id) { return id == RTC_ROUTE; }
 	inline bool IsOverlap(ID id) { return id == RTC_OVERLAP; }
-	inline bool IsValidForApproachControl(ID id) { return IsValid(id) && !IsOverlap(id); }
+	inline bool IsValidForApproachLocking(ID id) { return IsValid(id) && !IsOverlap(id); }
 	inline bool IsAspectLimitedToUnity(ID id) { return IsShunt(id); }
 	inline bool IsAspectDirectlyPropagatable(ID dep, ID targ) { return dep == RTC_ROUTE && targ == RTC_ROUTE; }
 	inline bool NeedsOverlap(ID id) { return IsRoute(id); }

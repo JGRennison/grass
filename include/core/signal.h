@@ -132,7 +132,7 @@ struct route {
 	passable_test_list passtestlist;
 	route_class::ID type;
 	int priority;
-	unsigned int approachcontrol_timeout;
+	unsigned int approachlocking_timeout;
 	unsigned int overlap_timeout;
 
 	enum class RF {
@@ -144,7 +144,7 @@ struct route {
 	routingpoint *parent;
 	unsigned int index;
 
-	route() : type(route_class::RTC_NULL), priority(0), approachcontrol_timeout(0), overlap_timeout(0), routeflags(RF::ZERO), parent(0), index(0) { }
+	route() : type(route_class::RTC_NULL), priority(0), approachlocking_timeout(0), overlap_timeout(0), routeflags(RF::ZERO), parent(0), index(0) { }
 	void FillLists();
 	bool TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const;
 	bool RouteReservation(RRF reserve_flags, std::string *failreasonkey = 0) const;
@@ -164,13 +164,13 @@ class route_restriction {
 	std::vector<std::string> via;
 	std::vector<std::string> notvia;
 	int priority = 0;
-	unsigned int approachcontrol_timeout;
+	unsigned int approachlocking_timeout;
 	unsigned int overlap_timeout;
 	enum class RRF {
-		ZERO			= 0,
-		PRIORITYSET		= 1<<0,
-		ACTIMEOUTSET		= 1<<1,
-		OVERLAPTIMEOUTSET	= 1<<2,
+		ZERO				= 0,
+		PRIORITYSET			= 1<<0,
+		APLOCK_TIMEOUTSET		= 1<<1,
+		OVERLAPTIMEOUTSET		= 1<<2,
 	};
 	RRF routerestrictionflags = RRF::ZERO;
 	route_class::set allowedtypes = route_class::All();
