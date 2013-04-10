@@ -807,3 +807,29 @@ TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
 	overlapcheck(tenv.s5, false);
 	overlapcheck(tenv.s6, true);
 }
+
+TEST_CASE( "signal/deserialisation/flagchecks", "Test signal/route flags contradiction and sanity checks" ) {
+	auto check = [&](const std::string &str, unsigned int errcount) {
+		test_fixture_world env(str);
+		if(env.ec.GetErrorCount() && env.ec.GetErrorCount() != errcount) { WARN("Error Collection: " << env.ec); }
+		REQUIRE(env.ec.GetErrorCount() == errcount);
+	};
+
+	check(
+	R"({ "content" : [ )"
+		R"({ "type" : "routesignal", "name" : "S1", "overlapend" : true, "end" : { "allow" : "overlap" } } )"
+	"] }"
+	, 0);
+
+	check(
+	R"({ "content" : [ )"
+		R"({ "type" : "routesignal", "name" : "S1", "overlapend" : true, "end" : { "deny" : "overlap" } } )"
+	"] }"
+	, 1);
+
+	check(
+	R"({ "content" : [ )"
+		R"({ "type" : "routesignal", "name" : "S1", "start" : { "deny" : "overlap" } } )"
+	"] }"
+	, 1);
+}

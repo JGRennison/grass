@@ -60,7 +60,7 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	flag_conflict_checker<route_class::set> conflictcheck_start;
 	flag_conflict_checker<route_class::set> conflictcheck_end;
 	conflictcheck_start.Ban(route_class::AllOverlaps());
-	conflictcheck_end.Ban(route_class::AllOverlaps());
+	if(di.json.HasMember("overlapend")) conflictcheck_end.RegisterFlagsMasked(availableroutetypes_forward.end, route_class::AllOverlaps(), di, "", ec);
 	route_class::DeserialiseGroupProp(availableroutetypes_forward.start, di, "start", ec, conflictcheck_start);
 	route_class::DeserialiseGroupProp(availableroutetypes_forward.end, di, "end", ec, conflictcheck_end);
 

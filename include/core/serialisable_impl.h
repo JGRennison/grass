@@ -205,24 +205,40 @@ template <typename C, typename D> inline bool CheckTransJsonValueDef(C &var, con
 	return res;
 }
 
-template <typename C> struct flag_conflict_checker {
+template <typename C> class flag_conflict_checker {
 	C set_bits;
 	C clear_bits;
+	void CheckError(C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec) {
+		if(set_bits & clear_bits & flagmask) {
+			ec.RegisterNewError<error_deserialisation>(di, string_format("Flag variable: %s, contradicts earlier declarations in same scope", prop));
+		}
+	}
 
+	public:
 	flag_conflict_checker() : set_bits(static_cast<C>(0)), clear_bits(static_cast<C>(0)) { }
 
 	void RegisterFlags(bool set, C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec) {
 		if(set) set_bits |= flagmask;
 		else clear_bits |= flagmask;
-		if(set_bits & clear_bits & flagmask) {
-			ec.RegisterNewError<error_deserialisation>(di, string_format("Flag variable: %s, contradicts earlier declarations in same scope", prop));
-		}
+		CheckError(flagmask, di, prop, ec);
 	}
 
 	void RegisterAndProcessFlags(C &val, bool set, C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec) {
 		if(set) val |= flagmask;
 		else val &= ~flagmask;
 		RegisterFlags(set, flagmask, di, prop, ec);
+	}
+
+	void RegisterFlagsMasked(C input, C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec) {
+		set_bits |= input & flagmask;
+		clear_bits |= (~input) & flagmask;
+		CheckError(flagmask, di, prop, ec);
+	}
+
+	void RegisterFlagsDual(C setmask, C clearmask, const deserialiser_input &di, const char *prop, error_collection &ec) {
+		set_bits |= setmask;
+		clear_bits |= clearmask;
+		CheckError(clearmask | setmask, di, prop, ec);
 	}
 
 	void Ban(C mask) {
