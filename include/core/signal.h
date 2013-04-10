@@ -41,39 +41,12 @@ typedef std::deque<track_circuit *> tc_list;
 typedef std::deque<genericsignal *> sig_list;
 typedef std::deque<route_recording_item> passable_test_list;
 
-/*enum class RPRT {
-	ZERO			= 0,
-	SHUNTSTART		= 1<<0,
-	SHUNTEND		= 1<<1,
-	SHUNTTRANS		= 1<<2,
-	ROUTESTART		= 1<<3,
-	ROUTEEND		= 1<<4,
-	ROUTETRANS		= 1<<5,
-	VIA			= 1<<6,
-	OVERLAPSTART		= 1<<7,
-	OVERLAPEND		= 1<<8,
-	OVERLAPTRANS		= 1<<9,
-
-	MASK_SHUNT		= SHUNTSTART | SHUNTEND | SHUNTTRANS,
-	MASK_ROUTE		= ROUTESTART | ROUTEEND | ROUTETRANS,
-	MASK_OVERLAP		= OVERLAPSTART | OVERLAPEND | OVERLAPTRANS,
-	MASK_START		= SHUNTSTART | ROUTESTART | OVERLAPSTART,
-	MASK_END		= SHUNTEND | ROUTEEND | OVERLAPEND,
-	MASK_TRANS		= SHUNTTRANS | ROUTETRANS | OVERLAPTRANS,
-};
-template<> struct enum_traits< RPRT > {	static constexpr bool flags = true; };
- * */
-
 enum class GMRF : unsigned int {
 	ZERO		= 0,
-//	ROUTEOK		= 1<<0,
-//	SHUNTOK		= 1<<1,
-//	OVERLAPOK	= 1<<2,
 	TRACKTEST	= 1<<3,
 	CHECKVIAS	= 1<<4,
 	DONTCLEARVECTOR	= 1<<5,
 	DONTSORT	= 1<<6,
-//	ALLROUTETYPES	= ROUTEOK | SHUNTOK | OVERLAPOK,
 };
 template<> struct enum_traits< GMRF > {	static constexpr bool flags = true; };
 
@@ -131,24 +104,6 @@ class routingpoint : public genericzlentrack {
 	inline route_class::ID GetAspectType() const { return aspect_type; }
 	virtual ASPECT_FLAGS GetAspectFlags() const { return ASPECT_FLAGS::ZERO; }
 	virtual void UpdateRoutingPoint() { }
-
-	/*static inline RPRT GetRouteClassRPRTMask(ROUTE_CLASS rc) {
-		switch(rc) {
-			case RTC_NULL: return RPRT::ZERO;
-			case RTC_SHUNT: return RPRT::MASK_SHUNT;
-			case RTC_ROUTE: return RPRT::MASK_ROUTE;
-			case RTC_OVERLAP: return RPRT::MASK_OVERLAP;
-			default: return RPRT::ZERO;
-		}
-	}
-
-	static inline RPRT GetTRSFlagsRPRTMask(RRF rr_flags) {
-		RPRT result = RPRT::ZERO;
-		if(rr_flags & RRF::STARTPIECE) result |= RPRT::MASK_START;
-		if(rr_flags & RRF::ENDPIECE) result |= RPRT::MASK_END;
-		if(!(rr_flags & (RRF::STARTPIECE | RRF::ENDPIECE))) result |= RPRT::MASK_TRANS;
-		return result;
-	}*/
 
 	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const = 0;
 	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const = 0;
