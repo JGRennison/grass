@@ -309,6 +309,21 @@ void genericsignal::UpdateSignalState() {
 		return;
 	}
 
+	if(set_route->routeflags & route::RF::APCONTROL && aspect == 0) {
+		bool can_trigger = false;
+		EnumerateCurrentBackwardsRoutes([&](const route *rt) {
+			if(rt->trackcircuits.empty()) return;
+			const track_circuit *tc = rt->trackcircuits.back();
+			if(tc && tc->Occupied() && tc->GetLastOccupationStateChangeTime() + set_route->approachcontrol_triggerdelay <= GetWorld().GetGameTime()) {
+				can_trigger = true;
+			}
+		});
+		if(!can_trigger) {
+			clear_route();
+			return;
+		}
+	}
+
 	if(!(GetSignalFlags() & GSF::REPEATER) && !(sflags & GSF::APPROACHLOCKINGMODE)) {
 		for(auto it = set_route->trackcircuits.begin(); it != set_route->trackcircuits.end(); ++it) {
 			if((*it)->Occupied()) {
@@ -833,6 +848,8 @@ void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::PRIORITYSET) rt.priority = priority;
 	if(routerestrictionflags & RRF::APLOCK_TIMEOUTSET) rt.approachlocking_timeout = approachlocking_timeout;
 	if(routerestrictionflags & RRF::OVERLAPTIMEOUTSET) rt.overlap_timeout = overlap_timeout;
+	if(routerestrictionflags & RRF::APCONTROL_SET) rt.routeflags |= route::RF::APCONTROL;
+	if(routerestrictionflags & RRF::APCONTROLTRIGGERDELAY_SET) rt.approachcontrol_triggerdelay = approachcontrol_triggerdelay;
 }
 
 route_class::set route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {

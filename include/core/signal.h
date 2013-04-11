@@ -134,10 +134,12 @@ struct route {
 	int priority;
 	unsigned int approachlocking_timeout;
 	unsigned int overlap_timeout;
+	unsigned int approachcontrol_triggerdelay = 0;
 
 	enum class RF {
 		ZERO			= 0,
 		NEEDOVERLAP		= 1<<0,
+		APCONTROL		= 1<<1,
 	};
 	RF routeflags;
 
@@ -166,11 +168,14 @@ class route_restriction {
 	int priority = 0;
 	unsigned int approachlocking_timeout;
 	unsigned int overlap_timeout;
+	unsigned int approachcontrol_triggerdelay = 0;
 	enum class RRF {
 		ZERO				= 0,
 		PRIORITYSET			= 1<<0,
 		APLOCK_TIMEOUTSET		= 1<<1,
 		OVERLAPTIMEOUTSET		= 1<<2,
+		APCONTROL_SET			= 1<<3,
+		APCONTROLTRIGGERDELAY_SET	= 1<<4,
 	};
 	RRF routerestrictionflags = RRF::ZERO;
 	route_class::set allowedtypes = route_class::All();

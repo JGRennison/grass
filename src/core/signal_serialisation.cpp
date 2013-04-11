@@ -169,6 +169,10 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 			if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF::PRIORITYSET;
 			if(CheckTransJsonValue(rr.approachlocking_timeout, subdi, "approachlockingtimeout", ec)) rr.routerestrictionflags |= route_restriction::RRF::APLOCK_TIMEOUTSET;
 			if(CheckTransJsonValue(rr.overlap_timeout, subdi, "overlaptimeout", ec)) rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTIMEOUTSET;
+			bool res = CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::APCONTROL_SET, subdi, "approachcontrol", ec);
+			if(!res || rr.routerestrictionflags & route_restriction::RRF::APCONTROL_SET) {
+				if(CheckTransJsonValue(rr.approachcontrol_triggerdelay, subdi, "approachcontroltriggerdelay", ec)) rr.routerestrictionflags |= route_restriction::RRF::APCONTROLTRIGGERDELAY_SET | route_restriction::RRF::APCONTROL_SET;
+			}
 
 			route_class::DeserialiseGroup(rr.allowedtypes, subdi, ec);
 			subdi.PostDeserialisePropCheck(ec);

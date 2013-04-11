@@ -29,6 +29,7 @@
 #include "world-test.h"
 #include "trackcircuit.h"
 #include "track_ops.h"
+#include "testutil.h"
 
 std::string track_test_str_1 =
 R"({ "content" : [ )"
@@ -808,7 +809,7 @@ TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
 	overlapcheck(tenv.s6, true);
 }
 
-TEST_CASE( "signal/deserialisation/flagchecks", "Test signal/route flags contradiction and sanity checks" ) {
+TEST_CASE( "signal/deserialisation/flagchecks", "Test signal/route flags contradiction detection and sanity checks" ) {
 	auto check = [&](const std::string &str, unsigned int errcount) {
 		test_fixture_world env(str);
 		if(env.ec.GetErrorCount() && env.ec.GetErrorCount() != errcount) { WARN("Error Collection: " << env.ec); }
@@ -832,4 +833,115 @@ TEST_CASE( "signal/deserialisation/flagchecks", "Test signal/route flags contrad
 		R"({ "type" : "routesignal", "name" : "S1", "start" : { "deny" : "overlap" } } )"
 	"] }"
 	, 1);
+
+	check(
+	R"({ "content" : [ )"
+		R"({ "type" : "routesignal", "name" : "S1", "routerestrictions" : [ { "approachcontrol" : true, "approachcontroltriggerdelay" : 100} ] } )"
+	"] }"
+	, 0);
+
+	check(
+	R"({ "content" : [ )"
+		R"({ "type" : "routesignal", "name" : "S1", "routerestrictions" : [ { "approachcontrol" : false, "approachcontroltriggerdelay" : 100} ] } )"
+	"] }"
+	, 1);
+}
+
+std::string approachcontrol_test_str_1 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "trackseg", "length" : 50000, "trackcircuit" : "T1" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S1" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S1ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T3" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S3", "routerestrictions" : [ { "approachcontrol" : true } ] }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S3ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000 }, )"
+	R"({ "type" : "autosignal", "name" : "AS" }, )"
+	R"({ "type" : "trackseg", "length" : 20000 }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T4" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S4", "routerestrictions" : [ { "approachcontroltriggerdelay" : 3000 } ] }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S4ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T5" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S5", "routerestrictions" : [ { "targets" : "C", "approachcontrol" : true } ] }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S5ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+
+	R"({ "type" : "points", "name" : "P1" }, )"
+	R"({ "type" : "trackseg", "length" : 500000, "trackcircuit" : "T6"  }, )"
+	R"({ "type" : "routesignal", "name" : "S6", "shuntsignal" : true, "end" : { "allow" : "route" } }, )"
+	R"({ "type" : "trackseg", "length" : 500000 }, )"
+	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "overlap" } }, )"
+
+	R"({ "type" : "trackseg", "length" : 400000, "connect" : { "to" : "P1" } }, )"
+	R"({ "type" : "endofline", "name" : "C" } )"
+"] }";
+
+TEST_CASE( "signal/approachcontrol/general", "Test basic approach control" ) {
+	test_fixture_world env(approachcontrol_test_str_1);
+
+	env.w.LayoutInit(env.ec);
+	env.w.PostLayoutInit(env.ec);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
+	genericsignal *s3 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S3"));
+	genericsignal *as = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("AS"));
+	genericsignal *s4 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S4"));
+	genericsignal *s5 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S5"));
+	genericsignal *s6 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S6"));
+	routingpoint *b = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("B"));
+
+	env.w.SubmitAction(action_reservepath(env.w, s1, s3));
+	env.w.SubmitAction(action_reservepath(env.w, s3, as));
+	env.w.SubmitAction(action_reservepath(env.w, s4, s5));
+	env.w.SubmitAction(action_reservepath(env.w, s5, s6));
+	env.w.SubmitAction(action_reservepath(env.w, s6, b));
+
+	env.w.GameStep(1);
+
+	CHECK(env.w.GetLogText() == "");
+
+	auto checksignals = [&](unsigned int line, unsigned int s1a, unsigned int s3a, unsigned int s4a, unsigned int s5a, unsigned int s6a) {
+		SCOPED_INFO("Signal check at time: " << env.w.GetGameTime() << ", line: " << line);
+		CHECK(s1->GetAspect() == s1a);
+		CHECK(s3->GetAspect() == s3a);
+		CHECK(s4->GetAspect() == s4a);
+		CHECK(s5->GetAspect() == s5a);
+		CHECK(s6->GetAspect() == s6a);
+	};
+
+
+	checksignals(__LINE__, 1, 0, 0, 1, 1);
+
+	env.w.FindOrMakeTrackCircuitByName("S1ovlp")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.FindOrMakeTrackCircuitByName("T6")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.GameStep(1);
+	checksignals(__LINE__, 0, 0, 0, 0, 1);
+	env.w.FindOrMakeTrackCircuitByName("S1ovlp")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.FindOrMakeTrackCircuitByName("T6")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+
+	env.w.FindOrMakeTrackCircuitByName("T3")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.FindOrMakeTrackCircuitByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.GameStep(1);
+	checksignals(__LINE__, 0, 1, 0, 1, 1);
+
+	env.w.GameStep(2998);
+	checksignals(__LINE__, 0, 1, 0, 1, 1);
+
+	env.w.FindOrMakeTrackCircuitByName("T3")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.FindOrMakeTrackCircuitByName("T4")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.GameStep(1);
+	checksignals(__LINE__, 3, 2, 0, 1, 1);
+
+	env.w.FindOrMakeTrackCircuitByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.GameStep(3000);
+	checksignals(__LINE__, 2, 1, 2, 1, 1);
 }
