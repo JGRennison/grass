@@ -29,6 +29,7 @@
 #include "serialisable_impl.h"
 #include "error.h"
 #include "world.h"
+#include "deserialisation_scalarconv.h"
 
 void generictrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	world_obj::Deserialise(di, ec);
@@ -43,7 +44,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 			if(funcdi.json.IsObject()) {
 				EDGETYPE dir;
 				unsigned int distance;
-				if(CheckTransJsonValue(dir, funcdi, "direction", ec) && CheckTransJsonValue(distance, funcdi, "distance", ec)) {
+				if(CheckTransJsonValue(dir, funcdi, "direction", ec) && CheckTransJsonValueProc(distance, funcdi, "distance", ec, dsconv::Length)) {
 					for(auto &it : sighting_distances) {
 						if(it.first == dir) {
 							it.second = distance;
@@ -59,10 +60,12 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 			}
 		};
 
-		if(sddi.json.IsUint()) {
-			unsigned int distance = sddi.json.GetUint();
-			for(auto &it : sighting_distances) {
-				it.second = distance;
+		if(sddi.json.IsUint() || sddi.json.IsString()) {
+			unsigned int distance;
+			if(TransJsonValueProc(sddi.json, distance, di, "sighting", ec, dsconv::Length)) {
+				for(auto &it : sighting_distances) {
+					it.second = distance;
+				}
 			}
 		}
 		else if(sddi.json.IsArray()) {
@@ -143,8 +146,8 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	generictrack::Deserialise(di, ec);
 
-	CheckTransJsonValue(length, di, "length", ec);
-	CheckTransJsonValue(elevationdelta, di, "elevationdelta", ec);
+	CheckTransJsonValueProc(length, di, "length", ec, dsconv::Length);
+	CheckTransJsonValueProc(elevationdelta, di, "elevationdelta", ec, dsconv::Length);
 	CheckTransJsonValue(traincount, di, "traincount", ec);
 	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
 	CheckTransJsonSubArray(speed_limits, di, "speedlimits", "speedlimits", ec);
@@ -336,7 +339,7 @@ void speedrestrictionset::Deserialise(const deserialiser_input &di, error_collec
 	for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
 		deserialiser_input subdi(di.json[i], "speedrestriction", MkArrayRefName(i), di);
 		speed_restriction sr;
-		if(subdi.json.IsObject() && CheckTransJsonValueDef(sr.speedclass, subdi, "speedclass", "", ec) && CheckTransJsonValueDef(sr.speed, subdi, "speed", 0, ec)) {
+		if(subdi.json.IsObject() && CheckTransJsonValueDef(sr.speedclass, subdi, "speedclass", "", ec) && CheckTransJsonValueDefProc(sr.speed, subdi, "speed", 0, ec, dsconv::Length)) {
 			AddSpeedRestriction(sr);
 			subdi.PostDeserialisePropCheck(ec);
 		}

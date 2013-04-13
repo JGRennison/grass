@@ -24,6 +24,8 @@
 #ifndef INC_SERIALISABLE_IMPL_ALREADY
 #define INC_SERIALISABLE_IMPL_ALREADY
 
+#define __STDC_FORMAT_MACROS
+#include <cinttypes>
 #include "flags.h"
 #include "serialisable.h"
 #include "error.h"
@@ -197,11 +199,47 @@ template <typename C> inline bool CheckTransJsonValue(C &var, const deserialiser
 }
 
 template <typename C, typename D> inline bool CheckTransJsonValueDef(C &var, const deserialiser_input &di, const char *prop, const D def, error_collection &ec) {
+	bool res = CheckTransJsonValue(var, di, prop, ec, false);
+	if(!res) var = def;
+	return res;
+}
+
+template <typename C> inline bool TransJsonValueProc(const rapidjson::Value &subval, C &var, const deserialiser_input &di, const char *prop, error_collection &ec, std::function<bool(const std::string &, uint64_t &, error_collection &)> conv, bool mandatory=false) {
+	if(subval.IsString()) {
+		uint64_t value;
+		std::string strvalue(subval.GetString(), subval.GetStringLength());
+		bool res = conv(strvalue, value, ec);
+		if(res) {
+			var = static_cast<C>(value);
+			if(static_cast<uint64_t>(var) != value) {
+				ec.RegisterNewError<error_deserialisation>(di, string_format("Property: %s, with value: \"%s\" (%" PRIu64 ") overflows when casting to type: %s", prop, strvalue.c_str(), value, GetTypeFriendlyName<C>()));
+				return false;
+			}
+		}
+		else ec.RegisterNewError<error_deserialisation>(di, string_format("Property: %s, with value: \"%s\" is invalid", prop, strvalue.c_str()));
+		return res;
+	}
+	else if(IsType<C>(subval)) {
+		var=GetType<C>(subval);
+		return true;
+	}
+	else {
+		CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec, true);
+		return false;
+	}
+}
+
+template <typename C> inline bool CheckTransJsonValueProc(C &var, const deserialiser_input &di, const char *prop, error_collection &ec, std::function<bool(const std::string &, uint64_t &, error_collection &)> conv, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
 	if(!subval.IsNull()) di.RegisterProp(prop);
-	bool res=IsType<typename flagtyperemover<C>::type>(subval);
-	var=res?static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval)):def;
-	if(!res) CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
+	else return false;
+
+	return TransJsonValueProc(subval, var, di, prop, ec, conv, mandatory);
+}
+
+template <typename C, typename D> inline bool CheckTransJsonValueDefProc(C &var, const deserialiser_input &di, const char *prop, const D def, error_collection &ec, std::function<bool(const std::string &, uint64_t &, error_collection &)> conv) {
+	bool res = CheckTransJsonValueProc(var, di, prop, ec, conv, false);
+	if(!res) var = def;
 	return res;
 }
 

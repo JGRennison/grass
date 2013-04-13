@@ -26,6 +26,7 @@
 #include "serialisable_impl.h"
 #include "error.h"
 #include "routetypes_serialisation.h"
+#include "deserialisation_scalarconv.h"
 
 void trackroutingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	routingpoint::Deserialise(di, ec);
@@ -92,7 +93,7 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 			if(funcdi.json.IsObject()) {
 				std::string rc;
 				unsigned int timeout;
-				if(CheckTransJsonValue(rc, funcdi, "routeclass", ec) && CheckTransJsonValue(timeout, funcdi, "timeout", ec)) {
+				if(CheckTransJsonValue(rc, funcdi, "routeclass", ec) && CheckTransJsonValueProc(timeout, funcdi, "timeout", ec, dsconv::Time)) {
 					for(int i = 0; i < route_class::LAST_RTC; i++) {
 						route_class::ID type = static_cast<route_class::ID>(i);
 						if(route_class::IsValidForApproachLocking(type) && route_class::GetRouteTypeName(type) == rc) {
@@ -110,11 +111,13 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 			}
 		};
 
-		if(sddi.json.IsUint()) {
-			unsigned int value = sddi.json.GetUint();
-			for(int i = 0; i < route_class::LAST_RTC; i++) {
-				route_class::ID type = static_cast<route_class::ID>(i);
-				if(route_class::IsValidForApproachLocking(type)) approachcontrol_default_timeouts[type] = value;
+		if(sddi.json.IsUint() || sddi.json.IsString()) {
+			unsigned int value;
+			if(TransJsonValueProc(sddi.json, value, di, "approachlockingtimeout", ec, dsconv::Time)) {
+				for(int i = 0; i < route_class::LAST_RTC; i++) {
+					route_class::ID type = static_cast<route_class::ID>(i);
+					if(route_class::IsValidForApproachLocking(type)) approachcontrol_default_timeouts[type] = value;
+				}
 			}
 		}
 		else if(sddi.json.IsArray()) {
@@ -167,11 +170,11 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "via", ec, rr.via);
 			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "notvia", ec, rr.notvia);
 			if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF::PRIORITYSET;
-			if(CheckTransJsonValue(rr.approachlocking_timeout, subdi, "approachlockingtimeout", ec)) rr.routerestrictionflags |= route_restriction::RRF::APLOCK_TIMEOUTSET;
-			if(CheckTransJsonValue(rr.overlap_timeout, subdi, "overlaptimeout", ec)) rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTIMEOUTSET;
+			if(CheckTransJsonValueProc(rr.approachlocking_timeout, subdi, "approachlockingtimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APLOCK_TIMEOUTSET;
+			if(CheckTransJsonValueProc(rr.overlap_timeout, subdi, "overlaptimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTIMEOUTSET;
 			bool res = CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::APCONTROL_SET, subdi, "approachcontrol", ec);
 			if(!res || rr.routerestrictionflags & route_restriction::RRF::APCONTROL_SET) {
-				if(CheckTransJsonValue(rr.approachcontrol_triggerdelay, subdi, "approachcontroltriggerdelay", ec)) rr.routerestrictionflags |= route_restriction::RRF::APCONTROLTRIGGERDELAY_SET | route_restriction::RRF::APCONTROL_SET;
+				if(CheckTransJsonValueProc(rr.approachcontrol_triggerdelay, subdi, "approachcontroltriggerdelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APCONTROLTRIGGERDELAY_SET | route_restriction::RRF::APCONTROL_SET;
 			}
 
 			route_class::DeserialiseGroup(rr.allowedtypes, subdi, ec);

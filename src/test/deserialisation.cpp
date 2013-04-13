@@ -29,6 +29,7 @@
 #include "signal.h"
 #include "world_serialisation.h"
 #include "deserialisation-test.h"
+#include "testutil.h"
 
 TEST_CASE( "deserialisation/error/notype", "Test missing object type" ) {
 	std::string track_test_str =
@@ -44,7 +45,7 @@ TEST_CASE( "deserialisation/error/notype", "Test missing object type" ) {
 TEST_CASE( "deserialisation/error/wrongtype", "Test wrong value type" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"trackseg\", \"length\" : \"foo\"}"
+		"{ \"type\" : \"trackseg\", \"traincount\" : \"foo\"}"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -231,4 +232,51 @@ TEST_CASE( "deserialisation/error/typedefextravalues", "Test typedef extra value
 
 	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 1);
+}
+
+TEST_CASE( "deserialisation/scalartypeconv/length", "Test scalar type conversion (length)" ) {
+	std::string track_test_str =
+	R"({ "content" : [ )"
+		R"({ "type" : "trackseg", "length" : 1000 }, )"
+		R"({ "type" : "trackseg", "length" : "1000  m" }, )"
+		R"({ "type" : "trackseg", "length" : "2.4km" }, )"
+		R"({ "type" : "trackseg", "length" : "0.56 miles" }, )"
+		R"({ "type" : "trackseg", "length" : "4699088.432 yd" } )"
+	"] }";
+	test_fixture_world env(track_test_str);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	CHECK(PTR_CHECK(env.w.FindTrackByName("#0"))->GetLength(EDGE_FRONT) == 1000);
+	CHECK(PTR_CHECK(env.w.FindTrackByName("#1"))->GetLength(EDGE_FRONT) == 1000000);
+	CHECK(PTR_CHECK(env.w.FindTrackByName("#2"))->GetLength(EDGE_FRONT) == 2400000);
+	CHECK(PTR_CHECK(env.w.FindTrackByName("#3"))->GetLength(EDGE_FRONT) == 901232);
+	CHECK(PTR_CHECK(env.w.FindTrackByName("#4"))->GetLength(EDGE_FRONT) == 4294966826);
+}
+
+TEST_CASE( "deserialisation/scalartypeconv/errors", "Test scalar type conversion error detection" ) {
+	auto check_parse_err = [&](const std::string &str) {
+		test_fixture_world env_err(str);
+		//if(env_err.ec.GetErrorCount()) { WARN("Error Collection: " << env_err.ec); }
+		REQUIRE(env_err.ec.GetErrorCount() >= 1);
+	};
+	check_parse_err(R"({ "content" : [ )"
+		R"({ "type" : "trackseg", "length" : "1000 ergs" } )"
+	"] }");
+	check_parse_err(R"({ "content" : [ )"
+		R"({ "type" : "trackseg", "length" : "foobar 1000m" } )"
+	"] }");
+	check_parse_err(R"({ "content" : [ )"
+		R"({ "type" : "trackseg", "length" : "." } )"
+	"] }");
+	check_parse_err(R"({ "content" : [ )"
+		R"({ "type" : "trackseg", "length" : "9999999999999999999999999999999999999999999999999" } )"
+	"] }");
+	check_parse_err(R"({ "content" : [ )"
+		R"({ "type" : "trackseg", "length" : "3000 miles" } )"
+	"] }");
+	check_parse_err(R"({ "content" : [ )"
+		R"({ "type" : "trackseg", "length" : "0x10 mm" } )"
+	"] }");
 }
