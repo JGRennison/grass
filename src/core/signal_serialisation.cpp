@@ -176,6 +176,7 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 			if(!res || rr.routerestrictionflags & route_restriction::RRF::APCONTROL_SET) {
 				if(CheckTransJsonValueProc(rr.approachcontrol_triggerdelay, subdi, "approachcontroltriggerdelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APCONTROLTRIGGERDELAY_SET | route_restriction::RRF::APCONTROL_SET;
 			}
+			if(CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::TORR, subdi, "torr", ec)) rr.routerestrictionflags |= route_restriction::RRF::TORR_SET;
 
 			route_class::DeserialiseGroup(rr.allowedtypes, subdi, ec);
 			subdi.PostDeserialisePropCheck(ec);

@@ -29,6 +29,7 @@
 #include "track_ops.h"
 #include "param.h"
 #include "routetypes.h"
+#include "util.h"
 
 #include <algorithm>
 #include <iterator>
@@ -850,6 +851,7 @@ void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::OVERLAPTIMEOUTSET) rt.overlap_timeout = overlap_timeout;
 	if(routerestrictionflags & RRF::APCONTROL_SET) rt.routeflags |= route::RF::APCONTROL;
 	if(routerestrictionflags & RRF::APCONTROLTRIGGERDELAY_SET) rt.approachcontrol_triggerdelay = approachcontrol_triggerdelay;
+	if(routerestrictionflags & RRF::TORR_SET) SetOrClearBitsRef(rt.routeflags, route::RF::TORR, routerestrictionflags & RRF::TORR);
 }
 
 route_class::set route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
@@ -953,6 +955,11 @@ RPRT startofline::GetSetRouteTypes(EDGETYPE direction) const {
 	return result;
 }
 
+unsigned int startofline::GetTRSList(std::vector<track_reservation_state *> &outputlist) {
+	outputlist.push_back(&trs);
+	return 1;
+}
+
 EDGETYPE endofline::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
 	return startofline::GetAvailableAutoConnectionDirection(!forwardconnection);
 }
@@ -978,6 +985,11 @@ RPRT routingmarker::GetSetRouteTypes(EDGETYPE direction) const {
 
 	trs.ReservationEnumerationInDirection(direction, result_flag_adds);
 	return result;
+}
+
+unsigned int routingmarker::GetTRSList(std::vector<track_reservation_state *> &outputlist) {
+	outputlist.push_back(&trs);
+	return 1;
 }
 
 std::ostream& operator<<(std::ostream& os, const RPRT& obj) {

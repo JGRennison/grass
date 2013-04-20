@@ -41,6 +41,7 @@ struct train_ref {
 class track_circuit : public world_obj {
 	unsigned int traincount = 0;
 	std::vector<train_ref> occupying_trains;
+	std::vector<generictrack *> owned_pieces;
 	world_time last_change;
 
 	public:
@@ -63,6 +64,8 @@ class track_circuit : public world_obj {
 	TCF SetTCFlagsMasked(TCF bits, TCF mask);
 	unsigned int GetTrainOccupationCount() const { return occupying_trains.size(); }
 	world_time GetLastOccupationStateChangeTime() const { return last_change; }
+	void RegisterTrack(generictrack *piece) { owned_pieces.push_back(piece); }
+	const std::vector<generictrack *> &GetOwnedTrackSet() const { return owned_pieces; }
 
 	virtual std::string GetTypeName() const override { return "Track Circuit"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "trackcircuit"; }

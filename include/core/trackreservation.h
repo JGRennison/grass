@@ -90,4 +90,3 @@ class track_reservation_state : public serialisable_obj {
 };
 
 #endif
-

@@ -30,6 +30,7 @@
 #include "error.h"
 #include "world.h"
 #include "deserialisation_scalarconv.h"
+#include "trackcircuit.h"
 
 void generictrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	world_obj::Deserialise(di, ec);
@@ -156,6 +157,7 @@ void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	std::string tracksegname;
 	if(CheckTransJsonValue(tracksegname, di, "trackcircuit", ec)) {
 		tc = GetWorld().FindOrMakeTrackCircuitByName(tracksegname);
+		tc->RegisterTrack(this);
 	}
 }
 

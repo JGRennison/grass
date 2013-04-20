@@ -140,6 +140,7 @@ struct route {
 		ZERO			= 0,
 		NEEDOVERLAP		= 1<<0,
 		APCONTROL		= 1<<1,
+		TORR			= 1<<2,
 	};
 	RF routeflags;
 
@@ -176,6 +177,8 @@ class route_restriction {
 		OVERLAPTIMEOUTSET		= 1<<2,
 		APCONTROL_SET			= 1<<3,
 		APCONTROLTRIGGERDELAY_SET	= 1<<4,
+		TORR				= 1<<5,
+		TORR_SET			= 1<<6,
 	};
 	RRF routerestrictionflags = RRF::ZERO;
 	route_class::set allowedtypes = route_class::All();
@@ -359,6 +362,7 @@ class startofline : public routingpoint {
 	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
 	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
+	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override;
 
 	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
 
@@ -403,6 +407,7 @@ class routingmarker : public trackroutingpoint {
 	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
 	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
+	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override;
 
 	virtual std::string GetTypeName() const override { return "Routing Marker"; }
 
