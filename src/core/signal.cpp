@@ -201,7 +201,7 @@ genericsignal::genericsignal(world &w_) : trackroutingpoint(w_), sflags(GSF::ZER
 	availableroutetypes_reverse.through |= route_class::AllNonOverlaps();
 	w_.RegisterTickUpdate(this);
 	sighting_distances.emplace_back(EDGE_FRONT, SIGHTING_DISTANCE_SIG);
-	std::copy(route_class::default_approach_control_timeouts.begin(), route_class::default_approach_control_timeouts.end(), approachcontrol_default_timeouts.begin());
+	std::copy(route_class::default_approach_locking_timeouts.begin(), route_class::default_approach_locking_timeouts.end(), approachlocking_default_timeouts.begin());
 }
 
 genericsignal::~genericsignal() {
@@ -659,7 +659,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						rt->pieces = route_pieces;
 						rt->end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
 						if(route_class::IsOverlap(type)) rt->overlap_timeout = overlap_default_timeout;
-						else rt->approachlocking_timeout = approachcontrol_default_timeouts[type];
+						else rt->approachlocking_timeout = approachlocking_default_timeouts[type];
 						rt->FillLists();
 						rt->parent = this;
 
@@ -849,8 +849,8 @@ void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::PRIORITYSET) rt.priority = priority;
 	if(routerestrictionflags & RRF::APLOCK_TIMEOUTSET) rt.approachlocking_timeout = approachlocking_timeout;
 	if(routerestrictionflags & RRF::OVERLAPTIMEOUTSET) rt.overlap_timeout = overlap_timeout;
-	if(routerestrictionflags & RRF::APCONTROL_SET) rt.routeflags |= route::RF::APCONTROL;
 	if(routerestrictionflags & RRF::APCONTROLTRIGGERDELAY_SET) rt.approachcontrol_triggerdelay = approachcontrol_triggerdelay;
+	if(routerestrictionflags & RRF::APCONTROL_SET) SetOrClearBitsRef(rt.routeflags, route::RF::APCONTROL, routerestrictionflags & RRF::APCONTROL);
 	if(routerestrictionflags & RRF::TORR_SET) SetOrClearBitsRef(rt.routeflags, route::RF::TORR, routerestrictionflags & RRF::TORR);
 }
 

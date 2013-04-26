@@ -43,7 +43,7 @@ namespace route_class {
 	};
 
 	extern std::array<name_set, LAST_RTC> route_names;
-	extern std::array<unsigned int, LAST_RTC> default_approach_control_timeouts;
+	extern std::array<unsigned int, LAST_RTC> default_approach_locking_timeouts;
 
 	inline const std::string &GetRouteTypeName(ID id) { return route_names[id].name; }
 	inline const std::string &GetRouteTypeFriendlyName(ID id) { return route_names[id].friendlyname; }

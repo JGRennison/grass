@@ -175,10 +175,11 @@ class route_restriction {
 		PRIORITYSET			= 1<<0,
 		APLOCK_TIMEOUTSET		= 1<<1,
 		OVERLAPTIMEOUTSET		= 1<<2,
-		APCONTROL_SET			= 1<<3,
-		APCONTROLTRIGGERDELAY_SET	= 1<<4,
-		TORR				= 1<<5,
-		TORR_SET			= 1<<6,
+		APCONTROL			= 1<<3,
+		APCONTROL_SET			= 1<<4,
+		APCONTROLTRIGGERDELAY_SET	= 1<<5,
+		TORR				= 1<<6,
+		TORR_SET			= 1<<7,
 	};
 	RRF routerestrictionflags = RRF::ZERO;
 	route_class::set allowedtypes = route_class::All();
@@ -253,7 +254,7 @@ class genericsignal : public trackroutingpoint {
 	unsigned int max_aspect = 1;
 	unsigned int overlapswingminaspectdistance = 1;
 
-	std::array<unsigned int, route_class::LAST_RTC> approachcontrol_default_timeouts;
+	std::array<unsigned int, route_class::LAST_RTC> approachlocking_default_timeouts;
 	unsigned int overlap_default_timeout = 0;
 
 	public:

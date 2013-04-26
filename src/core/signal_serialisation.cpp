@@ -97,7 +97,7 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 					for(int i = 0; i < route_class::LAST_RTC; i++) {
 						route_class::ID type = static_cast<route_class::ID>(i);
 						if(route_class::IsValidForApproachLocking(type) && route_class::GetRouteTypeName(type) == rc) {
-							approachcontrol_default_timeouts[type] = timeout;
+							approachlocking_default_timeouts[type] = timeout;
 							ok = true;
 							break;
 						}
@@ -116,7 +116,7 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 			if(TransJsonValueProc(sddi.json, value, di, "approachlockingtimeout", ec, dsconv::Time)) {
 				for(int i = 0; i < route_class::LAST_RTC; i++) {
 					route_class::ID type = static_cast<route_class::ID>(i);
-					if(route_class::IsValidForApproachLocking(type)) approachcontrol_default_timeouts[type] = value;
+					if(route_class::IsValidForApproachLocking(type)) approachlocking_default_timeouts[type] = value;
 				}
 			}
 		}
@@ -172,9 +172,10 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 			if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF::PRIORITYSET;
 			if(CheckTransJsonValueProc(rr.approachlocking_timeout, subdi, "approachlockingtimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APLOCK_TIMEOUTSET;
 			if(CheckTransJsonValueProc(rr.overlap_timeout, subdi, "overlaptimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTIMEOUTSET;
-			bool res = CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::APCONTROL_SET, subdi, "approachcontrol", ec);
-			if(!res || rr.routerestrictionflags & route_restriction::RRF::APCONTROL_SET) {
-				if(CheckTransJsonValueProc(rr.approachcontrol_triggerdelay, subdi, "approachcontroltriggerdelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APCONTROLTRIGGERDELAY_SET | route_restriction::RRF::APCONTROL_SET;
+			bool res = CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::APCONTROL, subdi, "approachcontrol", ec);
+			if(res) rr.routerestrictionflags |= route_restriction::RRF::APCONTROL_SET;
+			if(!res || rr.routerestrictionflags & route_restriction::RRF::APCONTROL) {
+				if(CheckTransJsonValueProc(rr.approachcontrol_triggerdelay, subdi, "approachcontroltriggerdelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APCONTROLTRIGGERDELAY_SET | route_restriction::RRF::APCONTROL_SET | route_restriction::RRF::APCONTROL;
 			}
 			if(CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::TORR, subdi, "torr", ec)) rr.routerestrictionflags |= route_restriction::RRF::TORR_SET;
 

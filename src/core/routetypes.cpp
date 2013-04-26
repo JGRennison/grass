@@ -34,7 +34,7 @@ namespace route_class {
 		{ "overlap", "Overlap" },
 	}};
 
-	std::array<unsigned int, LAST_RTC> default_approach_control_timeouts {{
+	std::array<unsigned int, LAST_RTC> default_approach_locking_timeouts {{
 		0,
 		30000,
 		90000,
