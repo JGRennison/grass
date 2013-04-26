@@ -154,7 +154,7 @@ TEST_CASE( "deserialisation/template/nested", "Test nested templating" ) {
 	routingmarker *rm = dynamic_cast<routingmarker *>(env.w.FindTrackByName("R1"));
 	REQUIRE(rm != 0);
 	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(0, route_class::All(), 0));
-	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::Flag(route_class::RTC_ROUTE) | route_class::Flag(route_class::RTC_SHUNT), 0));
+	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::RTC_OVERLAP), 0));
 }
 
 TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
@@ -172,7 +172,7 @@ TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 	routingmarker *rm = dynamic_cast<routingmarker *>(env.w.FindTrackByName("R1"));
 	REQUIRE(rm != 0);
 	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == RPRT());
-	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::Flag(route_class::RTC_ROUTE) | route_class::Flag(route_class::RTC_SHUNT), 0));
+	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::RTC_OVERLAP), 0));
 }
 
 TEST_CASE( "deserialisation/error/template", "Test reference to non-existent template" ) {
