@@ -112,10 +112,14 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 			bt_piece->ReservationEnumeration([&](const route *chk_reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
 				if(reserved_route == chk_reserved_route) {
 					if(rr_flags & RRF::STARTPIECE) {
-						unreserve = true;
-						unresdirection = direction;
-						unresidex = index;
-						unresrrflags = RRF::STARTPIECE | RRF::UNRESERVE;
+						if(reserved_route->routeflags & route::RF::TORR) {
+							//don't unreserve the start of the route unless TORR is enabled
+							unreserve = true;
+							unresdirection = direction;
+							unresidex = index;
+							unresrrflags = RRF::STARTPIECE | RRF::UNRESERVE;
+						}
+						else success = false;
 					}
 					else {
 						bool prevres = backtrack(bt_piece->GetEdgeConnectingPiece(direction).track, bt_piece, chk_reserved_route);
@@ -178,7 +182,6 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 	for(auto piece : pieces) {
 		std::vector<std::function<void()> > fixups;
 		piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
-			if(!(reserved_route->routeflags & route::RF::TORR)) return;
 			if(!route_class::IsValid(reserved_route->type) || route_class::IsOverlap(reserved_route->type)) return;
 			if(backtrack(piece->GetEdgeConnectingPiece(r_direction).track, piece, reserved_route)) {
 				fixups.emplace_back([=]() {

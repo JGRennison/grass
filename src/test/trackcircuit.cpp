@@ -167,14 +167,21 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	checkstate(env.w.FindTrackByName("TS3"), s2, s1rt);
 	settcstate("T4", true);
 	settcstate("T4", false);
-	INFO("Check7");
+	INFO("Check 7");
 	checkstate(env.w.FindTrackByName("TS3"), s2, s1rt);
 	settcstate("T3", false);
-	INFO("Check8");
+	INFO("Check 8");
 	checkunreserved(s1rt);
 
 	settcstate("T6", true);
 	settcstate("T6", false);
-	INFO("Check9");
+	INFO("Check 9");
 	checkstate(s2, b, s2rt);
+
+	settcstate("T7", true);
+	env.w.SubmitAction(action_unreservetrack(env.w, *s2));
+	env.w.GameStep(1);
+	settcstate("T7", false);
+	INFO("Check 10");
+	checkunreserved(s2rt);
 }
