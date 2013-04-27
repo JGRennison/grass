@@ -97,6 +97,15 @@ unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes,
 				score -= 10;
 			};
 			r->RouteReservationActions(RRF::RESERVE | extraflags, actioncounter);
+
+			if(route_class::PreferWhenReservingIfAlreadyOccupied(r->type)) {
+				for(auto it = r->trackcircuits.begin(); it != r->trackcircuits.end(); ++it) {
+					if((*it)->Occupied()) {
+						score += 10;
+						break;
+					}
+				}
+			}
 		}
 		gmr_routeitem gmr;
 		gmr.rt = r;
@@ -328,26 +337,28 @@ void genericsignal::UpdateSignalState() {
 	}
 
 	if(!(GetSignalFlags() & GSF::REPEATER) && !(sflags & GSF::APPROACHLOCKINGMODE)) {
-		for(auto it = set_route->trackcircuits.begin(); it != set_route->trackcircuits.end(); ++it) {
-			if((*it)->Occupied()) {
-				clear_route();
-				return;
-			}
-		}
 		for(auto it = set_route->passtestlist.begin(); it != set_route->passtestlist.end(); ++it) {
 			if(!it->location.track->IsTrackPassable(it->location.direction, it->connection_index)) {
 				clear_route();
 				return;
 			}
 		}
-		if(set_route->end.track->GetFlags(set_route->end.direction) & GTF::SIGNAL) {
-			genericsignal *gs = static_cast<genericsignal*>(set_route->end.track);
-			const route *rt = gs->GetCurrentForwardOverlap();
-			if(rt) {
-				for(auto it = rt->trackcircuits.begin(); it != rt->trackcircuits.end(); ++it) {
-					if((*it)->Occupied()) {
-						clear_route();
-						return;
+		if(!route_class::AllowEntryWhilstOccupied(set_route->type)) {
+			for(auto it = set_route->trackcircuits.begin(); it != set_route->trackcircuits.end(); ++it) {
+				if((*it)->Occupied()) {
+					clear_route();
+					return;
+				}
+			}
+			if(set_route->end.track->GetFlags(set_route->end.direction) & GTF::SIGNAL) {
+				genericsignal *gs = static_cast<genericsignal*>(set_route->end.track);
+				const route *rt = gs->GetCurrentForwardOverlap();
+				if(rt) {
+					for(auto it = rt->trackcircuits.begin(); it != rt->trackcircuits.end(); ++it) {
+						if((*it)->Occupied()) {
+							clear_route();
+							return;
+						}
 					}
 				}
 			}
@@ -857,6 +868,7 @@ void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::APCONTROLTRIGGERDELAY_SET) rt.approachcontrol_triggerdelay = approachcontrol_triggerdelay;
 	if(routerestrictionflags & RRF::APCONTROL_SET) SetOrClearBitsRef(rt.routeflags, route::RF::APCONTROL, routerestrictionflags & RRF::APCONTROL);
 	if(routerestrictionflags & RRF::TORR_SET) SetOrClearBitsRef(rt.routeflags, route::RF::TORR, routerestrictionflags & RRF::TORR);
+	if(routerestrictionflags & RRF::EXITSIGCONTROL_SET) SetOrClearBitsRef(rt.routeflags, route::RF::EXITSIGCONTROL, routerestrictionflags & RRF::EXITSIGCONTROL);
 }
 
 route_class::set route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {

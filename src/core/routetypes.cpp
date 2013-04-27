@@ -32,6 +32,7 @@ namespace route_class {
 		{ "shunt", "Shunt route" },
 		{ "route", "Main route" },
 		{ "overlap", "Overlap" },
+		{ "callon", "Call On" },
 	}};
 
 	std::array<unsigned int, LAST_RTC> default_approach_locking_timeouts {{

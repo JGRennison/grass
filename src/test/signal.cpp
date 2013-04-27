@@ -945,3 +945,103 @@ TEST_CASE( "signal/approachcontrol/general", "Test basic approach control" ) {
 	env.w.GameStep(3000);
 	checksignals(__LINE__, 2, 1, 2, 1, 1);
 }
+
+
+std::string callon_test_str_1 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "trackseg", "length" : 50000, "trackcircuit" : "T1" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S1" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S1ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T2" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S2", "start" : { "allow" : "callon" }, "routerestrictions" : [ { "applyonly" : "callon", "exitsignalcontrol" : true } ] }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S2ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T3" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S3", "end" : { "allow" : "callon" } }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S3ovlp" }, )"
+	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "overlap" } } )"
+"] }";
+
+TEST_CASE( "signal/callon/general", "Test call-on routes" ) {
+	test_fixture_world env(callon_test_str_1);
+
+	env.w.LayoutInit(env.ec);
+	env.w.PostLayoutInit(env.ec);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
+	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
+	genericsignal *s3 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S3"));
+	routingpoint *b = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("B"));
+
+	auto settcstate = [&](const std::string &tcname, bool enter) {
+		track_circuit *tc = env.w.FindOrMakeTrackCircuitByName(tcname);
+		tc->SetTCFlagsMasked(enter ? track_circuit::TCF::FORCEOCCUPIED : track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	};
+
+	auto checkaspects = [&](unsigned int s1asp, route_class::ID s1type, unsigned int s2asp, route_class::ID s2type, unsigned int s3asp, route_class::ID s3type) {
+		CHECK(s1asp == s1->GetAspect());
+		CHECK(s1type == s1->GetAspectType());
+		CHECK(s2asp == s2->GetAspect());
+		CHECK(s2type == s2->GetAspectType());
+		CHECK(s3asp == s3->GetAspect());
+		CHECK(s3type == s3->GetAspectType());
+	};
+
+	env.w.SubmitAction(action_reservepath(env.w, s1, s2));
+	env.w.SubmitAction(action_reservepath(env.w, s2, s3));
+	env.w.SubmitAction(action_reservepath(env.w, s3, b));
+	env.w.GameStep(1);
+
+	checkaspects(3, route_class::RTC_ROUTE, 2, route_class::RTC_ROUTE, 1, route_class::RTC_ROUTE);
+
+	settcstate("T3", true);
+	env.w.GameStep(1);
+
+	checkaspects(1, route_class::RTC_ROUTE, 0, route_class::RTC_NULL, 1, route_class::RTC_ROUTE);
+
+	env.w.SubmitAction(action_unreservetrack(env.w, *s2));
+	env.w.GameStep(1);
+
+	env.w.SubmitAction(action_reservepath(env.w, s2, s3));
+	env.w.GameStep(1);
+
+	CHECK(env.w.GetLogText() != "");
+	if(s2->GetCurrentForwardRoute()) {
+		FAIL(s2->GetCurrentForwardRoute()->type);
+	}
+
+	env.w.ResetLogText();
+
+	settcstate("T3", false);	//do this to avoid triggering approach locking
+	env.w.SubmitAction(action_unreservetrack(env.w, *s3));
+	env.w.GameStep(1);
+	settcstate("T3", true);
+
+	env.w.SubmitAction(action_reservepath(env.w, s2, s3));
+	env.w.GameStep(1);
+
+	CHECK(env.w.GetLogText() == "");
+	REQUIRE(s2->GetCurrentForwardRoute() != 0);
+	CHECK(s2->GetCurrentForwardRoute()->type == route_class::RTC_CALLON);
+
+	checkaspects(1, route_class::RTC_ROUTE, 0, route_class::RTC_NULL, 0, route_class::RTC_NULL);
+
+	settcstate("T2", true);
+	env.w.GameStep(1);
+
+	checkaspects(0, route_class::RTC_NULL, 1, route_class::RTC_CALLON, 0, route_class::RTC_NULL);
+
+	env.w.SubmitAction(action_reservepath(env.w, s3, b));
+	env.w.GameStep(1);
+
+	CHECK(env.w.GetLogText() != "");
+	if(s3->GetCurrentForwardRoute()) {
+		FAIL(s3->GetCurrentForwardRoute()->type);
+	}
+}

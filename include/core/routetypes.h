@@ -34,6 +34,7 @@ namespace route_class {
 		RTC_SHUNT,
 		RTC_ROUTE,
 		RTC_OVERLAP,
+		RTC_CALLON,
 		LAST_RTC,
 	} ID;
 
@@ -49,20 +50,24 @@ namespace route_class {
 	inline const std::string &GetRouteTypeFriendlyName(ID id) { return route_names[id].friendlyname; }
 
 	inline bool IsValid(ID id) { return id != RTC_NULL; }
-	inline bool IsShunt(ID id) { return id == RTC_SHUNT; }
+	inline bool IsShunt(ID id) { return id == RTC_SHUNT || id == RTC_CALLON; }
 	inline bool IsRoute(ID id) { return id == RTC_ROUTE; }
 	inline bool IsOverlap(ID id) { return id == RTC_OVERLAP; }
+	inline bool IsCallOn(ID id) { return id == RTC_CALLON; }
 	inline bool IsValidForApproachLocking(ID id) { return IsValid(id) && !IsOverlap(id); }
 	inline bool IsAspectLimitedToUnity(ID id) { return IsShunt(id); }
 	inline bool IsAspectDirectlyPropagatable(ID dep, ID targ) { return dep == RTC_ROUTE && targ == RTC_ROUTE; }
 	inline bool NeedsOverlap(ID id) { return IsRoute(id); }
 	inline bool IsNotEndExtendable(ID id) { return IsOverlap(id); }
+	inline bool AllowEntryWhilstOccupied(ID id) { return IsCallOn(id); }
+	inline bool DefaultApproachControlOn(ID id) { return IsCallOn(id); }
+	inline bool PreferWhenReservingIfAlreadyOccupied(ID id) { return IsCallOn(id); }
 
 	typedef unsigned char set;
 
 	enum {
 		RTCB_ALL		= ((1 << route_class::LAST_RTC) - 1) & ~(1 << RTC_NULL),
-		RTCB_SHUNTS		= 1 << RTC_SHUNT,
+		RTCB_SHUNTS		= (1 << RTC_SHUNT) | (1 << RTC_CALLON),
 		RTCB_ROUTES		= 1 << RTC_ROUTE,
 		RTCB_OVERLAPS		= 1 << RTC_OVERLAP,
 	};

@@ -142,6 +142,7 @@ struct route {
 		NEEDOVERLAP		= 1<<0,
 		APCONTROL		= 1<<1,
 		TORR			= 1<<2,
+		EXITSIGCONTROL		= 1<<3,
 	};
 	RF routeflags;
 
@@ -181,6 +182,8 @@ class route_restriction {
 		APCONTROLTRIGGERDELAY_SET	= 1<<5,
 		TORR				= 1<<6,
 		TORR_SET			= 1<<7,
+		EXITSIGCONTROL			= 1<<8,
+		EXITSIGCONTROL_SET		= 1<<9,
 	};
 	RRF routerestrictionflags = RRF::ZERO;
 	route_class::set allowedtypes = route_class::All();
