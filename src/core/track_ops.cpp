@@ -455,7 +455,7 @@ void action_reservetrack::ExecuteAction() const {
 }
 
 action_reservepath::action_reservepath(world &w_, const routingpoint *start_, const routingpoint *end_)
-: action_reservetrack_base(w_), start(start_), end(end_), allowed_route_types(route_class::AllNonOverlaps()), gmr_flags(GMRF::ZERO), extraflags(RRF::IGNORE_OWN_OVERLAP) { }
+: action_reservetrack_base(w_), start(start_), end(end_), allowed_route_types(route_class::AllNonOverlaps()), gmr_flags(GMRF::DYNPRIORITY), extraflags(RRF::IGNORE_OWN_OVERLAP) { }
 action_reservepath &action_reservepath::SetGmrFlags(GMRF gmr_flags_) { gmr_flags = gmr_flags_; return *this; }
 action_reservepath &action_reservepath::SetAllowedRouteTypes(route_class::set s) { allowed_route_types = s; return *this; }
 action_reservepath &action_reservepath::SetExtraFlags(RRF extraflags_) { extraflags = extraflags_; return *this; }

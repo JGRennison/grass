@@ -89,8 +89,10 @@ unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes,
 		if(end && r->end.track != end) return;
 
 		int score = r->priority;
-		if(gmr_flags & GMRF::TRACKTEST) {
+		if(gmr_flags & GMRF::CHECKTRYRESERVE) {
 			if(!r->RouteReservation(RRF::TRYRESERVE | extraflags)) return;
+		}
+		if(gmr_flags & GMRF::DYNPRIORITY) {
 			auto actioncounter = [&](action &&reservation_act) {
 				score -= 10;
 			};

@@ -43,7 +43,8 @@ typedef std::deque<route_recording_item> passable_test_list;
 
 enum class GMRF : unsigned int {
 	ZERO		= 0,
-	TRACKTEST	= 1<<3,
+	DYNPRIORITY	= 1<<2,
+	CHECKTRYRESERVE	= 1<<3,
 	CHECKVIAS	= 1<<4,
 	DONTCLEARVECTOR	= 1<<5,
 	DONTSORT	= 1<<6,
