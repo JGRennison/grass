@@ -183,10 +183,12 @@ class route_restriction {
 	};
 	RRF routerestrictionflags = RRF::ZERO;
 	route_class::set allowedtypes = route_class::All();
+	route_class::set applytotypes = route_class::All();
 
 	public:
 	bool CheckRestriction(route_class::set &allowed_routes, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
 	void ApplyRestriction(route &rt) const;
+	route_class::set GetApplyRouteTypes() const { return applytotypes; }
 };
 template<> struct enum_traits< route_restriction::RRF> {	static constexpr bool flags = true; };
 

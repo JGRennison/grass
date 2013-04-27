@@ -621,6 +621,7 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 		route *rt = &this->signal_routes.back();
 		rt->index = route_index;
 		rt->type = type;
+		if(route_class::DefaultApproachControlOn(type)) rt->routeflags |= route::RF::APCONTROL;
 		route_index++;
 		return rt;
 	});
@@ -669,7 +670,9 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						}
 
 						for(auto it = matching_restrictions.begin(); it != matching_restrictions.end(); ++it) {
-							(*it)->ApplyRestriction(*rt);
+							if((*it)->GetApplyRouteTypes() & route_class::Flag(type)) {
+								(*it)->ApplyRestriction(*rt);
+							}
 						}
 					}
 					else {

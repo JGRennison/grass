@@ -180,6 +180,19 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 			if(CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::TORR, subdi, "torr", ec)) rr.routerestrictionflags |= route_restriction::RRF::TORR_SET;
 
 			route_class::DeserialiseGroup(rr.allowedtypes, subdi, ec);
+
+			flag_conflict_checker<route_class::set> conflictnegcheck;
+			route_class::set val = 0;
+			if(route_class::DeserialiseProp("applyonly", val, subdi, ec)) {
+				rr.applytotypes = val;
+				conflictnegcheck.RegisterFlags(true, val, di, "applyonly", ec);
+				conflictnegcheck.RegisterFlags(false, ~val, di, "applyonly", ec);
+			}
+			if(route_class::DeserialiseProp("applydeny", val, subdi, ec)) {
+				rr.applytotypes &= ~val;
+				conflictnegcheck.RegisterFlags(false, val, di, "applydeny", ec);
+			}
+
 			subdi.PostDeserialisePropCheck(ec);
 		}
 		else {
