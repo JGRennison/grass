@@ -31,6 +31,7 @@
 #include "util.h"
 #include "textpool.h"
 #include "signal.h"
+#include "train.h"
 #include <iostream>
 
 world::world() {
@@ -181,4 +182,16 @@ void world::CapAllTrackPieceUnconnectedEdges() {
 			this->all_pieces[it->GetName()].reset(it);
 		}
 	});
+}
+
+vehicle_class *world::FindOrMakeVehicleClassByName(const std::string &name) {
+	std::unique_ptr<vehicle_class> &vc = all_vehicle_classes[name];
+	if(! vc.get()) vc.reset(new vehicle_class(name));
+	return vc.get();
+}
+
+vehicle_class *world::FindVehicleClassByName(const std::string &name) {
+	auto vcit = all_vehicle_classes.find(name);
+	if(vcit == all_vehicle_classes.end()) return 0;
+	else return vcit->second.get();
 }

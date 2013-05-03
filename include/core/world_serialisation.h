@@ -64,6 +64,7 @@ class world_serialisation {
 	void DeserialiseTrackCircuit(const deserialiser_input &di, error_collection &ec);
 	template <typename T> T* MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec);
 	template <typename T> T* DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec);
+	void DeserialiseVehicleClass(const deserialiser_input &di, error_collection &ec);
 	template <typename C> void MakeGenericTrackTypeWrapper();
 	inline unsigned int GetCurrentContentIndex() const { return current_content_index; }
 };

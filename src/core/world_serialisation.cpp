@@ -32,6 +32,7 @@
 #include "points.h"
 #include "signal.h"
 #include "trackcircuit.h"
+#include "train.h"
 #include <typeinfo>
 
 void world_serialisation::ParseInputString(const std::string &input, error_collection &ec) {
@@ -196,6 +197,17 @@ void world_serialisation::DeserialiseTrackCircuit(const deserialiser_input &di, 
 	}
 }
 
+void world_serialisation::DeserialiseVehicleClass(const deserialiser_input &di, error_collection &ec) {
+	std::string name;
+	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
+		vehicle_class *vc = di.w->FindOrMakeVehicleClassByName(name);
+		vc->DeserialiseObject(di, ec);
+	}
+	else {
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid vehicle class definition");
+	}
+}
+
 template <typename C> void world_serialisation::MakeGenericTrackTypeWrapper() {
 	auto func = [&](const deserialiser_input &di, error_collection &ec) {
 		this->DeserialiseGenericTrack<C>(di, ec);
@@ -220,6 +232,7 @@ void world_serialisation::InitObjectTypes() {
 	object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTractionType(di, ec); });
 	object_types.RegisterType("trackcircuit", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTrackCircuit(di, ec); });
 	object_types.RegisterType("couplepoints", [&](const deserialiser_input &di, error_collection &ec) { DeserialisePointsCoupling(di, ec); });
+	object_types.RegisterType("vehicleclass", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseVehicleClass(di, ec); });
 }
 
 void world_serialisation::DeserialiseObject(const deserialiser_input &di, error_collection &ec) {

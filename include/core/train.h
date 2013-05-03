@@ -27,6 +27,8 @@
 #include "world_obj.h"
 #include "track.h"
 #include "timetable.h"
+#include "serialisable.h"
+#include "tractiontype.h"
 #include <list>
 
 class lookahead_item {
@@ -39,21 +41,25 @@ class lookahead_set {
 	std::list<lookahead_item> items;
 };
 
-struct vehicle_class {
-	std::string name;
-	unsigned int length;		// mm
-	unsigned int max_speed;		// mm/s (μm/ms)
-	unsigned int tractive_force;	// kg μm/(ms^2) --> N
-	unsigned int tractive_power;	// 1000 * N mm/s --> W
-	unsigned int braking_force;	// N
-	unsigned int nominal_rail_traction_limit;	// N
-	unsigned int cumul_drag_const;	// N
-	unsigned int cumul_drag_v;	// N/(m/s)
-	unsigned int cumul_drag_v2;	// N/(m/s)^2
-	unsigned int face_drag_v2;	// N/(m/s)^2
-	unsigned int fullmass;		// kg
-	unsigned int emptymass;		// kg
-	std::forward_list<traction_type> tractions;
+struct vehicle_class : public serialisable_obj {
+	const std::string name;
+	unsigned int length = 0;			// mm
+	unsigned int max_speed = 0;			// mm/s (μm/ms)
+	unsigned int tractive_force = 0;		// kg μm/(ms^2) --> N
+	unsigned int tractive_power = 0;		// 1000 * N mm/s --> W
+	unsigned int braking_force = 0;			// N
+	unsigned int nominal_rail_traction_limit = 0;	// N
+	unsigned int cumul_drag_const = 0;		// N
+	unsigned int cumul_drag_v = 0;			// N/(m/s)
+	unsigned int cumul_drag_v2 = 0;			// N/(m/s)^2
+	unsigned int face_drag_v2 = 0;			// N/(m/s)^2
+	unsigned int fullmass = 0;			// kg
+	unsigned int emptymass = 0;			// kg
+	tractionset tractiontypes;
+
+	vehicle_class(const std::string &name_) : name(name_) { }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 /* sample values:

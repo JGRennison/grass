@@ -36,6 +36,7 @@ class action;
 class generictrack;
 class textpool;
 class track_circuit;
+class vehicle_class;
 
 struct connection_forward_declaration {
 	generictrack *track1;
@@ -74,6 +75,7 @@ class world : public named_futurable_obj {
 	friend world_serialisation;
 	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
 	std::unordered_map<std::string, std::unique_ptr<track_circuit> > all_track_circuits;
+	std::unordered_map<std::string, std::unique_ptr<vehicle_class> > all_vehicle_classes;
 	std::deque<connection_forward_declaration> connection_forward_declarations;
 	std::unordered_map<std::string, traction_type> traction_types;
 	std::deque<generictrack *> tick_update_list;
@@ -119,6 +121,8 @@ class world : public named_futurable_obj {
 	}
 	error_collection &GetEC() { return ec; }
 	void CapAllTrackPieceUnconnectedEdges();
+	vehicle_class *FindOrMakeVehicleClassByName(const std::string &name);
+	vehicle_class *FindVehicleClassByName(const std::string &name);
 };
 
 #endif

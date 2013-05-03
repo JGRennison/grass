@@ -28,7 +28,7 @@
 #include "serialisable_impl.h"
 #include "train.h"
 
-bool tractionset::CanTrainPass(train *t) const {
+bool tractionset::CanTrainPass(const train *t) const {
 	for(auto it = t->GetTractionTypes().tractions.begin(); it != t->GetTractionTypes().tractions.end(); ++it) {
 		if((*it)->alwaysavailable) return true;
 		if(std::find(tractions.begin(), tractions.end(), (*it)) != tractions.end()) return true;
@@ -36,12 +36,18 @@ bool tractionset::CanTrainPass(train *t) const {
 	return false;
 }
 
+bool tractionset::HasTraction(const traction_type *tt) const {
+	return std::find(tractions.begin(), tractions.end(), tt) != tractions.end();
+}
+
 void tractionset::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
 		const rapidjson::Value &cur = di.json[i];
 		if(cur.IsString() && di.w) {
 			traction_type *tt = di.w->GetTractionTypeByName(cur.GetString());
-			if(tt) tractions.push_back(tt);
+			if(tt) {
+				if(!HasTraction(tt)) tractions.push_back(tt);
+			}
 			else ec.RegisterNewError<error_deserialisation>(di, string_format("No such traction type: \"%s\"", cur.GetString()));
 		}
 		else {
@@ -51,5 +57,22 @@ void tractionset::Deserialise(const deserialiser_input &di, error_collection &ec
 }
 
 void tractionset::Serialise(serialiser_output &so, error_collection &ec) const {
+	for(auto &it : tractions) {
+		so.json_out.String(it->name);
+	}
 	return;
+}
+
+std::string tractionset::DumpString() const {
+	std::vector<std::string> strs;
+	for(auto &it : tractions) {
+		strs.push_back(it->name);
+	}
+	std::sort(strs.begin(), strs.end());
+	std::string out;
+	for(auto &it : strs) {
+		if(!out.empty()) out += ",";
+		out += it;
+	}
+	return out;
 }

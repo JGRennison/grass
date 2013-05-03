@@ -42,11 +42,14 @@ class tractionset : public serialisable_obj {
 
 	public:
 	inline void AddTractionType(traction_type *type) {
-		tractions.emplace_back(type);
+		if(!HasTraction(type)) tractions.emplace_back(type);
 	}
-	bool CanTrainPass(train *t) const;
+	bool CanTrainPass(const train *t) const;
+	bool HasTraction(const traction_type *tt) const;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+
+	std::string DumpString() const;
 };
 
 #endif
