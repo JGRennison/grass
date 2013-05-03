@@ -124,3 +124,16 @@ void deserialiser_input::PostDeserialisePropCheck(error_collection &ec) const {
 		}
 	}
 }
+
+void CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func) {
+	deserialiser_input subdi(di.json[prop], type_name, prop, di);
+	if(!subdi.json.IsNull()) di.RegisterProp(prop);
+
+	if(subdi.json.IsArray()) {
+		subdi.type += "_array";
+		for(rapidjson::SizeType i = 0; i < subdi.json.Size(); i++) {
+			func(deserialiser_input(subdi.json[i], type_name, MkArrayRefName(i), subdi), ec);
+		}
+	}
+	else func(subdi, ec);
+}

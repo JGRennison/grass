@@ -524,7 +524,7 @@ void action_reservepath::Deserialise(const deserialiser_input &di, error_collect
 		if(rp) vias.push_back(rp);
 	};
 	vias.clear();
-	CheckIterateJsonArrayOrType<std::string>(di, "vias", "", ec, viaparser);
+	CheckIterateJsonArrayOrType<std::string>(di, "vias", "via", ec, viaparser);
 
 	if(!start) ec.RegisterNewError<error_deserialisation>(di, "Invalid path reservation action definition");
 }
