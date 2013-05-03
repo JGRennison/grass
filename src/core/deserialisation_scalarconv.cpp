@@ -130,7 +130,7 @@ namespace dsconv {
 	const std::vector<scalar_conv> fsc {
 		{ "N", 1, 0 },
 		{ "kN", 1000, 0 },
-		{ "MN", 10000000, 0 },
+		{ "MN", 1000000, 0 },
 		{ "lbf", 4555, 10 },
 	};
 	bool Force(const std::string &in, uint64_t &out, error_collection &ec) {
