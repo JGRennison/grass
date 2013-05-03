@@ -323,7 +323,7 @@ template <typename C, typename D> inline C CheckGetJsonValueDef(const deserialis
 template <typename C> inline void CheckTransJsonTypeFunc(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
 	if(!subval.IsNull()) di.RegisterProp(prop);
-	if(IsType<C>(subval)) func(deserialiser_input(type_name, prop, subval), ec);
+	if(IsType<C>(subval)) func(deserialiser_input(type_name, prop, subval, di), ec);
 	else {
 		CheckJsonTypeAndReportError<C>(di, prop, subval, ec, mandatory);
 	}
