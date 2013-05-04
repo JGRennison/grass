@@ -26,6 +26,7 @@
 #include "deserialisation-test.h"
 #include "world-test.h"
 #include "testutil.h"
+#include <sstream>
 
 static void checkvc(world &w, const std::string &name, unsigned int length, unsigned int max_speed, unsigned int tractive_force, unsigned int tractive_power,
 	unsigned int braking_force, unsigned int nominal_rail_traction_limit, unsigned int cumul_drag_const, unsigned int cumul_drag_v, unsigned int cumul_drag_v2,
@@ -61,7 +62,8 @@ TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialis
 		R"({ "type" : "vehicleclass", "name" : "VC2", "length" : "30yd", "maxspeed" : "170km/h", "tractiveforce" : "500kN", "tractivepower" : "1000hp", "brakingforce" : "1MN",)"
 			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "mass" : "15t",)"
 			R"( "tractiontypes" : [ "AC", "AC" ] }, )"
-		R"({ "type" : "vehicleclass", "name" : "VC3", "fullmass" : "15t", "emptymass" : "20t" } )"
+		R"({ "type" : "vehicleclass", "name" : "VC3", "length" : "120ft", "tractiveforce" : "1024lbf", "tractivepower" : "512 ft lbf/s", "brakingforce" : "1MN",)"
+			R"( "mass" : "15t" } )"
 	"] }";
 
 	test_fixture_world env(test_vc_deserialisation_1);
@@ -71,5 +73,35 @@ TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialis
 
 	checkvc(env.w, "VC1", 25000, 56098, 500000, 746000, 1000000, 1200000, 500, 100, 200, 50, 15000, 10000, "AC,diesel");
 	checkvc(env.w, "VC2", 27420, 47260, 500000, 746000, 1000000, 1200000, 500, 100, 0, 0, 15000, 15000, "AC");
-	checkvc(env.w, "VC3", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20000, 20000, "");
+	checkvc(env.w, "VC3", 36600, UINT_MAX, 4555, 684, 1000000, 1000000, 0, 0, 0, 0, 15000, 15000, "");
+
+	auto parsecheckerr = [&](const std::string &json, const std::string &errstr) {
+		test_fixture_world env(json);
+		SCOPED_INFO("Error Collection: " << env.ec);
+		CHECK(env.ec.GetErrorCount() == 1);
+		std::stringstream s;
+		s << env.ec;
+		CHECK(s.str().find(errstr) != std::string::npos);
+	};
+
+	parsecheckerr(
+		R"({ "content" : [ )"
+		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "25m", "fullmass" : "15t", "emptymass" : "20t" } )"
+		"] }"
+		, "full mass < empty mass");
+	parsecheckerr(
+		R"({ "content" : [ )"
+		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "25m", "mass" : "15t", "emptymass" : "20t" } )"
+		"] }"
+		, "Unknown object property");
+	parsecheckerr(
+		R"({ "content" : [ )"
+		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "0", "mass" : "15t" } )"
+		"] }"
+		, "non-zero");
+	parsecheckerr(
+		R"({ "content" : [ )"
+		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "30m" } )"
+		"] }"
+		, "non-zero");
 }

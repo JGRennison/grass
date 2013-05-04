@@ -29,7 +29,7 @@
 
 void vehicle_class::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonValueDefProc(length, di, "length", 0, ec, dsconv::Length);
-	CheckTransJsonValueDefProc(max_speed, di, "maxspeed", 0, ec, dsconv::Speed);
+	CheckTransJsonValueDefProc(max_speed, di, "maxspeed", UINT_MAX, ec, dsconv::Speed);
 	CheckTransJsonValueDefProc(tractive_force, di, "tractiveforce", 0, ec, dsconv::Force);
 	CheckTransJsonValueDefProc(tractive_power, di, "tractivepower", 0, ec, dsconv::Power);
 	CheckTransJsonValueDefProc(braking_force, di, "brakingforce", 0, ec, dsconv::Force);
@@ -44,7 +44,10 @@ void vehicle_class::Deserialise(const deserialiser_input &di, error_collection &
 	else {
 		CheckTransJsonValueDefProc(fullmass, di, "fullmass", 0, ec, dsconv::Mass);
 		CheckTransJsonValueDefProc(emptymass, di, "emptymass", 0, ec, dsconv::Mass);
-		if(fullmass < emptymass) fullmass = emptymass;
+		if(fullmass < emptymass) ec.RegisterNewError<error_deserialisation>(di, "Vehicle class: full mass < empty mass");
+	}
+	if(!length || !fullmass || !emptymass) {
+		ec.RegisterNewError<error_deserialisation>(di, "Vehicle class: length and mass must be non-zero");
 	}
 	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec);
 }
