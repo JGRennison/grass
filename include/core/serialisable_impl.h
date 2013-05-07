@@ -81,6 +81,17 @@ struct deserialiser_input {
 		seenprops.push_back(prop);
 	}
 	void PostDeserialisePropCheck(error_collection &ec) const;
+
+	class deserialiser_input_deep_clone {
+		std::vector< std::unique_ptr<deserialiser_input> > items;
+		deserialiser_input *top;
+		public:
+		deserialiser_input_deep_clone(deserialiser_input *top_, std::vector< std::unique_ptr<deserialiser_input> > &&items_) :
+			items(std::move(items_)), top(top_) { }
+		deserialiser_input *GetTop() const { return top; };
+	};
+	std::shared_ptr<deserialiser_input_deep_clone> DeepClone() const;
+	deserialiser_input *Clone() const;
 };
 
 struct serialiser_output {

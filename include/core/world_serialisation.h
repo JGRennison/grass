@@ -29,6 +29,7 @@
 
 #include "world.h"
 #include "serialisable.h"
+#include "flags.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"
@@ -50,23 +51,38 @@ class world_serialisation {
 	unsigned int current_content_index;
 
 	public:
-	deserialisation_type_factory<> object_types;
+	struct ws_dtf_params {
+		enum class WSDTFP_FLAGS {
+			ZERO		= 0,
+			NONEWTRACK	= 1<<0,
+		};
+		WSDTFP_FLAGS flags;
+		ws_dtf_params(WSDTFP_FLAGS flags_ = WSDTFP_FLAGS::ZERO) : flags(flags_) { }
+	};
+	typedef deserialisation_type_factory<const ws_dtf_params &> ws_deserialisation_type_factory;
+	ws_deserialisation_type_factory content_object_types;
+	ws_deserialisation_type_factory gamestate_object_types;
+
+	fixup_list gamestate_init;
 
 	void InitObjectTypes();
 	world_serialisation(world &w_) : w(w_), previoustrackpiece(0) { InitObjectTypes(); }
 	void ParseInputString(const std::string &input, error_collection &ec);
 	void LoadGame(const deserialiser_input &di, error_collection &ec);
-	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);
+	void DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &contentdi, error_collection &ec);
+	void DeserialiseObject(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTemplate(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTypeDefinition(const deserialiser_input &di, error_collection &ec);
 	void ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTractionType(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTrackCircuit(const deserialiser_input &di, error_collection &ec);
-	template <typename T> T* MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec);
-	template <typename T> T* DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec);
+	template <typename T> T* MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec, bool findonly);
+	template <typename T> T* DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp);
 	void DeserialiseVehicleClass(const deserialiser_input &di, error_collection &ec);
 	template <typename C> void MakeGenericTrackTypeWrapper();
 	inline unsigned int GetCurrentContentIndex() const { return current_content_index; }
+	void DeserialiseGameState(error_collection &ec);
 };
+template<> struct enum_traits< world_serialisation::ws_dtf_params::WSDTFP_FLAGS > {	static constexpr bool flags = true; };
 
 #endif

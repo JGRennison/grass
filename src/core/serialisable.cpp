@@ -125,6 +125,28 @@ void deserialiser_input::PostDeserialisePropCheck(error_collection &ec) const {
 	}
 }
 
+deserialiser_input *deserialiser_input::Clone() const {
+	deserialiser_input *out = new deserialiser_input(type, reference_name, json, w, ws, parent);
+	out->seenprops = seenprops;
+	out->objpreparse = objpreparse;
+	out->objpostparse = objpostparse;
+	return out;
+}
+
+std::shared_ptr<deserialiser_input::deserialiser_input_deep_clone> deserialiser_input::DeepClone() const {
+	std::vector< std::unique_ptr<deserialiser_input> > items;
+	std::function<deserialiser_input *(const deserialiser_input *)> clone = [&](const deserialiser_input *in) -> deserialiser_input * {
+		deserialiser_input *out =  in->Clone();
+		items.emplace_back(out);
+		if(out->parent) out->parent = clone(out->parent);
+		if(out->objpreparse) out->objpreparse = clone(out->objpreparse);
+		if(out->objpostparse) out->objpostparse = clone(out->objpostparse);
+		return out;
+	};
+	deserialiser_input *top = clone(this);
+	return std::make_shared<deserialiser_input::deserialiser_input_deep_clone>(top, std::move(items));
+}
+
 void CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func) {
 	deserialiser_input subdi(di.json[prop], type_name, prop, di);
 	if(!subdi.json.IsNull()) di.RegisterProp(prop);

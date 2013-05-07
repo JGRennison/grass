@@ -46,6 +46,22 @@ void world_serialisation::ParseInputString(const std::string &input, error_colle
 
 void world_serialisation::LoadGame(const deserialiser_input &di, error_collection &ec) {
 	deserialiser_input contentdi(di.json["content"], "content", "content", di);
+	DeserialiseRootObjArray(content_object_types, ws_dtf_params(), contentdi, ec);
+
+	deserialiser_input gamestatetdi(di.json["gamestate"], "gamestate", "gamestate", di);
+	if(!gamestatetdi.json.IsNull()) {
+		auto deepclone = gamestatetdi.DeepClone();
+		gamestate_init.AddFixup([deepclone, this](error_collection &ec) {
+			DeserialiseRootObjArray(gamestate_object_types, ws_dtf_params(ws_dtf_params::WSDTFP_FLAGS::NONEWTRACK), *deepclone->GetTop(), ec);
+		});
+	}
+}
+
+void world_serialisation::DeserialiseGameState(error_collection &ec) {
+	gamestate_init.Execute(ec);
+}
+
+void world_serialisation::DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &contentdi, error_collection &ec) {
 	if(contentdi.json.IsArray()) {
 		for(rapidjson::SizeType i = 0; i < contentdi.json.Size(); i++) {
 			deserialiser_input subdi("", MkArrayRefName(i), contentdi.json[i], &w, this, &contentdi);
@@ -58,7 +74,7 @@ void world_serialisation::LoadGame(const deserialiser_input &di, error_collectio
 				if(typeval.IsString()) {
 					subdi.type.assign(typeval.GetString(), typeval.GetStringLength());
 					subdi.RegisterProp("type");
-					DeserialiseObject(subdi, ec);
+					DeserialiseObject(wdtf, wdtf_params, subdi, ec);
 				}
 				else {
 					ec.RegisterNewError<error_deserialisation>(subdi, "LoadGame: Object has no type");
@@ -69,12 +85,12 @@ void world_serialisation::LoadGame(const deserialiser_input &di, error_collectio
 			}
 		}
 	}
-	else {
-		ec.RegisterNewError<error_deserialisation>(di, "LoadGame: Document root not array");
+	else if(!contentdi.json.IsNull()) {
+		ec.RegisterNewError<error_deserialisation>(contentdi, "LoadGame: Top level section not array");
 	}
 }
 
-template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec) {
+template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec, bool findonly) {
 	std::string trackname;
 	if(!CheckTransJsonValue(trackname, di, "name", ec)) {
 		trackname=string_format("#%d", current_content_index);
@@ -87,17 +103,21 @@ template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deser
 			return 0;
 		}
 	}
-	else {
+	else if(!findonly) {
 		ptr.reset(new T(w));
 		ptr->SetName(trackname);
 		ptr->SetPreviousTrackPiece(previoustrackpiece);
 		previoustrackpiece = ptr.get();
 	}
+	else {
+		ec.RegisterNewError<error_deserialisation>(di, string_format("LoadGame: Cannot make a new track piece at this point: %s", trackname.c_str()));
+		return 0;
+	}
 	return static_cast<T*>(ptr.get());
 }
 
-template <typename T> T* world_serialisation::DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec) {
-	T* target = MakeOrFindGenericTrack<T>(di, ec);
+template <typename T> T* world_serialisation::DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+	T* target = MakeOrFindGenericTrack<T>(di, ec, wdp.flags & ws_dtf_params::WSDTFP_FLAGS::NONEWTRACK);
 	if(target) {
 		target->DeserialiseObject(di, ec);
 	}
@@ -123,7 +143,7 @@ void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di
 		const rapidjson::Value *content;
 		CheckTransRapidjsonValueDef<json_object>(content, di, "content", ec);
 
-		auto func = [=](const deserialiser_input &di, error_collection &ec) {
+		auto func = [=](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 			deserialiser_input typedefwrapperdi(di.type, "Typedef Wrapper: " + newtype + " base: " + basetype, di.json, di);
 
 			const deserialiser_input *checkparent = di.parent;
@@ -144,12 +164,12 @@ void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di
 				while(targ->objpreparse) targ = targ->objpreparse;
 				targ->objpreparse = &typedefcontentdi;
 			}
-			if(! this->object_types.FindAndDeserialise(basetype, typedefwrapperdi, ec))  {
+			if(! this->content_object_types.FindAndDeserialise(basetype, typedefwrapperdi, ec, wdp))  {
 				ec.RegisterNewError<error_deserialisation>(typedefwrapperdi, string_format("Typedef expansion: %s: Unknown base type: %s", newtype.c_str(), basetype.c_str()));
 			}
 			typedefwrapperdi.seenprops.swap(di.seenprops);
 		};
-		object_types.RegisterType(newtype, func);
+		content_object_types.RegisterType(newtype, func);
 		di.PostDeserialisePropCheck(ec);
 	}
 	else {
@@ -209,10 +229,11 @@ void world_serialisation::DeserialiseVehicleClass(const deserialiser_input &di, 
 }
 
 template <typename C> void world_serialisation::MakeGenericTrackTypeWrapper() {
-	auto func = [&](const deserialiser_input &di, error_collection &ec) {
-		this->DeserialiseGenericTrack<C>(di, ec);
+	auto func = [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+		this->DeserialiseGenericTrack<C>(di, ec, wdp);
 	};
-	object_types.RegisterType(C::GetTypeSerialisationNameStatic(), func);
+	content_object_types.RegisterType(C::GetTypeSerialisationNameStatic(), func);
+	gamestate_object_types.RegisterType(C::GetTypeSerialisationNameStatic(), func);
 }
 
 void world_serialisation::InitObjectTypes() {
@@ -227,16 +248,16 @@ void world_serialisation::InitObjectTypes() {
 	MakeGenericTrackTypeWrapper<startofline>();
 	MakeGenericTrackTypeWrapper<endofline>();
 	MakeGenericTrackTypeWrapper<routingmarker>();
-	object_types.RegisterType("template", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTemplate(di, ec); });
-	object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTypeDefinition(di, ec); });
-	object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTractionType(di, ec); });
-	object_types.RegisterType("trackcircuit", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseTrackCircuit(di, ec); });
-	object_types.RegisterType("couplepoints", [&](const deserialiser_input &di, error_collection &ec) { DeserialisePointsCoupling(di, ec); });
-	object_types.RegisterType("vehicleclass", [&](const deserialiser_input &di, error_collection &ec) { DeserialiseVehicleClass(di, ec); });
+	content_object_types.RegisterType("template", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTemplate(di, ec); });
+	content_object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTypeDefinition(di, ec); });
+	content_object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTractionType(di, ec); });
+	content_object_types.RegisterType("trackcircuit", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTrackCircuit(di, ec); });
+	content_object_types.RegisterType("couplepoints", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialisePointsCoupling(di, ec); });
+	content_object_types.RegisterType("vehicleclass", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseVehicleClass(di, ec); });
 }
 
-void world_serialisation::DeserialiseObject(const deserialiser_input &di, error_collection &ec) {
-	if(!object_types.FindAndDeserialise(di.type, di, ec)) {
+void world_serialisation::DeserialiseObject(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &di, error_collection &ec) {
+	if(!wdtf.FindAndDeserialise(di.type, di, ec, wdtf_params)) {
 		ec.RegisterNewError<error_deserialisation>(di, string_format("LoadGame: Unknown object type: %s", di.type.c_str()));
 	}
 }

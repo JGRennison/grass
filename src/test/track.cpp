@@ -33,7 +33,7 @@
 #include "world-test.h"
 #include "track_ops.h"
 #include "param.h"
-
+#include "testutil.h"
 
 struct test_fixture_track_1 {
 	world_test w;
@@ -617,5 +617,33 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 	check_parse_err(R"({ "content" : [ )"
 		R"({ "type" : "points", "name" : "P1", "sighting" : { "direction" : "front", "distance" : 40000 } } )"
 	"] }");
+}
 
+TEST_CASE( "track/deserialisation/gamestate/basicload", "Test basic gamestate loading, including track creation check" ) {
+	test_fixture_world env1(R"({ "gamestate" : [ )"
+		R"({ "type" : "points", "name" : "P1", "reverse" : true } )"
+	"] }");
+	INFO("Error Collection: " << env1.ec);
+	CHECK(env1.ec.GetErrorCount() == 0);
+	env1.ws.DeserialiseGameState(env1.ec);
+	INFO("Error Collection: " << env1.ec);
+	CHECK(env1.ec.GetErrorCount() == 1);
+
+	test_fixture_world env2(R"({ "gamestate" : [ )"
+		R"({ "type" : "points", "name" : "P1", "reverse" : true } )"
+	"],"
+	R"("content" : [ )"
+		R"({ "type" : "points", "name" : "P1" } )"
+	"] }");
+	INFO("Error Collection: " << env2.ec);
+	CHECK(env2.ec.GetErrorCount() == 0);
+
+	points *p1 = PTR_CHECK(dynamic_cast<points *>(env2.w.FindTrackByName("P1")));
+	CHECK((p1->GetPointsFlags(0) & points::PTF::REV) == points::PTF::ZERO);
+
+	env2.ws.DeserialiseGameState(env2.ec);
+	INFO("Error Collection: " << env2.ec);
+	CHECK(env2.ec.GetErrorCount() == 0);
+
+	CHECK((p1->GetPointsFlags(0) & points::PTF::REV) == points::PTF::REV);
 }
