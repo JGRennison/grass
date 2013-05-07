@@ -150,6 +150,7 @@ std::shared_ptr<deserialiser_input::deserialiser_input_deep_clone> deserialiser_
 void CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func) {
 	deserialiser_input subdi(di.json[prop], type_name, prop, di);
 	if(!subdi.json.IsNull()) di.RegisterProp(prop);
+	else return;
 
 	if(subdi.json.IsArray()) {
 		subdi.type += "_array";
