@@ -109,7 +109,7 @@ $(error GCC 4.7.0 has a nasty bug in std::unordered_multimap, this will cause pr
 endif
 
 ifdef list
-CFLAGS+= -masm=intel -g --save-temps -Wa,-msyntax=intel,-aghlms=$*.lst
+CFLAGS+= -masm=intel -g -save-temps=obj -Wa,-msyntax=intel,-aghlms=$(@:.o=.lst)
 endif
 
 ifdef map
