@@ -49,6 +49,11 @@ void world::GameStep(world_time delta) {
 	for(auto it = tick_update_list.begin(); it != tick_update_list.end(); ++it) {
 		(*it)->TrackTick();
 	}
+	for(auto it = all_trains.begin(); it != all_trains.end(); ) {
+		auto current = it;
+		++it;	//do this as *current may be modified/deleted
+		current->TrainTimeStep(delta);
+	}
 }
 
 void world::ConnectTrack(generictrack *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec) {
@@ -92,6 +97,7 @@ named_futurable_obj *world::FindFuturableByName(const std::string &name) {
 	if(offset == std::string::npos) return 0;
 	if(name.compare(0, offset, generictrack::GetTypeSerialisationClassNameStatic())) return FindTrackByName(name.substr(offset+1));
 	else if(name.compare(0, offset, track_circuit::GetTypeSerialisationClassNameStatic())) return FindOrMakeTrackCircuitByName(name.substr(offset+1));
+	else if(name.compare(0, offset, train::GetTypeSerialisationClassNameStatic())) return FindTrainByName(name.substr(offset+1));
 	else if(name == this->GetFullSerialisationName()) return this;
 	return 0;
 }
@@ -183,6 +189,32 @@ void world::CapAllTrackPieceUnconnectedEdges() {
 		}
 	});
 }
+
+train *world::CreateEmptyTrain() {
+	all_trains.emplace_front(*this);
+	return &all_trains.front();
+}
+
+void world::DeleteTrain(train *t) {
+	all_trains.remove_if([&](const train &lt) { return &lt == t; });
+}
+
+train *world::FindTrainByName(const std::string &name) const {
+	for(auto &it : all_trains) {
+		if(it.GetName() == name) return const_cast<train*>(&it);
+	}
+	return 0;
+}
+
+unsigned int world::EnumerateTrains(std::function<void(const train &)> f) const {
+	unsigned int count = 0;
+	for(auto &it : all_trains) {
+		f(it);
+		count++;
+	}
+	return count;
+}
+
 
 vehicle_class *world::FindOrMakeVehicleClassByName(const std::string &name) {
 	std::unique_ptr<vehicle_class> &vc = all_vehicle_classes[name];

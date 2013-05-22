@@ -26,6 +26,7 @@
 #include "deserialisation-test.h"
 #include "world-test.h"
 #include "testutil.h"
+#include "util.h"
 #include <sstream>
 
 static void checkvc(world &w, const std::string &name, unsigned int length, unsigned int max_speed, unsigned int tractive_force, unsigned int tractive_power,
@@ -49,6 +50,18 @@ static void checkvc(world &w, const std::string &name, unsigned int length, unsi
 	CHECK(vc->fullmass == fullmass);
 	CHECK(vc->emptymass == emptymass);
 	CHECK(vc->tractiontypes.DumpString() == traction_str);
+}
+
+static void checktd(const train_dynamics &td, unsigned int length, unsigned int maxspeed, unsigned int tractive_force, unsigned int tractive_power, unsigned int braking_force, unsigned int dragc, unsigned int dragv, unsigned int dragv2, unsigned int mass) {
+	CHECK(td.total_length == length);
+	CHECK(td.veh_max_speed == maxspeed);
+	CHECK(td.total_tractive_force == tractive_force);
+	CHECK(td.total_tractive_power == tractive_power);
+	CHECK(td.total_braking_force == braking_force);
+	CHECK(td.total_drag_const == dragc);
+	CHECK(td.total_drag_v == dragv);
+	CHECK(td.total_drag_v2 == dragv2);
+	CHECK(td.total_mass == mass);
 }
 
 TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialisation" ) {
@@ -104,4 +117,111 @@ TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialis
 		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "30m" } )"
 		"] }"
 		, "non-zero");
+}
+
+TEST_CASE("/train/train/deserialisation/typeerror", "Check that trains cannot appear in content section") {
+
+	auto parsecheckerr = [&](const std::string &json, const std::string &errstr) {
+		test_fixture_world env(json);
+		env.ws.DeserialiseGameState(env.ec);
+		SCOPED_INFO("Error Collection: " << env.ec);
+		CHECK(env.ec.GetErrorCount() == 1);
+		std::stringstream s;
+		s << env.ec;
+		CHECK(s.str().find(errstr) != std::string::npos);
+	};
+
+	parsecheckerr(
+		R"({ "content" : [ )"
+		R"({ "type" : "train", "nosuch" : "field" } )"
+		"] }"
+		, "Unknown object type");
+	parsecheckerr(
+		R"({ "gamestate" : [ )"
+		R"({ "type" : "train", "nosuch" : "field" } )"
+		"] }"
+		, "Unknown object property");
+}
+
+TEST_CASE("/train/train/deserialisation/dynamics", "Train deserialisation and dynamics") {
+	std::string test_train_deserialisation_dynamics =
+	R"({ "content" : [ )"
+		R"({ "type" : "tractiontype", "name" : "diesel", "alwaysavailable" : true }, )"
+		R"({ "type" : "tractiontype", "name" : "AC" }, )"
+		R"({ "type" : "vehicleclass", "name" : "VC1", "length" : "25m", "maxspeed" : "30m/s", "tractiveforce" : "500kN", "tractivepower" : "1000hp", "brakingforce" : "1MN",)"
+			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "dragv2" : 200, "facedragv2" : 50, "fullmass" : "15t", "emptymass" : "10t",)"
+			R"( "tractiontypes" : [ "diesel", "AC" ] }, )"
+		R"({ "type" : "vehicleclass", "name" : "VC2", "length" : "30m", "maxspeed" : "170km/h", "tractiveforce" : "500kN", "tractivepower" : "1000hp", "brakingforce" : "1MN",)"
+			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "mass" : "15t",)"
+			R"( "tractiontypes" : [ "AC" ] } )"
+	R"( ], )"
+	R"( "gamestate" : [ )"
+		"%s"
+	"] }";
+
+	std::string veh1 = R"({ "type" : "train", "activetractions" : %s, "vehicleclasses" : [ "VC1", "VC2" ] })";
+	std::string veh2 = R"({ "type" : "train", "activetractions" : %s, "vehicleclasses" : [ { "classname" : "VC1", "full" : true }, { "classname" : "VC2", "count" : 2 } ] })";
+	std::string veh3 = R"({ "type" : "train", "activetractions" : %s, "vehicleclasses" : [ { "classname" : "VC1", "full" : true }, { "classname" : "VC2", "count" : 2, "segmentmass" : "0" } ] })";
+	std::string veh4 = R"({ "type" : "train", "activetractions" : %s, "vehicleclasses" : [ { "classname" : "VC1", "count" : 2, "segmentmass" : "24t" }, { "classname" : "VC2", "count" : 0 } ] })";
+
+	auto mktenv = [&](const std::string &str) -> test_fixture_world* {
+		return new test_fixture_world(str);
+	};
+
+	auto make_test_tenv = [&](const std::string &vehstring, const std::string &activetractions) {
+		test_fixture_world *env = mktenv(string_format(string_format(test_train_deserialisation_dynamics, vehstring.c_str()), activetractions.c_str()));
+		env->ws.DeserialiseGameState(env->ec);
+		return env;
+	};
+
+	auto test_one_train = [&](const std::string &vehstring, const std::string &activetractions, std::function<void(train &)> f) {
+		test_fixture_world &env = *make_test_tenv(vehstring, activetractions);
+		SCOPED_INFO("Error Collection: " << env.ec);
+		REQUIRE(env.ec.GetErrorCount() == 0);
+
+		unsigned int count = 0;
+		unsigned int traincount = env.w.EnumerateTrains([&](train &t) {
+			count++;
+			f(t);
+		});
+		CHECK(count == 1);
+		CHECK(traincount == 1);
+		delete &env;
+	};
+
+	auto test_one_train_expect_err = [&](const std::string &vehstring, const std::string &activetractions, unsigned int errcount) {
+		test_fixture_world &env = *make_test_tenv(vehstring, activetractions);
+		SCOPED_INFO("Error Collection: " << env.ec);
+		CHECK(env.ec.GetErrorCount() == errcount);
+		delete &env;
+	};
+
+	test_one_train(veh1, "[\"diesel\"]", [&](train &t) {
+		SCOPED_INFO("Test 1");
+		checktd(t.GetTrainDynamics(), 55000, 30000, 500000, 746000, 1000000 * 2, 1000, 200, 250, 25000);
+	});
+	test_one_train(veh1, "[\"AC\"]", [&](train &t) {
+		SCOPED_INFO("Test 2");
+		checktd(t.GetTrainDynamics(), 55000, 30000, 500000 * 2, 746000 * 2, 1000000 * 2, 1000, 200, 250, 25000);
+	});
+	test_one_train(veh1, "[\"diesel\",\"AC\"]", [&](train &t) {
+		SCOPED_INFO("Test 3");
+		checktd(t.GetTrainDynamics(), 55000, 30000, 500000 * 2, 746000 * 2, 1000000 * 2, 1000, 200, 250, 25000);
+	});
+	test_one_train(veh1, "[]", [&](train &t) {
+		SCOPED_INFO("Test 4");
+		checktd(t.GetTrainDynamics(), 55000, 30000, 0, 0, 1000000 * 2, 1000, 200, 250, 25000);
+	});
+	test_one_train(veh2, "[\"AC\"]", [&](train &t) {
+		SCOPED_INFO("Test 5");
+		checktd(t.GetTrainDynamics(), 85000, 30000, 500000 * 3, 746000 * 3, 1000000 * 3, 1500, 300, 250, 45000);
+	});
+	{
+		SCOPED_INFO("Test 6");
+		test_one_train_expect_err(veh3, "[\"AC\"]", 1);
+	}
+	test_one_train(veh4, "[\"AC\"]", [&](train &t) {
+		SCOPED_INFO("Test 7");
+		checktd(t.GetTrainDynamics(), 50000, 30000, 500000 * 2, 746000 * 2, 1000000 * 2, 1000, 200, 500, 24000);
+	});
 }

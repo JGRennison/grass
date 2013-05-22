@@ -26,6 +26,7 @@
 
 #include <unordered_map>
 #include <deque>
+#include <forward_list>
 #include "tractiontype.h"
 #include "serialisable.h"
 #include "future.h"
@@ -76,6 +77,7 @@ class world : public named_futurable_obj {
 	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
 	std::unordered_map<std::string, std::unique_ptr<track_circuit> > all_track_circuits;
 	std::unordered_map<std::string, std::unique_ptr<vehicle_class> > all_vehicle_classes;
+        std::forward_list<train> all_trains;
 	std::deque<connection_forward_declaration> connection_forward_declarations;
 	std::unordered_map<std::string, traction_type> traction_types;
 	std::deque<generictrack *> tick_update_list;
@@ -83,6 +85,7 @@ class world : public named_futurable_obj {
 	GAMEMODE mode = GAMEMODE::SINGLE;
 	error_collection ec;
 	unsigned int auto_seq_item = 0;
+	uint64_t load_count = 0;		// incremented on each save/load cycle
 
 	public:
 	future_deserialisation_type_factory future_types;
@@ -120,7 +123,15 @@ class world : public named_futurable_obj {
 		return mode == GAMEMODE::SINGLE || mode == GAMEMODE::SERVER;
 	}
 	error_collection &GetEC() { return ec; }
+	inline uint64_t GetLoadCount() const { return load_count; }
 	void CapAllTrackPieceUnconnectedEdges();
+	train *CreateEmptyTrain();
+	train *FindTrainByName(const std::string &name) const;
+	void DeleteTrain(train *t);
+	unsigned int EnumerateTrains(std::function<void(const train &)> f) const;
+	inline unsigned int EnumerateTrains(std::function<void(train &)> f) {
+		return const_cast<const world*>(this)->EnumerateTrains([&](const train &t) { f(const_cast<train&>(t)); });
+	}
 	vehicle_class *FindOrMakeVehicleClassByName(const std::string &name);
 	vehicle_class *FindVehicleClassByName(const std::string &name);
 };

@@ -27,19 +27,10 @@
 #include "world_obj.h"
 #include "track.h"
 #include "timetable.h"
+#include "lookahead.h"
 #include "serialisable.h"
 #include "tractiontype.h"
 #include <list>
-
-class lookahead_item {
-	unsigned int speed;
-	unsigned int start_offset;
-};
-
-class lookahead_set {
-
-	std::list<lookahead_item> items;
-};
 
 struct vehicle_class : public serialisable_obj {
 	const std::string name;
@@ -70,14 +61,17 @@ struct vehicle_class : public serialisable_obj {
  */
 
 struct train_unit {
-	vehicle_class *vehtype;
+	vehicle_class *vehtype = 0;
 	unsigned int veh_multiplier = 0;
 	unsigned int segment_total_mass = 0;
 	enum class STF {
 		ZERO		= 0,
 		REV		= 1<<0,
+		FULL		= 1<<1,
 	};
-	STF stflags = STF::REV;
+	STF stflags = STF::ZERO;
+
+	void CalculateSegmentMass();
 };
 template<> struct enum_traits< train_unit::STF > {	static constexpr bool flags = true; };
 
@@ -87,7 +81,28 @@ struct train_track_speed_limit_item {
 	train_track_speed_limit_item(unsigned int speed_, unsigned int count_) : speed(speed_), count(count_) { }
 };
 
-class train : public world_obj  {
+struct train_dynamics {
+	unsigned int total_length = 0;
+	unsigned int veh_max_speed = 0;
+	unsigned int total_tractive_force = 0;
+	unsigned int total_tractive_power = 0;
+	unsigned int total_braking_force = 0;
+	unsigned int total_drag_const = 0;
+	unsigned int total_drag_v = 0;
+	unsigned int total_drag_v2 = 0;
+	unsigned int total_mass = 0;
+};
+
+struct train_motion_state {
+	unsigned int current_speed = 0;
+	unsigned int current_max_speed = 0;
+	track_location head_pos;
+	track_location tail_pos;
+	int head_relative_height = 0;
+	int tail_relative_height = 0;
+};
+
+class train : public world_obj, protected train_dynamics, protected train_motion_state {
 	enum class TF {
 		ZERO		= 0,
 		CONSISTREVDIR	= 1<<0,
@@ -99,45 +114,38 @@ class train : public world_obj  {
 	std::string vehspeedclass;
 	std::forward_list<train_track_speed_limit_item> covered_track_speed_limits;
 
-	lookahead_set lookahead;
+	lookahead la;
 
-	unsigned int total_length = 0;
-	unsigned int veh_max_speed = 0;
-	unsigned int current_max_speed = 0;
-	unsigned int total_tractive_force = 0;
-	unsigned int total_tractive_power = 0;
-	unsigned int total_braking_force = 0;
-	//unsigned int total_rail_traction_limit = 0;
-	unsigned int total_drag_const = 0;
-	unsigned int total_drag_v = 0;
-	unsigned int total_drag_v2 = 0;
-	unsigned int total_mass = 0;
-	unsigned int target_braking_deceleration = 0; 	// m/s^2 << 8
-
-	track_location head_pos;
-	track_location tail_pos;
-	int head_relative_height = 0;
-	int tail_relative_height = 0;
-
-	unsigned int current_speed = 0;
 	std::string headcode;
 	timetable currenttimetable;
 
-	public:
-	train(world &w_) : world_obj(w_) { }
 	void TrainMoveStep(unsigned int ms);
+
+	public:
+	train(world &w_);
+	void TrainTimeStep(unsigned int ms);
 	void CalculateTrainMotionProperties(unsigned int weatherfactor_shl8);
 	void AddCoveredTrackSpeedLimit(unsigned int speed);
 	void RemoveCoveredTrackSpeedLimit(unsigned int speed);
 	void CalculateCoveredTrackSpeedLimit();
 	void ReverseDirection();
-	inline void RefreshLookahead() { };
 	void RefreshCoveredTrackSpeedLimits();
 	void DropTrainIntoPosition(const track_location &position);
 	void UprootTrain();
+	inline const train_dynamics &GetTrainDynamics() const { return *this; }
+	inline const train_motion_state &GetTrainMotionState() const { return *this; }
 	inline unsigned int GetMaxVehSpeed() const { return veh_max_speed; }
 	inline std::string GetVehSpeedClass() const { return vehspeedclass; }
 	const tractionset &GetTractionTypes() const { return active_tractions; }
+	void ValidateActiveTractionSet();
+
+	virtual std::string GetTypeName() const { return "Train"; }
+	static std::string GetTypeSerialisationClassNameStatic() { return "train"; }
+	virtual std::string GetTypeSerialisationClassName() const override { return GetTypeSerialisationClassNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+
+	void GenerateName();
 };
 template<> struct enum_traits< train::TF > {	static constexpr bool flags = true; };
 

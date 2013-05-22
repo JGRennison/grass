@@ -31,7 +31,7 @@
 bool tractionset::CanTrainPass(const train *t) const {
 	for(auto it = t->GetTractionTypes().tractions.begin(); it != t->GetTractionTypes().tractions.end(); ++it) {
 		if((*it)->alwaysavailable) return true;
-		if(std::find(tractions.begin(), tractions.end(), (*it)) != tractions.end()) return true;
+		if(HasTraction(*it)) return true;
 	}
 	return false;
 }
@@ -40,7 +40,30 @@ bool tractionset::HasTraction(const traction_type *tt) const {
 	return std::find(tractions.begin(), tractions.end(), tt) != tractions.end();
 }
 
+bool tractionset::IsIntersecting(const tractionset &ts) const {
+	for(auto &it : tractions) {
+		if(ts.HasTraction(it)) return true;
+	}
+	return false;
+}
+
+void tractionset::IntersectWith(const tractionset &ts) {
+	container_unordered_remove_if(tractions, [&](traction_type *tt) {
+		return !ts.HasTraction(tt);
+	});
+}
+
+void tractionset::UnionWith(const tractionset &ts) {
+	for(auto &it : ts.tractions) {
+		AddTractionType(it);
+	}
+}
+
 void tractionset::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	if(!di.json.IsArray()) {
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid traction set definition");
+		return;
+	}
 	for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
 		const rapidjson::Value &cur = di.json[i];
 		if(cur.IsString() && di.w) {

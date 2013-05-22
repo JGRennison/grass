@@ -26,6 +26,7 @@
 
 #include <ctime>
 #include <string>
+#include <iterator>
 
 //adapted from http://forums.devshed.com/showpost.php?p=2678621&postcount=9
 //Newton-Raphson
@@ -63,6 +64,25 @@ template <typename I> I SetOrClearBits(I in, I bits, bool set) {
 
 template <typename I> void SetOrClearBitsRef(I &in, I bits, bool set) {
 	in = SetOrClearBits(in, bits, set);
+}
+
+template <typename C, typename UP> unsigned int container_unordered_remove_if(C &container, UP predicate) {
+	unsigned int removecount = 0;
+	for(auto it = container.begin(); it != container.end();) {
+		if(predicate(*it)) {
+			removecount++;
+			if(std::next(it) != container.end()) {
+				*it = std::move(container.back());
+				container.pop_back();
+			}
+			else {
+				container.pop_back();
+				break;
+			}
+		}
+		else ++it;
+	}
+	return removecount;
 }
 
 #endif

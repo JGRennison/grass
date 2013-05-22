@@ -251,6 +251,9 @@ class track_location {
 		SetTargetStartLocation(targ);
 	}
 	track_location(generictrack *track_, EDGETYPE direction_, unsigned int offset_) : trackpiece(track_, direction_), offset(offset_) { }
+
+	void Deserialise(const std::string &name, const deserialiser_input &di, error_collection &ec);
+	void Serialise(const std::string &name, serialiser_output &so, error_collection &ec) const;
 };
 
 class genericzlentrack : public generictrack {

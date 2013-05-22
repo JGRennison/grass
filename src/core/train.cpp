@@ -27,8 +27,13 @@
 #include "track.h"
 #include "train.h"
 #include "traverse.h"
+#include "world.h"
 
 #include <cassert>
+
+train::train(world &w_) : world_obj(w_) {
+
+}
 
 inline int CalcGravityForce(unsigned int total_mass, int elevationdecrease, unsigned int length) {
 	//slope angle = arctan(elevationdecrease/length)
@@ -58,6 +63,9 @@ bool CheckCalculateProjectedBrakingSpeed(unsigned int brake_deceleration, unsign
 	}
 }
 
+void train::TrainTimeStep(unsigned int ms) {
+	TrainMoveStep(ms);
+}
 
 void train::TrainMoveStep(unsigned int ms) {
 	unsigned int displacement=(ms*current_speed)/1000;
@@ -68,6 +76,7 @@ void train::TrainMoveStep(unsigned int ms) {
 	AdvanceDisplacement(displacement, tail_pos, &tail_elevationdelta, [this](track_location &old_track, track_location &new_track) { old_track.GetTrack()->TrainLeave(old_track.GetDirection(), this); });
 	head_relative_height += head_elevationdelta;
 	tail_relative_height += tail_elevationdelta;
+	la.Advance(displacement);
 
 	int slopeforce = CalcGravityForce(total_mass, tail_relative_height-head_relative_height, total_length);
 	int dragforce = CalcDrag(total_drag_const, total_drag_v, total_drag_v2, current_speed);
@@ -75,7 +84,7 @@ void train::TrainMoveStep(unsigned int ms) {
 	unsigned int current_max_tractive_force = total_tractive_power / current_speed;
 	if(current_max_tractive_force > total_tractive_force) current_max_tractive_force = total_tractive_force;
 
-	int current_max_braking_force = total_braking_force;
+	unsigned int current_max_braking_force = total_braking_force;
 
 	int max_total_force = current_max_tractive_force + slopeforce - dragforce;
 	int min_total_force = -current_max_braking_force + slopeforce - dragforce;
@@ -89,13 +98,22 @@ void train::TrainMoveStep(unsigned int ms) {
 	int max_new_speed = (int) current_speed + ((max_acceleration * ms) >> 8);
 	int min_new_speed = (int) current_speed + ((min_acceleration * ms) >> 8);
 
-	int new_speed = max_new_speed;
+	int target_speed = std::min((int) current_max_speed, max_new_speed);
 
-	if(new_speed < min_new_speed) new_speed = min_new_speed;
+	auto lookaheadfunc = [&](unsigned int distance, unsigned int speed) {
+		unsigned int brake_speed;
+		if(CheckCalculateProjectedBrakingSpeed(-min_acceleration, speed, current_speed, CREEP_SPEED, distance, brake_speed)) {
+			if((int) brake_speed < target_speed) target_speed = brake_speed;
+		}
+	};
 
-	if(new_speed < 0) current_speed = 0;
-	else if((unsigned int) new_speed > current_max_speed) current_speed = current_max_speed;
-	else current_speed = new_speed;
+	auto lookaheaderrorfunc = [&](lookahead::LA_ERROR err, const track_target_ptr &piece) {
+		//TODO: fill this in
+	};
+
+	la.CheckLookaheads(this, head_pos, lookaheadfunc, lookaheaderrorfunc);
+
+	current_speed = std::max(std::min(max_new_speed, target_speed), min_new_speed);
 }
 
 void train::CalculateTrainMotionProperties(unsigned int weatherfactor_shl8) {
@@ -107,7 +125,6 @@ void train::CalculateTrainMotionProperties(unsigned int weatherfactor_shl8) {
 	total_tractive_force = 0;
 	total_tractive_power = 0;
 	total_braking_force = 0;
-	target_braking_deceleration = 0;
 	veh_max_speed = 0;
 	current_max_speed = 0;
 
@@ -118,14 +135,17 @@ void train::CalculateTrainMotionProperties(unsigned int weatherfactor_shl8) {
 		total_drag_const += it->vehtype->cumul_drag_const * it->veh_multiplier;
 		total_drag_v += it->vehtype->cumul_drag_v * it->veh_multiplier;
 		total_drag_v2 += it->vehtype->cumul_drag_v2 * it->veh_multiplier;
-		total_tractive_power += it->vehtype->tractive_power * it->veh_multiplier;
 		total_mass += it->segment_total_mass;
 
-		unsigned int segment_tractive_force = it->vehtype->tractive_force;
-		unsigned int segment_braking_force = it->vehtype->braking_force;
-		unsigned int segment_traction_limit = (it->vehtype->nominal_rail_traction_limit * weatherfactor_shl8) >> 8;
-		total_tractive_force += std::min(segment_tractive_force, segment_traction_limit);
-		total_braking_force += std::min(segment_braking_force, segment_traction_limit);
+		unsigned int unit_tractive_force = it->vehtype->tractive_force;
+		unsigned int unit_braking_force = it->vehtype->braking_force;
+		unsigned int unit_traction_limit = (it->vehtype->nominal_rail_traction_limit * weatherfactor_shl8) >> 8;
+
+		total_braking_force += std::min(unit_braking_force, unit_traction_limit) * it->veh_multiplier;
+		if(active_tractions.IsIntersecting(it->vehtype->tractiontypes))	{
+			total_tractive_force += std::min(unit_tractive_force, unit_traction_limit) * it->veh_multiplier;
+			total_tractive_power += it->vehtype->tractive_power * it->veh_multiplier;
+		}
 
 		if(it == train_segments.begin() || veh_max_speed > it->vehtype->max_speed) veh_max_speed = it->vehtype->max_speed;
 
@@ -183,7 +203,7 @@ void train::ReverseDirection() {
 	tail_relative_height = head_relative_height;
 	head_relative_height = new_head_height;
 
-	RefreshLookahead();
+	la.Init(this, head_pos);
 }
 
 void train::RefreshCoveredTrackSpeedLimits() {
@@ -220,6 +240,8 @@ void train::DropTrainIntoPosition(const track_location &position) {
 	func(temp, tail_pos);				//include the first track piece
 	AdvanceDisplacement(total_length, tail_pos, &tail_relative_height, func);
 	tail_pos.ReverseDirection();
+
+	la.Init(this, head_pos);
 }
 
 void train::UprootTrain() {
@@ -234,4 +256,30 @@ void train::UprootTrain() {
 
 	tail_relative_height = head_relative_height = 0;
 	tail_pos = head_pos = track_location();
+}
+
+void train::ValidateActiveTractionSet() {
+	tractionset ts_union;
+	for(auto &it : train_segments) {
+		ts_union.UnionWith(it.vehtype->tractiontypes);
+	}
+	active_tractions.IntersectWith(ts_union);
+}
+
+void train::GenerateName() {
+	size_t id = reinterpret_cast<size_t>(this);
+	std::string name;
+	do {
+		name = "train_" + std::to_string(GetWorld().GetLoadCount()) + "_" + std::to_string(GetWorld().GetGameTime()) + "_" + std::to_string(id);
+		id++;
+	} while(GetWorld().FindTrainByName(name));
+	SetName(name);
+}
+
+void train_unit::CalculateSegmentMass() {
+	if(vehtype) {
+		unsigned int unit_mass = (stflags & STF::FULL) ? vehtype->fullmass : vehtype->emptymass;
+		segment_total_mass = unit_mass * veh_multiplier;
+	}
+	else segment_total_mass = 0;
 }

@@ -416,3 +416,41 @@ void DeserialisePointsCoupling(const deserialiser_input &di, error_collection &e
 		ec.RegisterNewError<error_deserialisation>(di, "Invalid points coupling definition");
 	}
 }
+
+void track_location::Deserialise(const std::string &name, const deserialiser_input &di, error_collection &ec) {
+	auto parse = [&](const deserialiser_input &edi, error_collection &ec) {
+		std::string piece;
+		if(!edi.w || !CheckTransJsonValue(piece, edi, "piece", ec)) {
+			trackpiece.Reset();
+			offset = 0;
+			return;
+		}
+		trackpiece.track = edi.w->FindTrackByName(piece);
+		if(!trackpiece.track) {
+			ec.RegisterNewError<error_deserialisation>(edi, "Invalid track location definition: no such piece");
+			return;
+		}
+		CheckTransJsonValueDef(trackpiece.direction, edi, "dir", EDGETYPE::EDGE_NULL, ec);
+		CheckTransJsonValueDef(offset, edi, "offset", 0, ec);
+	};
+
+	if(name.empty()) {
+		parse(di, ec);
+	}
+	else {
+		CheckTransJsonTypeFunc<json_object>(di, name.c_str(), "track_location", ec, parse);
+	}
+}
+
+void track_location::Serialise(const std::string &name, serialiser_output &so, error_collection &ec) const {
+	if(!name.empty()) {
+		so.json_out.String(name);
+		so.json_out.StartObject();
+	}
+	if(IsValid()) {
+		SerialiseValueJson(trackpiece.track->GetName(), so, "piece");
+		SerialiseValueJson(trackpiece.direction, so, "dir");
+		SerialiseValueJson(offset, so, "offset");
+	}
+	if(!name.empty()) so.json_out.EndObject();
+}

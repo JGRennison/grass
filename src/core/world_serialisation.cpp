@@ -228,6 +228,29 @@ void world_serialisation::DeserialiseVehicleClass(const deserialiser_input &di, 
 	}
 }
 
+void world_serialisation::DeserialiseTrain(const deserialiser_input &di, error_collection &ec) {
+	if(di.w) {
+		std::string name;
+		train *t = 0;
+		if(CheckTransJsonValue(name, di, "name", ec)) {
+			t = di.w->FindTrainByName(name);
+			if(!t) {
+				t = di.w->CreateEmptyTrain();
+				t->SetName(name);
+			}
+
+		}
+		else {
+			t = di.w->CreateEmptyTrain();
+			t->GenerateName();
+		}
+		t->DeserialiseObject(di, ec);
+	}
+	else {
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid train definition");
+	}
+}
+
 template <typename C> void world_serialisation::MakeGenericTrackTypeWrapper() {
 	auto func = [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		this->DeserialiseGenericTrack<C>(di, ec, wdp);
@@ -254,6 +277,7 @@ void world_serialisation::InitObjectTypes() {
 	content_object_types.RegisterType("trackcircuit", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTrackCircuit(di, ec); });
 	content_object_types.RegisterType("couplepoints", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialisePointsCoupling(di, ec); });
 	content_object_types.RegisterType("vehicleclass", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseVehicleClass(di, ec); });
+	gamestate_object_types.RegisterType("train", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTrain(di, ec); });
 }
 
 void world_serialisation::DeserialiseObject(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &di, error_collection &ec) {

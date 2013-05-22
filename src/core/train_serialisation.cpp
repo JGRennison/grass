@@ -54,3 +54,102 @@ void vehicle_class::Deserialise(const deserialiser_input &di, error_collection &
 
 void vehicle_class::Serialise(serialiser_output &so, error_collection &ec) const {
 }
+
+void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	world_obj::Deserialise(di, ec);
+
+	auto genericerror = [&](const deserialiser_input &edi, const std::string &message) {
+		ec.RegisterNewError<error_deserialisation>(edi, "Invalid train definition: " + message);
+	};
+
+	if(!di.w) {
+		genericerror(di, "No world");
+		return;
+	}
+
+	auto add_train_segment = [&](const std::string &vehtypename, unsigned int multiplier, bool reversed, bool full, bool calc_seg_mass, unsigned int seg_mass) {
+		if(multiplier == 0) return;
+		vehicle_class *vc = di.w->FindVehicleClassByName(vehtypename);
+		if(!vc) {
+			genericerror(di, "No such vehicle class: " + vehtypename);
+			return;
+		}
+		train_segments.emplace_back();
+		train_unit &tu = train_segments.back();
+		tu.vehtype = vc;
+		if(reversed) tu.stflags |= train_unit::STF::REV;
+		if(full) tu.stflags |= train_unit::STF::FULL;
+		tu.veh_multiplier = multiplier;
+		if(calc_seg_mass) tu.CalculateSegmentMass();
+		else {
+			if(seg_mass > vc->fullmass * multiplier || seg_mass < vc->emptymass * multiplier) {
+				genericerror(di, "Segment mass out of range");
+			}
+			tu.segment_total_mass = seg_mass;
+		}
+	};
+
+	auto parse_train_segment_val = [&](const deserialiser_input &tsdi, error_collection &ec) {
+		if(tsdi.json.IsString()) {
+			add_train_segment(tsdi.json.GetString(), 1, false, false, true, 0);
+		}
+		else if(tsdi.json.IsObject()) {
+			std::string vehclassname;
+			if(!CheckTransJsonValue(vehclassname, tsdi, "classname", ec)) {
+				genericerror(tsdi, "No class name");
+				return;
+			}
+
+			unsigned int segment_mass;
+			bool got_segment_mass = CheckTransJsonValueProc(segment_mass, tsdi, "segmentmass", ec, dsconv::Mass);
+
+			add_train_segment(vehclassname,
+					 CheckGetJsonValueDef<unsigned int>(tsdi, "count", 1, ec),
+					 CheckGetJsonValueDef<bool>(tsdi, "reversed", false, ec),
+					 CheckGetJsonValueDef<bool>(tsdi, "full", false, ec),
+					 !got_segment_mass,
+					 segment_mass);
+
+			tsdi.PostDeserialisePropCheck(ec);
+		}
+		else genericerror(tsdi, "Invalid type");
+	};
+
+	CheckIterateJsonArrayOrValue(di, "vehicleclasses", "vehicleclass", ec, parse_train_segment_val);
+	CheckTransJsonValueProc(current_speed, di, "speed", ec, dsconv::Speed);
+	CheckTransJsonValue(head_relative_height, di, "head_relative_height", ec);
+	CheckTransJsonValue(vehspeedclass, di, "vehspeedclass", ec);
+	CheckTransJsonSubArray(active_tractions, di, "activetractions", "tractiontypes", ec);
+	CheckTransJsonValueFlag(tflags, TF::CONSISTREVDIR, di, "reverseconsist", ec);
+
+	ValidateActiveTractionSet();
+
+	track_location newpos;
+	newpos.Deserialise("position", di, ec);
+	if(newpos.IsValid()) {
+		DropTrainIntoPosition(newpos);
+	}
+
+	//todo: timetables, headcode, lookahead state
+
+	CalculateTrainMotionProperties(1<<8);	// TODO: replace this with the proper value
+}
+
+void train::Serialise(serialiser_output &so, error_collection &ec) const {
+	world_obj::Serialise(so, ec);
+
+	SerialiseObjectArrayContainer<std::list<train_unit>, train_unit>(train_segments, so, "vehicleclasses", [&](serialiser_output &so, const train_unit &tu) {
+		SerialiseValueJson(tu.vehtype->name, so, "classname");
+		SerialiseValueJson(tu.veh_multiplier, so, "count");
+		SerialiseFlagJson(tu.stflags, train_unit::STF::FULL, so, "full");
+		SerialiseFlagJson(tu.stflags, train_unit::STF::REV, so, "reversed");
+		SerialiseValueJson(tu.segment_total_mass, so, "segmentmass");
+	});
+	SerialiseValueJson(current_speed, so, "speed");
+	SerialiseValueJson(head_relative_height - tail_relative_height, so, "head_relative_height");
+	SerialiseValueJson(vehspeedclass, so, "vehspeedclass");
+	SerialiseSubArrayJson(active_tractions, so, "activetractions", ec);
+	SerialiseFlagJson(tflags, TF::CONSISTREVDIR, so, "reverseconsist");
+
+	//todo: timetables, headcode, lookahead state
+}
