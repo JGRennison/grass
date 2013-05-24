@@ -107,11 +107,36 @@ void train::TrainMoveStep(unsigned int ms) {
 		}
 	};
 
+	bool waitingatredsig = false;
+
 	auto lookaheaderrorfunc = [&](lookahead::LA_ERROR err, const track_target_ptr &piece) {
-		//TODO: fill this in
+		switch(err) {
+			case lookahead::LA_ERROR::NONE:
+				break;
+			case lookahead::LA_ERROR::SIG_TARGET_CHANGE:
+				//TODO: fill this in
+				break;
+			case lookahead::LA_ERROR::SIG_ASPECT_LESS_THAN_EXPECTED:
+				//TODO: fill this in
+				break;
+			case lookahead::LA_ERROR::WAITING_AT_RED_SIG:
+				waitingatredsig = true;
+				break;
+
+		}
 	};
 
 	la.CheckLookaheads(this, head_pos, lookaheadfunc, lookaheaderrorfunc);
+
+	if(waitingatredsig && current_speed == 0) {
+		if(!(tflags & TF::WAITINGREDSIG)) {
+			tflags |= TF::WAITINGREDSIG;
+			redsigwaitstarttime = GetWorld().GetGameTime();
+		}
+
+		//TODO: do something if we've been waiting for a while
+	}
+	else tflags &= ~TF::WAITINGREDSIG;
 
 	current_speed = std::max(std::min(max_new_speed, target_speed), min_new_speed);
 }

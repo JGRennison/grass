@@ -66,6 +66,7 @@ class lookahead {
 		NONE,
 		SIG_TARGET_CHANGE,
 		SIG_ASPECT_LESS_THAN_EXPECTED,
+		WAITING_AT_RED_SIG,
 	};
 
 	void Init(const train *t  /* optional */, const track_location &pos, const route *rt = 0);

@@ -132,7 +132,11 @@ void lookahead::CheckLookaheads(const train *t /* optional */, const track_locat
 				ScanAppend(t, track_location(l1_list.back().gs), aspect - it->last_aspect, rt);
 				it->last_aspect = aspect;
 			}
-			if(aspect == 0) sendresponse(it->offset - current_offset, 0);
+			if(aspect == 0) {
+				unsigned int distance = it->offset - current_offset;
+				sendresponse(distance, 0);
+				if(distance == 0) errfunc(LA_ERROR::WAITING_AT_RED_SIG, it->gs);
+			}
 		}
 		else if(it->gs.IsValid() && it->last_aspect == 0) sendresponse(it->offset - current_offset, 0);
 	}

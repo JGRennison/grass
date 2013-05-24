@@ -244,10 +244,16 @@ TEST_CASE( "lookahead/unrouted", "Test unrouted track lookahead" ) {
 	CheckLookaheadResult(pos, map, 200000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
+	l.Advance(200000);
+	pos = track_location(s4, EDGE_FRONT, 0);
+	CheckLookahead(l, pos, map, lookahead::LA_ERROR::WAITING_AT_RED_SIG, track_target_ptr(s4, EDGE_FRONT));
+	CheckLookaheadResult(pos, map, 0, 0);
+	FinaliseLookaheadCheck(pos, map);
+
 	env.w.SubmitAction(action_reservepath(env.w, s4, b));
 	env.w.GameStep(1);
 	CheckLookahead(l, pos, map);
 	CheckLookaheadResult(pos, map, 0, 100);
-	CheckLookaheadResult(pos, map, 700000, 0);
+	CheckLookaheadResult(pos, map, 500000, 0);
 	FinaliseLookaheadCheck(pos, map);
 }

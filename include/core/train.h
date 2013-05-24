@@ -106,6 +106,7 @@ class train : public world_obj, protected train_dynamics, protected train_motion
 	enum class TF {
 		ZERO		= 0,
 		CONSISTREVDIR	= 1<<0,
+		WAITINGREDSIG	= 1<<1,
 	};
 	TF tflags = TF::ZERO;
 
@@ -115,6 +116,7 @@ class train : public world_obj, protected train_dynamics, protected train_motion
 	std::forward_list<train_track_speed_limit_item> covered_track_speed_limits;
 
 	lookahead la;
+	world_time redsigwaitstarttime = 0;
 
 	std::string headcode;
 	timetable currenttimetable;
