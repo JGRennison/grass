@@ -64,7 +64,7 @@ bool CheckCalculateProjectedBrakingSpeed(unsigned int brake_deceleration, unsign
 }
 
 void train::TrainTimeStep(unsigned int ms) {
-	TrainMoveStep(ms);
+	if(!train_segments.empty()) TrainMoveStep(ms);
 }
 
 void train::TrainMoveStep(unsigned int ms) {
@@ -81,8 +81,11 @@ void train::TrainMoveStep(unsigned int ms) {
 	int slopeforce = CalcGravityForce(total_mass, tail_relative_height-head_relative_height, total_length);
 	int dragforce = CalcDrag(total_drag_const, total_drag_v, total_drag_v2, current_speed);
 
-	unsigned int current_max_tractive_force = total_tractive_power / current_speed;
-	if(current_max_tractive_force > total_tractive_force) current_max_tractive_force = total_tractive_force;
+	unsigned int current_max_tractive_force = total_tractive_force;
+	if(current_speed) {	//don't do this check if stationary, divide by zero issue...
+		unsigned int speed_limited_tractive_force = total_tractive_power / current_speed;
+		if(speed_limited_tractive_force < current_max_tractive_force) current_max_tractive_force = speed_limited_tractive_force;
+	}
 
 	unsigned int current_max_braking_force = total_braking_force;
 
