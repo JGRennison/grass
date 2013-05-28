@@ -40,6 +40,8 @@ class lookahead {
 			HALT_UNLESS_VISIBLE			= 1<<0,
 			SCAN_BEYOND_IF_PASSABLE			= 1<<1,
 			ALLOW_DIFFERENT_CONNECTION_INDEX	= 1<<2,
+			TRACTION_UNSUITABLE			= 1<<3,
+			NOT_ALWAYS_PASSABLE			= 1<<4,
 		};
 		uint64_t start_offset;
 		uint64_t end_offset;
@@ -67,6 +69,7 @@ class lookahead {
 		SIG_TARGET_CHANGE,
 		SIG_ASPECT_LESS_THAN_EXPECTED,
 		WAITING_AT_RED_SIG,
+                TRACTION_UNSUITABLE,
 	};
 
 	void Init(const train *t  /* optional */, const track_location &pos, const route *rt = 0);

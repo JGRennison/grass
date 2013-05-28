@@ -224,11 +224,14 @@ class track_location {
 	inline const EDGETYPE &GetDirection() const {
 		return trackpiece.direction;
 	}
-	inline generictrack * const &GetTrack() const  {
+	inline generictrack * const &GetTrack() const {
 		return trackpiece.track;
 	}
-	inline const unsigned int &GetOffset() const  {
+	inline const unsigned int &GetOffset() const {
 		return offset;
+	}
+	inline const track_target_ptr &GetTrackTargetPtr() const {
+		return trackpiece;
 	}
 	inline EDGETYPE &GetDirection() {
 		return trackpiece.direction;
@@ -238,6 +241,9 @@ class track_location {
 	}
 	inline unsigned int &GetOffset() {
 		return offset;
+	}
+	inline track_target_ptr &GetTrackTargetPtr() {
+		return trackpiece;
 	}
 	inline bool operator==(const track_location &other) const  {
 		return trackpiece == other.trackpiece && offset == other.offset;

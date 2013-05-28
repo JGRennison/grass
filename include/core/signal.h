@@ -31,6 +31,7 @@
 #include "traverse.h"
 #include "flags.h"
 #include "routetypes.h"
+#include "tractiontype.h"
 
 class route;
 class routingpoint;
@@ -157,6 +158,7 @@ struct route {
 	void RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const;
 	bool IsRouteSubSet(const route *subset) const;
 	bool IsStartAnchored(RRF checkmask = RRF::RESERVE) const;
+	bool IsRouteTractionSuitable(const train* t) const;
 };
 template<> struct enum_traits< route::RF > {	static constexpr bool flags = true; };
 

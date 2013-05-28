@@ -841,6 +841,14 @@ bool route::IsStartAnchored(RRF checkmask) const {
 	return anchored;
 }
 
+bool route::IsRouteTractionSuitable(const train* t) const {
+	for(auto it = pieces.begin(); it != pieces.end(); ++it) {
+		const tractionset *ts = it->location.track->GetTractionTypes();
+		if(ts && !ts->CanTrainPass(t)) return false;
+	}
+	return true;
+}
+
 //return true if restriction applies
 bool route_restriction::CheckRestriction(route_class::set &allowed_routes, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
 	if(!targets.empty() && std::find(targets.begin(), targets.end(), piece.track->GetName()) == targets.end()) return false;

@@ -70,10 +70,13 @@ void lookahead::CheckLookaheads(const train *t /* optional */, const track_locat
 		for(auto jt = it->l2_list.begin(); jt != it->l2_list.end(); ++jt) {
 			if(current_offset >= jt->start_offset && current_offset <= jt->end_offset) {
 				sendresponse(0, jt->speed);
+				if(jt->flags & lookaheaditem::LAI_FLAGS::TRACTION_UNSUITABLE) {
+					errfunc(LA_ERROR::TRACTION_UNSUITABLE, jt->piece);
+				}
 			}
 			else if(current_offset < jt->start_offset) {
 				if(current_offset < jt->sighting_offset && jt->flags & lookaheaditem::LAI_FLAGS::HALT_UNLESS_VISIBLE) sendresponse(jt->start_offset - current_offset, 0);
-				else if(jt->piece.IsValid() && current_offset >= jt->sighting_offset) {
+				else if(jt->flags & lookaheaditem::LAI_FLAGS::NOT_ALWAYS_PASSABLE && current_offset >= jt->sighting_offset) {
 					if(jt->flags & lookaheaditem::LAI_FLAGS::ALLOW_DIFFERENT_CONNECTION_INDEX && jt->connection_index != jt->piece.track->GetCurrentNominalConnectionIndex(jt->piece.direction)) {
 						//points have moved, rescan
 						Init(t, pos, 0);
@@ -164,12 +167,34 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 		l2.sighting_offset = offset - piece.track->GetSightingDistance(piece.direction);
 		offset += piece.track->GetLength(piece.direction);
 		l2.end_offset = offset;
+		l2.piece = piece;
+
+		if(t) {
+			const tractionset *ts = piece.track->GetTractionTypes();
+			if(ts && !ts->CanTrainPass(t)) {
+				l2.speed = 0;
+				l2.flags |= lookaheaditem::LAI_FLAGS::TRACTION_UNSUITABLE;
+				return;
+			}
+		}
+
 		const speedrestrictionset *srs = piece.track->GetSpeedRestrictions();
 		if(srs) l2.speed = srs->GetTrainTrackSpeedLimit(t);
 		else l2.speed = UINT_MAX;
-		if(! piece.track->IsTrackAlwaysPassable()) l2.piece = piece;
+		if(! piece.track->IsTrackAlwaysPassable()) l2.flags |= lookaheaditem::LAI_FLAGS::NOT_ALWAYS_PASSABLE;
 	};
 	if(rt) {
+		if(t && !rt->IsRouteTractionSuitable(t)) {
+			l->l2_list.emplace_back();
+			lookaheaditem &l2 = l->l2_list.back();
+			l2.start_offset = offset;
+			l2.end_offset = offset;
+			l2.sighting_offset = 0;
+			l2.speed = 0;
+			l2.flags |= lookaheaditem::LAI_FLAGS::TRACTION_UNSUITABLE;
+			l2.piece = rt->start;
+		}
+
 		auto it = rt->pieces.begin();
 		if(pos.GetTrack() != rt->start.track) {
 			for(; it != rt->pieces.end(); ++it) {

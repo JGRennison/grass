@@ -29,7 +29,8 @@
 #include "train.h"
 
 bool tractionset::CanTrainPass(const train *t) const {
-	for(auto it = t->GetTractionTypes().tractions.begin(); it != t->GetTractionTypes().tractions.end(); ++it) {
+	const tractionset &ts = t->GetActiveTractionTypes();
+	for(auto it = ts.tractions.begin(); it != ts.tractions.end(); ++it) {
 		if((*it)->alwaysavailable) return true;
 		if(HasTraction(*it)) return true;
 	}

@@ -125,7 +125,9 @@ void train::TrainMoveStep(unsigned int ms) {
 			case lookahead::LA_ERROR::WAITING_AT_RED_SIG:
 				waitingatredsig = true;
 				break;
-
+			case lookahead::LA_ERROR::TRACTION_UNSUITABLE:
+				//TODO: fill this in
+				break;
 		}
 	};
 
@@ -286,12 +288,16 @@ void train::UprootTrain() {
 	tail_pos = head_pos = track_location();
 }
 
-void train::ValidateActiveTractionSet() {
+tractionset train::GetAllTractionTypes() const {
 	tractionset ts_union;
 	for(auto &it : train_segments) {
 		ts_union.UnionWith(it.vehtype->tractiontypes);
 	}
-	active_tractions.IntersectWith(ts_union);
+	return ts_union;
+}
+
+void train::ValidateActiveTractionSet() {
+	active_tractions.IntersectWith(GetAllTractionTypes());
 }
 
 void train::GenerateName() {
