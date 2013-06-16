@@ -417,20 +417,44 @@ void DeserialisePointsCoupling(const deserialiser_input &di, error_collection &e
 	}
 }
 
-void track_location::Deserialise(const std::string &name, const deserialiser_input &di, error_collection &ec) {
+template<> void track_target_ptr::Deserialise(const std::string &name, const deserialiser_input &di, error_collection &ec) {
 	auto parse = [&](const deserialiser_input &edi, error_collection &ec) {
 		std::string piece;
 		if(!edi.w || !CheckTransJsonValue(piece, edi, "piece", ec)) {
-			trackpiece.Reset();
-			offset = 0;
+			Reset();
 			return;
 		}
-		trackpiece.track = edi.w->FindTrackByName(piece);
-		if(!trackpiece.track) {
-			ec.RegisterNewError<error_deserialisation>(edi, "Invalid track location definition: no such piece");
+		track = edi.w->FindTrackByName(piece);
+		if(!track) {
+			ec.RegisterNewError<error_deserialisation>(edi, "Invalid track target definition: no such piece");
 			return;
 		}
-		CheckTransJsonValueDef(trackpiece.direction, edi, "dir", EDGETYPE::EDGE_NULL, ec);
+		CheckTransJsonValueDef(direction, edi, "dir", EDGETYPE::EDGE_NULL, ec);
+	};
+
+	if(name.empty()) {
+		parse(di, ec);
+	}
+	else {
+		CheckTransJsonTypeFunc<json_object>(di, name.c_str(), "track_target_ptr", ec, parse);
+	}
+}
+
+template<> void track_target_ptr::Serialise(const std::string &name, serialiser_output &so, error_collection &ec) const {
+	if(!name.empty()) {
+		so.json_out.String(name);
+		so.json_out.StartObject();
+	}
+	if(IsValid()) {
+		SerialiseValueJson(track->GetName(), so, "piece");
+		SerialiseValueJson(direction, so, "dir");
+	}
+	if(!name.empty()) so.json_out.EndObject();
+}
+
+void track_location::Deserialise(const std::string &name, const deserialiser_input &di, error_collection &ec) {
+	auto parse = [&](const deserialiser_input &edi, error_collection &ec) {
+		trackpiece.Deserialise("", edi, ec);
 		CheckTransJsonValueDef(offset, edi, "offset", 0, ec);
 	};
 
@@ -448,8 +472,7 @@ void track_location::Serialise(const std::string &name, serialiser_output &so, e
 		so.json_out.StartObject();
 	}
 	if(IsValid()) {
-		SerialiseValueJson(trackpiece.track->GetName(), so, "piece");
-		SerialiseValueJson(trackpiece.direction, so, "dir");
+		trackpiece.Serialise("", so, ec);
 		SerialiseValueJson(offset, so, "offset");
 	}
 	if(!name.empty()) so.json_out.EndObject();

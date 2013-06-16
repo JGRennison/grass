@@ -147,7 +147,7 @@ std::shared_ptr<deserialiser_input::deserialiser_input_deep_clone> deserialiser_
 	return std::make_shared<deserialiser_input::deserialiser_input_deep_clone>(top, std::move(items));
 }
 
-void CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func) {
+void CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func, bool arrayonly) {
 	deserialiser_input subdi(di.json[prop], type_name, prop, di);
 	if(!subdi.json.IsNull()) di.RegisterProp(prop);
 	else return;
@@ -158,5 +158,6 @@ void CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop
 			func(deserialiser_input(subdi.json[i], type_name, MkArrayRefName(i), subdi), ec);
 		}
 	}
-	else func(subdi, ec);
+	else if(!arrayonly) func(subdi, ec);
+	else CheckJsonTypeAndReportError<json_array>(subdi, subdi.reference_name.c_str(), subdi.json, ec);
 }

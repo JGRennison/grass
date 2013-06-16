@@ -25,6 +25,10 @@
 #include "traverse.h"
 #include "trackreservation.h"
 
+unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track) {
+	return AdvanceDisplacement(displacement, track, 0, [&](track_location &a, track_location &b) { });
+}
+
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/, std::function<void (track_location & /*old*/, track_location & /*new*/)> func) {
 
 	if(elevationdelta) *elevationdelta = 0;

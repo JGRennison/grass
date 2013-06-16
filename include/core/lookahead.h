@@ -33,7 +33,7 @@ class generictrack;
 class routingpoint;
 class train;
 
-class lookahead {
+class lookahead  : public serialisable_obj {
 	struct lookaheaditem {
 		enum class LAI_FLAGS {
 			ZERO					= 0,
@@ -76,6 +76,9 @@ class lookahead {
 	void Advance(unsigned int distance);
 	void CheckLookaheads(const train *t  /* optional */, const track_location &pos, std::function<void(unsigned int distance, unsigned int speed)> f, std::function<void(LA_ERROR err, const track_target_ptr &piece)> errfunc);
 	void ScanAppend(const train *t  /* optional */, const track_location &pos, unsigned int blocklimit, const route *rt);
+
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 template<> struct enum_traits< lookahead::lookaheaditem::LAI_FLAGS > {	static constexpr bool flags = true; };

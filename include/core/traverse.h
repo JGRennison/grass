@@ -28,6 +28,7 @@
 #include <functional>
 #include <deque>
 
+unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track);
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/, std::function<void(track_location & /*old*/, track_location & /*new*/)> func);
 
 enum class TSEF {

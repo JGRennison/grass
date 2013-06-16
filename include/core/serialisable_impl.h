@@ -24,7 +24,9 @@
 #ifndef INC_SERIALISABLE_IMPL_ALREADY
 #define INC_SERIALISABLE_IMPL_ALREADY
 
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
 #include <cinttypes>
 #include "flags.h"
 #include "serialisable.h"
@@ -96,6 +98,8 @@ struct deserialiser_input {
 
 struct serialiser_output {
 	Handler &json_out;
+
+	serialiser_output(Handler &h) : json_out(h) { }
 };
 
 class error_deserialisation : public error_obj {
@@ -348,9 +352,9 @@ template <typename C> inline void CheckTransJsonSubArray(C &obj, const deseriali
 	CheckTransJsonTypeFunc<json_array>(di, prop, type_name, ec, [&](const deserialiser_input &di, error_collection &ec) { obj.Deserialise(di, ec); }, mandatory);
 }
 
-void CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &, error_collection &)> func);
+void CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &, error_collection &)> func, bool arrayonly = false);
 
-template <typename C> inline void CheckIterateJsonArrayOrType(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &, error_collection &)> func) {
+template <typename C> inline void CheckIterateJsonArrayOrType(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &, error_collection &)> func, bool arrayonly = false) {
 	auto innerfunc = [&](const deserialiser_input &inner_di, error_collection &ec) {
 		if(IsType<C>(inner_di.json)) {
 			func(inner_di, ec);

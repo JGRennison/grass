@@ -192,6 +192,9 @@ template <typename T> struct vartrack_target_ptr {
 		return vartrack_target_ptr<generictrack>(track, direction);
 	}
 	const vartrack_target_ptr &GetConnectingPiece() const;
+
+	void Deserialise(const std::string &name, const deserialiser_input &di, error_collection &ec);
+	void Serialise(const std::string &name, serialiser_output &so, error_collection &ec) const;
 };
 
 extern const track_location empty_track_location;

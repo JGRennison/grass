@@ -26,6 +26,7 @@
 #include "track.h"
 #include "signal.h"
 #include "train.h"
+#include "serialisable_impl.h"
 #include <climits>
 
 void lookahead::Init(const train *t /* optional */, const track_location &pos, const route *rt) {
@@ -264,3 +265,48 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 		}
 	}
 }
+
+void lookahead::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	l1_list.clear();
+	CheckTransJsonValueDef(current_offset, di, "current_offset", 0, ec);
+	CheckIterateJsonArrayOrType<json_object>(di, "l1", "l1", ec, [&](const deserialiser_input &edi, error_collection &ec) {
+		l1_list.emplace_back();
+		lookaheadroutingpoint &l1 = l1_list.back();
+		CheckTransJsonValueDef(l1.offset, edi, "offset", 0, ec);
+		CheckTransJsonValueDef(l1.sighting_offset, edi, "sighting_offset", 0, ec);
+		track_target_ptr ttp;
+		ttp.Deserialise("gs", edi, ec);
+		l1.gs = vartrack_target_ptr<routingpoint>(FastRoutingpointCast(ttp.track, ttp.direction), ttp.direction);
+		CheckTransJsonValueDef(l1.last_aspect, edi, "last_aspect", 0, ec);
+		CheckIterateJsonArrayOrType<json_object>(edi, "l2", "l2", ec, [&](const deserialiser_input &fdi, error_collection &ec) {
+			l1.l2_list.emplace_back();
+			lookaheaditem &l2 = l1.l2_list.back();
+			CheckTransJsonValueDef(l2.start_offset, fdi, "start_offset", 0, ec);
+			CheckTransJsonValueDef(l2.end_offset, fdi, "end_offset", 0, ec);
+			CheckTransJsonValueDef(l2.sighting_offset, fdi, "sighting_offset", 0, ec);
+			l2.piece.Deserialise("piece", fdi, ec);
+			CheckTransJsonValueDef(l2.connection_index, fdi, "connection_index", 0, ec);
+			CheckTransJsonValueDef(l2.flags, fdi, "flags", lookaheaditem::LAI_FLAGS::ZERO, ec);
+		}, true);
+	}, true);
+}
+
+void lookahead::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseValueJson(current_offset, so, "current_offset");
+	SerialiseObjectArrayContainer<decltype(l1_list), lookaheadroutingpoint>(l1_list, so, "l1", [&](serialiser_output &so, const lookaheadroutingpoint &l1) {
+		SerialiseValueJson(l1.offset, so, "offset");
+		SerialiseValueJson(l1.sighting_offset, so, "sighting_offset");
+		track_target_ptr ttp = l1.gs;
+		ttp.Serialise("gs", so, ec);
+		SerialiseValueJson(l1.last_aspect, so, "last_aspect");
+		SerialiseObjectArrayContainer<decltype(l1.l2_list), lookaheaditem>(l1.l2_list, so, "l2", [&](serialiser_output &so, const lookaheaditem &l2) {
+			SerialiseValueJson(l2.start_offset, so, "start_offset");
+			SerialiseValueJson(l2.end_offset, so, "end_offset");
+			SerialiseValueJson(l2.sighting_offset, so, "sighting_offset");
+			l2.piece.Serialise("piece", so, ec);
+			SerialiseValueJson(l2.connection_index, so, "connection_index");
+			SerialiseValueJson(l2.flags, so, "flags");
+		});
+	});
+}
+

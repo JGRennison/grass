@@ -33,6 +33,9 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
 #include "rapidjson/document.h"
 #pragma GCC diagnostic pop
 

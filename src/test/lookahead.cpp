@@ -31,6 +31,7 @@
 #include "track_ops.h"
 #include "train.h"
 #include "tractiontype.h"
+#include "serialisable_impl.h"
 
 std::string lookahead_test_str_1 =
 R"({ "content" : [ )"
@@ -335,4 +336,103 @@ TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 	checklookahead(track_location(ts1, EDGE_FRONT, 0), false, 1500000);
 	INFO("Check 5");
 	checklookahead(track_location(s1, EDGE_FRONT, 0), false, 1500000);
+}
+
+TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserialisation" ) {
+	test_fixture_world env(lookahead_test_str_1);
+
+	env.w.LayoutInit(env.ec);
+	env.w.PostLayoutInit(env.ec);
+
+	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	env.w.GameStep(1);
+
+	routingpoint *a = env.w.FindTrackByNameCast<routingpoint>("A");
+	REQUIRE(a != 0);
+	genericsignal *s3 = env.w.FindTrackByNameCast<genericsignal>("S3");
+	REQUIRE(s3 != 0);
+	genericsignal *s4 = env.w.FindTrackByNameCast<genericsignal>("S4");
+	REQUIRE(s4 != 0);
+	env.w.SubmitAction(action_reservepath(env.w, s3, s4));
+
+	env.w.GameStep(1);
+
+	auto serialise_lookahead = [&](const lookahead &l) -> std::string {
+		std::string json;
+		writestream wr(json);
+		Handler hn(wr);
+		serialiser_output so(hn);
+		so.json_out.StartObject();
+		l.Serialise(so, env.ec);
+		so.json_out.EndObject();
+		return json;
+	};
+	auto deserialise_lookahead = [&](lookahead &l, const std::string &json) {
+		rapidjson::Document dc;
+		if(dc.Parse<0>(json.c_str()).HasParseError()) {
+			env.ec.RegisterNewError<error_jsonparse>(json, dc.GetErrorOffset(), dc.GetParseError());
+			FAIL("JSON parsing error: \n" << env.ec);
+		}
+		deserialiser_input di("lookahead", "lookahead", dc, &env.w);
+		l.Deserialise(di, env.ec);
+		di.PostDeserialisePropCheck(env.ec);
+		if(env.ec.GetErrorCount()) { FAIL("JSON deserialisation error: \n" << env.ec); }
+	};
+	auto compare_lookaheads = [&](lookahead &l1, lookahead &l2, const track_location &pos) {
+		std::forward_list<std::pair<unsigned int, unsigned int> > distances[2];
+		std::forward_list<std::pair<lookahead::LA_ERROR, const track_target_ptr &> > errors[2];
+
+		auto fill = [&](lookahead &l, unsigned int index) {
+			l.CheckLookaheads(0, pos, [&](unsigned int distance, unsigned int speed) {
+				distances[index].emplace_front(distance, speed);
+			}, [&](lookahead::LA_ERROR err, const track_target_ptr &piece){
+				errors[index].emplace_front(err, piece);
+			});
+		};
+		fill(l1, 0);
+		fill(l2, 1);
+
+		CHECK(distances[0] == distances[1]);
+		CHECK(errors[0] == errors[1]);
+	};
+
+	auto statetest = [&](lookahead &l1, lookahead &l2, const track_location &pos) {
+		INFO("Pre round-trip test");
+		compare_lookaheads(l1, l2, pos);
+
+		std::string l1json = serialise_lookahead(l1);
+		std::string l2json = serialise_lookahead(l2);
+		deserialise_lookahead(l2, l2json);
+		std::string l2json_roundtrip = serialise_lookahead(l2);
+		CHECK(l2json == l2json_roundtrip);
+		CHECK(l1json == l2json_roundtrip);
+
+		INFO("Post round-trip test");
+		compare_lookaheads(l1, l2, pos);
+	};
+
+	track_location pos(a, EDGE_FRONT, 0);
+	lookahead l1;
+	lookahead l2;
+	l1.Init(0, pos, 0);
+	l2.Init(0, pos, 0);
+
+	auto advance = [&](unsigned int distance) {
+		l1.Advance(distance);
+		l2.Advance(distance);
+		AdvanceDisplacement(distance, pos);
+	};
+
+	unsigned int totaldistance = 500000;
+	unsigned int step = 1000;
+	unsigned int offset = 0;
+	while(true) {
+		INFO("State Test at offset: " << offset);
+		statetest(l1, l2, pos);
+		if(offset >= totaldistance) break;
+		advance(step);
+		offset += step;
+	}
 }
