@@ -121,6 +121,7 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonValue(vehspeedclass, di, "vehspeedclass", ec);
 	CheckTransJsonSubArray(active_tractions, di, "activetractions", "tractiontypes", ec);
 	CheckTransJsonValueFlag(tflags, TF::CONSISTREVDIR, di, "reverseconsist", ec);
+	CheckTransJsonSubObj(la, di, "lookahead", "lookahead", ec, false);
 
 	ValidateActiveTractionSet();
 
@@ -130,7 +131,7 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 		DropTrainIntoPosition(newpos);
 	}
 
-	//todo: timetables, headcode, lookahead state
+	//todo: timetables, headcode
 
 	CalculateTrainMotionProperties(1<<8);	// TODO: replace this with the proper value
 }
@@ -150,6 +151,7 @@ void train::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(vehspeedclass, so, "vehspeedclass");
 	SerialiseSubArrayJson(active_tractions, so, "activetractions", ec);
 	SerialiseFlagJson(tflags, TF::CONSISTREVDIR, so, "reverseconsist");
+	SerialiseSubObjJson(la, so, "lookahead", ec);
 
-	//todo: timetables, headcode, lookahead state
+	//todo: timetables, headcode
 }
