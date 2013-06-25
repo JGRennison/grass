@@ -27,13 +27,54 @@
 #include "trackreservation.h"
 #include "signal.h"
 
+#include <algorithm>
+
 void CheckUnreserveTrackCircuit(track_circuit *tc);
+
+enum {
+	BPFF_SOFT	= 1<<0,
+};
+
+static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int flags = 0) {
+	auto it = rt->berths.begin();
+	if(it == rt->berths.end()) return;	//no berths here
+
+	if(flags & BPFF_SOFT) {			//don't insert berth value if any berths are already occupied, insert into last berth
+		for(; it != rt->berths.end(); ++it) {
+			if(!(*it)->contents.empty()) return;
+		}
+		rt->berths.back()->contents = newvalue;
+	}
+	else {
+		std::function<void(decltype(it) &)> advance = [&](decltype(it) &start) {
+			if((*start)->contents.empty()) return;
+			auto next = std::next(start);
+			if(next == rt->berths.end()) return;
+			advance(next);
+			if((*next)->contents.empty()) {
+				(*next)->contents = std::move((*start)->contents);
+				(*start)->contents.clear();
+			}
+
+		};
+		for(; it != rt->berths.end(); ++it) {
+			advance(it);
+			if((*it)->contents.empty()) {
+				(*it)->contents = newvalue;
+				return;
+			}
+		}
+
+		//berths all full, overwrite first
+		rt->berths.front()->contents = newvalue;
+	}
+}
 
 void track_circuit::TrainEnter(train *t) {
 	bool prevoccupied = Occupied();
 	traincount++;
 	if(prevoccupied != Occupied()) {
-		last_change = GetWorld().GetGameTime();
+		OccupationTrigger();
 	}
 	for(auto it = occupying_trains.begin(); it != occupying_trains.end(); ++it) {
 		if(it->t == t) {
@@ -47,8 +88,7 @@ void track_circuit::TrainLeave(train *t) {
 	bool prevoccupied = Occupied();
 	traincount--;
 	if(prevoccupied != Occupied()) {
-		last_change = GetWorld().GetGameTime();
-		CheckUnreserveTrackCircuit(this);
+		DeOccupationTrigger();
 	}
 	for(auto it = occupying_trains.begin(); it != occupying_trains.end(); ++it) {
 		if(it->t == t) {
@@ -60,6 +100,34 @@ void track_circuit::TrainLeave(train *t) {
 			return;
 		}
 	}
+}
+
+void track_circuit::OccupationTrigger() {
+	last_change = GetWorld().GetGameTime();
+
+	//check berth stepping
+	std::vector<const route *> routes;
+	const route *found = 0;
+	GetSetRoutes(routes);
+	for(const route *rt : routes) {
+		if(!rt->trackcircuits.empty() && rt->trackcircuits[0] == this) {
+			found = rt;
+			break;
+		}
+	}
+	if(found) {
+		//look backwards
+		trackberth *prev = found->start.track->GetPriorBerth(found->start.direction);
+		if(!prev || prev->contents.empty()) BerthPushFront(found, "????", BPFF_SOFT);
+		else {
+			BerthPushFront(found, std::move(prev->contents));
+			prev->contents.clear();
+		}
+	}
+}
+void track_circuit::DeOccupationTrigger() {
+	last_change = GetWorld().GetGameTime();
+	CheckUnreserveTrackCircuit(this);
 }
 
 void track_circuit::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -84,8 +152,8 @@ track_circuit::TCF track_circuit::SetTCFlagsMasked(TCF bits, TCF mask) {
 	bool prevoccupied = Occupied();
 	tc_flags = (tc_flags & ~mask) | (bits & mask);
 	if(prevoccupied != Occupied()) {
-		last_change = GetWorld().GetGameTime();
-		if(prevoccupied) CheckUnreserveTrackCircuit(this);
+		if(prevoccupied) DeOccupationTrigger();
+		else OccupationTrigger();
 	}
 	return tc_flags;
 }
@@ -191,5 +259,15 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 			}
 		}, RRF::RESERVE);
 		for(auto &fixup : fixups) fixup();
+	}
+}
+
+void track_circuit::GetSetRoutes(std::vector<const route *> &routes) {
+	for(generictrack *it : owned_pieces) {
+		it->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+			if(std::find(routes.begin(), routes.end(), reserved_route) == routes.end()) {
+				routes.push_back(reserved_route);
+			}
+		}, RRF::RESERVE);
 	}
 }

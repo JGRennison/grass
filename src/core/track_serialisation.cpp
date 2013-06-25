@@ -142,6 +142,21 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 	}
 
 	CheckTransJsonValueFlag(gt_privflags, GTPRIVF::REVERSEAUTOCONN, di, "reverseautoconnection", ec);
+
+	bool berthval;
+	if(CanHaveBerth() && CheckTransJsonValue(berthval, di, "berth", ec)) {
+		if(berthval) {
+			if(!berth) berth.reset(new trackberth);
+			CheckTransJsonValue(berth->contents, di, "berthstr", ec);
+		}
+		else berth.reset();
+	}
+}
+
+void generictrack::Serialise(serialiser_output &so, error_collection &ec) const {
+	if(berth) {
+		SerialiseValueJson(berth->contents, so, "berthstr");
+	}
 }
 
 void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {

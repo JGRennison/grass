@@ -31,6 +31,7 @@
 #include "world.h"
 
 class train;
+class route;
 
 struct train_ref {
 	train *t;
@@ -66,6 +67,7 @@ class track_circuit : public world_obj {
 	world_time GetLastOccupationStateChangeTime() const { return last_change; }
 	void RegisterTrack(generictrack *piece) { owned_pieces.push_back(piece); }
 	const std::vector<generictrack *> &GetOwnedTrackSet() const { return owned_pieces; }
+	void GetSetRoutes(std::vector<const route *> &routes);
 
 	virtual std::string GetTypeName() const override { return "Track Circuit"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "trackcircuit"; }
@@ -73,6 +75,10 @@ class track_circuit : public world_obj {
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+
+	private:
+	void OccupationTrigger();
+	void DeOccupationTrigger();
 };
 template<> struct enum_traits< track_circuit::TCF > {	static constexpr bool flags = true; };
 

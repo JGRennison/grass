@@ -37,10 +37,12 @@ class route;
 class routingpoint;
 class track_circuit;
 class genericsignal;
-typedef std::deque<routingpoint *> via_list;
-typedef std::deque<track_circuit *> tc_list;
-typedef std::deque<genericsignal *> sig_list;
-typedef std::deque<route_recording_item> passable_test_list;
+class trackberth;
+typedef std::vector<routingpoint *> via_list;
+typedef std::vector<track_circuit *> tc_list;
+typedef std::vector<genericsignal *> sig_list;
+typedef std::vector<route_recording_item> passable_test_list;
+typedef std::vector<trackberth *> berth_list;
 
 enum class GMRF : unsigned int {
 	ZERO		= 0,
@@ -114,6 +116,7 @@ class routingpoint : public genericzlentrack {
 	const route *FindBestOverlap() const;
 	void EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags = RRF::ZERO) const;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
+	virtual trackberth *GetPriorBerth(EDGETYPE direction) const { return 0; }
 
 	struct gmr_routeitem {
 		const route *rt;
@@ -132,6 +135,7 @@ struct route {
 	tc_list trackcircuits;
 	sig_list repeatersignals;
 	passable_test_list passtestlist;
+	berth_list berths;
 	route_class::ID type;
 	int priority;
 	unsigned int approachlocking_timeout;
@@ -284,6 +288,7 @@ class genericsignal : public trackroutingpoint {
 	virtual const route *GetCurrentForwardOverlap() const;	//this will only return the overlap, not the "real" route
 	virtual void EnumerateCurrentBackwardsRoutes(std::function<void (const route *)> func) const;	//this will return all routes which currently terminate here
 	virtual bool RepeaterAspectMeaningfulForRouteType(route_class::ID type) const;
+	virtual trackberth *GetPriorBerth(EDGETYPE direction) const override;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;

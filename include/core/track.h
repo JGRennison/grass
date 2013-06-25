@@ -70,6 +70,10 @@ class speedrestrictionset : public serialisable_obj {
 
 void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deserialiser_input &di, error_collection &ec, bool after_layout_init_resolve=false);
 
+struct trackberth {
+	std::string contents;
+};
+
 class generictrack : public world_obj {
 	generictrack *prevtrack;
 	bool have_inited = false;
@@ -79,6 +83,8 @@ class generictrack : public world_obj {
 		REVERSEAUTOCONN	= 1<<0,
 	};
 	GTPRIVF gt_privflags = GTPRIVF::ZERO;
+
+	std::unique_ptr<trackberth> berth;
 
 	friend world_serialisation;
 	void SetPreviousTrackPiece(generictrack *prev) { prevtrack = prev; }
@@ -133,7 +139,8 @@ class generictrack : public world_obj {
 
 	virtual GTF GetFlags(EDGETYPE direction) const = 0;
 
-	void Deserialise(const deserialiser_input &di, error_collection &ec);
+	void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	void Serialise(serialiser_output &so, error_collection &ec) const override;
 	virtual std::string GetTypeSerialisationName() const = 0;
 
 	virtual void TrackTick() { }
@@ -158,6 +165,12 @@ class generictrack : public world_obj {
 	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
 
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) { return 0; }
+
+	virtual bool CanHaveBerth() const { return false; }
+
+	public:
+	inline bool HasBerth() { return static_cast<bool>(berth); }
+	inline trackberth *GetBerth() { return berth.get(); }
 
 	private:
 	static bool TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target);

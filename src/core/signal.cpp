@@ -518,6 +518,15 @@ ASPECT_FLAGS genericsignal::GetAspectFlags() const {
 	return (sflags & GSF::NONASPECTEDREPEATER) ? ASPECT_FLAGS::MAXNOTBINDING : ASPECT_FLAGS::ZERO;
 }
 
+trackberth *genericsignal::GetPriorBerth(EDGETYPE direction) const {
+	if(direction != EDGE_FRONT) return 0;
+	trackberth *berth = 0;
+	EnumerateCurrentBackwardsRoutes([&](const route *rt) {
+		if(!rt->berths.empty()) berth = rt->berths.back();
+	});
+	return berth;
+}
+
 GTF autosignal::GetFlags(EDGETYPE direction) const {
 	GTF result = GTF::ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
 	if(direction == EDGE_FRONT) result |= GTF::SIGNAL;
@@ -793,6 +802,9 @@ void route::FillLists() {
 		}
 		if(!it->location.track->IsTrackAlwaysPassable()) {
 			passtestlist.push_back(*it);
+		}
+		if(it->location.track->HasBerth()) {
+			berths.push_back(it->location.track->GetBerth());
 		}
 	}
 }

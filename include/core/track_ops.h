@@ -39,7 +39,7 @@ class route;
 class routingpoint;
 enum class GMRF : unsigned int;
 enum class GSF : unsigned int;
-typedef std::deque<routingpoint *> via_list;
+typedef std::vector<routingpoint *> via_list;
 
 class action_pointsaction;
 
