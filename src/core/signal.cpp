@@ -522,9 +522,18 @@ trackberth *genericsignal::GetPriorBerth(EDGETYPE direction) const {
 	if(direction != EDGE_FRONT) return 0;
 	trackberth *berth = 0;
 	EnumerateCurrentBackwardsRoutes([&](const route *rt) {
+		if(route_class::IsOverlap(rt->type)) return;	// we don't want overlaps
 		if(!rt->berths.empty()) berth = rt->berths.back();
 	});
-	return berth;
+	if(berth) return berth;
+
+	//not found anything, try previous track piece if there
+	const track_target_ptr &prevpiece = GetEdgeConnectingPiece(EDGE_FRONT);
+	if(prevpiece.IsValid()) {
+		if(prevpiece.track->HasBerth()) return prevpiece.track->GetBerth();
+	}
+
+	return 0;
 }
 
 GTF autosignal::GetFlags(EDGETYPE direction) const {
@@ -806,6 +815,7 @@ void route::FillLists() {
 		if(it->location.track->HasBerth()) {
 			berths.push_back(it->location.track->GetBerth());
 		}
+		if(it->location.track->GetFlags(it->location.track->GetDefaultValidDirecton()) & GTF::SIGNAL) berths.clear();	//if we reach a signal, remove any berths we saw beforehand
 	}
 }
 

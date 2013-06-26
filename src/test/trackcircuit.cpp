@@ -188,10 +188,12 @@ R"({ "content" : [ )"
 	R"({ "type" : "startofline", "name" : "A" }, )"
 	R"({ "type" : "trackseg", "name" : "TS0", "length" : 50000, "berth" : true  }, )"
 	R"({ "type" : "4aspectauto", "name" : "S0" }, )"
+	R"({ "type" : "trackseg", "name" : "TS0A", "length" : 50000, "trackcircuit" : "T0A", "berth" : true }, )"
+	R"({ "type" : "4aspectauto", "name" : "S0A", "overlapend" : true }, )"
 	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1" }, )"
 	R"({ "type" : "4aspectauto", "name" : "S1", "overlapend" : true }, )"
 	R"({ "type" : "trackseg", "name" : "TS2", "length" : 20000, "trackcircuit" : "T2", "berth" : true }, )"
-	R"({ "type" : "4aspectroute", "name" : "S2", "overlapend" : true }, )"
+	R"({ "type" : "4aspectroute", "name" : "S2", "overlapend" : true, "overlapswingable" : true }, )"
 	R"({ "type" : "trackseg", "name" : "TS3", "length" : 30000, "trackcircuit" : "T3" }, )"
 
 	R"({ "type" : "points", "name" : "P1" }, )"
@@ -207,7 +209,7 @@ R"({ "content" : [ )"
 	R"({ "type" : "endofline", "name" : "C", "end" : { "allow" : [ "route", "overlap" ] } } )"
 "] }";
 
-TEST_CASE( "berth/step/1", "Berth stepping test no 1" ) {
+TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 	test_fixture_world_init_checked env(berth_test_str_1);
 
 	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
@@ -220,12 +222,14 @@ TEST_CASE( "berth/step/1", "Berth stepping test no 1" ) {
 		b[i] = t[i]->GetBerth();
 	}
 
+	PTR_CHECK(b[0]);
 	PTR_CHECK(b[2]);
 	PTR_CHECK(b[4]);
 	PTR_CHECK(b[6]);
 	CHECK(b[1] == 0);
 	CHECK(b[3] == 0);
 	CHECK(b[5] == 0);
+	CHECK(b[0]->contents == "");
 	CHECK(b[2]->contents == "");
 	CHECK(b[4]->contents == "");
 	CHECK(b[6]->contents == "");
@@ -258,3 +262,63 @@ TEST_CASE( "berth/step/1", "Berth stepping test no 1" ) {
 	advance(5, 6);
 	advance(6, 6);
 }
+
+void FillBerth(test_fixture_world &env, const std::string &name, std::string &&val) {
+	SCOPED_INFO("FillBerth: " << name << ", " << val);
+	generictrack *gt = PTR_CHECK(env.w.FindTrackByName(name));
+	REQUIRE(gt->HasBerth() == true);
+	PTR_CHECK(gt->GetBerth())->contents = std::move(val);
+}
+
+void SetTrackTC(test_fixture_world &env, const std::string &name, bool val) {
+	SCOPED_INFO("SetTrackTC: " << name << ", " << val);
+	generictrack *gt = PTR_CHECK(env.w.FindTrackByName(name));
+	PTR_CHECK(gt->GetTrackCircuit())->SetTCFlagsMasked(val ? track_circuit::TCF::FORCEOCCUPIED : track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+}
+
+void CheckBerth(test_fixture_world &env, const std::string &name, const std::string &val) {
+	SCOPED_INFO("CheckBerth: " << name << ", " << val);
+	generictrack *gt = PTR_CHECK(env.w.FindTrackByName(name));
+	REQUIRE(gt->HasBerth() == true);
+	CHECK(PTR_CHECK(gt->GetBerth())->contents == val);
+}
+
+TEST_CASE( "berth/step/2", "Berth stepping test no 2: check no stepping when no route" ) {
+	test_fixture_world_init_checked env(berth_test_str_1);
+
+	FillBerth(env, "TS2", "test");
+	SetTrackTC(env, "TS3", true);
+	CheckBerth(env, "TS4", "");
+	CheckBerth(env, "TS7", "");
+	CheckBerth(env, "TS2", "test");
+}
+
+TEST_CASE( "berth/step/3", "Berth stepping test no 3: check stepping when route has partial TC coverage" ) {
+	test_fixture_world_init_checked env(berth_test_str_1);
+
+	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
+	routingpoint *c = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("C"));
+
+	env.w.SubmitAction(action_reservepath(env.w, s2, c));
+	env.w.GameStep(100000);		//give points enough time to move
+	CHECK(env.w.GetLogText() == "");
+	if(env.ec.GetErrorCount()) {
+		FAIL("Error Collection: " << env.ec);
+	}
+
+	FillBerth(env, "TS2", "test");
+	SetTrackTC(env, "TS3", true);
+	CheckBerth(env, "TS7", "test");
+	CheckBerth(env, "TS4", "");
+	CheckBerth(env, "TS2", "");
+}
+
+TEST_CASE( "berth/step/4", "Berth stepping test no 4: check stepping when leaving bay" ) {
+	test_fixture_world_init_checked env(berth_test_str_1);
+
+	FillBerth(env, "TS0", "test");
+	SetTrackTC(env, "TS0A", true);
+	CheckBerth(env, "TS0A", "test");
+	CheckBerth(env, "TS0", "");
+}
+
