@@ -295,12 +295,7 @@ class autosig_test_class_1 {
 };
 
 TEST_CASE( "signal/propagation/autosignal", "Test basic autosignal aspect propagation" ) {
-	test_fixture_world env(autosig_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(autosig_test_str_1);
 
 	autosig_test_class_1 tenv(env.w);
 
@@ -369,13 +364,7 @@ R"({ "content" : [ )"
 "] }";
 
 TEST_CASE( "signal/propagation/typemixture", "Test aspect propagation and route creation with a mixture of signal types" ) {
-	test_fixture_world env(signalmixture_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(signalmixture_test_str_1);
 
 	autosig_test_class_1 tenv(env.w);
 
@@ -411,13 +400,7 @@ TEST_CASE( "signal/propagation/typemixture", "Test aspect propagation and route 
 }
 
 TEST_CASE( "signal/routesignal/reserveaction", "Test basic routesignal reservation action and aspect propagation" ) {
-	test_fixture_world env(autosig_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(autosig_test_str_1);
 
 	autosig_test_class_1 tenv(env.w);
 
@@ -498,13 +481,7 @@ R"({ "content" : [ )"
 "] }";
 
 TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route locking, timing and parameter serialisation" ) {
-	test_fixture_world env(approachlocking_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(approachlocking_test_str_1);
 
 	autosig_test_class_1 tenv(env.w);
 
@@ -709,13 +686,7 @@ R"({ "content" : [ )"
 "] }";
 
 TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
-	test_fixture_world env(overlaptimeout_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(overlaptimeout_test_str_1);
 
 	autosig_test_class_1 tenv(env.w);
 
@@ -883,13 +854,7 @@ R"({ "content" : [ )"
 "] }";
 
 TEST_CASE( "signal/approachcontrol/general", "Test basic approach control" ) {
-	test_fixture_world env(approachcontrol_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(approachcontrol_test_str_1);
 
 	genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
 	genericsignal *s3 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S3"));
@@ -966,13 +931,7 @@ R"({ "content" : [ )"
 "] }";
 
 TEST_CASE( "signal/callon/general", "Test call-on routes" ) {
-	test_fixture_world env(callon_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(callon_test_str_1);
 
 	genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
 	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));

@@ -137,13 +137,7 @@ class overlap_ops_test_class_1 {
 };
 
 TEST_CASE( "track/ops/overlap/reservationswing", "Test track reservation overlap swinging" ) {
-	test_fixture_world env(overlap_ops_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(overlap_ops_test_str_1);
 
 	overlap_ops_test_class_1 tenv(env.w);
 
@@ -200,13 +194,7 @@ TEST_CASE( "track/ops/overlap/reservationswing", "Test track reservation overlap
 }
 
 TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swinging" ) {
-	test_fixture_world env(overlap_ops_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(overlap_ops_test_str_1);
 
 	overlap_ops_test_class_1 tenv(env.w);
 
@@ -245,13 +233,7 @@ TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swingi
 }
 
 TEST_CASE( "track/ops/reservation/overset", "Test overset track reservation and dereservation" ) {
-	test_fixture_world env(overlap_ops_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(overlap_ops_test_str_1);
 
 	overlap_ops_test_class_1 tenv(env.w);
 

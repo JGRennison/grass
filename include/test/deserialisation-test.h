@@ -40,4 +40,16 @@ struct test_fixture_world {
 	}
 };
 
+struct test_fixture_world_init_checked : public test_fixture_world {
+	test_fixture_world_init_checked(std::string input, bool pli = true, bool gs = false, bool li = true) : test_fixture_world(input) {
+		if(li) w.LayoutInit(ec);
+		if(pli) w.PostLayoutInit(ec);
+		if(gs) ws.DeserialiseGameState(ec);
+
+		if(ec.GetErrorCount()) {
+			FAIL("Error Collection: " << ec);
+		}
+	}
+};
+
 #endif

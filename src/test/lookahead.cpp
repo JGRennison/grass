@@ -111,13 +111,7 @@ void FinaliseLookaheadCheck(const track_location &pos, std::map<unsigned int, un
 
 TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 
-	test_fixture_world env(lookahead_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(lookahead_test_str_1);
 
 	env.w.GameStep(1);
 
@@ -204,13 +198,7 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 
 TEST_CASE( "lookahead/unrouted", "Test unrouted track lookahead" ) {
 
-	test_fixture_world env(lookahead_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(lookahead_test_str_1);
 
 	env.w.GameStep(1);
 
@@ -281,14 +269,7 @@ TEST_CASE( "lookahead/unrouted", "Test unrouted track lookahead" ) {
 
 TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 
-	test_fixture_world env(lookahead_test_str_2);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-	env.ws.DeserialiseGameState(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(lookahead_test_str_2, true, true);
 
 	generictrack *ts1 = env.w.FindTrackByName("TS1");
 	REQUIRE(ts1 != 0);
@@ -339,13 +320,7 @@ TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 }
 
 TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserialisation" ) {
-	test_fixture_world env(lookahead_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(lookahead_test_str_1);
 
 	env.w.GameStep(1);
 

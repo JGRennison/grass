@@ -57,13 +57,7 @@ R"({ "content" : [ )"
 "] }";
 
 TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route dereservation" ) {
-	test_fixture_world env(tcdereservation_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(tcdereservation_test_str_1);
 
 	genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
 	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
@@ -214,13 +208,7 @@ R"({ "content" : [ )"
 "] }";
 
 TEST_CASE( "berth/step/1", "Berth stepping test no 1" ) {
-	test_fixture_world env(berth_test_str_1);
-
-	env.w.LayoutInit(env.ec);
-	env.w.PostLayoutInit(env.ec);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
+	test_fixture_world_init_checked env(berth_test_str_1);
 
 	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
 	genericsignal *s3 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S3"));
