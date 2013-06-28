@@ -110,6 +110,7 @@ void track_circuit::OccupationTrigger() {
 	const route *found = 0;
 	GetSetRoutes(routes);
 	for(const route *rt : routes) {
+		if(route_class::IsOverlap(rt->type)) continue;	// we don't want overlaps
 		if(!rt->trackcircuits.empty() && rt->trackcircuits[0] == this) {
 			found = rt;
 			break;
