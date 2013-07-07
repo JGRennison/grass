@@ -70,12 +70,10 @@ OUTNAME:=$(OUTNAME)$(SIZEPOSTFIX)
 GCC:=$(GCC64)
 LIBS_main:=$(LIBS_main64)
 CFLAGS+=-mcx16
-PACKER:=mpress -s
 else
 GCC:=$(GCC32)
 LIBS_main:=$(LIBS_main32)
 ARCH:=i686
-PACKER:=upx -9
 endif
 
 else
@@ -84,7 +82,6 @@ PLATFORM:=UNIX
 LIBS:=-lpcre -lrt
 LIBS_main:=`wx-config --libs`
 CFLAGS_main:= `wx-config --cxxflags`
-PACKER:=upx -9
 GCC_MAJOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f1)
 GCC_MINOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f2)
 ARCH:=$(shell test $(GCC_MAJOR) -gt 4 -o \( $(GCC_MAJOR) -eq 4 -a $(GCC_MINOR) -ge 2 \) && echo native)
@@ -142,7 +139,7 @@ $(TESTOUTNAME)$(SUFFIX): $(TEST_OBJS)
 
 MAKEDEPS = -MMD -MP -MT '$@ $(@:.o=.d)'
 
-define COMPILE_RULE =
+define COMPILE_RULE
 $$(call GENERIC_OBJ_DIR,$1)/%.o: src/$1/%.cpp | $$(call GENERIC_OBJ_DIR,$1) ; $$(GCC) -c $$< -o $$@ $$(call GENERIC_CFLAGS,$1) $$(call GENERIC_CXXFLAGS,$1) $$(GFLAGS) $$(MAKEDEPS)
 endef
 
