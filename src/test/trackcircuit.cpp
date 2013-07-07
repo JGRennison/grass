@@ -283,6 +283,19 @@ void CheckBerth(test_fixture_world &env, const std::string &name, const std::str
 	CHECK(PTR_CHECK(gt->GetBerth())->contents == val);
 }
 
+void SetRoute(test_fixture_world &env, const std::string &start, const std::string &end) {
+	SCOPED_INFO("SetRoute: " << start << " -> " << end);
+	routingpoint *s = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>(start));
+	routingpoint *e = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>(end));
+
+	std::string logtext = env.w.GetLogText();
+	env.w.SubmitAction(action_reservepath(env.w, s, e));
+	env.w.GameStep(1);
+	env.w.GameStep(10000);
+
+	CHECK(logtext == env.w.GetLogText());
+}
+
 TEST_CASE( "berth/step/2", "Berth stepping test no 2: check no stepping when no route" ) {
 	test_fixture_world_init_checked env(berth_test_str_1);
 
@@ -322,3 +335,104 @@ TEST_CASE( "berth/step/4", "Berth stepping test no 4: check stepping when leavin
 	CheckBerth(env, "TS0", "");
 }
 
+std::string berth_test_str_2 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1", "berth" : true  }, )"
+	R"({ "type" : "4aspectroute", "name" : "S1" }, )"
+	R"({ "type" : "trackseg", "name" : "TS2", "length" : 50000, "trackcircuit" : "T2" }, )"
+
+	R"({ "type" : "points", "name" : "P1", "reverseautoconnection" : true }, )"
+
+	R"({ "type" : "4aspectroute", "name" : "BS", "reverseautoconnection" : true, "overlapend_rev" : true }, )"
+	R"({ "type" : "trackseg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
+	R"({ "type" : "trackseg", "name" : "BTS1", "length" : 50000, "berth" : true }, )"
+	R"({ "type" : "trackseg", "name" : "BTS2", "length" : 50000, "berth" : true }, )"
+	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : [ "route", "overlap" ] } }, )"
+
+	R"({ "type" : "trackseg", "name" : "RTS1", "length" : 30000, "trackcircuit" : "RT1", "connect" : { "to" : "P1" }, "berth" : true }, )"
+	R"({ "type" : "4aspectroute", "name" : "RS1", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "name" : "RTS2", "length" : 50000, "trackcircuit" : "RT2", "berth" : true }, )"
+	R"({ "type" : "endofline", "name" : "C", "end" : { "allow" : [ "route", "overlap" ] } } )"
+"] }";
+
+TEST_CASE( "berth/step/5", "Berth stepping test no 5: check stepping into multi-berth bay" ) {
+	test_fixture_world_init_checked env(berth_test_str_2);
+
+	FillBerth(env, "TS1", "test");
+	SetRoute(env, "S1", "B");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "");
+	CheckBerth(env, "BTS1", "");
+	CheckBerth(env, "BTS2", "test");
+	CheckBerth(env, "TS1", "");
+}
+
+TEST_CASE( "berth/step/6", "Berth stepping test no 6: check stepping into multi-berth bay, partially filled at far end" ) {
+	test_fixture_world_init_checked env(berth_test_str_2);
+
+	FillBerth(env, "TS1", "test");
+	FillBerth(env, "BTS2", "foo");
+	SetRoute(env, "S1", "B");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "");
+	CheckBerth(env, "BTS1", "test");
+	CheckBerth(env, "BTS2", "foo");
+	CheckBerth(env, "TS1", "");
+}
+
+TEST_CASE( "berth/step/7", "Berth stepping test no 7: check stepping into multi-berth bay, partially filled in middle" ) {
+	test_fixture_world_init_checked env(berth_test_str_2);
+
+	FillBerth(env, "TS1", "test");
+	FillBerth(env, "BTS1", "foo");
+	SetRoute(env, "S1", "B");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "test");
+	CheckBerth(env, "BTS1", "foo");
+	CheckBerth(env, "BTS2", "");
+	CheckBerth(env, "TS1", "");
+}
+
+TEST_CASE( "berth/step/8", "Berth stepping test no 8: check stepping into multi-berth bay, partially filled at start" ) {
+	test_fixture_world_init_checked env(berth_test_str_2);
+
+	FillBerth(env, "TS1", "test");
+	FillBerth(env, "BTS0", "foo");
+	SetRoute(env, "S1", "B");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "test");
+	CheckBerth(env, "BTS1", "foo");
+	CheckBerth(env, "BTS2", "");
+	CheckBerth(env, "TS1", "");
+}
+
+TEST_CASE( "berth/step/9", "Berth stepping test no 9: check stepping into multi-berth bay, doubly partially filled at start" ) {
+	test_fixture_world_init_checked env(berth_test_str_2);
+
+	FillBerth(env, "TS1", "test");
+	FillBerth(env, "BTS0", "foo");
+	FillBerth(env, "BTS1", "bar");
+	SetRoute(env, "S1", "B");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "test");
+	CheckBerth(env, "BTS1", "foo");
+	CheckBerth(env, "BTS2", "bar");
+	CheckBerth(env, "TS1", "");
+}
+
+TEST_CASE( "berth/step/10", "Berth stepping test no 10: check stepping into multi-berth bay, full" ) {
+	test_fixture_world_init_checked env(berth_test_str_2);
+
+	FillBerth(env, "TS1", "test");
+	FillBerth(env, "BTS0", "foo");
+	FillBerth(env, "BTS1", "bar");
+	FillBerth(env, "BTS2", "baz");
+	SetRoute(env, "S1", "B");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "test");
+	CheckBerth(env, "BTS1", "bar");
+	CheckBerth(env, "BTS2", "baz");
+	CheckBerth(env, "TS1", "");
+}

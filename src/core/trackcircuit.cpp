@@ -58,10 +58,13 @@ static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int
 
 		};
 		for(; it != rt->berths.end(); ++it) {
+			auto next = std::next(it);
 			advance(it);
 			if((*it)->contents.empty()) {
-				(*it)->contents = newvalue;
-				return;
+				if(next == rt->berths.end() || !(*next)->contents.empty()) {
+					(*it)->contents = newvalue;
+					return;
+				}
 			}
 		}
 
