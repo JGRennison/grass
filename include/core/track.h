@@ -72,6 +72,7 @@ void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deseria
 
 struct trackberth {
 	std::string contents;
+	EDGETYPE direction = EDGE_NULL;
 };
 
 class generictrack : public world_obj {
@@ -170,6 +171,7 @@ class generictrack : public world_obj {
 
 	public:
 	inline bool HasBerth() { return static_cast<bool>(berth); }
+	inline bool HasBerth(EDGETYPE direction) { return HasBerth() && (GetBerth()->direction == EDGE_NULL || GetBerth()->direction == direction); }
 	inline trackberth *GetBerth() { return berth.get(); }
 
 	private:

@@ -473,3 +473,73 @@ TEST_CASE( "berth/step/12", "Berth stepping test no 12: check stepping across un
 	CheckBerth(env, "TS1", "");
 	CheckBerth(env, "TS2", "");
 }
+
+std::string berth_test_str_4 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "routesignal", "content" : { "shuntsignal" : true } }, )"
+	R"({ "type" : "startofline", "name" : "A", "end" : { "allow" : "shunt" } }, )"
+	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1", "berth" : true }, )"
+	R"({ "type" : "shunt", "name" : "S1" }, )"
+	R"({ "type" : "shunt", "name" : "RS1", "reverseautoconnection" : true }, )"
+	R"({ "type" : "trackseg", "name" : "TS2", "length" : 50000, "trackcircuit" : "T2", "berth" : "back" }, )"
+	R"({ "type" : "shunt", "name" : "RS2", "overlapend" : true, "reverseautoconnection" : true }, )"
+	R"({ "type" : "trackseg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
+	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "shunt" } } )"
+"] }";
+
+TEST_CASE( "berth/step/13", "Berth stepping test no 13: check stepping across berth in opposite direction" ) {
+	test_fixture_world_init_checked env(berth_test_str_4);
+
+	FillBerth(env, "TS1", "test");
+	SetRoute(env, "S1", "B");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "test");
+	CheckBerth(env, "TS1", "");
+	CheckBerth(env, "TS2", "");
+}
+
+TEST_CASE( "berth/step/14", "Berth stepping test no 14: check stepping across berth in opposite direction into filled berth" ) {
+	test_fixture_world_init_checked env(berth_test_str_4);
+
+	FillBerth(env, "TS1", "test");
+	FillBerth(env, "BTS0", "foo");
+	SetRoute(env, "S1", "B");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "test");
+	CheckBerth(env, "TS1", "");
+	CheckBerth(env, "TS2", "");
+}
+
+TEST_CASE( "berth/step/15", "Berth stepping test no 15: check stepping using berth in current direction" ) {
+	test_fixture_world_init_checked env(berth_test_str_4);
+
+	FillBerth(env, "BTS0", "test");
+	SetRoute(env, "RS2", "RS1");
+	SetRoute(env, "RS1", "A");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "");
+	CheckBerth(env, "TS1", "");
+	CheckBerth(env, "TS2", "test");
+	SetTrackTC(env, "TS1", true);
+	CheckBerth(env, "BTS0", "");
+	CheckBerth(env, "TS1", "test");
+	CheckBerth(env, "TS2", "");
+}
+
+TEST_CASE( "berth/step/16", "Berth stepping test no 16: check stepping using berth in current direction into filled berth" ) {
+	test_fixture_world_init_checked env(berth_test_str_4);
+
+	FillBerth(env, "BTS0", "test");
+	FillBerth(env, "TS1", "foo");
+	FillBerth(env, "TS2", "bar");
+	SetRoute(env, "RS2", "RS1");
+	SetRoute(env, "RS1", "A");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "");
+	CheckBerth(env, "TS1", "foo");
+	CheckBerth(env, "TS2", "test");
+	SetTrackTC(env, "TS1", true);
+	CheckBerth(env, "BTS0", "");
+	CheckBerth(env, "TS1", "test");
+	CheckBerth(env, "TS2", "");
+}

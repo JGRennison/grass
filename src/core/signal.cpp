@@ -812,7 +812,7 @@ void route::FillLists() {
 		if(!it->location.track->IsTrackAlwaysPassable()) {
 			passtestlist.push_back(*it);
 		}
-		if(it->location.track->HasBerth()) {
+		if(it->location.track->HasBerth(it->location.direction)) {
 			berths.push_back(it->location.track->GetBerth());
 		}
 		if(it->location.track->GetFlags(it->location.track->GetDefaultValidDirecton()) & GTF::SIGNAL) berths.clear();	//if we reach a signal, remove any berths we saw beforehand

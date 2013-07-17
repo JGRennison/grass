@@ -143,13 +143,27 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 
 	CheckTransJsonValueFlag(gt_privflags, GTPRIVF::REVERSEAUTOCONN, di, "reverseautoconnection", ec);
 
-	bool berthval;
-	if(CanHaveBerth() && CheckTransJsonValue(berthval, di, "berth", ec)) {
-		if(berthval) {
-			if(!berth) berth.reset(new trackberth);
-			CheckTransJsonValue(berth->contents, di, "berthstr", ec);
+	if(CanHaveBerth()) {
+		deserialiser_input bdi(di.json["berth"], "berth", "berth", di);
+		if(!bdi.json.IsNull()) {
+			di.RegisterProp("berth");
+
+			bool berthval;
+			EDGETYPE berthedge = EDGE_NULL;
+			if(bdi.json.IsBool()) berthval = bdi.json.GetBool();
+			else if(IsType<EDGETYPE>(bdi.json)) {
+				berthval = true;
+				berthedge = GetType<EDGETYPE>(bdi.json);
+			}
+			else ec.RegisterNewError<error_deserialisation>(bdi, "Invalid track berth definition");
+
+			if(berthval) {
+				if(!berth) berth.reset(new trackberth);
+				berth->direction = berthedge;
+				CheckTransJsonValue(berth->contents, di, "berthstr", ec);
+			}
+			else berth.reset();
 		}
-		else berth.reset();
 	}
 }
 
