@@ -436,3 +436,40 @@ TEST_CASE( "berth/step/10", "Berth stepping test no 10: check stepping into mult
 	CheckBerth(env, "BTS2", "baz");
 	CheckBerth(env, "TS1", "");
 }
+
+std::string berth_test_str_3 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+	R"({ "type" : "typedef", "newtype" : "4aspectrouteshunt", "basetype" : "4aspectroute", "content" : { "shuntsignal" : true } }, )"
+	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "routesignal", "content" : { "shuntsignal" : true, "through" : { "allow" : "route" } } }, )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1", "berth" : true  }, )"
+	R"({ "type" : "4aspectrouteshunt", "name" : "S1" }, )"
+	R"({ "type" : "trackseg", "name" : "TS2", "length" : 50000, "trackcircuit" : "T2", "berth" : true  }, )"
+	R"({ "type" : "shunt", "name" : "S2", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
+	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : [ "route", "overlap" ] } } )"
+"] }";
+
+TEST_CASE( "berth/step/11", "Berth stepping test no 11: check stepping across unrelated berths" ) {
+	test_fixture_world_init_checked env(berth_test_str_3);
+
+	FillBerth(env, "TS1", "test");
+	SetRoute(env, "S1", "B");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "test");
+	CheckBerth(env, "TS1", "");
+	CheckBerth(env, "TS2", "");
+}
+
+TEST_CASE( "berth/step/12", "Berth stepping test no 12: check stepping across unrelated berths into filled berth" ) {
+	test_fixture_world_init_checked env(berth_test_str_3);
+
+	FillBerth(env, "TS1", "test");
+	FillBerth(env, "BTS0", "foo");
+	SetRoute(env, "S1", "B");
+	SetTrackTC(env, "TS2", true);
+	CheckBerth(env, "BTS0", "test");
+	CheckBerth(env, "TS1", "");
+	CheckBerth(env, "TS2", "");
+}
