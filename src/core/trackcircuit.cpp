@@ -121,8 +121,8 @@ void track_circuit::OccupationTrigger() {
 	}
 	if(found) {
 		//look backwards
-		trackberth *prev = found->start.track->GetPriorBerth(found->start.direction);
-		if(!prev || prev->contents.empty()) BerthPushFront(found, "????", BPFF_SOFT);
+		trackberth *prev = found->start.track->GetPriorBerth(found->start.direction, routingpoint::GPBF::GETNONEMPTY);
+		if(!prev) BerthPushFront(found, "????", BPFF_SOFT);
 		else {
 			BerthPushFront(found, std::move(prev->contents));
 			prev->contents.clear();

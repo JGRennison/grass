@@ -116,7 +116,12 @@ class routingpoint : public genericzlentrack {
 	const route *FindBestOverlap() const;
 	void EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags = RRF::ZERO) const;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
-	virtual trackberth *GetPriorBerth(EDGETYPE direction) const { return 0; }
+
+	enum class GPBF {
+		ZERO			= 0,
+		GETNONEMPTY		= 1<<0,
+	};
+	virtual trackberth *GetPriorBerth(EDGETYPE direction, GPBF flags) const { return 0; }
 
 	struct gmr_routeitem {
 		const route *rt;
@@ -126,6 +131,7 @@ class routingpoint : public genericzlentrack {
 
 	virtual std::string GetTypeName() const override { return "Track Routing Point"; }
 };
+template<> struct enum_traits< routingpoint::GPBF > {	static constexpr bool flags = true; };
 
 struct route {
 	vartrack_target_ptr<routingpoint> start;
@@ -288,7 +294,7 @@ class genericsignal : public trackroutingpoint {
 	virtual const route *GetCurrentForwardOverlap() const;	//this will only return the overlap, not the "real" route
 	virtual void EnumerateCurrentBackwardsRoutes(std::function<void (const route *)> func) const;	//this will return all routes which currently terminate here
 	virtual bool RepeaterAspectMeaningfulForRouteType(route_class::ID type) const;
-	virtual trackberth *GetPriorBerth(EDGETYPE direction) const override;
+	virtual trackberth *GetPriorBerth(EDGETYPE direction, GPBF flags) const override;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;

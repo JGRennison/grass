@@ -543,3 +543,43 @@ TEST_CASE( "berth/step/16", "Berth stepping test no 16: check stepping using ber
 	CheckBerth(env, "TS1", "test");
 	CheckBerth(env, "TS2", "");
 }
+
+std::string berth_test_str_5 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "routesignal", "content" : { "shuntsignal" : true } }, )"
+	R"({ "type" : "startofline", "name" : "A", "end" : { "allow" : "shunt" } }, )"
+	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1", "berth" : true }, )"
+	R"({ "type" : "shunt", "name" : "S1" }, )"
+	R"({ "type" : "trackseg", "name" : "TS2", "length" : 50000, "trackcircuit" : "T1" }, )"
+	R"({ "type" : "shunt", "name" : "RS1", "reverseautoconnection" : true }, )"
+	R"({ "type" : "trackseg", "name" : "BTS0", "length" : 50000, "trackcircuit" : "BT0", "berth" : true }, )"
+	R"({ "type" : "trackseg", "name" : "BTS1", "length" : 50000, "trackcircuit" : "BT1", "berth" : true }, )"
+	R"({ "type" : "shunt", "name" : "S2", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "name" : "TS3", "length" : 50000, "trackcircuit" : "T3", "berth" : true }, )"
+	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "shunt" } } )"
+"] }";
+
+TEST_CASE( "berth/step/17", "Berth stepping test no 17: check stepping out of non-last berth from bidirectional multi-berth section" ) {
+	test_fixture_world_init_checked env(berth_test_str_5);
+
+	FillBerth(env, "BTS0", "test");
+	SetRoute(env, "S2", "B");
+	SetTrackTC(env, "TS3", true);
+	CheckBerth(env, "BTS0", "");
+	CheckBerth(env, "BTS1", "");
+	CheckBerth(env, "TS1", "");
+	CheckBerth(env, "TS3", "test");
+}
+
+TEST_CASE( "berth/step/18", "Berth stepping test no 18: check stepping out of last berth from bidirectional multi-berth section, of which multiple berths are filled" ) {
+	test_fixture_world_init_checked env(berth_test_str_5);
+
+	FillBerth(env, "BTS0", "test");
+	FillBerth(env, "BTS1", "foo");
+	SetRoute(env, "S2", "B");
+	SetTrackTC(env, "TS3", true);
+	CheckBerth(env, "BTS0", "test");
+	CheckBerth(env, "BTS1", "");
+	CheckBerth(env, "TS1", "");
+	CheckBerth(env, "TS3", "foo");
+}

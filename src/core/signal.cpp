@@ -518,22 +518,37 @@ ASPECT_FLAGS genericsignal::GetAspectFlags() const {
 	return (sflags & GSF::NONASPECTEDREPEATER) ? ASPECT_FLAGS::MAXNOTBINDING : ASPECT_FLAGS::ZERO;
 }
 
-trackberth *genericsignal::GetPriorBerth(EDGETYPE direction) const {
+trackberth *genericsignal::GetPriorBerth(EDGETYPE direction, routingpoint::GPBF flags) const {
 	if(direction != EDGE_FRONT) return 0;
 	trackberth *berth = 0;
 	EnumerateCurrentBackwardsRoutes([&](const route *rt) {
 		if(route_class::IsOverlap(rt->type)) return;	// we don't want overlaps
-		if(!rt->berths.empty()) berth = rt->berths.back();
+		if(!rt->berths.empty()) {
+			if(flags & routingpoint::GPBF::GETNONEMPTY) {
+				for(auto &it : rt->berths) {
+					if(!it->contents.empty()) berth = it;	//find last non-empty berth on route
+				}
+			}
+			else berth = rt->berths.back();
+		}
 	});
 	if(berth) return berth;
 
-	//not found anything, try previous track piece if there
-	const track_target_ptr &prevpiece = GetEdgeConnectingPiece(EDGE_FRONT);
-	if(prevpiece.IsValid()) {
-		if(prevpiece.track->HasBerth()) return prevpiece.track->GetBerth();
-	}
-
-	return 0;
+	//not found anything, try previous track pieces if there
+	route_recording_list pieces;
+	TSEF errflags;
+	TrackScan(100, 0, GetEdgeConnectingPiece(EDGE_FRONT), pieces, 0, errflags, [&](const route_recording_list &route_pieces, const track_target_ptr &piece, generic_route_recording_state *grrs) -> bool {
+		if(FastSignalCast(piece.track)) return true;	//this is a signal, stop here
+		if(piece.track->HasBerth(piece.track->GetReverseDirection(piece.direction))) {
+			trackberth *b = piece.track->GetBerth();
+			if(!(flags & routingpoint::GPBF::GETNONEMPTY) || !b->contents.empty()) {
+				berth = b;
+				return true;
+			}
+		}
+		return false;
+	});
+	return berth;
 }
 
 GTF autosignal::GetFlags(EDGETYPE direction) const {
