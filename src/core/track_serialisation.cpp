@@ -148,7 +148,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 		if(!bdi.json.IsNull()) {
 			di.RegisterProp("berth");
 
-			bool berthval;
+			bool berthval = false;
 			EDGETYPE berthedge = EDGE_NULL;
 			if(bdi.json.IsBool()) berthval = bdi.json.GetBool();
 			else if(IsType<EDGETYPE>(bdi.json)) {
