@@ -133,6 +133,7 @@ class generictrack : public world_obj {
 	virtual generictrack & SetTrackCircuit(track_circuit *tc);
 
 	virtual bool PostLayoutInit(error_collection &ec);	//return false to discontinue initing piece
+	inline bool IsPostLayoutInitDone() const { return have_inited; }
 	virtual bool AutoConnections(error_collection &ec);
 	virtual bool CheckUnconnectedEdges(error_collection &ec);
 

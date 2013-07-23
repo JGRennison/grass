@@ -303,9 +303,9 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 	}
 
 	const route *best_overlap = 0;
-	if(rt->routeflags & route::RF::NEEDOVERLAP) {
+	if(rt->overlap_type != route_class::ID::RTC_NULL) {
 		//need an overlap too
-		best_overlap = rt->end.track->FindBestOverlap();
+		best_overlap = rt->end.track->FindBestOverlap(route_class::Flag(rt->overlap_type));
 		if(!best_overlap) {
 			error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/reservation/fail", "track/reservation/overlap/noneavailable"));
 			return false;

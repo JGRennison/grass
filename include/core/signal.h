@@ -113,8 +113,8 @@ class routingpoint : public genericzlentrack {
 	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const = 0;
 
 	virtual route *GetRouteByIndex(unsigned int index) = 0;
-	const route *FindBestOverlap() const;
-	void EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags = RRF::ZERO) const;
+	const route *FindBestOverlap(route_class::set types = route_class::AllOverlaps()) const;
+	void EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags = RRF::ZERO, route_class::set types = route_class::AllOverlaps()) const;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
 
 	enum class GPBF {
@@ -143,6 +143,7 @@ struct route {
 	passable_test_list passtestlist;
 	berth_list berths;
 	route_class::ID type;
+	route_class::ID overlap_type = route_class::ID::RTC_NULL;
 	int priority;
 	unsigned int approachlocking_timeout;
 	unsigned int overlap_timeout;
@@ -150,7 +151,7 @@ struct route {
 
 	enum class RF {
 		ZERO			= 0,
-		NEEDOVERLAP		= 1<<0,
+		OVERLAPTYPE_SET		= 1<<0,
 		APCONTROL		= 1<<1,
 		TORR			= 1<<2,
 		EXITSIGCONTROL		= 1<<3,
@@ -275,6 +276,8 @@ class genericsignal : public trackroutingpoint {
 	std::array<unsigned int, route_class::LAST_RTC> approachlocking_default_timeouts;
 	unsigned int overlap_default_timeout = 0;
 
+	route_class::set available_overlaps = 0;
+
 	public:
 	genericsignal(world &w_);
 	virtual ~genericsignal();
@@ -307,6 +310,7 @@ class genericsignal : public trackroutingpoint {
 
 	inline unsigned int GetOverlapMinAspectDistance() const { return overlapswingminaspectdistance; }
 	bool IsOverlapSwingPermitted(std::string *failreasonkey = 0) const;
+	inline route_class::set GetAvailableOverlapTypes() const { return available_overlaps; }
 
 	virtual ASPECT_FLAGS GetAspectFlags() const override;
 

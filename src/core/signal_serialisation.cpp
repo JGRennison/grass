@@ -82,6 +82,7 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonValueFlag(sflags, GSF::APPROACHLOCKINGMODE, di, "approachlockingmode", ec);
 	CheckTransJsonValueFlag(sflags, GSF::OVERLAPTIMEOUTSTARTED, di, "overlaptimeoutstarted", ec);
 	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) CheckTransJsonValue(overlap_timeout_start, di, "overlap_timeout_start", ec);
+	CheckTransJsonValueFlag(sflags, GSF::NOOVERLAP, di, "nooverlap", ec);
 
 	deserialiser_input sddi(di.json["approachlockingtimeout"], "approachlockingtimeout", "approachlockingtimeout", di);
 	if(!sddi.json.IsNull()) {

@@ -52,22 +52,23 @@ class error_signalinit_trackscan : public error_signalinit {
 
 void routingpoint::EnumerateRoutes(std::function<void (const route *)> func) const { }
 
-const route *routingpoint::FindBestOverlap() const {
+const route *routingpoint::FindBestOverlap(route_class::set types) const {
 	int best_score = INT_MIN;
 	const route *best_overlap = 0;
-	EnumerateAvailableOverlaps([&](const route *r, int score){
+	EnumerateAvailableOverlaps([&](const route *r, int score) {
 		if(score>best_score) {
 			best_score = score;
 			best_overlap = r;
 		}
-	});
+	}, RRF::ZERO, types);
 	return best_overlap;
 }
 
-void routingpoint::EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags) const {
+void routingpoint::EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags, route_class::set types) const {
 
 	auto overlap_finder = [&](const route *r) {
 		if(!route_class::IsOverlap(r->type)) return;
+		if(!(types & route_class::Flag(r->type))) return;
 		if(!r->RouteReservation(RRF::TRYRESERVE | extraflags)) return;
 
 		int score = r->priority;
@@ -210,6 +211,7 @@ RPRT trackroutingpoint::GetAvailableRouteTypes(EDGETYPE direction) const {
 
 genericsignal::genericsignal(world &w_) : trackroutingpoint(w_), sflags(GSF::ZERO) {
 	availableroutetypes_reverse.through |= route_class::AllNonOverlaps();
+	availableroutetypes_forward.start |= route_class::AllOverlaps();
 	w_.RegisterTickUpdate(this);
 	sighting_distances.emplace_back(EDGE_FRONT, SIGHTING_DISTANCE_SIG);
 	std::copy(route_class::default_approach_locking_timeouts.begin(), route_class::default_approach_locking_timeouts.end(), approachlocking_default_timeouts.begin());
@@ -636,9 +638,10 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 			genericsignal *end_signal = FastSignalCast(signal_route.end.track, signal_route.end.direction);
 			if(end_signal && ! (end_signal->GetSignalFlags() & GSF::NOOVERLAP)) {	//reserve an overlap beyond the end signal too if needed
 				end_signal->PostLayoutInit(ec);					//make sure that the end piece is inited
-				const route *best_overlap = end_signal->FindBestOverlap();
+				const route *best_overlap = end_signal->FindBestOverlap(route_class::Flag(route_class::RTC_OVERLAP));
 				if(best_overlap && best_overlap->RouteReservation(RRF::AUTOROUTE | RRF::TRYRESERVE)) {
 					best_overlap->RouteReservation(RRF::AUTOROUTE | RRF::RESERVE);
+					signal_route.overlap_type = route_class::RTC_OVERLAP;
 				}
 				else {
 					ec.RegisterNewError<error_signalinit>(*this, "Autosignal route cannot reserve overlap");
@@ -676,7 +679,7 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(route_class::ID type, const track_target_ptr &piece)> mkblankroute) {
 	bool continue_initing = true;
 
-	bool foundoverlap = false;
+	route_class::set foundoverlaps = 0;
 
 	auto func = [&](const route_recording_list &route_pieces, const track_target_ptr &piece, generic_route_recording_state *grrs) {
 		signal_route_recording_state *rrrs = static_cast<signal_route_recording_state *>(grrs);
@@ -710,14 +713,35 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						rt->FillLists();
 						rt->parent = this;
 
+						genericsignal *rt_sig = FastSignalCast(target_routing_piece, piece.direction);
+
 						if(route_class::NeedsOverlap(type)) {
-							genericsignal *rt_sig = FastSignalCast(target_routing_piece, piece.direction);
-							if(rt_sig && !(rt_sig->GetSignalFlags()&GSF::NOOVERLAP)) rt->routeflags |= route::RF::NEEDOVERLAP;
+							if(rt_sig && !(rt_sig->GetSignalFlags()&GSF::NOOVERLAP)) rt->overlap_type = route_class::ID::RTC_OVERLAP;
 						}
 
 						for(auto it = matching_restrictions.begin(); it != matching_restrictions.end(); ++it) {
 							if((*it)->GetApplyRouteTypes() & route_class::Flag(type)) {
 								(*it)->ApplyRestriction(*rt);
+							}
+						}
+
+						if(rt->overlap_type != route_class::ID::RTC_NULL) {	//check whether the target overlap exists
+							if(rt_sig) {
+								auto checktarg = [this, rt_sig, rt](error_collection &ec) {
+									if(!(rt_sig->GetAvailableOverlapTypes() & route_class::Flag(rt->overlap_type))) {
+										//target signal does not have required type of overlap...
+										ec.RegisterNewError<error_signalinit>(*this, "No overlap of type: '" + route_class::GetRouteTypeName(rt->overlap_type) + "', found for signal: " + rt_sig->GetFriendlyName());
+									}
+								};
+								if(rt_sig->IsPostLayoutInitDone()) {
+									checktarg(ec);
+								}
+								else {
+									GetWorld().post_layout_init_final_fixups.AddFixup(checktarg);
+								}
+							}
+							else {
+								ec.RegisterNewError<error_signalinit>(*this, "No overlap of type: '" + route_class::GetRouteTypeName(rt->overlap_type) + "', found. " + rt->end.track->GetFriendlyName() + " is not a signal.");
 							}
 						}
 					}
@@ -732,7 +756,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 					found_types ^= bit;
 					mk_route(type);
 					if(route_class::IsNotEndExtendable(type)) rrrs->allowed_routeclasses &= ~bit;	//don't look for more overlap ends beyond the end of the first
-					if(route_class::IsOverlap(type)) foundoverlap = true;
+					if(route_class::IsOverlap(type)) foundoverlaps |= bit;
 				}
 			}
 			rrrs->allowed_routeclasses &= availableroutetypes.through;
@@ -750,23 +774,16 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 	TSEF error_flags = TSEF::ZERO;
 	route_recording_list pieces;
 	signal_route_recording_state rrrs;
-	bool needoverlap = false;
 
 	RPRT allowed = GetAvailableRouteTypes(EDGE_FRONT);
-	rrrs.allowed_routeclasses |= allowed.start & route_class::AllNonOverlaps();
-	if(allowed.end & route_class::AllNeedingOverlap() && !(GetSignalFlags() & GSF::NOOVERLAP)) {
-		rrrs.allowed_routeclasses |= route_class::AllOverlaps();
-		needoverlap = true;
-	}
+	rrrs.allowed_routeclasses |= allowed.start;
 	TrackScan(max_pieces, junction_max, GetConnectingPieceByIndex(EDGE_FRONT, 0), pieces, &rrrs, error_flags, func);
+
+	available_overlaps = foundoverlaps;
 
 	if(error_flags != TSEF::ZERO) {
 		continue_initing = false;
 		ec.RegisterNewError<error_signalinit>(*this, std::string("Track scan failed constraints: ") + GetTrackScanErrorFlagsStr(error_flags));
-	}
-	if(needoverlap && !foundoverlap) {
-		continue_initing = false;
-		ec.RegisterNewError<error_signalinit>(*this, "No overlap found for signal");
 	}
 	return continue_initing;
 }

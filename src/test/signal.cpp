@@ -83,7 +83,7 @@ TEST_CASE( "signal/deserialisation/general", "Test basic signal and routing dese
 
 	routesignal *s1 = dynamic_cast<routesignal *>(env.w.FindTrackByName("S1"));
 	REQUIRE(s1 != 0);
-	CHECK(s1->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(shuntset | routeset, 0, shuntset | routeset));
+	CHECK(s1->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(shuntset | routeset | route_class::AllOverlaps(), 0, shuntset | routeset));
 	CHECK(s1->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::AllNonOverlaps(), 0));
 	CHECK(s1->GetSetRouteTypes(EDGE_FRONT) == RPRT());
 	CHECK(s1->GetSetRouteTypes(EDGE_BACK) == RPRT());
@@ -97,7 +97,7 @@ TEST_CASE( "signal/deserialisation/general", "Test basic signal and routing dese
 
 	routesignal *s3 = dynamic_cast<routesignal *>(env.w.FindTrackByName("S3"));
 	REQUIRE(s3 != 0);
-	CHECK(s3->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(shuntset, 0, shuntset));
+	CHECK(s3->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(shuntset | route_class::AllOverlaps(), 0, shuntset));
 	CHECK(s3->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::AllNonOverlaps(), 0));
 	CHECK(s3->GetSetRouteTypes(EDGE_FRONT) == RPRT());
 	CHECK(s3->GetSetRouteTypes(EDGE_BACK) == RPRT());
@@ -1003,4 +1003,68 @@ TEST_CASE( "signal/callon/general", "Test call-on routes" ) {
 	if(s3->GetCurrentForwardRoute()) {
 		FAIL(s3->GetCurrentForwardRoute()->type);
 	}
+}
+
+TEST_CASE( "signal/overlap/general", "Test basic overlap assignment" ) {
+	test_fixture_world_init_checked env(
+		R"({ "content" : [ )"
+			R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+			R"({ "type" : "startofline", "name" : "A" }, )"
+			R"({ "type" : "4aspectroute", "name" : "S1" }, )"
+			R"({ "type" : "trackseg", "length" : 30000 }, )"
+			R"({ "type" : "4aspectroute", "name" : "S2" }, )"
+			R"({ "type" : "trackseg", "length" : 20000 }, )"
+			R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "overlap" } } )"
+		"] }"
+	);
+
+	genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
+	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
+
+	env.w.SubmitAction(action_reservepath(env.w, s1, s2));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() == "");
+
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::RTC_OVERLAP);
+}
+
+TEST_CASE( "signal/overlap/nooverlapflag", "Test signal no overlap flag" ) {
+	test_fixture_world_init_checked env(
+		R"({ "content" : [ )"
+			R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+			R"({ "type" : "startofline", "name" : "A" }, )"
+			R"({ "type" : "4aspectroute", "name" : "S1" }, )"
+			R"({ "type" : "trackseg", "length" : 30000 }, )"
+			R"({ "type" : "4aspectroute", "name" : "S2", "nooverlap" : true }, )"
+			R"({ "type" : "trackseg", "length" : 20000 }, )"
+			R"({ "type" : "endofline", "name" : "B" } )"
+		"] }"
+	);
+
+	genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
+	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
+
+	env.w.SubmitAction(action_reservepath(env.w, s1, s2));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() == "");
+
+	CHECK(s2->GetCurrentForwardOverlap() == 0);
+}
+
+TEST_CASE( "signal/overlap/missingoverlap", "Test that a missing overlap triggers an error" ) {
+	test_fixture_world env(
+		R"({ "content" : [ )"
+			R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+			R"({ "type" : "startofline", "name" : "A" }, )"
+			R"({ "type" : "4aspectroute", "name" : "S1" }, )"
+			R"({ "type" : "trackseg", "length" : 30000 }, )"
+			R"({ "type" : "4aspectroute", "name" : "S2" }, )"
+			R"({ "type" : "trackseg", "length" : 20000 }, )"
+			R"({ "type" : "endofline", "name" : "B" } )"
+		"] }"
+	);
+	env.w.LayoutInit(env.ec);
+	CHECK(env.ec.GetErrorCount() == 0);
+	env.w.PostLayoutInit(env.ec);
+	CHECK(env.ec.GetErrorCount() > 0);
 }
