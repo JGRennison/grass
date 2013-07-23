@@ -32,6 +32,9 @@ namespace route_class {
 		{ "shunt", "Shunt route" },
 		{ "route", "Main route" },
 		{ "overlap", "Overlap" },
+		{ "altoverlap1", "Alternative Overlap 1" },
+		{ "altoverlap2", "Alternative Overlap 2" },
+		{ "altoverlap3", "Alternative Overlap 3" },
 		{ "callon", "Call On" },
 	}};
 
@@ -80,8 +83,7 @@ namespace route_class {
 		}
 		else if(subdi.json.IsString()) {
 			di.RegisterProp(prop);
-			if(strcmp(subdi.json.GetString(), "all") == 0) value = route_class::All();
-			else value = Deserialise(subdi, ec);
+			value = Deserialise(subdi, ec);
 			return true;
 		}
 		else if(!subdi.json.IsNull()) ec.RegisterNewError<error_deserialisation>(di, "Invalid route class set definition");
@@ -92,16 +94,24 @@ namespace route_class {
 		set current = 0;
 
 		auto processitem = [&](rapidjson::SizeType index, const rapidjson::Value &item) {
-			bool found = false;
 			if(item.IsString()) {
-				for(unsigned char i = 1; i < route_class::LAST_RTC; i++ ) {
-					if(route_class::route_names[i].name == item.GetString()) {
-						found = true;
-						current |= (1<<i);
-						break;
+				if(strcmp(item.GetString(), "all") == 0) current |= route_class::All();
+				else if(strcmp(item.GetString(), "alloverlaps") == 0) current |= route_class::AllOverlaps();
+				else if(strcmp(item.GetString(), "allnonoverlaps") == 0) current |= route_class::AllNonOverlaps();
+				else if(strcmp(item.GetString(), "allroutes") == 0) current |= route_class::AllRoutes();
+				else if(strcmp(item.GetString(), "allshunts") == 0) current |= route_class::AllShunts();
+				else if(strcmp(item.GetString(), "allneedingoverlaps") == 0) current |= route_class::AllNeedingOverlap();
+				else {
+					bool found = false;
+					for(unsigned char i = 1; i < route_class::LAST_RTC; i++ ) {
+						if(route_class::route_names[i].name == item.GetString()) {
+							found = true;
+							current |= (1<<i);
+							break;
+						}
 					}
+					if(!found) ec.RegisterNewError<error_deserialisation>(di, "Invalid route class set definition: Invalid route type: " + std::string(item.GetString()));
 				}
-				if(!found) ec.RegisterNewError<error_deserialisation>(di, "Invalid route class set definition: Invalid route type: " + std::string(item.GetString()));
 			}
 			else CheckJsonTypeAndReportError<std::string>(di, MkArrayRefName(index).c_str(), item, ec, true);
 		};

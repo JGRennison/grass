@@ -36,10 +36,10 @@ void trackroutingpoint::Deserialise(const deserialiser_input &di, error_collecti
 
 	bool val;
 	if(CheckTransJsonValue<bool>(val, di, "overlapend", ec)) {
-		SetOrClearBitsRef(availableroutetypes_forward.end, route_class::AllOverlaps(), val);
+		SetOrClearBitsRef(availableroutetypes_forward.end, route_class::Flag(route_class::ID::RTC_OVERLAP), val);
 	}
 	if(CheckTransJsonValue<bool>(val, di, "overlapend_rev", ec)) {
-		SetOrClearBitsRef(availableroutetypes_reverse.end, route_class::AllOverlaps(), val);
+		SetOrClearBitsRef(availableroutetypes_reverse.end, route_class::Flag(route_class::ID::RTC_OVERLAP), val);
 	}
 
 	if(CheckTransJsonValue<bool>(val, di, "via", ec)) {
@@ -61,7 +61,7 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	flag_conflict_checker<route_class::set> conflictcheck_start;
 	flag_conflict_checker<route_class::set> conflictcheck_end;
 	conflictcheck_start.Ban(route_class::AllOverlaps());
-	if(di.json.HasMember("overlapend")) conflictcheck_end.RegisterFlagsMasked(availableroutetypes_forward.end, route_class::AllOverlaps(), di, "", ec);
+	if(di.json.HasMember("overlapend")) conflictcheck_end.RegisterFlagsMasked(availableroutetypes_forward.end, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
 	route_class::DeserialiseGroupProp(availableroutetypes_forward.start, di, "start", ec, conflictcheck_start);
 	route_class::DeserialiseGroupProp(availableroutetypes_forward.end, di, "end", ec, conflictcheck_end);
 

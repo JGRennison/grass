@@ -34,6 +34,9 @@ namespace route_class {
 		RTC_SHUNT,
 		RTC_ROUTE,
 		RTC_OVERLAP,
+		RTC_ALTOVERLAP1,
+		RTC_ALTOVERLAP2,
+		RTC_ALTOVERLAP3,
 		RTC_CALLON,
 		LAST_RTC,
 	} ID;
@@ -52,7 +55,7 @@ namespace route_class {
 	inline bool IsValid(ID id) { return id != RTC_NULL; }
 	inline bool IsShunt(ID id) { return id == RTC_SHUNT || id == RTC_CALLON; }
 	inline bool IsRoute(ID id) { return id == RTC_ROUTE; }
-	inline bool IsOverlap(ID id) { return id == RTC_OVERLAP; }
+	inline bool IsOverlap(ID id) { return id == RTC_OVERLAP || id == RTC_ALTOVERLAP1 || id == RTC_ALTOVERLAP2 || id == RTC_ALTOVERLAP3; }
 	inline bool IsCallOn(ID id) { return id == RTC_CALLON; }
 	inline bool IsValidForApproachLocking(ID id) { return IsValid(id) && !IsOverlap(id); }
 	inline bool IsAspectLimitedToUnity(ID id) { return IsShunt(id); }
@@ -69,7 +72,7 @@ namespace route_class {
 		RTCB_ALL		= ((1 << route_class::LAST_RTC) - 1) & ~(1 << RTC_NULL),
 		RTCB_SHUNTS		= (1 << RTC_SHUNT) | (1 << RTC_CALLON),
 		RTCB_ROUTES		= 1 << RTC_ROUTE,
-		RTCB_OVERLAPS		= 1 << RTC_OVERLAP,
+		RTCB_OVERLAPS		= (1 << RTC_OVERLAP) | (1 << RTC_ALTOVERLAP1) | (1 << RTC_ALTOVERLAP2) | (1 << RTC_ALTOVERLAP3),
 	};
 
 	inline void Set(set &s, ID r) { s |= (1<<r); }
