@@ -931,6 +931,7 @@ void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::APCONTROL_SET) SetOrClearBitsRef(rt.routeflags, route::RF::APCONTROL, routerestrictionflags & RRF::APCONTROL);
 	if(routerestrictionflags & RRF::TORR_SET) SetOrClearBitsRef(rt.routeflags, route::RF::TORR, routerestrictionflags & RRF::TORR);
 	if(routerestrictionflags & RRF::EXITSIGCONTROL_SET) SetOrClearBitsRef(rt.routeflags, route::RF::EXITSIGCONTROL, routerestrictionflags & RRF::EXITSIGCONTROL);
+	if(routerestrictionflags & RRF::OVERLAPTYPE_SET) rt.overlap_type = overlap_type;
 }
 
 route_class::set route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {

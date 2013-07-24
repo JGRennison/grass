@@ -151,10 +151,9 @@ struct route {
 
 	enum class RF {
 		ZERO			= 0,
-		OVERLAPTYPE_SET		= 1<<0,
-		APCONTROL		= 1<<1,
-		TORR			= 1<<2,
-		EXITSIGCONTROL		= 1<<3,
+		APCONTROL		= 1<<0,
+		TORR			= 1<<1,
+		EXITSIGCONTROL		= 1<<2,
 	};
 	RF routeflags;
 
@@ -185,6 +184,7 @@ class route_restriction {
 	unsigned int approachlocking_timeout;
 	unsigned int overlap_timeout;
 	unsigned int approachcontrol_triggerdelay = 0;
+	route_class::ID overlap_type;
 	enum class RRF {
 		ZERO				= 0,
 		PRIORITYSET			= 1<<0,
@@ -197,6 +197,7 @@ class route_restriction {
 		TORR_SET			= 1<<7,
 		EXITSIGCONTROL			= 1<<8,
 		EXITSIGCONTROL_SET		= 1<<9,
+		OVERLAPTYPE_SET			= 1<<10,
 	};
 	RRF routerestrictionflags = RRF::ZERO;
 	route_class::set allowedtypes = route_class::All();
@@ -437,6 +438,7 @@ class routingmarker : public trackroutingpoint {
 
 	static std::string GetTypeSerialisationNameStatic() { return "routingmarker"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 };
 
 inline genericsignal* FastSignalCast(generictrack *gt, EDGETYPE direction) {

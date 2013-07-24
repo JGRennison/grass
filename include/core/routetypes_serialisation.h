@@ -40,6 +40,7 @@ namespace route_class {
 		flag_conflict_checker<set> conflictcheck;
 		DeserialiseGroupProp(s, di, prop, ec, conflictcheck);
 	}
+	std::pair<bool, ID> DeserialiseName(const std::string &name, error_collection &ec);
 }
 
 #endif

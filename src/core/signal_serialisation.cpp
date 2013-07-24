@@ -60,10 +60,14 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 
 	flag_conflict_checker<route_class::set> conflictcheck_start;
 	flag_conflict_checker<route_class::set> conflictcheck_end;
+	flag_conflict_checker<route_class::set> conflictcheck_end_rev;
 	conflictcheck_start.Ban(route_class::AllOverlaps());
+	conflictcheck_end_rev.Ban(route_class::AllNonOverlaps());
 	if(di.json.HasMember("overlapend")) conflictcheck_end.RegisterFlagsMasked(availableroutetypes_forward.end, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
+	if(di.json.HasMember("overlapend_rev")) conflictcheck_end.RegisterFlagsMasked(availableroutetypes_reverse.end, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
 	route_class::DeserialiseGroupProp(availableroutetypes_forward.start, di, "start", ec, conflictcheck_start);
 	route_class::DeserialiseGroupProp(availableroutetypes_forward.end, di, "end", ec, conflictcheck_end);
+	route_class::DeserialiseGroupProp(availableroutetypes_reverse.end, di, "end_rev", ec, conflictcheck_end_rev);
 
 	auto docompoundflag = [&](const char *prop, route_class::set start_flags, route_class::set end_flags) {
 		bool val;
@@ -195,6 +199,21 @@ void route_restriction_set::Deserialise(const deserialiser_input &di, error_coll
 				conflictnegcheck.RegisterFlags(false, val, di, "applydeny", ec);
 			}
 
+			deserialiser_input odi(subdi.json["overlap"], "overlap", subdi);
+			if(!odi.json.IsNull()) {
+				subdi.RegisterProp("overlap");
+
+				if(odi.json.IsBool()) rr.overlap_type = odi.json.GetBool() ? route_class::ID::RTC_OVERLAP : route_class::ID::RTC_NULL;
+				else if(odi.json.IsString()) {
+					auto res = route_class::DeserialiseName(odi.json.GetString(), ec);
+					if(res.first) rr.overlap_type = res.second;
+					else ec.RegisterNewError<error_deserialisation>(odi, "Invalid overlap type definition: " + std::string(odi.json.GetString()));
+				}
+				else ec.RegisterNewError<error_deserialisation>(odi, "Invalid overlap type definition: wrong type");
+
+				rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTYPE_SET;
+			}
+
 			subdi.PostDeserialisePropCheck(ec);
 		}
 		else {
@@ -217,4 +236,17 @@ void startofline::Serialise(serialiser_output &so, error_collection &ec) const {
 	routingpoint::Serialise(so, ec);
 
 	SerialiseSubObjJson(trs, so, "trs", ec);
+}
+
+void routingmarker::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	trackroutingpoint::Deserialise(di, ec);
+
+	flag_conflict_checker<route_class::set> conflictcheck_end;
+	flag_conflict_checker<route_class::set> conflictcheck_end_rev;
+	conflictcheck_end.Ban(route_class::AllNonOverlaps());
+	conflictcheck_end_rev.Ban(route_class::AllNonOverlaps());
+	if(di.json.HasMember("overlapend")) conflictcheck_end.RegisterFlagsMasked(availableroutetypes_forward.end, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
+	if(di.json.HasMember("overlapend_rev")) conflictcheck_end.RegisterFlagsMasked(availableroutetypes_reverse.end, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
+	route_class::DeserialiseGroupProp(availableroutetypes_forward.end, di, "end", ec, conflictcheck_end);
+	route_class::DeserialiseGroupProp(availableroutetypes_reverse.end, di, "end_rev", ec, conflictcheck_end_rev);
 }

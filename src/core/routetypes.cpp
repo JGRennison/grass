@@ -102,15 +102,9 @@ namespace route_class {
 				else if(strcmp(item.GetString(), "allshunts") == 0) current |= route_class::AllShunts();
 				else if(strcmp(item.GetString(), "allneedingoverlaps") == 0) current |= route_class::AllNeedingOverlap();
 				else {
-					bool found = false;
-					for(unsigned char i = 1; i < route_class::LAST_RTC; i++ ) {
-						if(route_class::route_names[i].name == item.GetString()) {
-							found = true;
-							current |= (1<<i);
-							break;
-						}
-					}
-					if(!found) ec.RegisterNewError<error_deserialisation>(di, "Invalid route class set definition: Invalid route type: " + std::string(item.GetString()));
+					auto res = DeserialiseName(item.GetString(), ec);
+					if(res.first) current |= Flag(res.second);
+					else ec.RegisterNewError<error_deserialisation>(di, "Invalid route class set definition: Invalid route type: " + std::string(item.GetString()));
 				}
 			}
 			else CheckJsonTypeAndReportError<std::string>(di, MkArrayRefName(index).c_str(), item, ec, true);
@@ -125,6 +119,19 @@ namespace route_class {
 		else processitem(0, di.json);
 
 		return current;
+	}
+
+	std::pair<bool, ID> DeserialiseName(const std::string &name, error_collection &ec) {
+		bool found = false;
+		ID current = ID::RTC_NULL;
+		for(unsigned char i = 1; i < route_class::LAST_RTC; i++ ) {
+			if(route_class::route_names[i].name == name) {
+				found = true;
+				current = static_cast<ID>(i);
+				break;
+			}
+		}
+		return std::make_pair(found, current);
 	}
 
 	std::ostream& StreamOutRouteClassSet(std::ostream& os, const set& obj) {
