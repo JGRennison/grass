@@ -85,10 +85,24 @@ inline bool operator==(const RPRT &l, const RPRT &r) {
 }
 std::ostream& operator<<(std::ostream& os, const RPRT& obj);
 
+class route_restriction;
+
+class route_restriction_set {
+	std::vector<route_restriction> restrictions;
+
+	public:
+	route_class::set CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
+	void DeserialiseRestriction(const deserialiser_input &subdi, error_collection &ec, bool isendtype);
+
+	unsigned int GetRestrictionCount() const { return restrictions.size(); }
+};
+
 class routingpoint : public genericzlentrack {
 	routingpoint *aspect_target = 0;
 	routingpoint *aspect_route_target = 0;
 	routingpoint *aspect_backwards_dependency = 0;
+
+	route_restriction_set endrestrictions;
 
 	protected:
 	unsigned int aspect = 0;
@@ -129,7 +143,10 @@ class routingpoint : public genericzlentrack {
 	};
 	unsigned int GetMatchingRoutes(std::vector<gmr_routeitem> &routes, const routingpoint *end, route_class::set rc_mask = route_class::AllNonOverlaps(), GMRF gmr_flags = GMRF::ZERO, RRF extraflags = RRF::ZERO, const via_list &vias = via_list()) const;
 
+	const route_restriction_set &GetRouteEndRestrictions() const { return endrestrictions; }
+
 	virtual std::string GetTypeName() const override { return "Track Routing Point"; }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 };
 template<> struct enum_traits< routingpoint::GPBF > {	static constexpr bool flags = true; };
 
@@ -172,8 +189,6 @@ struct route {
 };
 template<> struct enum_traits< route::RF > {	static constexpr bool flags = true; };
 
-class route_restriction_set;
-
 class route_restriction {
 	friend route_restriction_set;
 
@@ -209,17 +224,6 @@ class route_restriction {
 	route_class::set GetApplyRouteTypes() const { return applytotypes; }
 };
 template<> struct enum_traits< route_restriction::RRF> {	static constexpr bool flags = true; };
-
-class route_restriction_set : public serialisable_obj {
-	std::vector<route_restriction> restrictions;
-
-	public:
-	route_class::set CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
-
-	unsigned int GetRestrictionCount() const { return restrictions.size(); }
-};
 
 bool RouteReservation(route &res_route, RRF rr_flags);
 

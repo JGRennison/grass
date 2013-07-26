@@ -28,6 +28,14 @@
 #include "routetypes_serialisation.h"
 #include "deserialisation_scalarconv.h"
 
+void routingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	genericzlentrack::Deserialise(di, ec);
+	CheckIterateJsonArrayOrType<json_object>(di, "routeendrestrictions", "routerestrictions", ec,
+		[&](const deserialiser_input &subdi, error_collection &ec) {
+			endrestrictions.DeserialiseRestriction(subdi, ec, true);
+		});
+}
+
 void trackroutingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	routingpoint::Deserialise(di, ec);
 
@@ -157,72 +165,67 @@ void autosignal::Serialise(serialiser_output &so, error_collection &ec) const {
 
 void routesignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	genericsignal::Deserialise(di, ec);
-	CheckTransJsonSubArray(restrictions, di, "routerestrictions", "routerestrictions", ec);
+	CheckIterateJsonArrayOrType<json_object>(di, "routerestrictions", "routerestrictions", ec,
+		[&](const deserialiser_input &subdi, error_collection &ec) {
+			restrictions.DeserialiseRestriction(subdi, ec, false);
+		});
 }
 
 void routesignal::Serialise(serialiser_output &so, error_collection &ec) const {
 	genericsignal::Serialise(so, ec);
 }
 
-void route_restriction_set::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	restrictions.reserve(di.json.Size());
-	for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
-		deserialiser_input subdi(di.json[i], "routerestriction", MkArrayRefName(i), di);
-		if(subdi.json.IsObject()) {
-			restrictions.emplace_back();
-			route_restriction &rr = restrictions.back();
-			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "targets", ec, rr.targets);
-			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "via", ec, rr.via);
-			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "notvia", ec, rr.notvia);
-			if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF::PRIORITYSET;
-			if(CheckTransJsonValueProc(rr.approachlocking_timeout, subdi, "approachlockingtimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APLOCK_TIMEOUTSET;
-			if(CheckTransJsonValueProc(rr.overlap_timeout, subdi, "overlaptimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTIMEOUTSET;
-			bool res = CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::APCONTROL, subdi, "approachcontrol", ec);
-			if(res) rr.routerestrictionflags |= route_restriction::RRF::APCONTROL_SET;
-			if(!res || rr.routerestrictionflags & route_restriction::RRF::APCONTROL) {
-				if(CheckTransJsonValueProc(rr.approachcontrol_triggerdelay, subdi, "approachcontroltriggerdelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APCONTROLTRIGGERDELAY_SET | route_restriction::RRF::APCONTROL_SET | route_restriction::RRF::APCONTROL;
-			}
-			if(CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::TORR, subdi, "torr", ec)) rr.routerestrictionflags |= route_restriction::RRF::TORR_SET;
-			if(CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::EXITSIGCONTROL, subdi, "exitsignalcontrol", ec)) rr.routerestrictionflags |= route_restriction::RRF::EXITSIGCONTROL_SET;
-
-			route_class::DeserialiseGroup(rr.allowedtypes, subdi, ec);
-
-			flag_conflict_checker<route_class::set> conflictnegcheck;
-			route_class::set val = 0;
-			if(route_class::DeserialiseProp("applyonly", val, subdi, ec)) {
-				rr.applytotypes = val;
-				conflictnegcheck.RegisterFlags(true, val, di, "applyonly", ec);
-				conflictnegcheck.RegisterFlags(false, ~val, di, "applyonly", ec);
-			}
-			if(route_class::DeserialiseProp("applydeny", val, subdi, ec)) {
-				rr.applytotypes &= ~val;
-				conflictnegcheck.RegisterFlags(false, val, di, "applydeny", ec);
-			}
-
-			deserialiser_input odi(subdi.json["overlap"], "overlap", subdi);
-			if(!odi.json.IsNull()) {
-				subdi.RegisterProp("overlap");
-
-				if(odi.json.IsBool()) rr.overlap_type = odi.json.GetBool() ? route_class::ID::RTC_OVERLAP : route_class::ID::RTC_NULL;
-				else if(odi.json.IsString()) {
-					auto res = route_class::DeserialiseName(odi.json.GetString(), ec);
-					if(res.first) rr.overlap_type = res.second;
-					else ec.RegisterNewError<error_deserialisation>(odi, "Invalid overlap type definition: " + std::string(odi.json.GetString()));
-				}
-				else ec.RegisterNewError<error_deserialisation>(odi, "Invalid overlap type definition: wrong type");
-
-				rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTYPE_SET;
-			}
-
-			subdi.PostDeserialisePropCheck(ec);
-		}
-		else {
-			ec.RegisterNewError<error_deserialisation>(subdi, "Invalid route restriction definition");
-		}
+void route_restriction_set::DeserialiseRestriction(const deserialiser_input &subdi, error_collection &ec, bool isendtype) {
+	restrictions.emplace_back();
+	route_restriction &rr = restrictions.back();
+	if(isendtype) CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "routestart", ec, rr.targets);
+	else {
+		CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "targets", ec, rr.targets) ||
+			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "routeend", ec, rr.targets);
 	}
-}
+	CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "via", ec, rr.via);
+	CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "notvia", ec, rr.notvia);
+	if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF::PRIORITYSET;
+	if(CheckTransJsonValueProc(rr.approachlocking_timeout, subdi, "approachlockingtimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APLOCK_TIMEOUTSET;
+	if(CheckTransJsonValueProc(rr.overlap_timeout, subdi, "overlaptimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTIMEOUTSET;
+	bool res = CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::APCONTROL, subdi, "approachcontrol", ec);
+	if(res) rr.routerestrictionflags |= route_restriction::RRF::APCONTROL_SET;
+	if(!res || rr.routerestrictionflags & route_restriction::RRF::APCONTROL) {
+		if(CheckTransJsonValueProc(rr.approachcontrol_triggerdelay, subdi, "approachcontroltriggerdelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APCONTROLTRIGGERDELAY_SET | route_restriction::RRF::APCONTROL_SET | route_restriction::RRF::APCONTROL;
+	}
+	if(CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::TORR, subdi, "torr", ec)) rr.routerestrictionflags |= route_restriction::RRF::TORR_SET;
+	if(CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::EXITSIGCONTROL, subdi, "exitsignalcontrol", ec)) rr.routerestrictionflags |= route_restriction::RRF::EXITSIGCONTROL_SET;
 
-void route_restriction_set::Serialise(serialiser_output &so, error_collection &ec) const {
+	route_class::DeserialiseGroup(rr.allowedtypes, subdi, ec);
+
+	flag_conflict_checker<route_class::set> conflictnegcheck;
+	route_class::set val = 0;
+	if(route_class::DeserialiseProp("applyonly", val, subdi, ec)) {
+		rr.applytotypes = val;
+		conflictnegcheck.RegisterFlags(true, val, subdi, "applyonly", ec);
+		conflictnegcheck.RegisterFlags(false, ~val, subdi, "applyonly", ec);
+	}
+	if(route_class::DeserialiseProp("applydeny", val, subdi, ec)) {
+		rr.applytotypes &= ~val;
+		conflictnegcheck.RegisterFlags(false, val, subdi, "applydeny", ec);
+	}
+
+	deserialiser_input odi(subdi.json["overlap"], "overlap", subdi);
+	if(!odi.json.IsNull()) {
+		subdi.RegisterProp("overlap");
+
+		if(odi.json.IsBool()) rr.overlap_type = odi.json.GetBool() ? route_class::ID::RTC_OVERLAP : route_class::ID::RTC_NULL;
+		else if(odi.json.IsString()) {
+			auto res = route_class::DeserialiseName(odi.json.GetString(), ec);
+			if(res.first) rr.overlap_type = res.second;
+			else ec.RegisterNewError<error_deserialisation>(odi, "Invalid overlap type definition: " + std::string(odi.json.GetString()));
+		}
+		else ec.RegisterNewError<error_deserialisation>(odi, "Invalid overlap type definition: wrong type");
+
+		rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTYPE_SET;
+	}
+
+	subdi.PostDeserialisePropCheck(ec);
 }
 
 void startofline::Deserialise(const deserialiser_input &di, error_collection &ec) {

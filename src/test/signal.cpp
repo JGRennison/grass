@@ -1143,3 +1143,45 @@ TEST_CASE( "signal/overlap/multi", "Test multiple overlap types" ) {
 	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::RTC_ALTOVERLAP1);
 	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->end.track->GetName() == "C");
 }
+
+TEST_CASE( "route/restrictions/end", "Test route end restrictions" ) {
+	test_fixture_world_init_checked env(
+		R"({ "content" : [ )"
+			R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+			R"({ "type" : "startofline", "name" : "A" }, )"
+			R"({ "type" : "4aspectroute", "name" : "S1", "start" : { "allow" : "callon" } }, )"
+			R"({ "type" : "trackseg", "length" : 30000 }, )"
+			R"({ "type" : "4aspectroute", "name" : "S2", "start" : { "allow" : "shunt" }, "end" : { "allow" : "callon" }, "routeendrestrictions" : { "routestart" : "S1", "applyonly" : "callon" , "overlap" : "altoverlap1" } }, )"
+			R"({ "type" : "trackseg", "length" : 20000 }, )"
+			R"({ "type" : "routingmarker", "name" : "C", "end" : { "allow" : "altoverlap1" } }, )"
+			R"({ "type" : "trackseg", "length" : 20000 }, )"
+			R"({ "type" : "endofline", "name" : "B",  "end" : { "allow" : "overlap" }, "routeendrestrictions" : { "routestart" : "nonexistant", "deny" : "shunt" } } )"
+		"] }"
+	);
+
+	genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
+	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
+	routingpoint *b = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("B"));
+
+	env.w.SubmitAction(action_reservepath(env.w, s1, s2).SetAllowedRouteTypes(route_class::Flag(route_class::ID::RTC_ROUTE)));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() == "");
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::RTC_OVERLAP);
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->end.track->GetName() == "B");
+
+	env.w.SubmitAction(action_unreservetrack(env.w, *s1));
+	env.w.GameStep(1);
+
+	env.w.SubmitAction(action_reservepath(env.w, s1, s2).SetAllowedRouteTypes(route_class::Flag(route_class::ID::RTC_CALLON)));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() == "");
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::RTC_ALTOVERLAP1);
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->end.track->GetName() == "C");
+
+	env.w.SubmitAction(action_unreservetrack(env.w, *s1));
+	env.w.GameStep(1);
+
+	env.w.SubmitAction(action_reservepath(env.w, s2, b).SetAllowedRouteTypes(route_class::Flag(route_class::ID::RTC_SHUNT)));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLogText() == "");
+}

@@ -702,6 +702,8 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 				if(restrictions) restriction_permitted_types = restrictions->CheckAllRestrictions(matching_restrictions, route_pieces, piece);
 				else restriction_permitted_types = route_class::All();
 
+				restriction_permitted_types &= target_routing_piece->GetRouteEndRestrictions().CheckAllRestrictions(matching_restrictions, route_pieces, track_target_ptr(this, EDGE_FRONT));
+
 				auto mk_route = [&](route_class::ID type) {
 					route *rt = mkblankroute(type, piece);
 					if(rt) {

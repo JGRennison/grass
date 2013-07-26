@@ -335,26 +335,26 @@ template <typename C, typename D> inline C CheckGetJsonValueDef(const deserialis
 	return res?static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval)):def;
 }
 
-template <typename C> inline void CheckTransJsonTypeFunc(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func, bool mandatory=false) {
+template <typename C> inline bool CheckTransJsonTypeFunc(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
 	if(!subval.IsNull()) di.RegisterProp(prop);
-	if(IsType<C>(subval)) func(deserialiser_input(type_name, prop, subval, di), ec);
-	else {
-		CheckJsonTypeAndReportError<C>(di, prop, subval, ec, mandatory);
-	}
+	bool res = IsType<C>(subval);
+	if(res) func(deserialiser_input(type_name, prop, subval, di), ec);
+	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec, mandatory);
+	return res;
 }
 
-template <typename C> inline void CheckTransJsonSubObj(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, bool mandatory=false) {
-	CheckTransJsonTypeFunc<json_object>(di, prop, type_name, ec, [&](const deserialiser_input &di, error_collection &ec) { obj.Deserialise(di, ec); }, mandatory);
+template <typename C> inline bool CheckTransJsonSubObj(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, bool mandatory=false) {
+	return CheckTransJsonTypeFunc<json_object>(di, prop, type_name, ec, [&](const deserialiser_input &di, error_collection &ec) { obj.Deserialise(di, ec); }, mandatory);
 }
 
-template <typename C> inline void CheckTransJsonSubArray(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, bool mandatory=false) {
-	CheckTransJsonTypeFunc<json_array>(di, prop, type_name, ec, [&](const deserialiser_input &di, error_collection &ec) { obj.Deserialise(di, ec); }, mandatory);
+template <typename C> inline bool CheckTransJsonSubArray(C &obj, const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, bool mandatory=false) {
+	return CheckTransJsonTypeFunc<json_array>(di, prop, type_name, ec, [&](const deserialiser_input &di, error_collection &ec) { obj.Deserialise(di, ec); }, mandatory);
 }
 
-void CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &, error_collection &)> func, bool arrayonly = false);
+bool CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &, error_collection &)> func, bool arrayonly = false);
 
-template <typename C> inline void CheckIterateJsonArrayOrType(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &, error_collection &)> func, bool arrayonly = false) {
+template <typename C> inline bool CheckIterateJsonArrayOrType(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &, error_collection &)> func, bool arrayonly = false) {
 	auto innerfunc = [&](const deserialiser_input &inner_di, error_collection &ec) {
 		if(IsType<C>(inner_di.json)) {
 			func(inner_di, ec);
@@ -364,14 +364,14 @@ template <typename C> inline void CheckIterateJsonArrayOrType(const deserialiser
 		}
 	};
 
-	CheckIterateJsonArrayOrValue(di, prop, type_name, ec, innerfunc);
+	return CheckIterateJsonArrayOrValue(di, prop, type_name, ec, innerfunc);
 }
 
-template <typename C> inline void CheckFillTypeVectorFromJsonArrayOrType(const deserialiser_input &di, const char *prop, error_collection &ec, std::vector<C> &vec) {
+template <typename C> inline bool CheckFillTypeVectorFromJsonArrayOrType(const deserialiser_input &di, const char *prop, error_collection &ec, std::vector<C> &vec) {
 	auto func = [&](const deserialiser_input &fdi, error_collection &ec) {
 		vec.push_back(GetType<C>(fdi.json));
 	};
-	CheckIterateJsonArrayOrType<C>(di, prop, "", ec, func);
+	return CheckIterateJsonArrayOrType<C>(di, prop, "", ec, func);
 }
 
 template <typename C> inline bool CheckTransRapidjsonValue(const rapidjson::Value *&val, const deserialiser_input &di, const char *prop, error_collection &ec, bool mandatory=false) {

@@ -147,17 +147,25 @@ std::shared_ptr<deserialiser_input::deserialiser_input_deep_clone> deserialiser_
 	return std::make_shared<deserialiser_input::deserialiser_input_deep_clone>(top, std::move(items));
 }
 
-void CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func, bool arrayonly) {
+bool CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func, bool arrayonly) {
 	deserialiser_input subdi(di.json[prop], type_name, prop, di);
 	if(!subdi.json.IsNull()) di.RegisterProp(prop);
-	else return;
+	else return false;
 
 	if(subdi.json.IsArray()) {
 		subdi.type += "_array";
 		for(rapidjson::SizeType i = 0; i < subdi.json.Size(); i++) {
 			func(deserialiser_input(subdi.json[i], type_name, MkArrayRefName(i), subdi), ec);
 		}
+		return true;
 	}
-	else if(!arrayonly) func(subdi, ec);
-	else CheckJsonTypeAndReportError<json_array>(subdi, subdi.reference_name.c_str(), subdi.json, ec);
+	else if(!arrayonly) {
+		func(subdi, ec);
+		return true;
+	}
+	else {
+		CheckJsonTypeAndReportError<json_array>(subdi, subdi.reference_name.c_str(), subdi.json, ec);
+		return false;
+	}
+
 }
