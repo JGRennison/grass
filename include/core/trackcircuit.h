@@ -39,7 +39,7 @@ struct train_ref {
 	train_ref(train *t_, unsigned int count_) : t(t_), count(count_) { }
 };
 
-class track_circuit : public world_obj {
+class track_train_counter_block : public world_obj {
 	unsigned int traincount = 0;
 	std::vector<train_ref> occupying_trains;
 	std::vector<generictrack *> owned_pieces;
@@ -56,8 +56,8 @@ class track_circuit : public world_obj {
 
 	public:
 
-	track_circuit(world &w_, const std::string &name_) : world_obj(w_), last_change(w_.GetGameTime()) { SetName(name_); }
-	track_circuit(world &w_) : world_obj(w_), last_change(w_.GetGameTime()) { }
+	track_train_counter_block(world &w_, const std::string &name_) : world_obj(w_), last_change(w_.GetGameTime()) { SetName(name_); }
+	track_train_counter_block(world &w_) : world_obj(w_), last_change(w_.GetGameTime()) { }
 	void TrainEnter(train *t);
 	void TrainLeave(train *t);
 	inline bool Occupied() const;
@@ -69,19 +69,33 @@ class track_circuit : public world_obj {
 	const std::vector<generictrack *> &GetOwnedTrackSet() const { return owned_pieces; }
 	void GetSetRoutes(std::vector<const route *> &routes);
 
-	virtual std::string GetTypeName() const override { return "Track Circuit"; }
-	static std::string GetTypeSerialisationClassNameStatic() { return "trackcircuit"; }
+	virtual std::string GetTypeName() const override { return "Track Train Counter Block"; }
+	static std::string GetTypeSerialisationClassNameStatic() { return "tracktraincounterblock"; }
 	virtual std::string GetTypeSerialisationClassName() const override { return GetTypeSerialisationClassNameStatic(); }
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
-	private:
-	void OccupationTrigger();
-	void DeOccupationTrigger();
+	protected:
+	virtual void OccupationTrigger() { };
+	virtual void DeOccupationTrigger() { };
 };
-template<> struct enum_traits< track_circuit::TCF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< track_train_counter_block::TCF > {	static constexpr bool flags = true; };
 
-inline bool track_circuit::Occupied() const { return traincount > 0 || tc_flags & TCF::FORCEOCCUPIED; }
+inline bool track_train_counter_block::Occupied() const { return traincount > 0 || tc_flags & TCF::FORCEOCCUPIED; }
+
+class track_circuit : public track_train_counter_block {
+	public:
+	track_circuit(world &w_, const std::string &name_) : track_train_counter_block(w_, name_) { }
+	track_circuit(world &w_) : track_train_counter_block(w_) { }
+
+	virtual std::string GetTypeName() const override { return "Track Circuit"; }
+	static std::string GetTypeSerialisationClassNameStatic() { return "trackcircuit"; }
+	virtual std::string GetTypeSerialisationClassName() const override { return GetTypeSerialisationClassNameStatic(); }
+
+	protected:
+	virtual void OccupationTrigger() override;
+	virtual void DeOccupationTrigger() override;
+};
 
 #endif

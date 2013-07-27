@@ -73,26 +73,24 @@ static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int
 	}
 }
 
-void track_circuit::TrainEnter(train *t) {
+void track_train_counter_block::TrainEnter(train *t) {
 	bool prevoccupied = Occupied();
 	traincount++;
-	if(prevoccupied != Occupied()) {
-		OccupationTrigger();
-	}
 	for(auto it = occupying_trains.begin(); it != occupying_trains.end(); ++it) {
 		if(it->t == t) {
 			it->count++;
-			return;
+			break;
 		}
 	}
 	occupying_trains.emplace_back(t, 1);
+	if(prevoccupied != Occupied()) {
+		last_change = GetWorld().GetGameTime();
+		OccupationTrigger();
+	}
 }
-void track_circuit::TrainLeave(train *t) {
+void track_train_counter_block::TrainLeave(train *t) {
 	bool prevoccupied = Occupied();
 	traincount--;
-	if(prevoccupied != Occupied()) {
-		DeOccupationTrigger();
-	}
 	for(auto it = occupying_trains.begin(); it != occupying_trains.end(); ++it) {
 		if(it->t == t) {
 			it->count--;
@@ -100,62 +98,38 @@ void track_circuit::TrainLeave(train *t) {
 				*it = *occupying_trains.rbegin();
 				occupying_trains.pop_back();
 			}
-			return;
-		}
-	}
-}
-
-void track_circuit::OccupationTrigger() {
-	last_change = GetWorld().GetGameTime();
-
-	//check berth stepping
-	std::vector<const route *> routes;
-	const route *found = 0;
-	GetSetRoutes(routes);
-	for(const route *rt : routes) {
-		if(route_class::IsOverlap(rt->type)) continue;	// we don't want overlaps
-		if(!rt->trackcircuits.empty() && rt->trackcircuits[0] == this) {
-			found = rt;
 			break;
 		}
 	}
-	if(found) {
-		//look backwards
-		trackberth *prev = found->start.track->GetPriorBerth(found->start.direction, routingpoint::GPBF::GETNONEMPTY);
-		if(!prev) BerthPushFront(found, "????", BPFF_SOFT);
-		else {
-			BerthPushFront(found, std::move(prev->contents));
-			prev->contents.clear();
-		}
+	if(prevoccupied != Occupied()) {
+		last_change = GetWorld().GetGameTime();
+		DeOccupationTrigger();
 	}
 }
-void track_circuit::DeOccupationTrigger() {
-	last_change = GetWorld().GetGameTime();
-	CheckUnreserveTrackCircuit(this);
-}
 
-void track_circuit::Deserialise(const deserialiser_input &di, error_collection &ec) {
+void track_train_counter_block::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	world_obj::Deserialise(di, ec);
 
 	CheckTransJsonValueFlag(tc_flags, TCF::FORCEOCCUPIED, di, "forceoccupied", ec);
 	CheckTransJsonValue(last_change, di, "last_change", ec);
 }
 
-void track_circuit::Serialise(serialiser_output &so, error_collection &ec) const {
+void track_train_counter_block::Serialise(serialiser_output &so, error_collection &ec) const {
 	world_obj::Serialise(so, ec);
 
 	SerialiseFlagJson(tc_flags, TCF::FORCEOCCUPIED, so, "forceoccupied");
 	SerialiseValueJson(last_change, so, "last_change");
 }
 
-track_circuit::TCF track_circuit::GetTCFlags() const {
+track_train_counter_block::TCF track_train_counter_block::GetTCFlags() const {
 	return tc_flags;
 }
 
-track_circuit::TCF track_circuit::SetTCFlagsMasked(TCF bits, TCF mask) {
+track_train_counter_block::TCF track_train_counter_block::SetTCFlagsMasked(TCF bits, TCF mask) {
 	bool prevoccupied = Occupied();
 	tc_flags = (tc_flags & ~mask) | (bits & mask);
 	if(prevoccupied != Occupied()) {
+		last_change = GetWorld().GetGameTime();
 		if(prevoccupied) DeOccupationTrigger();
 		else OccupationTrigger();
 	}
@@ -266,7 +240,7 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 	}
 }
 
-void track_circuit::GetSetRoutes(std::vector<const route *> &routes) {
+void track_train_counter_block::GetSetRoutes(std::vector<const route *> &routes) {
 	for(generictrack *it : owned_pieces) {
 		it->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
 			if(std::find(routes.begin(), routes.end(), reserved_route) == routes.end()) {
@@ -275,3 +249,31 @@ void track_circuit::GetSetRoutes(std::vector<const route *> &routes) {
 		}, RRF::RESERVE);
 	}
 }
+
+void track_circuit::OccupationTrigger() {
+	//check berth stepping
+	std::vector<const route *> routes;
+	const route *found = 0;
+	GetSetRoutes(routes);
+	for(const route *rt : routes) {
+		if(route_class::IsOverlap(rt->type)) continue;	// we don't want overlaps
+		if(!rt->trackcircuits.empty() && rt->trackcircuits[0] == this) {
+			found = rt;
+			break;
+		}
+	}
+	if(found) {
+		//look backwards
+		trackberth *prev = found->start.track->GetPriorBerth(found->start.direction, routingpoint::GPBF::GETNONEMPTY);
+		if(!prev) BerthPushFront(found, "????", BPFF_SOFT);
+		else {
+			BerthPushFront(found, std::move(prev->contents));
+			prev->contents.clear();
+		}
+	}
+}
+
+void track_circuit::DeOccupationTrigger() {
+	CheckUnreserveTrackCircuit(this);
+}
+
