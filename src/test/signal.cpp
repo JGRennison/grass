@@ -319,7 +319,7 @@ TEST_CASE( "signal/propagation/autosignal", "Test basic autosignal aspect propag
 	tenv.checksignal(tenv.s5, 0, route_class::RTC_NULL, 0, 0);
 	tenv.checksignal(tenv.s6, 0, route_class::RTC_NULL, 0, 0);
 
-	track_circuit *s3ovlp = env.w.FindOrMakeTrackCircuitByName("S3ovlp");
+	track_circuit *s3ovlp = env.w.track_circuits.FindOrMakeByName("S3ovlp");
 	s3ovlp->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 	env.w.GameStep(1);
 
@@ -531,8 +531,8 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	routecheck(tenv.s5, tenv.s4, tenv.s6, 60000);
 	routecheck(tenv.s6, tenv.s5, tenv.b, 45000);
 
-	env.w.FindOrMakeTrackCircuitByName("T3")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
-	env.w.FindOrMakeTrackCircuitByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("T3")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 	env.w.GameStep(1);
 
 	checksignal2(tenv.s1, 1, 1, route_class::RTC_ROUTE, tenv.s2, false);
@@ -574,7 +574,7 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	checksignal2(tenv.s6, 0, 0, route_class::RTC_NULL, 0, false);
 
 	env.w.SubmitAction(action_reservepath(env.w, tenv.s6, tenv.b));
-	env.w.FindOrMakeTrackCircuitByName("T6")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("T6")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 	env.w.GameStep(1);
 	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s6));
 	env.w.GameStep(1);
@@ -708,7 +708,7 @@ TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
 	overlapparamcheck(tenv.s6, 0);
 
 	auto occupytcandcancelroute = [&](std::string tc, genericsignal *s) {
-		env.w.FindOrMakeTrackCircuitByName(tc)->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+		env.w.track_circuits.FindOrMakeByName(tc)->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 		env.w.SubmitAction(action_unreservetrack(env.w, *s));
 		env.w.GameStep(1);
 	};
@@ -886,27 +886,27 @@ TEST_CASE( "signal/approachcontrol/general", "Test basic approach control" ) {
 
 	checksignals(__LINE__, 1, 0, 0, 1, 1);
 
-	env.w.FindOrMakeTrackCircuitByName("S1ovlp")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
-	env.w.FindOrMakeTrackCircuitByName("T6")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("S1ovlp")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("T6")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 	env.w.GameStep(1);
 	checksignals(__LINE__, 0, 0, 0, 0, 1);
-	env.w.FindOrMakeTrackCircuitByName("S1ovlp")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
-	env.w.FindOrMakeTrackCircuitByName("T6")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("S1ovlp")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("T6")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
 
-	env.w.FindOrMakeTrackCircuitByName("T3")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
-	env.w.FindOrMakeTrackCircuitByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("T3")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 	env.w.GameStep(1);
 	checksignals(__LINE__, 0, 1, 0, 1, 1);
 
 	env.w.GameStep(2998);
 	checksignals(__LINE__, 0, 1, 0, 1, 1);
 
-	env.w.FindOrMakeTrackCircuitByName("T3")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
-	env.w.FindOrMakeTrackCircuitByName("T4")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("T3")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("T4")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
 	env.w.GameStep(1);
 	checksignals(__LINE__, 3, 2, 0, 1, 1);
 
-	env.w.FindOrMakeTrackCircuitByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.track_circuits.FindOrMakeByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 	env.w.GameStep(3000);
 	checksignals(__LINE__, 2, 1, 2, 1, 1);
 }
@@ -939,7 +939,7 @@ TEST_CASE( "signal/callon/general", "Test call-on routes" ) {
 	routingpoint *b = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("B"));
 
 	auto settcstate = [&](const std::string &tcname, bool enter) {
-		track_circuit *tc = env.w.FindOrMakeTrackCircuitByName(tcname);
+		track_circuit *tc = env.w.track_circuits.FindOrMakeByName(tcname);
 		tc->SetTCFlagsMasked(enter ? track_circuit::TCF::FORCEOCCUPIED : track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
 	};
 

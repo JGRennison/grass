@@ -185,7 +185,7 @@ void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
 
 	std::string tracksegname;
 	if(CheckTransJsonValue(tracksegname, di, "trackcircuit", ec)) {
-		tc = GetWorld().FindOrMakeTrackCircuitByName(tracksegname);
+		tc = GetWorld().track_circuits.FindOrMakeByName(tracksegname);
 		tc->RegisterTrack(this);
 	}
 }

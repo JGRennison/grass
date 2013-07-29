@@ -209,11 +209,22 @@ void world_serialisation::DeserialiseTractionType(const deserialiser_input &di, 
 void world_serialisation::DeserialiseTrackCircuit(const deserialiser_input &di, error_collection &ec) {
 	std::string name;
 	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
-		track_circuit *tc = di.w->FindOrMakeTrackCircuitByName(name);
+		track_circuit *tc = di.w->track_circuits.FindOrMakeByName(name);
 		tc->DeserialiseObject(di, ec);
 	}
 	else {
 		ec.RegisterNewError<error_deserialisation>(di, "Invalid track circuit definition");
+	}
+}
+
+void world_serialisation::DeserialiseTrackTrainBlock(const deserialiser_input &di, error_collection &ec) {
+	std::string name;
+	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
+		track_train_counter_block *tc = di.w->track_triggers.FindOrMakeByName(name);
+		tc->DeserialiseObject(di, ec);
+	}
+	else {
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid track train counter block definition");
 	}
 }
 
@@ -275,6 +286,7 @@ void world_serialisation::InitObjectTypes() {
 	content_object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTypeDefinition(di, ec); });
 	content_object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTractionType(di, ec); });
 	content_object_types.RegisterType("trackcircuit", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTrackCircuit(di, ec); });
+	content_object_types.RegisterType("tracktraincounterblock", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTrackTrainBlock(di, ec); });
 	content_object_types.RegisterType("couplepoints", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialisePointsCoupling(di, ec); });
 	content_object_types.RegisterType("vehicleclass", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseVehicleClass(di, ec); });
 	gamestate_object_types.RegisterType("train", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTrain(di, ec); });

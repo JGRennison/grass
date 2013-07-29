@@ -37,7 +37,9 @@ class action;
 class generictrack;
 class textpool;
 class track_circuit;
+class track_train_counter_block;
 class vehicle_class;
+class world;
 
 struct connection_forward_declaration {
 	generictrack *track1;
@@ -72,12 +74,32 @@ class fixup_list {
 	}
 };
 
+template <typename C>
+class track_train_counter_block_container {
+	std::unordered_map<std::string, std::unique_ptr<C> > all_items;
+	world &w;
+
+	public:
+	track_train_counter_block_container(world &w_) : w(w_) { }
+	C *FindByName(const std::string &name) {
+		auto it = all_items.find(name);
+		if(it != all_items.end()) {
+			if(it->second) return it->second.get();
+		}
+		return 0;
+	}
+	C *FindOrMakeByName(const std::string &name) {
+		std::unique_ptr<C> &tc = all_items[name];
+		if(! tc.get()) tc.reset(new C(w, name));
+		return tc.get();
+	}
+};
+
 class world : public named_futurable_obj {
 	friend world_serialisation;
 	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
-	std::unordered_map<std::string, std::unique_ptr<track_circuit> > all_track_circuits;
 	std::unordered_map<std::string, std::unique_ptr<vehicle_class> > all_vehicle_classes;
-        std::forward_list<train> all_trains;
+	std::forward_list<train> all_trains;
 	std::deque<connection_forward_declaration> connection_forward_declarations;
 	std::unordered_map<std::string, traction_type> traction_types;
 	std::deque<generictrack *> tick_update_list;
@@ -92,6 +114,8 @@ class world : public named_futurable_obj {
 	future_set futures;
 	fixup_list layout_init_final_fixups;
 	fixup_list post_layout_init_final_fixups;
+	track_train_counter_block_container<track_circuit> track_circuits;
+	track_train_counter_block_container<track_train_counter_block> track_triggers;
 
 	world();
 	virtual ~world();
@@ -105,7 +129,7 @@ class world : public named_futurable_obj {
 	template <typename C> C *FindTrackByNameCast(const std::string &name) const {
 		return dynamic_cast<C*>(FindTrackByName(name));
 	}
-	track_circuit *FindOrMakeTrackCircuitByName(const std::string &name);
+	track_train_counter_block *FindTrackTrainBlockOrTrackCircuitByName(const std::string &name);
 	void InitFutureTypes();
 	world_time GetGameTime() const { return gametime; }
 	std::string FormatGameTime(world_time wt) const;

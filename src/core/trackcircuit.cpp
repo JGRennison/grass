@@ -276,4 +276,3 @@ void track_circuit::OccupationTrigger() {
 void track_circuit::DeOccupationTrigger() {
 	CheckUnreserveTrackCircuit(this);
 }
-

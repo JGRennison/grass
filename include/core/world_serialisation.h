@@ -79,6 +79,7 @@ class world_serialisation {
 	void ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTractionType(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTrackCircuit(const deserialiser_input &di, error_collection &ec);
+	void DeserialiseTrackTrainBlock(const deserialiser_input &di, error_collection &ec);
 	template <typename T> T* MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec, bool findonly);
 	template <typename T> T* DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp);
 	void DeserialiseVehicleClass(const deserialiser_input &di, error_collection &ec);

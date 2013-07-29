@@ -34,7 +34,7 @@
 #include "train.h"
 #include <iostream>
 
-world::world() {
+world::world() : track_circuits(*this), track_triggers(*this) {
 	InitFutureTypes();
 }
 
@@ -96,7 +96,8 @@ named_futurable_obj *world::FindFuturableByName(const std::string &name) {
 	size_t offset = name.find('/');
 	if(offset == std::string::npos) return 0;
 	if(name.compare(0, offset, generictrack::GetTypeSerialisationClassNameStatic())) return FindTrackByName(name.substr(offset+1));
-	else if(name.compare(0, offset, track_circuit::GetTypeSerialisationClassNameStatic())) return FindOrMakeTrackCircuitByName(name.substr(offset+1));
+	else if(name.compare(0, offset, track_circuit::GetTypeSerialisationClassNameStatic())) return track_circuits.FindOrMakeByName(name.substr(offset+1));
+	else if(name.compare(0, offset, track_train_counter_block::GetTypeSerialisationClassNameStatic())) return track_triggers.FindOrMakeByName(name.substr(offset+1));
 	else if(name.compare(0, offset, train::GetTypeSerialisationClassNameStatic())) return FindTrainByName(name.substr(offset+1));
 	else if(name == this->GetFullSerialisationName()) return this;
 	return 0;
@@ -149,10 +150,11 @@ generictrack *world::FindTrackByName(const std::string &name) const {
 	}
 	return 0;
 }
-track_circuit *world::FindOrMakeTrackCircuitByName(const std::string &name) {
-	std::unique_ptr<track_circuit> &tc = all_track_circuits[name];
-	if(! tc.get()) tc.reset(new track_circuit(*this, name));
-	return tc.get();
+
+track_train_counter_block *world::FindTrackTrainBlockOrTrackCircuitByName(const std::string &name) {
+	track_train_counter_block *res = track_triggers.FindByName(name);
+	if(res) return res;
+	else return track_circuits.FindByName(name);
 }
 
 void world::RegisterTickUpdate(generictrack *targ) {

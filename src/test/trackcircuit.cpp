@@ -64,7 +64,7 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	routingpoint *b = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("B"));
 
 	auto settcstate = [&](const std::string &tcname, bool enter) {
-		track_circuit *tc = env.w.FindOrMakeTrackCircuitByName(tcname);
+		track_circuit *tc = env.w.track_circuits.FindOrMakeByName(tcname);
 		tc->SetTCFlagsMasked(enter ? track_circuit::TCF::FORCEOCCUPIED : track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
 	};
 
