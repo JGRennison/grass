@@ -290,9 +290,12 @@ void genericsignal::UpdateSignalState() {
 	if(own_overlap && own_overlap->overlap_timeout) {
 		bool can_timeout_overlap = false;
 		bool start_anchored = false;
+		if(own_overlap->overlaptimeout_trigger) {
+			if(own_overlap->overlaptimeout_trigger->Occupied()) can_timeout_overlap = true;
+		}
 		EnumerateCurrentBackwardsRoutes([&](const route *r) {
 			if(r->IsStartAnchored()) start_anchored = true;
-			if(!r->trackcircuits.empty()) {
+			if(!own_overlap->overlaptimeout_trigger && !r->trackcircuits.empty()) {
 				if(r->trackcircuits.back()->Occupied()) can_timeout_overlap = true;
 			}
 		});
@@ -325,13 +328,23 @@ void genericsignal::UpdateSignalState() {
 
 	if(set_route->routeflags & route::RF::APCONTROL && aspect == 0) {
 		bool can_trigger = false;
-		EnumerateCurrentBackwardsRoutes([&](const route *rt) {
-			if(rt->trackcircuits.empty()) return;
-			const track_circuit *tc = rt->trackcircuits.back();
-			if(tc && tc->Occupied() && tc->GetLastOccupationStateChangeTime() + set_route->approachcontrol_triggerdelay <= GetWorld().GetGameTime()) {
+
+		auto test_ttcb = [&](track_train_counter_block *ttcb) {
+			if(ttcb && ttcb->Occupied() && ttcb->GetLastOccupationStateChangeTime() + set_route->approachcontrol_triggerdelay <= GetWorld().GetGameTime()) {
 				can_trigger = true;
 			}
-		});
+		};
+
+		if(set_route->approachcontrol_trigger) {
+			test_ttcb(set_route->approachcontrol_trigger);
+		}
+		else {
+			EnumerateCurrentBackwardsRoutes([&](const route *rt) {
+				if(rt->trackcircuits.empty()) return;
+				test_ttcb(rt->trackcircuits.back());
+			});
+		}
+
 		if(!can_trigger) {
 			clear_route();
 			return;
@@ -934,6 +947,8 @@ void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::TORR_SET) SetOrClearBitsRef(rt.routeflags, route::RF::TORR, routerestrictionflags & RRF::TORR);
 	if(routerestrictionflags & RRF::EXITSIGCONTROL_SET) SetOrClearBitsRef(rt.routeflags, route::RF::EXITSIGCONTROL, routerestrictionflags & RRF::EXITSIGCONTROL);
 	if(routerestrictionflags & RRF::OVERLAPTYPE_SET) rt.overlap_type = overlap_type;
+	if(approachcontrol_trigger) rt.approachcontrol_trigger = approachcontrol_trigger;
+	if(overlaptimeout_trigger) rt.overlaptimeout_trigger = overlaptimeout_trigger;
 }
 
 route_class::set route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {

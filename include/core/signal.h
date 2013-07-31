@@ -165,6 +165,8 @@ struct route {
 	unsigned int approachlocking_timeout;
 	unsigned int overlap_timeout;
 	unsigned int approachcontrol_triggerdelay = 0;
+	track_train_counter_block *approachcontrol_trigger = 0;
+	track_train_counter_block *overlaptimeout_trigger = 0;
 
 	enum class RF {
 		ZERO			= 0,
@@ -199,6 +201,8 @@ class route_restriction {
 	unsigned int approachlocking_timeout;
 	unsigned int overlap_timeout;
 	unsigned int approachcontrol_triggerdelay = 0;
+	track_train_counter_block *approachcontrol_trigger = 0;
+	track_train_counter_block *overlaptimeout_trigger = 0;
 	route_class::ID overlap_type;
 	enum class RRF {
 		ZERO				= 0,

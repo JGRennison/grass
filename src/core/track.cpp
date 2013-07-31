@@ -177,6 +177,9 @@ void trackseg::TrainEnter(EDGETYPE direction, train *t) {
 	traincount++;
 	track_circuit *tc = GetTrackCircuit();
 	if(tc) tc->TrainEnter(t);
+	for(auto &it : ttcbs) {
+		it->TrainEnter(t);
+	}
 	const speedrestrictionset *speeds = GetSpeedRestrictions();
 	if(speeds) t->AddCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
 }
@@ -276,6 +279,10 @@ unsigned int trackseg::GetRemainingLength(EDGETYPE direction, unsigned int curre
 
 track_circuit *trackseg::GetTrackCircuit() const {
 	return tc;
+}
+
+const std::vector<track_train_counter_block *> *trackseg::GetOtherTrackTriggers() const {
+	return &ttcbs;
 }
 
 GTF trackseg::GetFlags(EDGETYPE direction) const {

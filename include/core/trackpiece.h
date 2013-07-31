@@ -33,6 +33,7 @@ class trackseg : public generictrack {
 	speedrestrictionset speed_limits;
 	tractionset tractiontypes;
 	track_circuit *tc;
+	std::vector<track_train_counter_block *> ttcbs;
 	unsigned int traincount;
 	track_target_ptr next;
 	track_target_ptr prev;
@@ -51,6 +52,7 @@ class trackseg : public generictrack {
 	virtual unsigned int GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const override;
 	virtual unsigned int GetRemainingLength(EDGETYPE direction, unsigned int currentoffset) const override;
 	virtual track_circuit *GetTrackCircuit() const override;
+	virtual const std::vector<track_train_counter_block *> *GetOtherTrackTriggers() const override;
 	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }

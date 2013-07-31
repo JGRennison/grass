@@ -27,6 +27,7 @@
 #include "error.h"
 #include "routetypes_serialisation.h"
 #include "deserialisation_scalarconv.h"
+#include "trackcircuit.h"
 
 void routingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	genericzlentrack::Deserialise(di, ec);
@@ -178,6 +179,30 @@ void routesignal::Serialise(serialiser_output &so, error_collection &ec) const {
 void route_restriction_set::DeserialiseRestriction(const deserialiser_input &subdi, error_collection &ec, bool isendtype) {
 	restrictions.emplace_back();
 	route_restriction &rr = restrictions.back();
+
+	auto deserialise_ttcb = [&](std::string prop, std::function<void(route_restriction &, track_train_counter_block *)> f) {
+		std::string approachcontroltrigger_ttcb;
+		if(CheckTransJsonValue(approachcontroltrigger_ttcb, subdi, prop.c_str(), ec)) {
+			world *w = subdi.w;
+			if(w) {
+				size_t rr_index = restrictions.size() - 1;
+				auto func = [this, approachcontroltrigger_ttcb, w, rr_index, prop, f](error_collection &ec) {
+					track_train_counter_block *ttcb = w->FindTrackTrainBlockOrTrackCircuitByName(approachcontroltrigger_ttcb);
+					if(ttcb) {
+						f(this->restrictions[rr_index], ttcb);
+					}
+					else {
+						ec.RegisterNewError<generic_error_obj>(prop + ": No such track circuit or track trigger: " + approachcontroltrigger_ttcb);
+					}
+				};
+				w->layout_init_final_fixups.AddFixup(func);
+			}
+			else {
+				ec.RegisterNewError<error_deserialisation>(subdi, prop + " not valid in this context (no world)");
+			}
+		}
+	};
+
 	if(isendtype) CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "routestart", ec, rr.targets);
 	else {
 		CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "targets", ec, rr.targets) ||
@@ -188,10 +213,17 @@ void route_restriction_set::DeserialiseRestriction(const deserialiser_input &sub
 	if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF::PRIORITYSET;
 	if(CheckTransJsonValueProc(rr.approachlocking_timeout, subdi, "approachlockingtimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APLOCK_TIMEOUTSET;
 	if(CheckTransJsonValueProc(rr.overlap_timeout, subdi, "overlaptimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTIMEOUTSET;
+	deserialise_ttcb("overlaptimeouttrigger", [&](route_restriction &rr, track_train_counter_block *ttcb) {
+		rr.overlaptimeout_trigger = ttcb;
+	});
 	bool res = CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::APCONTROL, subdi, "approachcontrol", ec);
 	if(res) rr.routerestrictionflags |= route_restriction::RRF::APCONTROL_SET;
 	if(!res || rr.routerestrictionflags & route_restriction::RRF::APCONTROL) {
 		if(CheckTransJsonValueProc(rr.approachcontrol_triggerdelay, subdi, "approachcontroltriggerdelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APCONTROLTRIGGERDELAY_SET | route_restriction::RRF::APCONTROL_SET | route_restriction::RRF::APCONTROL;
+		deserialise_ttcb("approachcontroltrigger", [&](route_restriction &rr, track_train_counter_block *ttcb) {
+			rr.approachcontrol_trigger = ttcb;
+			rr.routerestrictionflags |= route_restriction::RRF::APCONTROL_SET | route_restriction::RRF::APCONTROL;
+		});
 	}
 	if(CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::TORR, subdi, "torr", ec)) rr.routerestrictionflags |= route_restriction::RRF::TORR_SET;
 	if(CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::EXITSIGCONTROL, subdi, "exitsignalcontrol", ec)) rr.routerestrictionflags |= route_restriction::RRF::EXITSIGCONTROL_SET;

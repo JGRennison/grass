@@ -46,6 +46,7 @@ class route;
 class action;
 class world_serialisation;
 class track_circuit;
+class track_train_counter_block;
 class track_reservation_state;
 enum class RRF : unsigned int;
 enum class GTF : unsigned int;
@@ -104,6 +105,7 @@ class generictrack : public world_obj {
 	virtual int GetElevationDelta(EDGETYPE direction) const = 0;
 	virtual int GetPartialElevationDelta(EDGETYPE direction, unsigned int displacement) const;
 	virtual track_circuit *GetTrackCircuit() const;
+	virtual const std::vector<track_train_counter_block *> *GetOtherTrackTriggers() const { return 0; }
 	virtual void TrainEnter(EDGETYPE direction, train *t) = 0;
 	virtual void TrainLeave(EDGETYPE direction, train *t) = 0;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const = 0;

@@ -188,6 +188,12 @@ void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
 		tc = GetWorld().track_circuits.FindOrMakeByName(tracksegname);
 		tc->RegisterTrack(this);
 	}
+
+	CheckIterateJsonArrayOrType<std::string>(di, "tracktriggers", "tracktrigger", ec, [&](const deserialiser_input &sdi, error_collection &ec) {
+		track_train_counter_block *ttcb = GetWorld().track_triggers.FindOrMakeByName(GetType<std::string>(sdi.json));
+		ttcbs.push_back(ttcb);
+		ttcb->RegisterTrack(this);
+	});
 }
 
 void trackseg::Serialise(serialiser_output &so, error_collection &ec) const {

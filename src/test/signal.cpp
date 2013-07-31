@@ -260,6 +260,18 @@ R"({ "content" : [ )"
 	R"({ "type" : "endofline", "name" : "B" } )"
 "] }";
 
+std::function<void(routingpoint *, unsigned int, route_class::ID, routingpoint *, routingpoint *)> makechecksignal(world &w) {
+	return [&w](routingpoint *signal, unsigned int aspect, route_class::ID aspect_type, routingpoint *aspect_target, routingpoint *aspect_route_target) {
+		REQUIRE(signal != 0);
+		SCOPED_INFO("Signal check for: " << signal->GetName() << ", at time: " << w.GetGameTime());
+
+		CHECK(signal->GetAspect() == aspect);
+		CHECK(signal->GetAspectType() == aspect_type);
+		CHECK(signal->GetAspectNextTarget() == aspect_target);
+		CHECK(signal->GetAspectRouteTarget() == aspect_route_target);
+	};
+}
+
 class autosig_test_class_1 {
 	public:
 	genericsignal *s1;
@@ -281,16 +293,7 @@ class autosig_test_class_1 {
 		s6 = w.FindTrackByNameCast<genericsignal>("S6");
 		a = w.FindTrackByNameCast<routingpoint>("A");
 		b = w.FindTrackByNameCast<routingpoint>("B");
-
-		checksignal = [&](routingpoint *signal, unsigned int aspect, route_class::ID aspect_type, routingpoint *aspect_target, routingpoint *aspect_route_target) {
-			REQUIRE(signal != 0);
-			SCOPED_INFO("Signal check for: " << signal->GetName() << ", at time: " << w.GetGameTime());
-
-			CHECK(signal->GetAspect() == aspect);
-			CHECK(signal->GetAspectType() == aspect_type);
-			CHECK(signal->GetAspectNextTarget() == aspect_target);
-			CHECK(signal->GetAspectRouteTarget() == aspect_route_target);
-		};
+		checksignal = makechecksignal(w);
 	}
 };
 
@@ -780,6 +783,55 @@ TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
 	overlapcheck(tenv.s6, true);
 }
 
+
+std::string overlaptimeout_test_str_2 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "2aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 1, "routesignal" : true } }, )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "trackseg", "length" : 50000 }, )"
+	R"({ "type" : "2aspectroute", "name" : "S1" }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S1ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T2" }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T2", "tracktriggers" : "TT1" }, )"
+	R"({ "type" : "2aspectroute", "name" : "S2", "routerestrictions" : [ { "overlaptimeout" : 90000, "targets" : "S2ovlpend", "overlaptimeouttrigger" : "TT1" } ] }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S2ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true, "name" : "S2ovlpend" }, )"
+	R"({ "type" : "endofline", "name" : "B" } )"
+"] }";
+
+TEST_CASE( "signal/overlap/tracktrigger/timeout", "Test overlap timeouts for triggers" ) {
+	test_fixture_world_init_checked env(overlaptimeout_test_str_2);
+
+	genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
+	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
+
+	env.w.SubmitAction(action_reservepath(env.w, s1, s2));
+	CHECK(env.w.GetLogText() == "");
+	env.w.GameStep(1);
+
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->overlap_timeout == 90000);
+	CHECK(PTR_CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->overlaptimeout_trigger)->GetName() == "TT1");
+
+	env.w.track_circuits.FindOrMakeByName("T2")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.SubmitAction(action_unreservetrack(env.w, *s1));
+	env.w.GameStep(1);
+
+	env.w.GameStep(100000);
+	env.w.GameStep(100000);
+	CHECK(s2->GetCurrentForwardOverlap() != 0);
+
+	env.w.track_triggers.FindOrMakeByName("TT1")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.GameStep(1);
+	CHECK((s2->GetSignalFlags() & GSF::OVERLAPTIMEOUTSTARTED) == GSF::OVERLAPTIMEOUTSTARTED);
+
+	env.w.GameStep(89998);
+	CHECK(s2->GetCurrentForwardOverlap() != 0);
+	env.w.GameStep(4);
+	env.w.GameStep(4);
+	CHECK(s2->GetCurrentForwardOverlap() == 0);
+}
+
 TEST_CASE( "signal/deserialisation/flagchecks", "Test signal/route flags contradiction detection and sanity checks" ) {
 	auto check = [&](const std::string &str, unsigned int errcount) {
 		test_fixture_world env(str);
@@ -909,6 +961,44 @@ TEST_CASE( "signal/approachcontrol/general", "Test basic approach control" ) {
 	env.w.track_circuits.FindOrMakeByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 	env.w.GameStep(3000);
 	checksignals(__LINE__, 2, 1, 2, 1, 1);
+}
+
+std::string approachcontrol_test_str_2 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "2aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 1, "routesignal" : true } }, )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "autosignal", "name" : "S1" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T2" }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T2", "tracktriggers" : "TT1" }, )"
+	R"({ "type" : "2aspectroute", "name" : "S2", "routerestrictions" : [ { "approachcontroltrigger" : "TT1" } ] }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S2ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true, "name" : "S2ovlpend" }, )"
+	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "route" } } )"
+"] }";
+
+TEST_CASE( "signal/approachcontrol/tracktrigger", "Test approach control for triggers" ) {
+	test_fixture_world_init_checked env(approachcontrol_test_str_2);
+
+	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
+	routingpoint *b = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("B"));
+
+	env.w.SubmitAction(action_reservepath(env.w, s2, b));
+	CHECK(env.w.GetLogText() == "");
+	env.w.GameStep(1);
+
+	CHECK(s2->GetAspect() == 0);
+
+	env.w.track_circuits.FindOrMakeByName("T2")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.GameStep(1);
+
+	env.w.GameStep(100000);
+	env.w.GameStep(100000);
+	CHECK(s2->GetAspect() == 0);
+
+	env.w.track_triggers.FindOrMakeByName("TT1")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w.GameStep(1);
+	CHECK(s2->GetAspect() == 1);
 }
 
 
