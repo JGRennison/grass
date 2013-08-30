@@ -584,3 +584,26 @@ TEST_CASE( "berth/step/18", "Berth stepping test no 18: check stepping out of la
 	CheckBerth(env, "TS1", "");
 	CheckBerth(env, "TS3", "foo");
 }
+
+TEST_CASE( "track_circuit/updates", "Test basic track circuit updates" ) {
+	test_fixture_world_init_checked env(tcdereservation_test_str_1);
+
+	env.w.GameStep(1);
+
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 0);
+
+	track_circuit *tc = PTR_CHECK(env.w.track_circuits.FindOrMakeByName("T1"));
+
+	tc->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	CHECK(env.w.GetLastUpdateSet().size() == 2);
+
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 0);
+
+	tc->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	CHECK(env.w.GetLastUpdateSet().size() == 2);
+
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 0);
+}

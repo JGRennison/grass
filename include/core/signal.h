@@ -43,7 +43,12 @@ typedef std::vector<routingpoint *> via_list;
 typedef std::vector<track_circuit *> tc_list;
 typedef std::vector<genericsignal *> sig_list;
 typedef std::vector<route_recording_item> passable_test_list;
-typedef std::vector<trackberth *> berth_list;
+struct berth_record {
+	trackberth *berth = 0;
+	generictrack *ownertrack = 0;
+	berth_record(trackberth *b, generictrack *o = 0) : berth(b), ownertrack(o) {}
+};
+typedef std::vector<berth_record> berth_list;
 
 enum class GMRF : unsigned int {
 	ZERO		= 0,
@@ -294,8 +299,6 @@ class genericsignal : public trackroutingpoint {
 	virtual void TrainEnter(EDGETYPE direction, train *t) override;
 	virtual void TrainLeave(EDGETYPE direction, train *t) override;
 
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) override;
-
 	virtual std::string GetTypeName() const override { return "Generic Signal"; }
 
 	virtual GSF GetSignalFlags() const;
@@ -329,6 +332,7 @@ class genericsignal : public trackroutingpoint {
 
 	protected:
 	bool PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(route_class::ID type, const track_target_ptr &piece)> mkblankroute);
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) override;
 };
 
 class autosignal : public genericsignal {
@@ -395,7 +399,7 @@ class startofline : public routingpoint {
 
 	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
 	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override;
 
 	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
@@ -438,7 +442,7 @@ class routingmarker : public trackroutingpoint {
 
 	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
 
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
 	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override;

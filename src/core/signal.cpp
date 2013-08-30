@@ -234,7 +234,7 @@ GSF genericsignal::SetSignalFlagsMasked(GSF set_flags, GSF mask_flags) {
 	return sflags;
 }
 
-bool genericsignal::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
+bool genericsignal::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	if(direction != EDGE_FRONT && rr_flags & (RRF::STARTPIECE | RRF::ENDPIECE)) {
 		return false;
 	}
@@ -278,12 +278,20 @@ void genericsignal::UpdateSignalState() {
 
 	last_state_update = GetWorld().GetGameTime();
 
+	unsigned int previous_aspect = aspect;
+	auto check_aspect_change = [&]() {
+		if(aspect != previous_aspect) {
+			MarkUpdated();
+		}
+	};
+
 	auto clear_route = [&]() {
 		aspect = 0;
 		reserved_aspect = 0;
 		SetAspectNextTarget(0);
 		SetAspectRouteTarget(0);
 		aspect_type = route_class::RTC_NULL;
+		check_aspect_change();
 	};
 
 	const route *own_overlap = GetCurrentForwardOverlap();
@@ -417,6 +425,7 @@ void genericsignal::UpdateSignalState() {
 	if(sflags & GSF::APPROACHLOCKINGMODE) {
 		aspect = 0;
 	}
+	check_aspect_change();
 }
 
 //this will not return the overlap, only the "real" route
@@ -542,10 +551,10 @@ trackberth *genericsignal::GetPriorBerth(EDGETYPE direction, routingpoint::GPBF 
 		if(!rt->berths.empty()) {
 			if(flags & routingpoint::GPBF::GETNONEMPTY) {
 				for(auto &it : rt->berths) {
-					if(!it->contents.empty()) berth = it;	//find last non-empty berth on route
+					if(!it.berth->contents.empty()) berth = it.berth;	//find last non-empty berth on route
 				}
 			}
-			else berth = rt->berths.back();
+			else berth = rt->berths.back().berth;
 		}
 	});
 	if(berth) return berth;
@@ -861,7 +870,7 @@ void route::FillLists() {
 			passtestlist.push_back(*it);
 		}
 		if(it->location.track->HasBerth(it->location.direction)) {
-			berths.push_back(it->location.track->GetBerth());
+			berths.emplace_back(it->location.track->GetBerth(), it->location.track);
 		}
 		if(it->location.track->GetFlags(it->location.track->GetDefaultValidDirecton()) & GTF::SIGNAL) berths.clear();	//if we reach a signal, remove any berths we saw beforehand
 	}
@@ -1020,7 +1029,7 @@ void startofline::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_FRONT, connection) });
 }
 
-bool startofline::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
+bool startofline::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	if(rr_flags & RRF::STARTPIECE && direction == EDGE_BACK) {
 		return trs.Reservation(direction, index, rr_flags, resroute);
 	}
@@ -1066,7 +1075,7 @@ GTF routingmarker::GetFlags(EDGETYPE direction) const {
 	return GTF::ROUTINGPOINT | trs.GetGTReservationFlags(direction);
 }
 
-bool routingmarker::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
+bool routingmarker::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 

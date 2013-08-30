@@ -319,7 +319,7 @@ trackseg & trackseg::SetTrackCircuit(track_circuit *tc) {
 	return *this;
 }
 
-bool trackseg::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
+bool trackseg::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	if(rr_flags & RRF::STOP_ON_OCCUPIED_TC && GetTrackCircuit() && GetTrackCircuit()->Occupied()) return false;
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
@@ -424,7 +424,7 @@ GTF crossover::GetFlags(EDGETYPE direction) const {
 	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-bool crossover::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
+bool crossover::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 

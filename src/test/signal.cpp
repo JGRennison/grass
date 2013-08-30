@@ -1276,3 +1276,31 @@ TEST_CASE( "route/restrictions/end", "Test route end restrictions" ) {
 	env.w.GameStep(1);
 	CHECK(env.w.GetLogText() == "");
 }
+
+TEST_CASE( "signal/updates", "Test basic signal state and reservation state change updates" ) {
+	test_fixture_world_init_checked env(autosig_test_str_1);
+
+	autosig_test_class_1 tenv(env.w);
+	env.w.GameStep(1);
+
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 0);
+
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s5, tenv.s6));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 9);	//5 pieces on route, overlap (2) and 2 preceding signals.
+
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 0);
+
+	env.w.SubmitAction(action_reservepath(env.w, tenv.s6, tenv.b));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 7);	//5 pieces on route and 2 preceding signals.
+
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 0);
+
+	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s6));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 7);	//5 pieces on route and 2 preceding signals.
+}

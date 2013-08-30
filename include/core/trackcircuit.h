@@ -78,6 +78,7 @@ class track_train_counter_block : public world_obj {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
+	virtual void OccupationStateChangeTrigger() { };
 	virtual void OccupationTrigger() { };
 	virtual void DeOccupationTrigger() { };
 };
@@ -95,6 +96,7 @@ class track_circuit : public track_train_counter_block {
 	virtual std::string GetTypeSerialisationClassName() const override { return GetTypeSerialisationClassNameStatic(); }
 
 	protected:
+	virtual void OccupationStateChangeTrigger() override;
 	virtual void OccupationTrigger() override;
 	virtual void DeOccupationTrigger() override;
 };

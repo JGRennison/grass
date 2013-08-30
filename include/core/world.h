@@ -28,6 +28,7 @@
 #include <unordered_map>
 #include <deque>
 #include <forward_list>
+#include <set>
 #include "tractiontype.h"
 #include "serialisable.h"
 #include "future.h"
@@ -41,6 +42,7 @@ class track_circuit;
 class track_train_counter_block;
 class vehicle_class;
 class world;
+class updatable_obj;
 
 struct connection_forward_declaration {
 	generictrack *track1;
@@ -117,6 +119,7 @@ class world : public named_futurable_obj {
 	fixup_list post_layout_init_final_fixups;
 	track_train_counter_block_container<track_circuit> track_circuits;
 	track_train_counter_block_container<track_train_counter_block> track_triggers;
+	std::set<updatable_obj *> update_set;
 
 	world();
 	virtual ~world();
@@ -159,6 +162,8 @@ class world : public named_futurable_obj {
 	}
 	vehicle_class *FindOrMakeVehicleClassByName(const std::string &name);
 	vehicle_class *FindVehicleClassByName(const std::string &name);
+	void MarkUpdated(updatable_obj *wo);
+	const std::set<updatable_obj *> &GetLastUpdateSet() const { return update_set; }
 };
 
 #endif

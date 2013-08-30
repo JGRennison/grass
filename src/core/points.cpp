@@ -46,7 +46,9 @@ genericpoints::PTF genericpoints::SetPointsFlagsMasked(unsigned int points_index
 
 	if(pflags & PTF::FIXED || pflags & PTF::INVALID) return pflags;
 
+	PTF old_pflags = pflags;
 	pflags = (pflags & (~mask_flags)) | (set_flags & mask_flags);
+	if(old_pflags != pflags) MarkUpdated();
 
 	std::vector<points_coupling> *couplings = GetCouplingVector(points_index);
 	if(couplings) {
@@ -58,12 +60,13 @@ genericpoints::PTF genericpoints::SetPointsFlagsMasked(unsigned int points_index
 				curbits = swap_single_bits(curbits, PTF::FAILEDNORM, PTF::FAILEDREV);
 			}
 			curbits ^= it->xormask;
+			PTF old_cp_pflags = *(it->pflags);
 			*(it->pflags) = (*(it->pflags) & (~curmask)) | (curbits & curmask);
+			if(old_cp_pflags != *(it->pflags)) it->targ->MarkUpdated();
 		}
 	}
 	return pflags;
 }
-
 
 const track_target_ptr & points::GetConnectingPiece(EDGETYPE direction) const {
 	if(IsOOC(0)) return empty_track_target;
@@ -182,7 +185,7 @@ bool IsPointsRoutingDirAndIndexRev(EDGETYPE direction, unsigned int index) {
 	}
 }
 
-bool points::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
+bool points::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	PTF pflags = GetPointsFlags(0);
 	bool rev = pflags & PTF::REV;
 	if(IsFlagsImmovable(pflags)) {
@@ -194,7 +197,7 @@ bool points::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, c
 	return trs.Reservation(direction, index, rr_flags, resroute, failreasonkey);
 }
 
-void points::ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+void points::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
 	if(rr_flags & RRF::RESERVE) {
 		bool rev = pflags & PTF::REV;
 		bool newrev = IsPointsRoutingDirAndIndexRev(direction, index);
@@ -313,7 +316,7 @@ const genericpoints::PTF &catchpoints::GetPointsFlagsRef(unsigned int points_ind
 	return pflags;
 }
 
-bool catchpoints::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
+bool catchpoints::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	genericpoints::PTF pflags = GetPointsFlags(0);
 	if(IsFlagsImmovable(pflags) && pflags & PTF::REV) {
 		GetReservationFailureReason(pflags, failreasonkey);
@@ -322,7 +325,7 @@ bool catchpoints::Reservation(EDGETYPE direction, unsigned int index, RRF rr_fla
 	return trs.Reservation(direction, index, rr_flags, resroute, failreasonkey);
 }
 
-void catchpoints::ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+void catchpoints::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
 	if(rr_flags & RRF::RESERVE && trs.GetReservationCount() == 0) {
 		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::ZERO, PTF::REV, action_pointsaction::APAF::NOOVERLAPSWING));
 	}
@@ -407,7 +410,7 @@ GTF springpoints::GetFlags(EDGETYPE direction) const {
 	return GTF::ROUTEFORK | trs.GetGTReservationFlags(direction);
 }
 
-bool springpoints::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
+bool springpoints::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
@@ -501,7 +504,7 @@ const genericpoints::PTF &doubleslip::GetPointsFlagsRef(unsigned int points_inde
 	}
 }
 
-bool doubleslip::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
+bool doubleslip::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	PTF pf = GetCurrentPointFlags(direction);
 	if(IsFlagsImmovable(pf)) {
 		if(!(pf & PTF::REV) != !index) {
@@ -525,7 +528,7 @@ bool doubleslip::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flag
 	return trs.Reservation(direction, index, rr_flags, resroute, failreasonkey);
 }
 
-void doubleslip::ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+void doubleslip::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
 	if(rr_flags & RRF::RESERVE) {
 		unsigned int entranceindex = GetPointsIndexByEdge(direction);
 		PTF entrancepf = GetCurrentPointFlags(direction);

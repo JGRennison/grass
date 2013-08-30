@@ -25,12 +25,24 @@
 #ifndef INC_WORLDOBJ_ALREADY
 #define INC_WORLDOBJ_ALREADY
 
+#include <string>
+#include <vector>
+#include <functional>
 #include "future.h"
 #include "serialisable.h"
 
 class world;
 
-class world_obj : public serialisable_futurable_obj {
+class updatable_obj {
+	std::vector<std::function<void(updatable_obj*, world &)> > update_functions;
+
+	public:
+	void AddUpdateHook(const std::function<void(updatable_obj*, world &)> &f);
+	virtual void MarkUpdated(world &w);
+	virtual void UpdateNotification(world &w);
+};
+
+class world_obj : public serialisable_futurable_obj, public updatable_obj {
 	std::string name;
 	world &w;
 
@@ -42,6 +54,7 @@ class world_obj : public serialisable_futurable_obj {
 	void SetName(std::string newname) { name = newname; }
 	virtual std::string GetFriendlyName() const;
 	world &GetWorld() const { return w; }
+	void MarkUpdated() { updatable_obj::MarkUpdated(w); }
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 };

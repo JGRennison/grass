@@ -122,9 +122,20 @@ class generictrack : public world_obj {
 
 	bool FullConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec);
 
+	protected:
 	//return true if reservation OK
-	virtual bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) = 0;
-	virtual void ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) { }
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) = 0;
+	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) { }
+
+	public:
+	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) {
+		bool result = ReservationV(direction, index, rr_flags, resroute, failreasonkey);
+		if(result) MarkUpdated();
+		return result;
+	}
+	void ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+		ReservationActionsV(direction, index, rr_flags, resroute, submitaction);
+	}
 
 	virtual std::string GetTypeName() const { return "Generic Track"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "track"; }

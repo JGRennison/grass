@@ -42,35 +42,40 @@ static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int
 
 	if(flags & BPFF_SOFT) {			//don't insert berth value if any berths are already occupied, insert into last berth
 		for(; it != rt->berths.end(); ++it) {
-			if(!(*it)->contents.empty()) return;
+			if(!(*it).berth->contents.empty()) return;
 		}
-		rt->berths.back()->contents = newvalue;
+		rt->berths.back().berth->contents = newvalue;
+		if(rt->berths.back().ownertrack) rt->berths.back().ownertrack->MarkUpdated();
 	}
 	else {
 		std::function<void(decltype(it) &)> advance = [&](decltype(it) &start) {
-			if((*start)->contents.empty()) return;
+			if((*start).berth->contents.empty()) return;
 			auto next = std::next(start);
 			if(next == rt->berths.end()) return;
 			advance(next);
-			if((*next)->contents.empty()) {
-				(*next)->contents = std::move((*start)->contents);
-				(*start)->contents.clear();
+			if((*next).berth->contents.empty()) {
+				(*next).berth->contents = std::move((*start).berth->contents);
+				(*start).berth->contents.clear();
+				if((*next).ownertrack) (*next).ownertrack->MarkUpdated();
+				if((*start).ownertrack) (*start).ownertrack->MarkUpdated();
 			}
 
 		};
 		for(; it != rt->berths.end(); ++it) {
 			auto next = std::next(it);
 			advance(it);
-			if((*it)->contents.empty()) {
-				if(next == rt->berths.end() || !(*next)->contents.empty()) {
-					(*it)->contents = newvalue;
+			if((*it).berth->contents.empty()) {
+				if(next == rt->berths.end() || !(*next).berth->contents.empty()) {
+					(*it).berth->contents = newvalue;
+					if((*it).ownertrack) (*it).ownertrack->MarkUpdated();
 					return;
 				}
 			}
 		}
 
 		//berths all full, overwrite first
-		rt->berths.front()->contents = newvalue;
+		rt->berths.front().berth->contents = newvalue;
+		if(rt->berths.front().ownertrack) rt->berths.front().ownertrack->MarkUpdated();
 	}
 }
 
@@ -86,6 +91,7 @@ void track_train_counter_block::TrainEnter(train *t) {
 	occupying_trains.emplace_back(t, 1);
 	if(prevoccupied != Occupied()) {
 		last_change = GetWorld().GetGameTime();
+		OccupationStateChangeTrigger();
 		OccupationTrigger();
 	}
 }
@@ -104,6 +110,7 @@ void track_train_counter_block::TrainLeave(train *t) {
 	}
 	if(prevoccupied != Occupied()) {
 		last_change = GetWorld().GetGameTime();
+		OccupationStateChangeTrigger();
 		DeOccupationTrigger();
 	}
 }
@@ -131,6 +138,7 @@ track_train_counter_block::TCF track_train_counter_block::SetTCFlagsMasked(TCF b
 	tc_flags = (tc_flags & ~mask) | (bits & mask);
 	if(prevoccupied != Occupied()) {
 		last_change = GetWorld().GetGameTime();
+		OccupationStateChangeTrigger();
 		if(prevoccupied) DeOccupationTrigger();
 		else OccupationTrigger();
 	}
@@ -248,6 +256,13 @@ void track_train_counter_block::GetSetRoutes(std::vector<const route *> &routes)
 				routes.push_back(reserved_route);
 			}
 		}, RRF::RESERVE);
+	}
+}
+
+void track_circuit::OccupationStateChangeTrigger() {
+	GetWorld().MarkUpdated(this);
+	for(auto &it : GetOwnedTrackSet()) {
+		it->MarkUpdated();
 	}
 }
 

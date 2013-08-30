@@ -648,3 +648,22 @@ TEST_CASE( "track/deserialisation/gamestate/basicload", "Test basic gamestate lo
 
 	CHECK((p1->GetPointsFlags(0) & points::PTF::REV) == points::PTF::REV);
 }
+
+TEST_CASE( "track/points/updates", "Test basic points updates" ) {
+	test_fixture_track_2 env;
+
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 0);
+
+	env.w.SubmitAction(action_pointsaction(env.w, env.pt1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+
+	CHECK(env.w.GetLastUpdateSet().size() == 0);
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 1);
+	env.w.GameStep(10000);
+	CHECK(env.w.GetLastUpdateSet().size() == 1);
+
+	env.w.SubmitAction(action_pointsaction(env.w, env.pt1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	env.w.GameStep(1);
+	CHECK(env.w.GetLastUpdateSet().size() == 0);
+}

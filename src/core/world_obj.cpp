@@ -26,6 +26,20 @@
 #include "world.h"
 #include "serialisable_impl.h"
 
+void updatable_obj::AddUpdateHook(const std::function<void(updatable_obj*, world &)> &f) {
+	update_functions.push_back(f);
+}
+
+void updatable_obj::MarkUpdated(world &w) {
+	w.MarkUpdated(this);
+}
+
+void updatable_obj::UpdateNotification(world &w) {
+	for(auto &it : update_functions) {
+		it(this, w);
+	}
+}
+
 std::string world_obj::GetFriendlyName() const {
 	std::string result= std::string(GetTypeName()).append(": ").append((!name.empty()) ? name : std::string("[unnamed]"));
 	return result;

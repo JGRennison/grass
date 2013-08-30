@@ -43,6 +43,8 @@ world::~world() {
 }
 
 void world::GameStep(world_time delta) {
+	update_set.clear();
+
 	gametime += delta;
 
 	futures.ExecuteUpTo(gametime);
@@ -54,6 +56,9 @@ void world::GameStep(world_time delta) {
 		auto current = it;
 		++it;	//do this as *current may be modified/deleted
 		current->TrainTimeStep(delta);
+	}
+	for(auto &it : update_set) {
+		it->UpdateNotification(*this);
 	}
 }
 
@@ -229,4 +234,8 @@ vehicle_class *world::FindVehicleClassByName(const std::string &name) {
 	auto vcit = all_vehicle_classes.find(name);
 	if(vcit == all_vehicle_classes.end()) return 0;
 	else return vcit->second.get();
+}
+
+void world::MarkUpdated(updatable_obj *wo) {
+	update_set.insert(wo);
 }
