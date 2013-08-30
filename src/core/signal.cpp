@@ -625,7 +625,7 @@ struct signal_route_recording_state : public generic_route_recording_state {
 };
 
 bool autosignal::PostLayoutInit(error_collection &ec) {
-	if(! genericsignal::PostLayoutInit(ec)) return false;
+	if(! stdsignal::PostLayoutInit(ec)) return false;
 
 	auto mkroutefunc = [&](route_class::ID type, const track_target_ptr &piece) -> route* {
 		route *candidate = 0;
@@ -685,7 +685,7 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 }
 
 bool routesignal::PostLayoutInit(error_collection &ec) {
-	if(! genericsignal::PostLayoutInit(ec)) return false;
+	if(! stdsignal::PostLayoutInit(ec)) return false;
 
 	unsigned int route_index = 0;
 	return PostLayoutInitTrackScan(ec, 100, 10, &restrictions, [&](route_class::ID type, const track_target_ptr &piece) -> route* {

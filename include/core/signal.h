@@ -237,12 +237,21 @@ template<> struct enum_traits< route_restriction::RRF> {	static constexpr bool f
 
 bool RouteReservation(route &res_route, RRF rr_flags);
 
+class trackroutingpoint_deserialisation_extras_base {
+	public:
+	trackroutingpoint_deserialisation_extras_base() { }
+	virtual ~trackroutingpoint_deserialisation_extras_base() { }
+};
+
 class trackroutingpoint : public routingpoint {
 	protected:
 	track_target_ptr prev;
 	track_target_ptr next;
 	RPRT availableroutetypes_forward;
 	RPRT availableroutetypes_reverse;
+
+	protected:
+	std::unique_ptr<trackroutingpoint_deserialisation_extras_base> trp_de;
 
 	public:
 	trackroutingpoint(world &w_) : routingpoint(w_) { }
@@ -335,12 +344,20 @@ class genericsignal : public trackroutingpoint {
 	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) override;
 };
 
-class autosignal : public genericsignal {
+class stdsignal : public genericsignal {
+	public:
+	stdsignal(world &w_) : genericsignal(w_) { }
+	virtual std::string GetTypeName() const override { return "Standard Signal"; }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+};
+
+class autosignal : public stdsignal {
 	route signal_route;
 	route overlap_route;
 
 	public:
-	autosignal(world &w_) : genericsignal(w_) { availableroutetypes_forward.start |= route_class::Flag(route_class::RTC_ROUTE); availableroutetypes_forward.end |= route_class::AllNonOverlaps(); sflags |= GSF::AUTOSIGNAL; }
+	autosignal(world &w_) : stdsignal(w_) { availableroutetypes_forward.start |= route_class::Flag(route_class::RTC_ROUTE); availableroutetypes_forward.end |= route_class::AllNonOverlaps(); sflags |= GSF::AUTOSIGNAL; }
 	bool PostLayoutInit(error_collection &ec) override;
 	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual std::string GetTypeName() const override { return "Automatic Signal"; }
@@ -355,12 +372,12 @@ class autosignal : public genericsignal {
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const override;
 };
 
-class routesignal : public genericsignal {
+class routesignal : public stdsignal {
 	std::list<route> signal_routes;
 	route_restriction_set restrictions;
 
 	public:
-	routesignal(world &w_) : genericsignal(w_) { }
+	routesignal(world &w_) : stdsignal(w_) { }
 	virtual bool PostLayoutInit(error_collection &ec) override;
 	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual std::string GetTypeName() const override { return "Route Signal"; }

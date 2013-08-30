@@ -38,18 +38,30 @@ void routingpoint::Deserialise(const deserialiser_input &di, error_collection &e
 		});
 }
 
+class trackroutingpoint_deserialisation_extras : public trackroutingpoint_deserialisation_extras_base {
+	public:
+	flag_conflict_checker<route_class::set> conflictcheck_start;
+	flag_conflict_checker<route_class::set> conflictcheck_start_rev;
+	flag_conflict_checker<route_class::set> conflictcheck_end;
+	flag_conflict_checker<route_class::set> conflictcheck_end_rev;
+	flag_conflict_checker<route_class::set> conflictcheck_through;
+	flag_conflict_checker<route_class::set> conflictcheck_through_rev;
+};
+
 void trackroutingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	routingpoint::Deserialise(di, ec);
 
-	route_class::DeserialiseGroupProp(availableroutetypes_forward.through, di, "through", ec);
-	route_class::DeserialiseGroupProp(availableroutetypes_reverse.through, di, "through_rev", ec);
+	trp_de.reset(new trackroutingpoint_deserialisation_extras);
+	trackroutingpoint_deserialisation_extras *de = static_cast<trackroutingpoint_deserialisation_extras*>(trp_de.get());
+	route_class::DeserialiseGroupProp(availableroutetypes_forward.through, di, "through", ec, de->conflictcheck_through);
+	route_class::DeserialiseGroupProp(availableroutetypes_reverse.through, di, "through_rev", ec, de->conflictcheck_through_rev);
 
 	bool val;
 	if(CheckTransJsonValue<bool>(val, di, "overlapend", ec)) {
-		SetOrClearBitsRef(availableroutetypes_forward.end, route_class::Flag(route_class::ID::RTC_OVERLAP), val);
+		de->conflictcheck_end.RegisterAndProcessFlags(availableroutetypes_forward.end, val, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
 	}
 	if(CheckTransJsonValue<bool>(val, di, "overlapend_rev", ec)) {
-		SetOrClearBitsRef(availableroutetypes_reverse.end, route_class::Flag(route_class::ID::RTC_OVERLAP), val);
+		de->conflictcheck_end_rev.RegisterAndProcessFlags(availableroutetypes_reverse.end, val, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
 	}
 
 	if(CheckTransJsonValue<bool>(val, di, "via", ec)) {
@@ -68,34 +80,47 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonSubObj(start_trs, di, "start_trs", "trs", ec);
 	CheckTransJsonSubObj(end_trs, di, "end_trs", "trs", ec);
 
-	flag_conflict_checker<route_class::set> conflictcheck_start;
-	flag_conflict_checker<route_class::set> conflictcheck_end;
-	flag_conflict_checker<route_class::set> conflictcheck_end_rev;
-	conflictcheck_start.Ban(route_class::AllOverlaps());
-	conflictcheck_end_rev.Ban(route_class::AllNonOverlaps());
-	if(di.json.HasMember("overlapend")) conflictcheck_end.RegisterFlagsMasked(availableroutetypes_forward.end, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
-	if(di.json.HasMember("overlapend_rev")) conflictcheck_end.RegisterFlagsMasked(availableroutetypes_reverse.end, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
-	route_class::DeserialiseGroupProp(availableroutetypes_forward.start, di, "start", ec, conflictcheck_start);
-	route_class::DeserialiseGroupProp(availableroutetypes_forward.end, di, "end", ec, conflictcheck_end);
-	route_class::DeserialiseGroupProp(availableroutetypes_reverse.end, di, "end_rev", ec, conflictcheck_end_rev);
+	CheckTransJsonValue(max_aspect, di, "maxaspect", ec);
+	CheckTransJsonValueFlag(sflags, GSF::APPROACHLOCKINGMODE, di, "approachlockingmode", ec);
+	CheckTransJsonValueFlag(sflags, GSF::OVERLAPTIMEOUTSTARTED, di, "overlaptimeoutstarted", ec);
+	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) CheckTransJsonValue(overlap_timeout_start, di, "overlap_timeout_start", ec);
+}
+
+void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {
+	trackroutingpoint::Serialise(so, ec);
+
+	SerialiseSubObjJson(start_trs, so, "start_trs", ec);
+	SerialiseSubObjJson(end_trs, so, "end_trs", ec);
+	if(sflags & GSF::APPROACHLOCKINGMODE) SerialiseValueJson<bool>(true, so, "approachlockingmode");
+	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) {
+		SerialiseValueJson(overlap_timeout_start, so, "overlap_timeout_start");
+		SerialiseValueJson<bool>(true, so, "approachlockingmode");
+	}
+}
+
+void stdsignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	genericsignal::Deserialise(di, ec);
+
+	trackroutingpoint_deserialisation_extras *de = static_cast<trackroutingpoint_deserialisation_extras*>(trp_de.get());
+	de->conflictcheck_start.Ban(route_class::AllOverlaps());
+	de->conflictcheck_end_rev.Ban(route_class::AllNonOverlaps());
+	route_class::DeserialiseGroupProp(availableroutetypes_forward.start, di, "start", ec, de->conflictcheck_start);
+	route_class::DeserialiseGroupProp(availableroutetypes_forward.end, di, "end", ec, de->conflictcheck_end);
+	route_class::DeserialiseGroupProp(availableroutetypes_reverse.end, di, "end_rev", ec, de->conflictcheck_end_rev);
 
 	auto docompoundflag = [&](const char *prop, route_class::set start_flags, route_class::set end_flags) {
 		bool val;
 		if(CheckTransJsonValue<bool>(val, di, prop, ec)) {
-			conflictcheck_start.RegisterAndProcessFlags(availableroutetypes_forward.start, val, start_flags, di, prop, ec);
-			conflictcheck_end.RegisterAndProcessFlags(availableroutetypes_forward.end, val, end_flags, di, prop, ec);
+			de->conflictcheck_start.RegisterAndProcessFlags(availableroutetypes_forward.start, val, start_flags, di, prop, ec);
+			de->conflictcheck_end.RegisterAndProcessFlags(availableroutetypes_forward.end, val, end_flags, di, prop, ec);
 		}
 	};
 	docompoundflag("shuntsignal", route_class::Flag(route_class::RTC_SHUNT), route_class::Flag(route_class::RTC_SHUNT));
 	docompoundflag("routesignal", route_class::Flag(route_class::RTC_ROUTE), route_class::Flag(route_class::RTC_SHUNT) | route_class::Flag(route_class::RTC_ROUTE));
 	docompoundflag("routeshuntsignal", route_class::Flag(route_class::RTC_SHUNT) | route_class::Flag(route_class::RTC_ROUTE), route_class::Flag(route_class::RTC_SHUNT) | route_class::Flag(route_class::RTC_ROUTE));
 
-	CheckTransJsonValue(max_aspect, di, "maxaspect", ec);
 	CheckTransJsonValueFlag(sflags, GSF::OVERLAPSWINGABLE, di, "overlapswingable", ec);
 	CheckTransJsonValue(overlapswingminaspectdistance, di, "overlapswingminaspectdistance", ec);
-	CheckTransJsonValueFlag(sflags, GSF::APPROACHLOCKINGMODE, di, "approachlockingmode", ec);
-	CheckTransJsonValueFlag(sflags, GSF::OVERLAPTIMEOUTSTARTED, di, "overlaptimeoutstarted", ec);
-	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) CheckTransJsonValue(overlap_timeout_start, di, "overlap_timeout_start", ec);
 	CheckTransJsonValueFlag(sflags, GSF::NOOVERLAP, di, "nooverlap", ec);
 
 	deserialiser_input sddi(di.json["approachlockingtimeout"], "approachlockingtimeout", "approachlockingtimeout", di);
@@ -145,28 +170,20 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonValue(overlap_default_timeout, di, "overlaptimeout", ec);
 }
 
-void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {
-	trackroutingpoint::Serialise(so, ec);
-
-	SerialiseSubObjJson(start_trs, so, "start_trs", ec);
-	SerialiseSubObjJson(end_trs, so, "end_trs", ec);
-	if(sflags & GSF::APPROACHLOCKINGMODE) SerialiseValueJson<bool>(true, so, "approachlockingmode");
-	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) {
-		SerialiseValueJson(overlap_timeout_start, so, "overlap_timeout_start");
-		SerialiseValueJson<bool>(true, so, "approachlockingmode");
-	}
-}
-
-void autosignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	genericsignal::Deserialise(di, ec);
-}
-
-void autosignal::Serialise(serialiser_output &so, error_collection &ec) const {
+void stdsignal::Serialise(serialiser_output &so, error_collection &ec) const {
 	genericsignal::Serialise(so, ec);
 }
 
+void autosignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	stdsignal::Deserialise(di, ec);
+}
+
+void autosignal::Serialise(serialiser_output &so, error_collection &ec) const {
+	stdsignal::Serialise(so, ec);
+}
+
 void routesignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	genericsignal::Deserialise(di, ec);
+	stdsignal::Deserialise(di, ec);
 	CheckIterateJsonArrayOrType<json_object>(di, "routerestrictions", "routerestrictions", ec,
 		[&](const deserialiser_input &subdi, error_collection &ec) {
 			restrictions.DeserialiseRestriction(subdi, ec, false);
@@ -174,7 +191,7 @@ void routesignal::Deserialise(const deserialiser_input &di, error_collection &ec
 }
 
 void routesignal::Serialise(serialiser_output &so, error_collection &ec) const {
-	genericsignal::Serialise(so, ec);
+	stdsignal::Serialise(so, ec);
 }
 
 void route_restriction_set::DeserialiseRestriction(const deserialiser_input &subdi, error_collection &ec, bool isendtype) {
