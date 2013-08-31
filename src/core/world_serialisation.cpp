@@ -276,6 +276,7 @@ void world_serialisation::InitObjectTypes() {
 	MakeGenericTrackTypeWrapper<points>();
 	MakeGenericTrackTypeWrapper<autosignal>();
 	MakeGenericTrackTypeWrapper<routesignal>();
+	MakeGenericTrackTypeWrapper<repeatersignal>();
 	MakeGenericTrackTypeWrapper<catchpoints>();
 	MakeGenericTrackTypeWrapper<springpoints>();
 	MakeGenericTrackTypeWrapper<crossover>();

@@ -31,6 +31,7 @@
 #include "trackcircuit.h"
 #include "track_ops.h"
 #include "testutil.h"
+#include "util.h"
 
 std::string track_test_str_1 =
 R"({ "content" : [ )"
@@ -1303,4 +1304,53 @@ TEST_CASE( "signal/updates", "Test basic signal state and reservation state chan
 	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s6));
 	env.w.GameStep(1);
 	CHECK(env.w.GetLastUpdateSet().size() == 7);	//5 pieces on route and 2 preceding signals.
+}
+
+TEST_CASE( "signal/propagation/repeater", "Test aspect propagation and route creation with aspected repeater signals") {
+	auto test = [&](bool nonaspected) {
+		SCOPED_INFO("Non-aspected test: " << nonaspected);
+		test_fixture_world_init_checked env(
+			string_format(
+				R"({ "content" : [ )"
+					R"({ "type" : "typedef", "newtype" : "4aspectauto", "basetype" : "autosignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+					R"({ "type" : "typedef", "newtype" : "4aspectrepeater", "basetype" : "repeatersignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+					R"({ "type" : "startofline", "name" : "A" }, )"
+					R"({ "type" : "4aspectauto", "name" : "S1" }, )"
+					R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "T1" }, )"
+					R"({ "type" : "4aspectrepeater", "name" : "RS2", "nonaspected" : %s }, )"
+					R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "T1" }, )"
+					R"({ "type" : "4aspectauto", "name" : "S3" }, )"
+					R"({ "type" : "trackseg", "length" : 20000 }, )"
+					R"({ "type" : "endofline", "name" : "B",  "end" : { "allow" : [ "overlap", "route" ] } } )"
+				"] }"
+				, nonaspected ? "true" : "false"
+			)
+		);
+
+		CHECK(env.w.GetLogText() == "");
+
+		genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
+		genericsignal *rs2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("RS2"));
+		genericsignal *s3 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S3"));
+		routingpoint *b = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("B"));
+		track_circuit *t1 = env.w.track_circuits.FindOrMakeByName("T1");
+
+		env.w.GameStep(1);
+		CHECK(env.w.GetLogText() == "");
+
+		auto checksignal = makechecksignal(env.w);
+
+		checksignal(s1, nonaspected ? 2 : 3, route_class::RTC_ROUTE, nonaspected ? s3 : rs2, s3);
+		checksignal(rs2, 2, route_class::RTC_ROUTE, s3, s3);
+		checksignal(s3, 1, route_class::RTC_ROUTE, b, b);
+
+		t1->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+		env.w.GameStep(1);
+
+		checksignal(s1, 0, route_class::RTC_NULL, 0, 0);
+		checksignal(rs2, 2, route_class::RTC_ROUTE, s3, s3);
+		checksignal(s3, 1, route_class::RTC_ROUTE, b, b);
+	};
+	test(false);
+	test(true);
 }

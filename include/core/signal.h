@@ -312,6 +312,7 @@ class genericsignal : public trackroutingpoint {
 
 	virtual GSF GetSignalFlags() const;
 	virtual GSF SetSignalFlagsMasked(GSF set_flags, GSF mask_flags);
+	virtual GTF GetFlags(EDGETYPE direction) const override;
 
 	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
 
@@ -346,7 +347,7 @@ class genericsignal : public trackroutingpoint {
 
 class stdsignal : public genericsignal {
 	public:
-	stdsignal(world &w_) : genericsignal(w_) { }
+	stdsignal(world &w_);
 	virtual std::string GetTypeName() const override { return "Standard Signal"; }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
@@ -359,7 +360,6 @@ class autosignal : public stdsignal {
 	public:
 	autosignal(world &w_) : stdsignal(w_) { availableroutetypes_forward.start |= route_class::Flag(route_class::RTC_ROUTE); availableroutetypes_forward.end |= route_class::AllNonOverlaps(); sflags |= GSF::AUTOSIGNAL; }
 	bool PostLayoutInit(error_collection &ec) override;
-	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual std::string GetTypeName() const override { return "Automatic Signal"; }
 
 	virtual route *GetRouteByIndex(unsigned int index) override;
@@ -379,7 +379,6 @@ class routesignal : public stdsignal {
 	public:
 	routesignal(world &w_) : stdsignal(w_) { }
 	virtual bool PostLayoutInit(error_collection &ec) override;
-	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual std::string GetTypeName() const override { return "Route Signal"; }
 
 	virtual route *GetRouteByIndex(unsigned int index) override;
@@ -392,6 +391,17 @@ class routesignal : public stdsignal {
 	const route_restriction_set &GetRouteRestrictions() const { return restrictions; }
 
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const override;
+};
+
+class repeatersignal : public genericsignal {
+	public:
+	repeatersignal(world &w_) : genericsignal(w_) { sflags |= GSF::REPEATER | GSF::NOOVERLAP; }
+	virtual std::string GetTypeName() const override { return "Repeater Signal"; }
+	static std::string GetTypeSerialisationNameStatic() { return "repeatersignal"; }
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
 };
 
 class startofline : public routingpoint {

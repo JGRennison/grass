@@ -194,6 +194,24 @@ void routesignal::Serialise(serialiser_output &so, error_collection &ec) const {
 	stdsignal::Serialise(so, ec);
 }
 
+void repeatersignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	genericsignal::Deserialise(di, ec);
+	CheckTransJsonValueFlag(sflags, GSF::NONASPECTEDREPEATER, di, "nonaspected", ec);
+
+	trackroutingpoint_deserialisation_extras *de = static_cast<trackroutingpoint_deserialisation_extras*>(trp_de.get());
+	auto docompoundflag = [&](const char *prop, route_class::set through_flags) {
+		bool val;
+		if(CheckTransJsonValue<bool>(val, di, prop, ec)) {
+			de->conflictcheck_through.RegisterAndProcessFlags(availableroutetypes_forward.through, val, through_flags, di, prop, ec);
+		}
+	};
+	docompoundflag("routesignal", route_class::Flag(route_class::RTC_ROUTE));
+}
+
+void repeatersignal::Serialise(serialiser_output &so, error_collection &ec) const {
+	genericsignal::Serialise(so, ec);
+}
+
 void route_restriction_set::DeserialiseRestriction(const deserialiser_input &subdi, error_collection &ec, bool isendtype) {
 	restrictions.emplace_back();
 	route_restriction &rr = restrictions.back();

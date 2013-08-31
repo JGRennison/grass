@@ -212,7 +212,6 @@ RPRT trackroutingpoint::GetAvailableRouteTypes(EDGETYPE direction) const {
 
 genericsignal::genericsignal(world &w_) : trackroutingpoint(w_), sflags(GSF::ZERO) {
 	availableroutetypes_reverse.through |= route_class::AllNonOverlaps();
-	availableroutetypes_forward.start |= route_class::AllOverlaps();
 	w_.RegisterTickUpdate(this);
 	sighting_distances.emplace_back(EDGE_FRONT, SIGHTING_DISTANCE_SIG);
 	std::copy(route_class::default_approach_locking_timeouts.begin(), route_class::default_approach_locking_timeouts.end(), approachlocking_default_timeouts.begin());
@@ -576,10 +575,14 @@ trackberth *genericsignal::GetPriorBerth(EDGETYPE direction, routingpoint::GPBF 
 	return berth;
 }
 
-GTF autosignal::GetFlags(EDGETYPE direction) const {
+GTF genericsignal::GetFlags(EDGETYPE direction) const {
 	GTF result = GTF::ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
 	if(direction == EDGE_FRONT) result |= GTF::SIGNAL;
 	return result;
+}
+
+stdsignal::stdsignal(world &w_) : genericsignal(w_) {
+	availableroutetypes_forward.start |= route_class::AllOverlaps();
 }
 
 route *autosignal::GetRouteByIndex(unsigned int index) {
@@ -592,12 +595,6 @@ void autosignal::EnumerateRoutes(std::function<void (const route *)> func) const
 	func(&signal_route);
 	if(overlap_route.type == route_class::RTC_OVERLAP) func(&overlap_route);
 };
-
-GTF routesignal::GetFlags(EDGETYPE direction) const {
-	GTF result = GTF::ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
-	if(direction == EDGE_FRONT) result |= GTF::SIGNAL;
-	return result;
-}
 
 route *routesignal::GetRouteByIndex(unsigned int index) {
 	for(auto it = signal_routes.begin(); it != signal_routes.end(); ++it) {
