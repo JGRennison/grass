@@ -145,7 +145,7 @@ endef
 
 $(foreach DIR,$(SRC_DIRS),$(eval $(call COMPILE_RULE,$(DIR))))
 
-$(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch: | $(call GENERIC_OBJ_DIR,test)/pch
+$(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch: include/test/catch.hpp | $(call GENERIC_OBJ_DIR,test)/pch
 	$(GCC) -c include/test/catch.hpp -o $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch $(call GENERIC_CFLAGS,test) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
 
 $(DIRS):
