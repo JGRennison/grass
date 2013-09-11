@@ -23,15 +23,15 @@
 //==========================================================================
 
 #include "common.h"
-#include "track.h"
-#include "trackpiece.h"
-#include "points.h"
-#include "signal.h"
-#include "serialisable_impl.h"
-#include "error.h"
-#include "world.h"
-#include "deserialisation_scalarconv.h"
-#include "trackcircuit.h"
+#include "core/track.h"
+#include "core/trackpiece.h"
+#include "core/points.h"
+#include "core/signal.h"
+#include "core/serialisable_impl.h"
+#include "core/error.h"
+#include "core/world.h"
+#include "core/deserialisation_scalarconv.h"
+#include "core/trackcircuit.h"
 
 void generictrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	world_obj::Deserialise(di, ec);

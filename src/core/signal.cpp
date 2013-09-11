@@ -23,14 +23,14 @@
 //==========================================================================
 
 #include "common.h"
-#include "trackreservation.h"
-#include "signal.h"
-#include "world.h"
-#include "trackcircuit.h"
-#include "track_ops.h"
-#include "param.h"
-#include "routetypes.h"
-#include "util.h"
+#include "core/trackreservation.h"
+#include "core/signal.h"
+#include "core/world.h"
+#include "core/trackcircuit.h"
+#include "core/track_ops.h"
+#include "core/param.h"
+#include "core/routetypes.h"
+#include "core/util.h"
 
 #include <algorithm>
 #include <iterator>

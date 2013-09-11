@@ -22,15 +22,15 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "catch.hpp"
-#include "track.h"
-#include "train.h"
-#include "traverse.h"
-#include "world.h"
-#include "signal.h"
-#include "world_serialisation.h"
-#include "deserialisation-test.h"
-#include "testutil.h"
+#include "test/catch.hpp"
+#include "test/deserialisation-test.h"
+#include "test/testutil.h"
+#include "core/track.h"
+#include "core/train.h"
+#include "core/traverse.h"
+#include "core/world.h"
+#include "core/signal.h"
+#include "core/world_serialisation.h"
 
 TEST_CASE( "deserialisation/error/notype", "Test missing object type" ) {
 	std::string track_test_str =

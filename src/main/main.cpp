@@ -24,9 +24,9 @@
 
 #include <cstdio>
 #include "common.h"
-#include "wxcommon.h"
-#include "main.h"
-#include "cmdline.h"
+#include "main/wxcommon.h"
+#include "main/main.h"
+#include "main/cmdline.h"
 
 IMPLEMENT_APP(grassapp)
 

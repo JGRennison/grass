@@ -28,9 +28,9 @@
 #include <map>
 #include <string>
 
-#include "world.h"
-#include "serialisable.h"
-#include "flags.h"
+#include "core/world.h"
+#include "core/serialisable.h"
+#include "core/flags.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"

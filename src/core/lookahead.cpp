@@ -23,11 +23,11 @@
 //==========================================================================
 
 #include "common.h"
-#include "lookahead.h"
-#include "track.h"
-#include "signal.h"
-#include "train.h"
-#include "serialisable_impl.h"
+#include "core/lookahead.h"
+#include "core/track.h"
+#include "core/signal.h"
+#include "core/train.h"
+#include "core/serialisable_impl.h"
 #include <climits>
 
 void lookahead::Init(const train *t /* optional */, const track_location &pos, const route *rt) {

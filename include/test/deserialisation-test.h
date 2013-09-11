@@ -25,11 +25,11 @@
 #ifndef INC_DESERIALISATION_TEST_ALREADY
 #define INC_DESERIALISATION_TEST_ALREADY
 
-#include "catch.hpp"
-#include "error.h"
-#include "world.h"
-#include "world-test.h"
-#include "world_serialisation.h"
+#include "test/catch.hpp"
+#include "test/world-test.h"
+#include "core/error.h"
+#include "core/world.h"
+#include "core/world_serialisation.h"
 
 struct test_fixture_world {
 	world_test w;

@@ -23,12 +23,12 @@
 //==========================================================================
 
 #include "common.h"
-#include "util.h"
-#include "param.h"
-#include "track.h"
-#include "train.h"
-#include "traverse.h"
-#include "world.h"
+#include "core/util.h"
+#include "core/param.h"
+#include "core/track.h"
+#include "core/train.h"
+#include "core/traverse.h"
+#include "core/world.h"
 
 #include <cassert>
 

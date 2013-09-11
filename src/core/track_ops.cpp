@@ -25,14 +25,14 @@
 #include <memory>
 #include <algorithm>
 #include "common.h"
-#include "trackreservation.h"
-#include "track_ops.h"
-#include "track.h"
-#include "points.h"
-#include "serialisable_impl.h"
-#include "signal.h"
-#include "textpool.h"
-#include "trackcircuit.h"
+#include "core/trackreservation.h"
+#include "core/track_ops.h"
+#include "core/track.h"
+#include "core/points.h"
+#include "core/serialisable_impl.h"
+#include "core/signal.h"
+#include "core/textpool.h"
+#include "core/trackcircuit.h"
 
 
 void future_pointsaction::ExecuteAction() {

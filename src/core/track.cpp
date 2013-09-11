@@ -23,11 +23,11 @@
 //==========================================================================
 
 #include "common.h"
-#include "track.h"
-#include "trackpiece.h"
-#include "train.h"
-#include "error.h"
-#include "trackcircuit.h"
+#include "core/track.h"
+#include "core/trackpiece.h"
+#include "core/train.h"
+#include "core/error.h"
+#include "core/trackcircuit.h"
 
 #include <cassert>
 #include <cstring>

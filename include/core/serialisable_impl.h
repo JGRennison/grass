@@ -29,12 +29,12 @@
 #define __STDC_FORMAT_MACROS
 #endif
 #include <cinttypes>
-#include "flags.h"
-#include "serialisable.h"
-#include "error.h"
-#include "util.h"
-#include "world_serialisation.h"
-#include "edgetype.h"
+#include "core/flags.h"
+#include "core/serialisable.h"
+#include "core/error.h"
+#include "core/util.h"
+#include "core/world_serialisation.h"
+#include "core/edgetype.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"

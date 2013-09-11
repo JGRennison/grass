@@ -22,16 +22,16 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "catch.hpp"
-#include "track.h"
-#include "signal.h"
-#include "traverse.h"
-#include "deserialisation-test.h"
-#include "world-test.h"
-#include "trackcircuit.h"
-#include "track_ops.h"
-#include "testutil.h"
-#include "util.h"
+#include "test/catch.hpp"
+#include "test/deserialisation-test.h"
+#include "test/world-test.h"
+#include "test/testutil.h"
+#include "core/track.h"
+#include "core/signal.h"
+#include "core/traverse.h"
+#include "core/trackcircuit.h"
+#include "core/track_ops.h"
+#include "core/util.h"
 
 std::string track_test_str_1 =
 R"({ "content" : [ )"

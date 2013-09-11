@@ -22,15 +22,16 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "catch.hpp"
-#include "track_ops.h"
-#include "world-test.h"
-#include "track.h"
-#include "points.h"
-#include "textpool.h"
-#include "var.h"
-#include "signal.h"
-#include "deserialisation-test.h"
+#include "test/catch.hpp"
+#include "test/deserialisation-test.h"
+#include "test/world-test.h"
+#include "core/track_ops.h"
+#include "core/track.h"
+#include "core/points.h"
+#include "core/textpool.h"
+#include "core/var.h"
+#include "core/signal.h"
+
 
 struct test_fixture_world_ops_1 {
 	world_test w;

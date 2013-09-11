@@ -23,8 +23,8 @@
 //==========================================================================
 
 #include "common.h"
-#include "traverse.h"
-#include "trackreservation.h"
+#include "core/traverse.h"
+#include "core/trackreservation.h"
 
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track) {
 	return AdvanceDisplacement(displacement, track, 0, [&](track_location &a, track_location &b) { });

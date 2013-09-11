@@ -23,11 +23,11 @@
 //==========================================================================
 
 #include "common.h"
-#include "world_ops.h"
-#include "world_obj.h"
-#include "util.h"
-#include "serialisable_impl.h"
-#include "textpool.h"
+#include "core/world_ops.h"
+#include "core/world_obj.h"
+#include "core/util.h"
+#include "core/serialisable_impl.h"
+#include "core/textpool.h"
 
 void future_usermessage::InitVariables(message_formatter &mf, world &w) {
 	mf.RegisterVariable("gametime", [&](std::string) -> std::string {

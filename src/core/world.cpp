@@ -23,16 +23,16 @@
 //==========================================================================
 
 #include "common.h"
-#include "world.h"
-#include "error.h"
-#include "track.h"
-#include "track_ops.h"
-#include "trackcircuit.h"
-#include "action.h"
-#include "util.h"
-#include "textpool.h"
-#include "signal.h"
-#include "train.h"
+#include "core/world.h"
+#include "core/error.h"
+#include "core/track.h"
+#include "core/track_ops.h"
+#include "core/trackcircuit.h"
+#include "core/action.h"
+#include "core/util.h"
+#include "core/textpool.h"
+#include "core/signal.h"
+#include "core/train.h"
 #include <iostream>
 
 world::world() : track_circuits(*this), track_triggers(*this) {

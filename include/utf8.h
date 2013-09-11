@@ -27,8 +27,6 @@
 
 #include <string>
 
-#include "signal.h"
-
 //UTF-8 functions all assume perfectly valid UTF-8 for the most part
 
 inline int getcharfromstr_utf8(const char *str) {

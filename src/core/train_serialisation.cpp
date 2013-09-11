@@ -23,10 +23,10 @@
 //==========================================================================
 
 #include "common.h"
-#include "train.h"
-#include "serialisable_impl.h"
-#include "error.h"
-#include "deserialisation_scalarconv.h"
+#include "core/train.h"
+#include "core/serialisable_impl.h"
+#include "core/error.h"
+#include "core/deserialisation_scalarconv.h"
 
 void vehicle_class::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonValueDefProc(length, di, "length", 0, ec, dsconv::Length);

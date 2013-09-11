@@ -23,8 +23,8 @@
 //==========================================================================
 
 #include "common.h"
-#include "serialisable_impl.h"
-#include "error.h"
+#include "core/serialisable_impl.h"
+#include "core/error.h"
 #include "utf8.h"
 #include <algorithm>
 

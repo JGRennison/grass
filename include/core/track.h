@@ -32,11 +32,11 @@
 #include <vector>
 #include <limits.h>
 
-#include "flags.h"
-#include "edgetype.h"
-#include "world_obj.h"
-#include "tractiontype.h"
-#include "error.h"
+#include "core/flags.h"
+#include "core/edgetype.h"
+#include "core/world_obj.h"
+#include "core/tractiontype.h"
+#include "core/error.h"
 
 class train;
 class generictrack;

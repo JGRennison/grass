@@ -26,12 +26,12 @@
 #define INC_TRACKOPS_ALREADY
 
 #include <deque>
-#include "future.h"
-#include "serialisable.h"
-#include "action.h"
-#include "world_ops.h"
-#include "points.h"
-#include "routetypes.h"
+#include "core/future.h"
+#include "core/serialisable.h"
+#include "core/action.h"
+#include "core/world_ops.h"
+#include "core/points.h"
+#include "core/routetypes.h"
 
 class genericpoints;
 class generictrack;

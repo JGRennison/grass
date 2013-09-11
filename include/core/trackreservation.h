@@ -28,10 +28,10 @@
 #include <string>
 #include <functional>
 #include <vector>
-#include "flags.h"
-#include "edgetype.h"
-#include "serialisable.h"
-#include "error.h"
+#include "core/flags.h"
+#include "core/edgetype.h"
+#include "core/serialisable.h"
+#include "core/error.h"
 
 class route;
 

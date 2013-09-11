@@ -26,7 +26,7 @@
 #define INC_WORLD_TEST_ALREADY
 
 #include <sstream>
-#include "world.h"
+#include "core/world.h"
 
 class world_test : public world {
 	std::stringstream logtext;

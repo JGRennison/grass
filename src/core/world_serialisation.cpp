@@ -23,17 +23,17 @@
 //==========================================================================
 
 #include "common.h"
-#include "world.h"
-#include "serialisable_impl.h"
-#include "error.h"
-#include "util.h"
-#include "world_serialisation.h"
-#include "track.h"
-#include "trackpiece.h"
-#include "points.h"
-#include "signal.h"
-#include "trackcircuit.h"
-#include "train.h"
+#include "core/world.h"
+#include "core/serialisable_impl.h"
+#include "core/error.h"
+#include "core/util.h"
+#include "core/world_serialisation.h"
+#include "core/track.h"
+#include "core/trackpiece.h"
+#include "core/points.h"
+#include "core/signal.h"
+#include "core/trackcircuit.h"
+#include "core/train.h"
 #include <typeinfo>
 
 void world_serialisation::ParseInputString(const std::string &input, error_collection &ec) {

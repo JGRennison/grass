@@ -22,7 +22,7 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "var.h"
+#include "core/var.h"
 #include <algorithm>
 
 std::string message_formatter::FormatMessage(const std::string &input) const {
@@ -75,7 +75,7 @@ std::string message_formatter::ExpandVariable(std::string::const_iterator &begin
 			else param.push_back(*begin);
 		}
 	}
-	
+
 	auto targetvar = registered_variables.find(varname);
 	if(targetvar != registered_variables.end()) {
 		return targetvar->second(param);

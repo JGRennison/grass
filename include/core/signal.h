@@ -27,12 +27,12 @@
 
 #include <vector>
 
-#include "track.h"
-#include "trackreservation.h"
-#include "traverse.h"
-#include "flags.h"
-#include "routetypes.h"
-#include "tractiontype.h"
+#include "core/track.h"
+#include "core/trackreservation.h"
+#include "core/traverse.h"
+#include "core/flags.h"
+#include "core/routetypes.h"
+#include "core/tractiontype.h"
 
 class route;
 class routingpoint;

@@ -22,8 +22,8 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "error.h"
-#include "util.h"
+#include "core/error.h"
+#include "core/util.h"
 
 void error_collection::RegisterError(std::unique_ptr<error_obj> &&err) {
 	errors.emplace_back(std::move(err));

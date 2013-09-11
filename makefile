@@ -13,10 +13,7 @@ SRC_DIRS := main core test
 
 GENERIC_SRC = $(wildcard src/$1/*.cpp)
 GENERIC_OBJ_DIR = objs/$1$(DIR_POSTFIX)
-INCLUDE_main = main core
-INCLUDE_test = test core
-INCLUDE_core = core
-GENERIC_CFLAGS = $(CFLAGS) $(CFLAGS_$1) $(foreach dir,$(value INCLUDE_$1),-iquote include/$(dir))
+GENERIC_CFLAGS = $(CFLAGS) $(CFLAGS_$1) -iquote include
 GENERIC_CXXFLAGS = $(CXXFLAGS) $(CXXFLAGS_$1)
 GENERIC_OBJS = $(patsubst src/$1/%.cpp,$(call GENERIC_OBJ_DIR,$1)/%.o,$(call GENERIC_SRC,$1))
 LIST_OBJS = $(foreach dir,$1,$(call GENERIC_OBJS,$(dir)))

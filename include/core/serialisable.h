@@ -25,7 +25,7 @@
 #ifndef INC_SERIALISABLE_ALREADY
 #define INC_SERIALISABLE_ALREADY
 
-#include "error.h"
+#include "core/error.h"
 #include <map>
 
 struct deserialiser_input;

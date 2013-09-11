@@ -25,13 +25,13 @@
 #ifndef INC_TEXTPOOL_ALREADY
 #define INC_TEXTPOOL_ALREADY
 
-#include "serialisable.h"
+#include "core/serialisable.h"
 #include <string>
 #include <map>
 
 class textpool : public serialisable_obj {
 	std::map<std::string, std::string> textmap;
-	
+
 	public:
 	textpool();
 	void RegisterNewText(const std::string &key, const std::string &text);

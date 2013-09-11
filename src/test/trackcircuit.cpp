@@ -22,16 +22,16 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "catch.hpp"
-#include "world_serialisation.h"
-#include "deserialisation-test.h"
-#include "world-test.h"
-#include "trackcircuit.h"
-#include "train.h"
-#include "signal.h"
-#include "track_ops.h"
-#include "testutil.h"
-#include "util.h"
+#include "test/catch.hpp"
+#include "test/deserialisation-test.h"
+#include "test/world-test.h"
+#include "test/testutil.h"
+#include "core/world_serialisation.h"
+#include "core/trackcircuit.h"
+#include "core/train.h"
+#include "core/signal.h"
+#include "core/track_ops.h"
+#include "core/util.h"
 
 std::string tcdereservation_test_str_1 =
 R"({ "content" : [ )"

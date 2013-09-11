@@ -25,12 +25,12 @@
 #ifndef INC_TRAIN_ALREADY
 #define INC_TRAIN_ALREADY
 
-#include "world_obj.h"
-#include "track.h"
-#include "timetable.h"
-#include "lookahead.h"
-#include "serialisable.h"
-#include "tractiontype.h"
+#include "core/world_obj.h"
+#include "core/track.h"
+#include "core/timetable.h"
+#include "core/lookahead.h"
+#include "core/serialisable.h"
+#include "core/tractiontype.h"
 #include <list>
 
 struct vehicle_class : public serialisable_obj {

@@ -24,10 +24,10 @@
 
 #include <vector>
 #include "common.h"
-#include "trackreservation.h"
-#include "track.h"
-#include "signal.h"
-#include "serialisable_impl.h"
+#include "core/trackreservation.h"
+#include "core/track.h"
+#include "core/signal.h"
+#include "core/serialisable_impl.h"
 
 bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, RRF in_rr_flags, const route *resroute, std::string* failreasonkey) {
 	if(in_rr_flags & (RRF::RESERVE | RRF::TRYRESERVE | RRF::PROVISIONAL_RESERVE)) {

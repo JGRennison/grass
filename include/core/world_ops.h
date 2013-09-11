@@ -26,10 +26,10 @@
 #define INC_WORLDOPS_ALREADY
 
 #include "common.h"
-#include "future.h"
-#include "var.h"
-#include "world.h"
-#include "var.h"
+#include "core/future.h"
+#include "core/var.h"
+#include "core/world.h"
+#include "core/var.h"
 
 class future_usermessage : public future {
 	private:

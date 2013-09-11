@@ -25,7 +25,7 @@
 #ifndef INC_TRAVERSE_ALREADY
 #define INC_TRAVERSE_ALREADY
 
-#include "track.h"
+#include "core/track.h"
 #include <functional>
 #include <deque>
 

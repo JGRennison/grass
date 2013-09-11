@@ -23,12 +23,12 @@
 //==========================================================================
 
 #include "common.h"
-#include "track.h"
-#include "points.h"
-#include "error.h"
-#include "track_ops.h"
-#include "util.h"
-#include "param.h"
+#include "core/track.h"
+#include "core/points.h"
+#include "core/error.h"
+#include "core/track_ops.h"
+#include "core/util.h"
+#include "core/param.h"
 
 #include <cassert>
 

@@ -29,10 +29,10 @@
 #include <deque>
 #include <forward_list>
 #include <set>
-#include "tractiontype.h"
-#include "serialisable.h"
-#include "future.h"
-#include "edgetype.h"
+#include "core/tractiontype.h"
+#include "core/serialisable.h"
+#include "core/future.h"
+#include "core/edgetype.h"
 
 class world_serialisation;
 class action;

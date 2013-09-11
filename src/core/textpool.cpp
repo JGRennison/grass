@@ -23,7 +23,7 @@
 //==========================================================================
 
 #include "common.h"
-#include "textpool.h"
+#include "core/textpool.h"
 
 textpool::textpool() {
 	RegisterNewText("textpool/keynotfound", "textpool: No such key: ");

@@ -22,9 +22,9 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "world_obj.h"
-#include "world.h"
-#include "serialisable_impl.h"
+#include "core/world_obj.h"
+#include "core/world.h"
+#include "core/serialisable_impl.h"
 
 void updatable_obj::AddUpdateHook(const std::function<void(updatable_obj*, world &)> &f) {
 	update_functions.push_back(f);

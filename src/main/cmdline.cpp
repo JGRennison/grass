@@ -23,9 +23,9 @@
 //==========================================================================
 
 #include "common.h"
-#include "wxcommon.h"
-#include "SimpleOpt.h"
-#include "cmdline.h"
+#include "main/wxcommon.h"
+#include "main/SimpleOpt.h"
+#include "main/cmdline.h"
 //#define CATCH_CONFIG_RUNNER
 //#include "../include/test.h"
 #include <wx/string.h>

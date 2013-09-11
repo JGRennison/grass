@@ -22,12 +22,12 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "catch.hpp"
-#include "train.h"
-#include "deserialisation-test.h"
-#include "world-test.h"
-#include "testutil.h"
-#include "util.h"
+#include "test/catch.hpp"
+#include "test/deserialisation-test.h"
+#include "test/world-test.h"
+#include "test/testutil.h"
+#include "core/train.h"
+#include "core/util.h"
 #include <sstream>
 
 static void checkvc(world &w, const std::string &name, unsigned int length, unsigned int max_speed, unsigned int tractive_force, unsigned int tractive_power,

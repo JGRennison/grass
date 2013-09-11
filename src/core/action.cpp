@@ -23,7 +23,7 @@
 //==========================================================================
 
 #include "common.h"
-#include "action.h"
+#include "core/action.h"
 
 void action::Execute() const {
 	ExecuteAction();

@@ -23,12 +23,12 @@
 //==========================================================================
 
 #include "common.h"
-#include "signal.h"
-#include "serialisable_impl.h"
-#include "error.h"
-#include "routetypes_serialisation.h"
-#include "deserialisation_scalarconv.h"
-#include "trackcircuit.h"
+#include "core/signal.h"
+#include "core/serialisable_impl.h"
+#include "core/error.h"
+#include "core/routetypes_serialisation.h"
+#include "core/deserialisation_scalarconv.h"
+#include "core/trackcircuit.h"
 
 void routingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	genericzlentrack::Deserialise(di, ec);

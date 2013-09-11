@@ -27,9 +27,9 @@
 
 #include <string>
 #include <vector>
-#include "world_obj.h"
-#include "flags.h"
-#include "world.h"
+#include "core/world_obj.h"
+#include "core/flags.h"
+#include "core/world.h"
 
 class train;
 class route;

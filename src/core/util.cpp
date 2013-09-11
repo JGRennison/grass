@@ -23,7 +23,7 @@
 //==========================================================================
 
 #include "common.h"
-#include "util.h"
+#include "core/util.h"
 #include <cstring>
 #include <cstdarg>
 #include <cstdio>

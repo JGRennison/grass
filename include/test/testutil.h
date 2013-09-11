@@ -25,7 +25,7 @@
 #ifndef INC_TESTUTIL_ALREADY
 #define INC_TESTUTIL_ALREADY
 
-#include "catch.hpp"
+#include "test/catch.hpp"
 
 template <typename C> C* CheckPtr(C* in, const char *file, unsigned int line) {
 	if(!in) {

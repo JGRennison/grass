@@ -25,8 +25,8 @@
 #ifndef INC_TRACKPIECE_ALREADY
 #define INC_TRACKPIECE_ALREADY
 
-#include "track.h"
-#include "trackreservation.h"
+#include "core/track.h"
+#include "core/trackreservation.h"
 
 class trackseg : public generictrack {
 	unsigned int length;

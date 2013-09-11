@@ -22,8 +22,8 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "serialisable.h"
-#include "world.h"
+#include "core/serialisable.h"
+#include "core/world.h"
 
 #ifndef INC_ACTION_ALREADY
 #define INC_ACTION_ALREADY

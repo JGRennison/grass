@@ -25,9 +25,9 @@
 #include <algorithm>
 
 #include "common.h"
-#include "tractiontype.h"
-#include "serialisable_impl.h"
-#include "train.h"
+#include "core/tractiontype.h"
+#include "core/serialisable_impl.h"
+#include "core/train.h"
 
 bool tractionset::CanTrainPass(const train *t) const {
 	const tractionset &ts = t->GetActiveTractionTypes();

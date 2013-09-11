@@ -22,17 +22,17 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "catch.hpp"
-#include "track.h"
-#include "points.h"
-#include "deserialisation-test.h"
-#include "world-test.h"
-#include "signal.h"
-#include "lookahead.h"
-#include "track_ops.h"
-#include "train.h"
-#include "tractiontype.h"
-#include "serialisable_impl.h"
+#include "test/catch.hpp"
+#include "test/deserialisation-test.h"
+#include "test/world-test.h"
+#include "core/track.h"
+#include "core/points.h"
+#include "core/signal.h"
+#include "core/lookahead.h"
+#include "core/track_ops.h"
+#include "core/train.h"
+#include "core/tractiontype.h"
+#include "core/serialisable_impl.h"
 
 std::string lookahead_test_str_1 =
 R"({ "content" : [ )"
