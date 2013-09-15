@@ -9,7 +9,7 @@
 #x64: set to true to compile for x86_64/win64
 
 
-SRC_DIRS := main core test
+SRC_DIRS := main core test layout
 
 GENERIC_SRC = $(wildcard src/$1/*.cpp)
 GENERIC_OBJ_DIR = objs/$1$(DIR_POSTFIX)

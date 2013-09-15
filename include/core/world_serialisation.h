@@ -27,6 +27,7 @@
 
 #include <map>
 #include <string>
+#include <deque>
 
 #include "core/world.h"
 #include "core/serialisable.h"
@@ -41,6 +42,7 @@
 #pragma GCC diagnostic pop
 
 class generictrack;
+class trackberth;
 
 struct template_def {
 	const rapidjson::Value *json = 0;
@@ -68,6 +70,10 @@ class world_serialisation {
 	ws_deserialisation_type_factory gamestate_object_types;
 
 	fixup_list gamestate_init;
+
+	std::function<void(const generictrack *, const deserialiser_input &, error_collection &)> gui_layout_generictrack;
+	std::function<void(const trackberth *, const generictrack *, const deserialiser_input &, error_collection &)> gui_layout_trackberth;
+	std::function<void(const deserialiser_input &, error_collection &)> gui_layout_guiobject;
 
 	void InitObjectTypes();
 	world_serialisation(world &w_) : w(w_), previoustrackpiece(0) { InitObjectTypes(); }

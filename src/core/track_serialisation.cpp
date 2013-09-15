@@ -36,6 +36,10 @@
 void generictrack::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	world_obj::Deserialise(di, ec);
 
+	CheckIterateJsonArrayOrType<json_object>(di, "layout", "layout", ec, [&](const deserialiser_input &di, error_collection &ec) {
+		if(di.ws) di.ws->gui_layout_generictrack(this, di, ec);
+	});
+
 	deserialiser_input sddi(di.json["sighting"], "sighting", "sighting", di);
 	if(!sddi.json.IsNull()) {
 		di.RegisterProp("sighting");
@@ -161,9 +165,14 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 			if(berthval) {
 				if(!berth) berth.reset(new trackberth);
 				berth->direction = berthedge;
-				CheckTransJsonValue(berth->contents, di, "berthstr", ec);
 			}
 			else berth.reset();
+		}
+		if(berth) {
+			CheckTransJsonValue(berth->contents, di, "berthstr", ec);
+			CheckIterateJsonArrayOrType<json_object>(di, "berthlayout", "layout", ec, [&](const deserialiser_input &di, error_collection &ec) {
+				if(di.ws) di.ws->gui_layout_trackberth(berth.get(), this, di, ec);
+			});
 		}
 	}
 }
