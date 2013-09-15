@@ -26,8 +26,6 @@
 #include "main/wxcommon.h"
 #include "main/SimpleOpt.h"
 #include "main/cmdline.h"
-//#define CATCH_CONFIG_RUNNER
-//#include "../include/test.h"
 #include <wx/string.h>
 #include <wx/log.h>
 

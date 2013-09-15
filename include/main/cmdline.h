@@ -22,7 +22,12 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
+#ifndef INC_MAIN_CMDLINE_ALREADY
+#define INC_MAIN_CMDLINE_ALREADY
+
 #include "main/wxcommon.h"
 #include <wx/string.h>
 
 bool cmdlineproc(wxChar ** argv, int argc);
+
+#endif

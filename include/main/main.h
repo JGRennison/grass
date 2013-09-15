@@ -24,8 +24,12 @@
 
 #include <wx/app.h>
 
-class grassapp: public wxApp
-{
+#ifndef INC_MAIN_MAIN_ALREADY
+#define INC_MAIN_MAIN_ALREADY
+
+class grassapp: public wxApp {
     virtual bool OnInit();
     virtual int OnExit();
 };
+
+#endif
