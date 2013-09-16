@@ -25,6 +25,8 @@
 #ifndef INC_EDGETYPE_ALREADY
 #define INC_EDGETYPE_ALREADY
 
+#include <ostream>
+
 typedef enum {
 	EDGE_NULL = 0,
 	EDGE_FRONT,		//front edge/forward direction on track
