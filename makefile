@@ -36,6 +36,7 @@ endif
 
 ifdef debug
 CFLAGS=-g -Wextra -Wall -Wno-unused-parameter
+AFLAGS+=-g
 #AFLAGS:=-Wl,-d,--export-all-symbols
 DEBUGPOSTFIX:=_debug
 DIR_POSTFIX:=$(DIR_POSTFIX)$(DEBUGPOSTFIX)
