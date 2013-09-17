@@ -10,6 +10,8 @@
 
 
 SRC_DIRS := main core test layout
+MAIN_DIRS := main core layout
+TEST_DIRS := test core
 
 GENERIC_SRC = $(wildcard src/$1/*.cpp)
 GENERIC_OBJ_DIR = objs/$1$(DIR_POSTFIX)
@@ -126,11 +128,11 @@ test: $(TESTOUTNAME)$(SUFFIX)
 
 $(call GENERIC_OBJS,test): $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch
 
-OBJS:=$(call LIST_OBJS,main core)
+OBJS:=$(call LIST_OBJS,$(MAIN_DIRS))
 $(OUTNAME)$(SUFFIX): $(OBJS)
 	$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX) $(LIBS) $(LIBS_main) $(AFLAGS) $(AFLAGS_main) $(GFLAGS)
 
-TEST_OBJS:=$(call LIST_OBJS,test core)
+TEST_OBJS:=$(call LIST_OBJS,$(TEST_DIRS))
 $(TESTOUTNAME)$(SUFFIX): $(TEST_OBJS)
 	$(GCC) $(TEST_OBJS) -o $(TESTOUTNAME)$(SUFFIX) $(LIBS) $(AFLAGS) $(AFLAGS_test) $(GFLAGS)
 	$(EXECPREFIX)$(TESTOUTNAME)$(SUFFIX)
