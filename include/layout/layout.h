@@ -31,23 +31,22 @@
 #include <string>
 #include <map>
 #include <tuple>
+#include <vector>
 #include "core/edgetype.h"
+#include "core/error.h"
 
 class world_serialisation;
 class generictrack;
 class trackberth;
 class error_collection;
+class deserialiser_input;
 
 namespace guilayout {
+	struct layout_obj;
 
-	class layout_obj : public std::enable_shared_from_this<layout_obj> {
-		std::pair<unsigned int, unsigned int> dimensions;
-		std::pair<int, int> position;
-
+	class error_layout : public error_obj {
 		public:
-		virtual ~layout_obj() { }
-		std::pair<unsigned int, unsigned int> GetDimensions() const;
-		std::pair<int, int> GetPosition() const;
+		error_layout(const layout_obj &obj, const std::string &msg);
 	};
 
 	enum class LAYOUT_DIR {
@@ -66,6 +65,91 @@ namespace guilayout {
 		UL,
 	};
 
+	class layout_obj : public std::enable_shared_from_this<layout_obj> {
+		protected:
+		int x = 0;
+		int y = 0;
+		int rx = 0;
+		int ry = 0;
+
+		enum {
+			LOSM_X		= 1<<0,
+			LOSM_Y		= 1<<1,
+			LOSM_RX		= 1<<2,
+			LOSM_RY		= 1<<3,
+		};
+		unsigned int setmembers = 0;
+
+		public:
+		virtual ~layout_obj() { }
+		std::pair<unsigned int, unsigned int> GetDimensions() const;
+		std::pair<int, int> GetPosition() const;
+		virtual std::string GetFriendlyName() const = 0;
+		virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+	};
+
+	class layouttrack_obj : public layout_obj {
+		protected:
+		const generictrack *gt;
+		int length = 0;
+		bool leftside = false;
+		bool rightside = false;
+		LAYOUT_DIR layoutdirection = LAYOUT_DIR::NULLDIR;
+		std::string pos_class = "default";
+		std::string prev;
+		EDGETYPE prev_edge = EDGETYPE::EDGE_NULL;
+
+		enum {
+			LTOSM_LENGTH	= 1<<16,
+			LTOSM_LEFTSIDE	= 1<<17,
+			LTOSM_RIGHTSIDE	= 1<<18,
+			LTOSM_LAYOUTDIR	= 1<<19,
+			LTOSM_PREV	= 1<<20,
+			LTOSM_PREVEDGE	= 1<<21,
+		};
+
+		std::vector<std::function<void(layouttrack_obj &obj, error_collection &ec)> > fixups;
+
+		public:
+		layouttrack_obj(const generictrack *gt_) : gt(gt_) { }
+		virtual std::string GetFriendlyName() const override;
+		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+		void RelativeFixup(const layout_obj &src, std::function<void(layouttrack_obj &obj, error_collection &ec)> f, error_collection &ec);
+	};
+
+	class layoutberth_obj : public layout_obj {
+		protected:
+		const generictrack *gt = 0;
+		const trackberth *b = 0;
+		int length = 0;
+
+		enum {
+			LBOSM_LENGTH	= 1<<16,
+		};
+
+		public:
+		layoutberth_obj(const generictrack *gt_, const trackberth *b_) : gt(gt_), b(b_) { }
+		virtual std::string GetFriendlyName() const override;
+		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	};
+
+	class layoutgui_obj : public layout_obj {
+		protected:
+		int dx = 0;
+		int dy = 0;
+		std::string graphics;
+
+		enum {
+			LGOSM_DX		= 1<<16,
+			LGOSM_DY		= 1<<17,
+			LGOSM_GRAPHICS		= 1<<18,
+		};
+
+		public:
+		virtual std::string GetFriendlyName() const override;
+		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	};
+
 	struct layoutoffsetdirectionresult {
 		int endx;
 		int endy;
@@ -76,70 +160,28 @@ namespace guilayout {
 
 	layoutoffsetdirectionresult LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length);
 
-	struct layout_descriptor {
-		std::string type;
-		generictrack *gt = 0;
-		const trackberth *b = 0;
-		int x = 0;
-		int y = 0;
-		int rx = 0;
-		int ry = 0;
-		int dx = 0;
-		int dy = 0;
-		int length = 0;
-		bool leftside = false;
-		bool rightside = false;
-		LAYOUT_DIR layoutdirection = LAYOUT_DIR::NULLDIR;
-		std::string prev;
-		EDGETYPE prev_edge = EDGETYPE::EDGE_NULL;
-		std::string graphics;
-
-		std::string pos_class = "default";
-
-		enum {
-			LDSM_X		= 1<<0,
-			LDSM_Y		= 1<<1,
-			LDSM_RX		= 1<<2,
-			LDSM_RY		= 1<<3,
-			LDSM_DX		= 1<<4,
-			LDSM_DY		= 1<<5,
-			LDSM_LENGTH	= 1<<6,
-			LDSM_LEFTSIDE	= 1<<7,
-			LDSM_RIGHTSIDE	= 1<<8,
-			LDSM_LAYOUTDIR	= 1<<9,
-			LDSM_PREV	= 1<<10,
-			LDSM_PREVEDGE	= 1<<11,
-			LDSM_GRAPHICS	= 1<<12,
-		};
-
-		unsigned int setmembers = 0;
-	};
-
 	class world_layout : public std::enable_shared_from_this<world_layout> {
 		std::deque<std::shared_ptr<layout_obj> > objs;
-		std::deque<std::unique_ptr<layout_descriptor> > descriptors;
 
 		struct layout_pos {
 			int x = 0;
 			int y = 0;
 			layout_obj *prev_obj = 0;
-			generictrack *prev_gt = 0;
+			const generictrack *prev_gt = 0;
 			EDGETYPE prev_edge = EDGETYPE::EDGE_NULL;
 			LAYOUT_DIR layoutdirection = LAYOUT_DIR::NULLDIR;
 		};
 		std::map<std::string, layout_pos> layout_positions;
+		std::map<const generictrack *, std::shared_ptr<layouttrack_obj> > tracktolayoutmap;
 
 		public:
 		void AddLayoutObj(const std::shared_ptr<layout_obj> &obj);
-		void AddLayoutDescriptor(std::unique_ptr<layout_descriptor> &&desc);
 		void SetWorldSerialisationLayout(world_serialisation &ws);
-		void ProcessLayoutDescriptor(const layout_descriptor &desc, error_collection &ec);
-		void ProcessLayoutDescriptorSet(error_collection &ec);
+		void ProcessLayoutObj(const layout_obj &desc, error_collection &ec);
+		void ProcessLayoutObjSet(error_collection &ec);
+		layouttrack_obj * GetTrackLayoutObj(const layout_obj &src, const generictrack *targetgt, error_collection &ec);
+		void LayoutTrackRelativeFixup(const layout_obj &src, const generictrack *targetgt, std::function<void(layouttrack_obj &obj, error_collection &ec)> f, error_collection &ec);
 		virtual ~world_layout();
-	};
-
-	class generictrack_obj : public layout_obj {
-
 	};
 
 };

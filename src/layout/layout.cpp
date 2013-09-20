@@ -30,6 +30,11 @@
 #include "core/serialisable_impl.h"
 
 namespace guilayout {
+
+	error_layout::error_layout(const layout_obj &obj, const std::string &errmsg) {
+		msg << "GUI Layout error for: '" << obj.GetFriendlyName() << "'\n" << errmsg;
+	}
+
 	std::array<std::pair<guilayout::LAYOUT_DIR, std::string>, 13> layout_direction_names { {
 		{ guilayout::LAYOUT_DIR::NULLDIR, "null" },
 		{ guilayout::LAYOUT_DIR::U, "u" },
@@ -85,9 +90,56 @@ template <> inline void SetType<guilayout::LAYOUT_DIR>(Handler &out, guilayout::
 }
 template <> inline const char *GetTypeFriendlyName<guilayout::LAYOUT_DIR>() { return "layout direction"; }
 
+void guilayout::layouttrack_obj::RelativeFixup(const layout_obj &src, std::function<void(layouttrack_obj &obj, error_collection &ec)> f, error_collection &ec) {
+	if(setmembers & LOSM_X && setmembers & LOSM_Y) f(*this, ec);
+	else fixups.push_back(f);
+}
+
+std::string guilayout::layouttrack_obj::GetFriendlyName() const {
+	return "Track: " + gt->GetFriendlyName();
+};
+
+std::string guilayout::layoutberth_obj::GetFriendlyName() const {
+	return "Track Berth for: " + gt->GetFriendlyName();
+};
+
+std::string guilayout::layoutgui_obj::GetFriendlyName() const {
+	return "Layout GUI Object";
+};
+
+void guilayout::layout_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	if(CheckTransJsonValue(x, di, "x", ec)) setmembers |= LOSM_X;
+	if(CheckTransJsonValue(y, di, "y", ec)) setmembers |= LOSM_Y;
+	if(CheckTransJsonValue(rx, di, "rx", ec)) setmembers |= LOSM_RX;
+	if(CheckTransJsonValue(ry, di, "ry", ec)) setmembers |= LOSM_RY;
+}
+
+void guilayout::layouttrack_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	guilayout::layout_obj::Deserialise(di, ec);
+	if(CheckTransJsonValue(length, di, "length", ec)) setmembers |= LTOSM_LENGTH;
+	if(CheckTransJsonValue(leftside, di, "leftside", ec)) setmembers |= LTOSM_LEFTSIDE;
+	if(CheckTransJsonValue(rightside, di, "rightside", ec)) setmembers |= LTOSM_RIGHTSIDE;
+	if(CheckTransJsonValue(layoutdirection, di, "direction", ec)) setmembers |= LTOSM_LAYOUTDIR;
+	if(CheckTransJsonValue(prev, di, "prev", ec)) setmembers |= LTOSM_PREV;
+	if(CheckTransJsonValue(prev_edge, di, "prevedge", ec)) setmembers |= LTOSM_PREVEDGE;
+	CheckTransJsonValue(pos_class, di, "posclass", ec);
+}
+
+void guilayout::layoutberth_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	guilayout::layout_obj::Deserialise(di, ec);
+	if(CheckTransJsonValue(length, di, "length", ec)) setmembers |= LBOSM_LENGTH;
+}
+
+void guilayout::layoutgui_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	guilayout::layout_obj::Deserialise(di, ec);
+	if(CheckTransJsonValue(dx, di, "dx", ec)) setmembers |= LGOSM_DX;
+	if(CheckTransJsonValue(dy, di, "dy", ec)) setmembers |= LGOSM_DY;
+	if(CheckTransJsonValue(graphics, di, "graphics", ec)) setmembers |= LGOSM_GRAPHICS;
+}
+
 guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length) {
 	if(ld == LAYOUT_DIR::NULLDIR || !length) {
-		return layoutoffsetdirectionresult { startx, starty, startx, starty, ld };
+		return layoutoffsetdirectionresult{ startx, starty, startx, starty, ld };
 	}
 
 	LAYOUT_DIR step1 = ld;
@@ -165,55 +217,33 @@ guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int star
 }
 
 void guilayout::world_layout::SetWorldSerialisationLayout(world_serialisation &ws) {
-
-	auto common = [](layout_descriptor &desc, const deserialiser_input &di, error_collection &ec) {
-		if(CheckTransJsonValue(desc.x, di, "x", ec)) desc.setmembers |= layout_descriptor::LDSM_X;
-		if(CheckTransJsonValue(desc.y, di, "y", ec)) desc.setmembers |= layout_descriptor::LDSM_Y;
-		if(CheckTransJsonValue(desc.rx, di, "rx", ec)) desc.setmembers |= layout_descriptor::LDSM_RX;
-		if(CheckTransJsonValue(desc.ry, di, "ry", ec)) desc.setmembers |= layout_descriptor::LDSM_RY;
-		if(CheckTransJsonValue(desc.leftside, di, "leftside", ec)) desc.setmembers |= layout_descriptor::LDSM_LEFTSIDE;
-		if(CheckTransJsonValue(desc.rightside, di, "rightside", ec)) desc.setmembers |= layout_descriptor::LDSM_RIGHTSIDE;
-		if(CheckTransJsonValue(desc.prev, di, "prev", ec)) desc.setmembers |= layout_descriptor::LDSM_PREV;
-		if(CheckTransJsonValue(desc.prev_edge, di, "prevedge", ec)) desc.setmembers |= layout_descriptor::LDSM_PREVEDGE;
-		if(CheckTransJsonValue(desc.graphics, di, "graphics", ec)) desc.setmembers |= layout_descriptor::LDSM_GRAPHICS;
-		CheckTransJsonValue(desc.pos_class, di, "posclass", ec);
-	};
-
 	std::weak_ptr<world_layout> wl_weak = shared_from_this();
-	ws.gui_layout_generictrack = [wl_weak, common](const generictrack *gt, const deserialiser_input &di, error_collection &ec) {
+	ws.gui_layout_generictrack = [wl_weak](const generictrack *gt, const deserialiser_input &di, error_collection &ec) {
 		std::shared_ptr<world_layout> wl = wl_weak.lock();
 		if(!wl) return;
 
-		std::unique_ptr<layout_descriptor> desc(new layout_descriptor);
-		desc->type = "track";
-		if(CheckTransJsonValue(desc->layoutdirection, di, "direction", ec)) desc->setmembers |= layout_descriptor::LDSM_LAYOUTDIR;
-		if(CheckTransJsonValue(desc->length, di, "length", ec)) desc->setmembers |= layout_descriptor::LDSM_LENGTH;
-		common(*desc, di, ec);
+		std::shared_ptr<layouttrack_obj> obj = std::make_shared<layouttrack_obj>(gt);
+		obj->Deserialise(di, ec);
 
-		wl->AddLayoutDescriptor(std::move(desc));
+		wl->AddLayoutObj(std::static_pointer_cast<layout_obj>(obj));
 	};
-	ws.gui_layout_trackberth = [wl_weak, common](const trackberth *b, const generictrack *gt, const deserialiser_input &di, error_collection &ec) {
+	ws.gui_layout_trackberth = [wl_weak](const trackberth *b, const generictrack *gt, const deserialiser_input &di, error_collection &ec) {
 		std::shared_ptr<world_layout> wl = wl_weak.lock();
 		if(!wl) return;
 
-		std::unique_ptr<layout_descriptor> desc(new layout_descriptor);
-		desc->type = "berth";
-		if(CheckTransJsonValue(desc->length, di, "length", ec)) desc->setmembers |= layout_descriptor::LDSM_LENGTH;
-		common(*desc, di, ec);
+		std::shared_ptr<layoutberth_obj> obj = std::make_shared<layoutberth_obj>(gt, b);
+		obj->Deserialise(di, ec);
 
-		wl->AddLayoutDescriptor(std::move(desc));
+		wl->AddLayoutObj(std::static_pointer_cast<layout_obj>(obj));
 	};
-	ws.gui_layout_guiobject = [wl_weak, common](const deserialiser_input &di, error_collection &ec) {
+	ws.gui_layout_guiobject = [wl_weak](const deserialiser_input &di, error_collection &ec) {
 		std::shared_ptr<world_layout> wl = wl_weak.lock();
 		if(!wl) return;
 
-		std::unique_ptr<layout_descriptor> desc(new layout_descriptor);
-		desc->type = "guiobj";
-		if(CheckTransJsonValue(desc->dx, di, "dx", ec)) desc->setmembers |= layout_descriptor::LDSM_DX;
-		if(CheckTransJsonValue(desc->dy, di, "dy", ec)) desc->setmembers |= layout_descriptor::LDSM_DY;
-		common(*desc, di, ec);
+		std::shared_ptr<layoutgui_obj> obj = std::make_shared<layoutgui_obj>();
+		obj->Deserialise(di, ec);
 
-		wl->AddLayoutDescriptor(std::move(desc));
+		wl->AddLayoutObj(std::static_pointer_cast<layout_obj>(obj));
 	};
 
 }
@@ -222,33 +252,30 @@ void guilayout::world_layout::AddLayoutObj(const std::shared_ptr<layout_obj> &ob
 	objs.push_back(obj);
 }
 
-void guilayout::world_layout::AddLayoutDescriptor(std::unique_ptr<layout_descriptor> &&desc) {
-	descriptors.emplace_back(std::move(desc));
+void guilayout::world_layout::ProcessLayoutObj(const layout_obj &desc, error_collection &ec) {
+
 }
 
-void guilayout::world_layout::ProcessLayoutDescriptor(const layout_descriptor &desc, error_collection &ec) {
-	std::shared_ptr<generictrack_obj> obj = std::make_shared<generictrack_obj>();
-	AddLayoutObj(std::static_pointer_cast<layout_obj>(obj));
-
-	layout_pos &lp = layout_positions[desc.pos_class];
-
-
-	generictrack *gt = desc.gt;
-	if(gt) {
-		genericsignal *gs = FastSignalCast(gt);
-		if(gs) {
-
-		}
-		genericpoints *gp = dynamic_cast<genericpoints*>(gt);
-		if(gp) {
-
-		}
+void guilayout::world_layout::ProcessLayoutObjSet(error_collection &ec) {
+	for(auto &it : objs) {
+		ProcessLayoutObj(*it, ec);
 	}
+	tracktolayoutmap.clear();
+	layout_positions.clear();
 }
 
-void guilayout::world_layout::ProcessLayoutDescriptorSet(error_collection &ec) {
-	for(auto &it : descriptors) {
-		ProcessLayoutDescriptor(*it, ec);
+guilayout::layouttrack_obj * guilayout::world_layout::GetTrackLayoutObj(const layout_obj &src, const generictrack *targetgt, error_collection &ec) {
+	auto it = tracktolayoutmap.find(targetgt);
+	if(it == tracktolayoutmap.end()) {
+		ec.RegisterNewError<error_layout>(src, "Cannot layout object relative to track piece: not in layout: " + targetgt->GetFriendlyName());
+		return 0;
 	}
-	descriptors.clear();
+	return it->second.get();
+}
+
+void guilayout::world_layout::LayoutTrackRelativeFixup(const layout_obj &src, const generictrack *targetgt, std::function<void(layouttrack_obj &obj, error_collection &ec)> f, error_collection &ec) {
+	layouttrack_obj *targ = GetTrackLayoutObj(src, targetgt, ec);
+	if(targ) {
+		targ->RelativeFixup(src, f, ec);
+	}
 }
