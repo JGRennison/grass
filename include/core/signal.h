@@ -481,21 +481,34 @@ class routingmarker : public trackroutingpoint {
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 };
 
-inline genericsignal* FastSignalCast(generictrack *gt, EDGETYPE direction) {
-	if(gt && gt->GetFlags(direction) & GTF::SIGNAL) return static_cast<genericsignal*>(gt);
+inline const genericsignal* FastSignalCast(const generictrack *gt, EDGETYPE direction) {
+	if(gt && gt->GetFlags(direction) & GTF::SIGNAL) return static_cast<const genericsignal*>(gt);
 	return 0;
 }
-inline genericsignal* FastSignalCast(generictrack *gt) {
+inline const genericsignal* FastSignalCast(const generictrack *gt) {
 	if(gt) return FastSignalCast(gt, gt->GetDefaultValidDirecton());
 	else return 0;
 }
-inline routingpoint* FastRoutingpointCast(generictrack *gt, EDGETYPE direction) {
-	if(gt && gt->GetFlags(direction) & GTF::ROUTINGPOINT) return static_cast<routingpoint*>(gt);
+inline const routingpoint* FastRoutingpointCast(const generictrack *gt, EDGETYPE direction) {
+	if(gt && gt->GetFlags(direction) & GTF::ROUTINGPOINT) return static_cast<const routingpoint*>(gt);
 	return 0;
 }
-inline routingpoint* FastRoutingpointCast(generictrack *gt) {
+inline const routingpoint* FastRoutingpointCast(const generictrack *gt) {
 	if(gt) return FastRoutingpointCast(gt, gt->GetDefaultValidDirecton());
 	else return 0;
+}
+
+inline genericsignal* FastSignalCast(generictrack *gt, EDGETYPE direction) {
+	return const_cast<genericsignal*>(FastSignalCast(const_cast<const generictrack*>(gt), direction));
+}
+inline genericsignal* FastSignalCast(generictrack *gt) {
+	return const_cast<genericsignal*>(FastSignalCast(const_cast<const generictrack*>(gt)));
+}
+inline routingpoint* FastRoutingpointCast(generictrack *gt, EDGETYPE direction) {
+	return const_cast<routingpoint*>(FastRoutingpointCast(const_cast<const generictrack*>(gt), direction));
+}
+inline routingpoint* FastRoutingpointCast(generictrack *gt) {
+	return const_cast<routingpoint*>(FastRoutingpointCast(const_cast<const generictrack*>(gt)));
 }
 
 #endif
