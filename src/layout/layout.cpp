@@ -122,7 +122,11 @@ void guilayout::layouttrack_obj::Deserialise(const deserialiser_input &di, error
 	if(CheckTransJsonValue(layoutdirection, di, "direction", ec)) setmembers |= LTOSM_LAYOUTDIR;
 	if(CheckTransJsonValue(prev, di, "prev", ec)) setmembers |= LTOSM_PREV;
 	if(CheckTransJsonValue(prev_edge, di, "prevedge", ec)) setmembers |= LTOSM_PREVEDGE;
-	CheckTransJsonValue(pos_class, di, "posclass", ec);
+	if(CheckTransJsonValue(src_branch, di, "branch", ec)) dest_branch = src_branch;
+	else {
+		CheckTransJsonValue(src_branch, di, "srcbranch", ec);
+		CheckTransJsonValue(dest_branch, di, "destbranch", ec);
+	}
 }
 
 void guilayout::layoutberth_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -135,6 +139,91 @@ void guilayout::layoutgui_obj::Deserialise(const deserialiser_input &di, error_c
 	if(CheckTransJsonValue(dx, di, "dx", ec)) setmembers |= LGOSM_DX;
 	if(CheckTransJsonValue(dy, di, "dy", ec)) setmembers |= LGOSM_DY;
 	if(CheckTransJsonValue(graphics, di, "graphics", ec)) setmembers |= LGOSM_GRAPHICS;
+}
+
+void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec) {
+	std::shared_ptr<layouttrack_obj> prevtrackobj;
+	if(setmembers & LTOSM_PREV) {
+		generictrack *targgt = wl.GetWorld().FindTrackByName(prev);
+		if(!targgt) {
+			ec.RegisterNewError<error_layout>(*this, "No such track piece: " + prev);
+			return;
+		}
+		prevtrackobj = wl.GetTrackLayoutObj(*this, targgt, ec);
+	}
+	else {
+		prevtrackobj = wl.GetLayoutBranchRef(src_branch);
+	}
+
+	bool x_relative = !(setmembers & LOSM_X);
+	bool y_relative = !(setmembers & LOSM_Y);
+
+	//work out which edge prevtrackobj/the given coords should be connected to
+	EDGETYPE startedge = prev_edge;
+	if(startedge == EDGETYPE::EDGE_NULL) {
+		std::vector<generictrack::edgelistitem> edges;
+		gt->GetListOfEdges(edges);
+
+		unsigned int free_edges = edges.size();
+		for(auto &it : edges) {
+			if(it.target->track == gt->GetPreviousTrackPiece()) {	//if we are connected to the previous (in the layout) track piece, use that connection/edge as the reference
+				startedge = it.edge;
+				break;;
+			}
+			if(it.target->track == gt->GetNextTrackPiece()) {	//if we are connected to the next (in the layout) track piece,
+									//don't use that connection/edge, use the remaining edge as the reference
+									//if there are multiple remaining edges, report an error
+				free_edges--;
+				it.edge = EDGETYPE::EDGE_NULL;
+			}
+		}
+
+		if(startedge == EDGETYPE::EDGE_NULL) {	//check that there is one free edge in the edgelist and use that
+			if(free_edges != 1) {
+				ec.RegisterNewError<error_layout>(*this, string_format("Ambiguous relative layout declaration: %d possible edges to choose from, try using the 'prevedge' parameter", free_edges));
+				return;
+			}
+			for(auto &it : edges) {		//find the free edge
+				if(it.edge != EDGETYPE::EDGE_NULL) {
+					startedge = it.edge;
+					break;
+				}
+			}
+		}
+	}
+
+	if(!prevtrackobj && (x_relative || y_relative)) {
+		ec.RegisterNewError<error_layout>(*this, "Cannot layout track piece relative to non-existent track piece");
+		return;
+	}
+
+	const genericsignal *gs = FastSignalCast(gt);
+	if(gs) {
+
+	}
+	const genericpoints *gp = dynamic_cast<const genericpoints*>(gt);
+	if(gp) {
+
+	}
+
+	auto finalise = [this](error_collection &ec) {
+		for(auto &it : fixups) it(*this, ec);
+		fixups.clear();
+	};
+
+	auto layoutfixup = [&wl, prevtrackobj, this, finalise](layouttrack_obj &targobj, error_collection &ec) {
+		finalise(ec);
+	};
+	if(x_relative || y_relative) prevtrackobj->RelativeFixup(*this, layoutfixup, ec);
+	else finalise(ec);
+}
+
+void guilayout::layoutberth_obj::Process(world_layout &wl, error_collection &ec) {
+
+}
+
+void guilayout::layoutgui_obj::Process(world_layout &wl, error_collection &ec) {
+
 }
 
 guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length) {
@@ -252,29 +341,25 @@ void guilayout::world_layout::AddLayoutObj(const std::shared_ptr<layout_obj> &ob
 	objs.push_back(obj);
 }
 
-void guilayout::world_layout::ProcessLayoutObj(const layout_obj &desc, error_collection &ec) {
-
-}
-
 void guilayout::world_layout::ProcessLayoutObjSet(error_collection &ec) {
 	for(auto &it : objs) {
-		ProcessLayoutObj(*it, ec);
+		it->Process(*this, ec);
 	}
 	tracktolayoutmap.clear();
-	layout_positions.clear();
+	layout_branches.clear();
 }
 
-guilayout::layouttrack_obj * guilayout::world_layout::GetTrackLayoutObj(const layout_obj &src, const generictrack *targetgt, error_collection &ec) {
+std::shared_ptr<guilayout::layouttrack_obj> guilayout::world_layout::GetTrackLayoutObj(const layout_obj &src, const generictrack *targetgt, error_collection &ec) {
 	auto it = tracktolayoutmap.find(targetgt);
 	if(it == tracktolayoutmap.end()) {
 		ec.RegisterNewError<error_layout>(src, "Cannot layout object relative to track piece: not in layout: " + targetgt->GetFriendlyName());
-		return 0;
+		return std::shared_ptr<layouttrack_obj>();
 	}
-	return it->second.get();
+	return it->second;
 }
 
 void guilayout::world_layout::LayoutTrackRelativeFixup(const layout_obj &src, const generictrack *targetgt, std::function<void(layouttrack_obj &obj, error_collection &ec)> f, error_collection &ec) {
-	layouttrack_obj *targ = GetTrackLayoutObj(src, targetgt, ec);
+	std::shared_ptr<guilayout::layouttrack_obj> targ = GetTrackLayoutObj(src, targetgt, ec);
 	if(targ) {
 		targ->RelativeFixup(src, f, ec);
 	}

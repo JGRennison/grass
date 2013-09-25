@@ -40,9 +40,11 @@ class generictrack;
 class trackberth;
 class error_collection;
 class deserialiser_input;
+class world;
 
 namespace guilayout {
 	struct layout_obj;
+	class world_layout;
 
 	class error_layout : public error_obj {
 		public:
@@ -85,6 +87,7 @@ namespace guilayout {
 		std::pair<unsigned int, unsigned int> GetDimensions() const;
 		std::pair<int, int> GetPosition() const;
 		virtual std::string GetFriendlyName() const = 0;
+		virtual void Process(world_layout &wl, error_collection &ec) = 0;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	};
 
@@ -95,7 +98,8 @@ namespace guilayout {
 		bool leftside = false;
 		bool rightside = false;
 		LAYOUT_DIR layoutdirection = LAYOUT_DIR::NULLDIR;
-		std::string pos_class = "default";
+		std::string src_branch = "default";
+		std::string dest_branch = "default";
 		std::string prev;
 		EDGETYPE prev_edge = EDGETYPE::EDGE_NULL;
 
@@ -108,11 +112,19 @@ namespace guilayout {
 			LTOSM_PREVEDGE	= 1<<21,
 		};
 
+		struct edge_def {
+			EDGETYPE edge;
+			int x;
+			int y;
+		};
+		std::vector<edge_def> edges;
+
 		std::vector<std::function<void(layouttrack_obj &obj, error_collection &ec)> > fixups;
 
 		public:
 		layouttrack_obj(const generictrack *gt_) : gt(gt_) { }
 		virtual std::string GetFriendlyName() const override;
+		virtual void Process(world_layout &wl, error_collection &ec) override;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 		void RelativeFixup(const layout_obj &src, std::function<void(layouttrack_obj &obj, error_collection &ec)> f, error_collection &ec);
 	};
@@ -130,6 +142,7 @@ namespace guilayout {
 		public:
 		layoutberth_obj(const generictrack *gt_, const trackberth *b_) : gt(gt_), b(b_) { }
 		virtual std::string GetFriendlyName() const override;
+		virtual void Process(world_layout &wl, error_collection &ec) override;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	};
 
@@ -147,6 +160,7 @@ namespace guilayout {
 
 		public:
 		virtual std::string GetFriendlyName() const override;
+		virtual void Process(world_layout &wl, error_collection &ec) override;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	};
 
@@ -162,26 +176,20 @@ namespace guilayout {
 
 	class world_layout : public std::enable_shared_from_this<world_layout> {
 		std::deque<std::shared_ptr<layout_obj> > objs;
-
-		struct layout_pos {
-			int x = 0;
-			int y = 0;
-			layout_obj *prev_obj = 0;
-			const generictrack *prev_gt = 0;
-			EDGETYPE prev_edge = EDGETYPE::EDGE_NULL;
-			LAYOUT_DIR layoutdirection = LAYOUT_DIR::NULLDIR;
-		};
-		std::map<std::string, layout_pos> layout_positions;
 		std::map<const generictrack *, std::shared_ptr<layouttrack_obj> > tracktolayoutmap;
+		std::map<std::string, std::shared_ptr<layouttrack_obj> > layout_branches;
+		const world &w;
 
 		public:
+		world_layout(const world &w_) : w(w_) { }
+		virtual ~world_layout() { }
+		const world & GetWorld() const { return w; }
+		std::shared_ptr<layouttrack_obj> & GetLayoutBranchRef(std::string name) { return layout_branches[name]; }
 		void AddLayoutObj(const std::shared_ptr<layout_obj> &obj);
 		void SetWorldSerialisationLayout(world_serialisation &ws);
-		void ProcessLayoutObj(const layout_obj &desc, error_collection &ec);
 		void ProcessLayoutObjSet(error_collection &ec);
-		layouttrack_obj * GetTrackLayoutObj(const layout_obj &src, const generictrack *targetgt, error_collection &ec);
+		std::shared_ptr<layouttrack_obj> GetTrackLayoutObj(const layout_obj &src, const generictrack *targetgt, error_collection &ec);
 		void LayoutTrackRelativeFixup(const layout_obj &src, const generictrack *targetgt, std::function<void(layouttrack_obj &obj, error_collection &ec)> f, error_collection &ec);
-		virtual ~world_layout();
 	};
 
 };
