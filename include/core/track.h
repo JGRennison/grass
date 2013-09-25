@@ -78,7 +78,8 @@ struct trackberth {
 };
 
 class generictrack : public world_obj {
-	generictrack *prevtrack;
+	generictrack *prevtrack = 0;
+	generictrack *nexttrack = 0;
 	bool have_inited = false;
 
 	enum class GTPRIVF {
@@ -91,12 +92,16 @@ class generictrack : public world_obj {
 
 	friend world_serialisation;
 	void SetPreviousTrackPiece(generictrack *prev) { prevtrack = prev; }
+	void SetNextTrackPiece(generictrack *next) { nexttrack = next; }
+	public:
+	const generictrack *GetPreviousTrackPiece() const { return prevtrack; }
+	const generictrack *GetNextTrackPiece() const { return nexttrack; }
 
 	protected:
 	std::vector<std::pair<EDGETYPE, unsigned int> > sighting_distances;
 
 	public:
-	generictrack(world &w_) : world_obj(w_), prevtrack(0) { }
+	generictrack(world &w_) : world_obj(w_) { }
 	virtual const speedrestrictionset *GetSpeedRestrictions() const;
 	virtual const tractionset *GetTractionTypes() const;
 	virtual unsigned int GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const = 0;
