@@ -51,26 +51,26 @@ struct berth_record {
 typedef std::vector<berth_record> berth_list;
 
 enum class GMRF : unsigned int {
-	ZERO		= 0,
-	DYNPRIORITY	= 1<<2,
-	CHECKTRYRESERVE	= 1<<3,
-	CHECKVIAS	= 1<<4,
-	DONTCLEARVECTOR	= 1<<5,
-	DONTSORT	= 1<<6,
+	ZERO               = 0,
+	DYNPRIORITY        = 1<<2,
+	CHECKTRYRESERVE    = 1<<3,
+	CHECKVIAS          = 1<<4,
+	DONTCLEARVECTOR    = 1<<5,
+	DONTSORT           = 1<<6,
 };
-template<> struct enum_traits< GMRF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< GMRF > { static constexpr bool flags = true; };
 
 enum class ASPECT_FLAGS : unsigned int {
-	ZERO		= 0,
-	MAXNOTBINDING	= 1<<0,		//for banner repeaters, etc. the aspect does not override any previous longer aspect
+	ZERO            = 0,
+	MAXNOTBINDING   = 1<<0,     //for banner repeaters, etc. the aspect does not override any previous longer aspect
 };
-template<> struct enum_traits< ASPECT_FLAGS > {	static constexpr bool flags = true; };
+template<> struct enum_traits< ASPECT_FLAGS > { static constexpr bool flags = true; };
 
 enum class RPRT_FLAGS {
-	ZERO			= 0,
-	VIA			= 1<<0,
+	ZERO            = 0,
+	VIA             = 1<<0,
 };
-template<> struct enum_traits< RPRT_FLAGS > {	static constexpr bool flags = true; };
+template<> struct enum_traits< RPRT_FLAGS > {   static constexpr bool flags = true; };
 
 struct RPRT {
 	route_class::set start;
@@ -121,7 +121,7 @@ class routingpoint : public genericzlentrack {
 	routingpoint(world &w_) : genericzlentrack(w_) { }
 
 	inline unsigned int GetAspect() const { return aspect; }
-	inline unsigned int GetReservedAspect() const { return reserved_aspect; }	//this includes approach locking aspects
+	inline unsigned int GetReservedAspect() const { return reserved_aspect; }   //this includes approach locking aspects
 	inline routingpoint *GetAspectNextTarget() const { return aspect_target; }
 	inline routingpoint *GetAspectRouteTarget() const { return aspect_route_target; }
 	inline routingpoint *GetAspectBackwardsDependency() const { return aspect_backwards_dependency; }
@@ -138,8 +138,8 @@ class routingpoint : public genericzlentrack {
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
 
 	enum class GPBF {
-		ZERO			= 0,
-		GETNONEMPTY		= 1<<0,
+		ZERO            = 0,
+		GETNONEMPTY     = 1<<0,
 	};
 	virtual trackberth *GetPriorBerth(EDGETYPE direction, GPBF flags) const { return 0; }
 
@@ -154,7 +154,7 @@ class routingpoint : public genericzlentrack {
 	virtual std::string GetTypeName() const override { return "Track Routing Point"; }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 };
-template<> struct enum_traits< routingpoint::GPBF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< routingpoint::GPBF > { static constexpr bool flags = true; };
 
 struct route {
 	vartrack_target_ptr<routingpoint> start;
@@ -167,25 +167,25 @@ struct route {
 	berth_list berths;
 	route_class::ID type;
 	route_class::ID overlap_type = route_class::ID::RTC_NULL;
-	int priority;
-	unsigned int approachlocking_timeout;
-	unsigned int overlap_timeout;
+	int priority = 0;
+	unsigned int approachlocking_timeout = 0;
+	unsigned int overlap_timeout = 0;
 	unsigned int approachcontrol_triggerdelay = 0;
 	track_train_counter_block *approachcontrol_trigger = 0;
 	track_train_counter_block *overlaptimeout_trigger = 0;
 
 	enum class RF {
-		ZERO			= 0,
-		APCONTROL		= 1<<0,
-		TORR			= 1<<1,
-		EXITSIGCONTROL		= 1<<2,
+		ZERO                  = 0,
+		APCONTROL             = 1<<0,
+		TORR                  = 1<<1,
+		EXITSIGCONTROL        = 1<<2,
 	};
-	RF routeflags;
+	RF routeflags = RF::ZERO;
 
-	routingpoint *parent;
-	unsigned int index;
+	routingpoint *parent  = 0;
+	unsigned int index  = 0;
 
-	route() : type(route_class::RTC_NULL), priority(0), approachlocking_timeout(0), overlap_timeout(0), routeflags(RF::ZERO), parent(0), index(0) { }
+	route() : type(route_class::RTC_NULL) { }
 	void FillLists();
 	bool TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const;
 	bool RouteReservation(RRF reserve_flags, std::string *failreasonkey = 0) const;
@@ -195,7 +195,7 @@ struct route {
 	bool IsStartAnchored(RRF checkmask = RRF::RESERVE) const;
 	bool IsRouteTractionSuitable(const train* t) const;
 };
-template<> struct enum_traits< route::RF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< route::RF > { static constexpr bool flags = true; };
 
 class route_restriction {
 	friend route_restriction_set;
@@ -211,18 +211,18 @@ class route_restriction {
 	track_train_counter_block *overlaptimeout_trigger = 0;
 	route_class::ID overlap_type;
 	enum class RRF {
-		ZERO				= 0,
-		PRIORITYSET			= 1<<0,
-		APLOCK_TIMEOUTSET		= 1<<1,
-		OVERLAPTIMEOUTSET		= 1<<2,
-		APCONTROL			= 1<<3,
-		APCONTROL_SET			= 1<<4,
-		APCONTROLTRIGGERDELAY_SET	= 1<<5,
-		TORR				= 1<<6,
-		TORR_SET			= 1<<7,
-		EXITSIGCONTROL			= 1<<8,
-		EXITSIGCONTROL_SET		= 1<<9,
-		OVERLAPTYPE_SET			= 1<<10,
+		ZERO                        = 0,
+		PRIORITYSET                 = 1<<0,
+		APLOCK_TIMEOUTSET           = 1<<1,
+		OVERLAPTIMEOUTSET           = 1<<2,
+		APCONTROL                   = 1<<3,
+		APCONTROL_SET               = 1<<4,
+		APCONTROLTRIGGERDELAY_SET   = 1<<5,
+		TORR                        = 1<<6,
+		TORR_SET                    = 1<<7,
+		EXITSIGCONTROL              = 1<<8,
+		EXITSIGCONTROL_SET          = 1<<9,
+		OVERLAPTYPE_SET             = 1<<10,
 	};
 	RRF routerestrictionflags = RRF::ZERO;
 	route_class::set allowedtypes = route_class::All();
@@ -233,7 +233,7 @@ class route_restriction {
 	void ApplyRestriction(route &rt) const;
 	route_class::set GetApplyRouteTypes() const { return applytotypes; }
 };
-template<> struct enum_traits< route_restriction::RRF> {	static constexpr bool flags = true; };
+template<> struct enum_traits< route_restriction::RRF> { static constexpr bool flags = true; };
 
 bool RouteReservation(route &res_route, RRF rr_flags);
 
@@ -273,16 +273,16 @@ class trackroutingpoint : public routingpoint {
 };
 
 enum class GSF : unsigned int {
-	ZERO			= 0,
-	REPEATER		= 1<<0,
-	NONASPECTEDREPEATER	= 1<<1,		//true for banner repeaters, etc. not true for "standard" repeaters which show an aspect
-	NOOVERLAP		= 1<<2,
-	APPROACHLOCKINGMODE	= 1<<3,		//route cancelled with train approaching, hold aspect at 0
-	AUTOSIGNAL		= 1<<4,
-	OVERLAPSWINGABLE	= 1<<5,
-	OVERLAPTIMEOUTSTARTED	= 1<<6,
+	ZERO                     = 0,
+	REPEATER                 = 1<<0,
+	NONASPECTEDREPEATER      = 1<<1,     //true for banner repeaters, etc. not true for "standard" repeaters which show an aspect
+	NOOVERLAP                = 1<<2,
+	APPROACHLOCKINGMODE      = 1<<3,     //route cancelled with train approaching, hold aspect at 0
+	AUTOSIGNAL               = 1<<4,
+	OVERLAPSWINGABLE         = 1<<5,
+	OVERLAPTIMEOUTSTARTED    = 1<<6,
 };
-template<> struct enum_traits< GSF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< GSF > { static constexpr bool flags = true; };
 
 class genericsignal : public trackroutingpoint {
 	private:
@@ -319,9 +319,9 @@ class genericsignal : public trackroutingpoint {
 
 	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
 
-	virtual const route *GetCurrentForwardRoute() const;	//this will not return the overlap, only the "real" route
-	virtual const route *GetCurrentForwardOverlap() const;	//this will only return the overlap, not the "real" route
-	virtual void EnumerateCurrentBackwardsRoutes(std::function<void (const route *)> func) const;	//this will return all routes which currently terminate here
+	virtual const route *GetCurrentForwardRoute() const;                                            //this will not return the overlap, only the "real" route
+	virtual const route *GetCurrentForwardOverlap() const;                                          //this will only return the overlap, not the "real" route
+	virtual void EnumerateCurrentBackwardsRoutes(std::function<void (const route *)> func) const;   //this will return all routes which currently terminate here
 	virtual bool RepeaterAspectMeaningfulForRouteType(route_class::ID type) const;
 	virtual trackberth *GetPriorBerth(EDGETYPE direction, GPBF flags) const override;
 
