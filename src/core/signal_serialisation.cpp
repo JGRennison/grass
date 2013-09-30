@@ -87,6 +87,9 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonValue(last_route_prove_time, di, "lastrouteprovetime", ec);
 	CheckTransJsonValue(last_route_clear_time, di, "lastroutecleartime", ec);
 	CheckTransJsonValue(last_route_set_time, di, "lastroutesettime", ec);
+	CheckTransJsonValue(routeprove_default_delay, di, "routeprovedelay", ec);
+	CheckTransJsonValue(routeclear_default_delay, di, "routecleardelay", ec);
+	CheckTransJsonValue(routeset_default_delay, di, "routesetdelay", ec);
 }
 
 void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -255,6 +258,9 @@ void route_restriction_set::DeserialiseRestriction(const deserialiser_input &sub
 	if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF::PRIORITYSET;
 	if(CheckTransJsonValueProc(rr.approachlocking_timeout, subdi, "approachlockingtimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APLOCK_TIMEOUTSET;
 	if(CheckTransJsonValueProc(rr.overlap_timeout, subdi, "overlaptimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTIMEOUTSET;
+	if(CheckTransJsonValueProc(rr.routeprove_delay, subdi, "routeprovedelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::ROUTEPROVEDELAY_SET;
+	if(CheckTransJsonValueProc(rr.routeclear_delay, subdi, "routecleardelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::ROUTECLEARDELAY_SET;
+	if(CheckTransJsonValueProc(rr.routeset_delay, subdi, "routesetdelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::ROUTESETDELAY_SET;
 	deserialise_ttcb("overlaptimeouttrigger", [&](route_restriction &rr, track_train_counter_block *ttcb) {
 		rr.overlaptimeout_trigger = ttcb;
 	});

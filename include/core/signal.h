@@ -173,6 +173,9 @@ struct route {
 	unsigned int approachcontrol_triggerdelay = 0;
 	track_train_counter_block *approachcontrol_trigger = 0;
 	track_train_counter_block *overlaptimeout_trigger = 0;
+	unsigned int routeprove_delay = 0;
+	unsigned int routeclear_delay = 0;
+	unsigned int routeset_delay = 0;
 
 	enum class RF {
 		ZERO                  = 0,
@@ -206,6 +209,9 @@ class route_restriction {
 	int priority = 0;
 	unsigned int approachlocking_timeout;
 	unsigned int overlap_timeout;
+	unsigned int routeprove_delay;
+	unsigned int routeclear_delay;
+	unsigned int routeset_delay;
 	unsigned int approachcontrol_triggerdelay = 0;
 	track_train_counter_block *approachcontrol_trigger = 0;
 	track_train_counter_block *overlaptimeout_trigger = 0;
@@ -223,6 +229,9 @@ class route_restriction {
 		EXITSIGCONTROL              = 1<<8,
 		EXITSIGCONTROL_SET          = 1<<9,
 		OVERLAPTYPE_SET             = 1<<10,
+		ROUTEPROVEDELAY_SET         = 1<<11,
+		ROUTECLEARDELAY_SET         = 1<<12,
+		ROUTESETDELAY_SET           = 1<<13,
 	};
 	RRF routerestrictionflags = RRF::ZERO;
 	route_class::set allowedtypes = route_class::All();
@@ -302,6 +311,9 @@ class genericsignal : public trackroutingpoint {
 
 	std::array<unsigned int, route_class::LAST_RTC> approachlocking_default_timeouts;
 	unsigned int overlap_default_timeout = 0;
+	unsigned int routeprove_default_delay = 0;
+	unsigned int routeclear_default_delay = 0;
+	unsigned int routeset_default_delay = 0;
 
 	route_class::set available_overlaps = 0;
 

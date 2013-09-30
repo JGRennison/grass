@@ -1354,3 +1354,95 @@ TEST_CASE( "signal/propagation/repeater", "Test aspect propagation and route cre
 	test(false);
 	test(true);
 }
+
+TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal aspect based on route prove, clear, or set time") {
+	auto test = [&](std::string testname, std::string sigparam, std::string rrparam, world_time expected_time) {
+		SCOPED_INFO("Test: " << testname << ", Signal Parameter: " << sigparam << ", Route Restriction Parameter: " << rrparam << ", Expected Time: " << expected_time);
+		test_fixture_world_init_checked env(
+			string_format(
+				R"({ "content" : [ )"
+					R"({ "type" : "startofline", "name" : "A" }, )"
+					R"({ "type" : "routesignal", "name" : "S1", "routesignal" : true %s, "routerestrictions" : [ { "targets" : "B" %s } ] }, )"
+					R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "T1" }, )"
+					R"({ "type" : "points", "name" : "P1" }, )"
+					R"({ "type" : "trackseg", "length" : 20000 }, )"
+					R"({ "type" : "endofline", "name" : "B",  "end" : { "allow" : [ "overlap", "route" ] } }, )"
+
+					R"({ "type" : "endofline", "name" : "C", "connect" : { "to" : "P1" } } )"
+				"] }"
+				, !sigparam.empty() ? (", " + sigparam).c_str() : ""
+				, !rrparam.empty() ? (", " + rrparam).c_str() : ""
+			)
+		);
+
+		CHECK(env.w.GetLogText() == "");
+		genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
+		routingpoint *b = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("B"));
+		genericpoints *p1 = PTR_CHECK(env.w.FindTrackByNameCast<genericpoints>("P1"));
+		track_circuit *t1 = env.w.track_circuits.FindOrMakeByName("T1");
+
+		t1->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+		p1->SetPointsFlagsMasked(0, genericpoints::PTF::FAILEDNORM | genericpoints::PTF::FAILEDREV, genericpoints::PTF::FAILEDNORM | genericpoints::PTF::FAILEDREV);
+
+		world_time cumuldelay = 0;
+		auto checkdelay = [&](world_time delay) {
+			SCOPED_INFO("Test at cumulative delay: " << cumuldelay);
+			world_time newcumuldelay = cumuldelay + delay;
+			if(newcumuldelay > expected_time) {
+				world_time initial_delay = expected_time - cumuldelay - 1;
+				if(initial_delay) {
+					if(initial_delay > 1) env.w.GameStep(1);
+					env.w.GameStep(initial_delay - 1);
+					cumuldelay += initial_delay;
+				}
+				{
+					SCOPED_INFO("Pre-check at cumulative delay: " << cumuldelay << ", Game Time: " << env.w.GetGameTime());
+					CHECK(s1->GetAspect() == 0);
+				}
+				env.w.GameStep(2);
+				cumuldelay += 2;
+				{
+					SCOPED_INFO("Post-check at cumulative delay: " << cumuldelay << ", Game Time: " << env.w.GetGameTime());
+					CHECK(s1->GetAspect() == 1);
+				}
+				env.w.GameStep(newcumuldelay - cumuldelay);
+			}
+			else {
+				env.w.GameStep(1);
+				CHECK(s1->GetAspect() == 0);
+				env.w.GameStep(delay - 1);
+				CHECK(s1->GetAspect() == 0);
+			}
+			cumuldelay = newcumuldelay;
+		};
+
+		env.w.GameStep(1000);
+		CHECK(s1->GetAspect() == 0);
+
+		env.w.SubmitAction(action_reservepath(env.w, s1, b));
+		CHECK(env.w.GetLogText() == "");
+
+		checkdelay(1000);
+		p1->SetPointsFlagsMasked(0, genericpoints::PTF::ZERO, genericpoints::PTF::FAILEDNORM | genericpoints::PTF::FAILEDREV);
+		checkdelay(1000);
+		t1->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+		checkdelay(20000);
+		CHECK(s1->GetAspect() == 1);
+	};
+
+	auto multitest = [&](std::string paramname, unsigned int paramvalue, world_time expected_time) {
+		SCOPED_INFO("Multi-Test: Parameter: " << paramname << ", Value: " << paramvalue << ", Expected Time: " << expected_time);
+		auto mkparam = [&](unsigned int value) {
+			return string_format(R"( "%s" : %d )", paramname.c_str(), value);
+		};
+		test("Signal", mkparam(paramvalue), "", expected_time);
+		test("Restriction", "", mkparam(paramvalue), expected_time);
+		test("Both", mkparam(paramvalue * 2), mkparam(paramvalue), expected_time);
+	};
+
+	multitest("routeprovedelay", 10000, 11000);
+	multitest("routecleardelay", 10000, 12000);
+	multitest("routesetdelay", 10000, 10000);
+	multitest("routeprovedelay", 500, 2001);
+	multitest("routesetdelay", 500, 2001);
+}

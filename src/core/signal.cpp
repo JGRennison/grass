@@ -306,8 +306,8 @@ void genericsignal::UpdateSignalState() {
 		clear_route_base();
 	};
 	auto clear_route_occ = [&]() {
-		last_route_prove_time = 0;
-		set_clear_time();
+		set_prove_time();
+		last_route_clear_time = 0;
 		clear_route_base();
 	};
 	auto clear_route_noprove = [&]() {
@@ -454,6 +454,9 @@ void genericsignal::UpdateSignalState() {
 	set_clear_time();
 	set_prove_time();
 	if(sflags & GSF::APPROACHLOCKINGMODE) aspect = 0;
+	if(last_state_update - last_route_prove_time < set_route->routeprove_delay) aspect = 0;
+	if(last_state_update - last_route_clear_time < set_route->routeclear_delay) aspect = 0;
+	if(last_state_update - last_route_set_time < set_route->routeset_delay) aspect = 0;
 	check_aspect_change();
 }
 
@@ -762,6 +765,9 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						rt->end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
 						if(route_class::IsOverlap(type)) rt->overlap_timeout = overlap_default_timeout;
 						else rt->approachlocking_timeout = approachlocking_default_timeouts[type];
+						rt->routeprove_delay = routeprove_default_delay;
+						rt->routeclear_delay = routeclear_default_delay;
+						rt->routeset_delay = routeset_default_delay;
 						rt->FillLists();
 						rt->parent = this;
 
@@ -984,6 +990,9 @@ void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::TORR_SET) SetOrClearBitsRef(rt.routeflags, route::RF::TORR, routerestrictionflags & RRF::TORR);
 	if(routerestrictionflags & RRF::EXITSIGCONTROL_SET) SetOrClearBitsRef(rt.routeflags, route::RF::EXITSIGCONTROL, routerestrictionflags & RRF::EXITSIGCONTROL);
 	if(routerestrictionflags & RRF::OVERLAPTYPE_SET) rt.overlap_type = overlap_type;
+	if(routerestrictionflags & RRF::ROUTEPROVEDELAY_SET) rt.routeprove_delay = routeprove_delay;
+	if(routerestrictionflags & RRF::ROUTECLEARDELAY_SET) rt.routeclear_delay = routeclear_delay;
+	if(routerestrictionflags & RRF::ROUTESETDELAY_SET) rt.routeset_delay = routeset_delay;
 	if(approachcontrol_trigger) rt.approachcontrol_trigger = approachcontrol_trigger;
 	if(overlaptimeout_trigger) rt.overlaptimeout_trigger = overlaptimeout_trigger;
 }
