@@ -294,6 +294,9 @@ class genericsignal : public trackroutingpoint {
 	track_reservation_state end_trs;
 
 	world_time last_state_update = 0;
+	world_time last_route_prove_time = 0;
+	world_time last_route_clear_time = 0;
+	world_time last_route_set_time = 0;
 	unsigned int max_aspect = 1;
 	unsigned int overlapswingminaspectdistance = 1;
 

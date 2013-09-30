@@ -84,6 +84,9 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonValueFlag(sflags, GSF::APPROACHLOCKINGMODE, di, "approachlockingmode", ec);
 	CheckTransJsonValueFlag(sflags, GSF::OVERLAPTIMEOUTSTARTED, di, "overlaptimeoutstarted", ec);
 	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) CheckTransJsonValue(overlap_timeout_start, di, "overlap_timeout_start", ec);
+	CheckTransJsonValue(last_route_prove_time, di, "lastrouteprovetime", ec);
+	CheckTransJsonValue(last_route_clear_time, di, "lastroutecleartime", ec);
+	CheckTransJsonValue(last_route_set_time, di, "lastroutesettime", ec);
 }
 
 void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -96,6 +99,9 @@ void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const
 		SerialiseValueJson(overlap_timeout_start, so, "overlap_timeout_start");
 		SerialiseValueJson<bool>(true, so, "approachlockingmode");
 	}
+	if(last_route_prove_time) SerialiseValueJson(last_route_prove_time, so, "lastrouteprovetime");
+	if(last_route_clear_time) SerialiseValueJson(last_route_clear_time, so, "lastroutecleartime");
+	if(last_route_set_time) SerialiseValueJson(last_route_set_time, so, "lastroutesettime");
 }
 
 void stdsignal::Deserialise(const deserialiser_input &di, error_collection &ec) {

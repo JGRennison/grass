@@ -284,13 +284,41 @@ void genericsignal::UpdateSignalState() {
 		}
 	};
 
-	auto clear_route = [&]() {
+	auto clear_route_base = [&]() {
 		aspect = 0;
 		reserved_aspect = 0;
 		SetAspectNextTarget(0);
 		SetAspectRouteTarget(0);
 		aspect_type = route_class::RTC_NULL;
 		check_aspect_change();
+	};
+
+	auto set_clear_time = [&]() {
+		if(last_route_clear_time == 0) last_route_clear_time = last_state_update;
+	};
+	auto set_prove_time = [&]() {
+		if(last_route_prove_time == 0) last_route_prove_time = last_state_update;
+	};
+
+	auto clear_route = [&]() {
+		last_route_prove_time = 0;
+		last_route_clear_time = 0;
+		clear_route_base();
+	};
+	auto clear_route_occ = [&]() {
+		last_route_prove_time = 0;
+		set_clear_time();
+		clear_route_base();
+	};
+	auto clear_route_noprove = [&]() {
+		last_route_prove_time = 0;
+		last_route_clear_time = 0;
+		clear_route_base();
+	};
+	auto clear_route_notrigger = [&]() {
+		set_prove_time();
+		set_clear_time();
+		clear_route_base();
 	};
 
 	const route *own_overlap = GetCurrentForwardOverlap();
@@ -330,8 +358,39 @@ void genericsignal::UpdateSignalState() {
 
 	const route *set_route = GetCurrentForwardRoute();
 	if(!set_route) {
+		last_route_set_time = 0;
 		clear_route();
 		return;
+	}
+	if(last_route_set_time == 0) last_route_set_time = last_state_update;
+
+	if(!(GetSignalFlags() & GSF::REPEATER) && !(sflags & GSF::APPROACHLOCKINGMODE)) {
+		for(auto it = set_route->passtestlist.begin(); it != set_route->passtestlist.end(); ++it) {
+			if(!it->location.track->IsTrackPassable(it->location.direction, it->connection_index)) {
+				clear_route_noprove();
+				return;
+			}
+		}
+		if(!route_class::AllowEntryWhilstOccupied(set_route->type)) {
+			for(auto it = set_route->trackcircuits.begin(); it != set_route->trackcircuits.end(); ++it) {
+				if((*it)->Occupied()) {
+					clear_route_occ();
+					return;
+				}
+			}
+			if(set_route->end.track->GetFlags(set_route->end.direction) & GTF::SIGNAL) {
+				genericsignal *gs = static_cast<genericsignal*>(set_route->end.track);
+				const route *rt = gs->GetCurrentForwardOverlap();
+				if(rt) {
+					for(auto it = rt->trackcircuits.begin(); it != rt->trackcircuits.end(); ++it) {
+						if((*it)->Occupied()) {
+							clear_route_occ();
+							return;
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if(set_route->routeflags & route::RF::APCONTROL && aspect == 0) {
@@ -354,37 +413,8 @@ void genericsignal::UpdateSignalState() {
 		}
 
 		if(!can_trigger) {
-			clear_route();
+			clear_route_notrigger();
 			return;
-		}
-	}
-
-	if(!(GetSignalFlags() & GSF::REPEATER) && !(sflags & GSF::APPROACHLOCKINGMODE)) {
-		for(auto it = set_route->passtestlist.begin(); it != set_route->passtestlist.end(); ++it) {
-			if(!it->location.track->IsTrackPassable(it->location.direction, it->connection_index)) {
-				clear_route();
-				return;
-			}
-		}
-		if(!route_class::AllowEntryWhilstOccupied(set_route->type)) {
-			for(auto it = set_route->trackcircuits.begin(); it != set_route->trackcircuits.end(); ++it) {
-				if((*it)->Occupied()) {
-					clear_route();
-					return;
-				}
-			}
-			if(set_route->end.track->GetFlags(set_route->end.direction) & GTF::SIGNAL) {
-				genericsignal *gs = static_cast<genericsignal*>(set_route->end.track);
-				const route *rt = gs->GetCurrentForwardOverlap();
-				if(rt) {
-					for(auto it = rt->trackcircuits.begin(); it != rt->trackcircuits.end(); ++it) {
-						if((*it)->Occupied()) {
-							clear_route();
-							return;
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -421,9 +451,9 @@ void genericsignal::UpdateSignalState() {
 	}
 	SetAspectNextTarget(aspect_target);
 	SetAspectRouteTarget(aspect_route_target);
-	if(sflags & GSF::APPROACHLOCKINGMODE) {
-		aspect = 0;
-	}
+	set_clear_time();
+	set_prove_time();
+	if(sflags & GSF::APPROACHLOCKINGMODE) aspect = 0;
 	check_aspect_change();
 }
 
