@@ -509,7 +509,7 @@ void genericsignal::BackwardsReservedTrackScan(std::function<bool(const generics
 		for(auto it = rt->pieces.rbegin(); it != rt->pieces.rend(); ++it) {
 			if(!(it->location.track->GetFlags(it->location.direction) & GTF::ROUTETHISDIR)) {
 				stop_tracing = true;
-				return;	//route not reserved, stop tracing
+				return;    //route not reserved, stop tracing
 			}
 			if(it->location.track == next) {
 				//found a repeater signal
@@ -550,7 +550,7 @@ bool genericsignal::IsOverlapSwingPermitted(std::string *failreasonkey) const {
 	auto checkpiece = [&](const track_target_ptr &piece) -> bool {
 		track_circuit *tc = piece.track->GetTrackCircuit();
 		if(tc && tc->Occupied()) {
-			occupied = true;		//found an occupied piece, train is on approach
+			occupied = true;    //found an occupied piece, train is on approach
 			return false;
 		}
 		else return true;
@@ -579,11 +579,11 @@ trackberth *genericsignal::GetPriorBerth(EDGETYPE direction, routingpoint::GPBF 
 	if(direction != EDGE_FRONT) return 0;
 	trackberth *berth = 0;
 	EnumerateCurrentBackwardsRoutes([&](const route *rt) {
-		if(route_class::IsOverlap(rt->type)) return;	// we don't want overlaps
+		if(route_class::IsOverlap(rt->type)) return;    // we don't want overlaps
 		if(!rt->berths.empty()) {
 			if(flags & routingpoint::GPBF::GETNONEMPTY) {
 				for(auto &it : rt->berths) {
-					if(!it.berth->contents.empty()) berth = it.berth;	//find last non-empty berth on route
+					if(!it.berth->contents.empty()) berth = it.berth;    //find last non-empty berth on route
 				}
 			}
 			else berth = rt->berths.back().berth;
@@ -595,7 +595,7 @@ trackberth *genericsignal::GetPriorBerth(EDGETYPE direction, routingpoint::GPBF 
 	route_recording_list pieces;
 	TSEF errflags;
 	TrackScan(100, 0, GetEdgeConnectingPiece(EDGE_FRONT), pieces, 0, errflags, [&](const route_recording_list &route_pieces, const track_target_ptr &piece, generic_route_recording_state *grrs) -> bool {
-		if(FastSignalCast(piece.track)) return true;	//this is a signal, stop here
+		if(FastSignalCast(piece.track)) return true;    //this is a signal, stop here
 		if(piece.track->HasBerth(piece.track->GetReverseDirection(piece.direction))) {
 			trackberth *b = piece.track->GetBerth();
 			if(!(flags & routingpoint::GPBF::GETNONEMPTY) || !b->contents.empty()) {
@@ -689,8 +689,8 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 			signal_route.RouteReservation(RRF::AUTOROUTE | RRF::RESERVE);
 
 			genericsignal *end_signal = FastSignalCast(signal_route.end.track, signal_route.end.direction);
-			if(end_signal && ! (end_signal->GetSignalFlags() & GSF::NOOVERLAP)) {	//reserve an overlap beyond the end signal too if needed
-				end_signal->PostLayoutInit(ec);					//make sure that the end piece is inited
+			if(end_signal && ! (end_signal->GetSignalFlags() & GSF::NOOVERLAP)) {    //reserve an overlap beyond the end signal too if needed
+				end_signal->PostLayoutInit(ec);    //make sure that the end piece is inited
 				const route *best_overlap = end_signal->FindBestOverlap(route_class::Flag(route_class::RTC_OVERLAP));
 				if(best_overlap && best_overlap->RouteReservation(RRF::AUTOROUTE | RRF::TRYRESERVE)) {
 					best_overlap->RouteReservation(RRF::AUTOROUTE | RRF::RESERVE);
@@ -783,7 +783,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 							}
 						}
 
-						if(rt->overlap_type != route_class::ID::RTC_NULL) {	//check whether the target overlap exists
+						if(rt->overlap_type != route_class::ID::RTC_NULL) {    //check whether the target overlap exists
 							if(rt_sig) {
 								auto checktarg = [this, rt_sig, rt](error_collection &ec) {
 									if(!(rt_sig->GetAvailableOverlapTypes() & route_class::Flag(rt->overlap_type))) {
@@ -813,13 +813,13 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 					route_class::ID type = static_cast<route_class::ID>(__builtin_ffs(bit) - 1);
 					found_types ^= bit;
 					mk_route(type);
-					if(route_class::IsNotEndExtendable(type)) rrrs->allowed_routeclasses &= ~bit;	//don't look for more overlap ends beyond the end of the first
+					if(route_class::IsNotEndExtendable(type)) rrrs->allowed_routeclasses &= ~bit;    //don't look for more overlap ends beyond the end of the first
 					if(route_class::IsOverlap(type)) foundoverlaps |= bit;
 				}
 			}
 			rrrs->allowed_routeclasses &= availableroutetypes.through;
 
-			if(!rrrs->allowed_routeclasses) return true;	//nothing left to scan for
+			if(!rrrs->allowed_routeclasses) return true;    //nothing left to scan for
 		}
 		if(pieceflags & GTF::ROUTESET) {
 			ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Piece already reserved");
@@ -917,7 +917,7 @@ bool route::IsRouteSubSet(const route *subset) const {
 	const vartrack_target_ptr<routingpoint> &substart = subset->start;
 
 	auto this_it = pieces.begin();
-	if(substart != start) {		//scan along route for start
+	if(substart != start) {    //scan along route for start
 		while(true) {
 			if(this_it->location == substart) break;
 			++this_it;

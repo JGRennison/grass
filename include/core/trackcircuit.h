@@ -48,8 +48,8 @@ class track_train_counter_block : public world_obj {
 
 	public:
 	enum class TCF {
-		ZERO		= 0,
-		FORCEOCCUPIED	= 1<<0,
+		ZERO              = 0,
+		FORCEOCCUPIED     = 1<<0,
 	};
 
 	private:
@@ -82,7 +82,7 @@ class track_train_counter_block : public world_obj {
 	virtual void OccupationTrigger() { };
 	virtual void DeOccupationTrigger() { };
 };
-template<> struct enum_traits< track_train_counter_block::TCF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< track_train_counter_block::TCF > { static constexpr bool flags = true; };
 
 inline bool track_train_counter_block::Occupied() const { return traincount > 0 || tc_flags & TCF::FORCEOCCUPIED; }
 

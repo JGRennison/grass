@@ -240,7 +240,7 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 				unsigned int connection_index = current.track->GetCurrentNominalConnectionIndex(current.direction);
 				newpiece(current, connection_index);
 				l->l2_list.back().flags |= lookaheaditem::LAI_FLAGS::ALLOW_DIFFERENT_CONNECTION_INDEX | lookaheaditem::LAI_FLAGS::HALT_UNLESS_VISIBLE;
-				if(current_offset < l->l2_list.back().sighting_offset) {	//can't see beyond this
+				if(current_offset < l->l2_list.back().sighting_offset) {    //can't see beyond this
 					l->l2_list.back().flags |= lookaheaditem::LAI_FLAGS::SCAN_BEYOND_IF_PASSABLE;
 					break;
 				}
@@ -258,7 +258,7 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 		if(!l->gs.IsValid()) {
 			if(l->l2_list.empty()) l1_list.pop_back();
 			else {
-				l->offset = l->l2_list.back().end_offset;	//dummy signal
+				l->offset = l->l2_list.back().end_offset;    //dummy signal
 				l->gs.Reset();
 				l->sighting_offset = l->offset;
 				l->last_aspect = 0;

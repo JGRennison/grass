@@ -54,7 +54,7 @@ void world::GameStep(world_time delta) {
 	}
 	for(auto it = all_trains.begin(); it != all_trains.end(); ) {
 		auto current = it;
-		++it;	//do this as *current may be modified/deleted
+		++it;    //do this as *current may be modified/deleted
 		current->TrainTimeStep(delta);
 	}
 	for(auto &it : update_set) {

@@ -34,17 +34,17 @@ class genericpoints : public genericzlentrack {
 
 	public:
 	enum class PTF {
-		ZERO		= 0,
-		REV		= 1<<0,
-		OOC		= 1<<1,
-		LOCKED		= 1<<2,
-		REMINDER	= 1<<3,
-		FAILEDNORM	= 1<<4,
-		FAILEDREV	= 1<<5,
-		INVALID		= 1<<6,
-		FIXED		= 1<<7,
-		COUPLED		= 1<<8,
-		SERIALISABLE	= REV | OOC | LOCKED | REMINDER | FAILEDNORM | FAILEDREV,
+		ZERO             = 0,
+		REV              = 1<<0,
+		OOC              = 1<<1,
+		LOCKED           = 1<<2,
+		REMINDER         = 1<<3,
+		FAILEDNORM       = 1<<4,
+		FAILEDREV        = 1<<5,
+		INVALID          = 1<<6,
+		FIXED            = 1<<7,
+		COUPLED          = 1<<8,
+		SERIALISABLE     = REV | OOC | LOCKED | REMINDER | FAILEDNORM | FAILEDREV,
 	};
 
 	protected:
@@ -87,7 +87,7 @@ class genericpoints : public genericzlentrack {
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override { outputlist.push_back(&trs); return 1; }
 	virtual GTF GetFlags(EDGETYPE direction) const override;
 };
-template<> struct enum_traits< genericpoints::PTF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< genericpoints::PTF > { static constexpr bool flags = true; };
 
 inline bool genericpoints::IsFlagsOOC(PTF pflags) const {
 	if(pflags & PTF::OOC) return true;
@@ -236,12 +236,12 @@ class doubleslip : public genericpoints {
 	unsigned int dof = 2;
 
 	enum class DSF {
-		ZERO		= 0,
-		NO_FL_BL	= 1<<0,
-		NO_FR_BL	= 1<<1,
-		NO_FL_BR	= 1<<2,
-		NO_FR_BR	= 1<<3,
-		NO_TRACK_MASK = NO_FL_BL | NO_FR_BL | NO_FL_BR | NO_FR_BR,
+		ZERO               = 0,
+		NO_FL_BL           = 1<<0,
+		NO_FR_BL           = 1<<1,
+		NO_FL_BR           = 1<<2,
+		NO_FR_BR           = 1<<3,
+		NO_TRACK_MASK      = NO_FL_BL | NO_FR_BL | NO_FL_BR | NO_FR_BR,
 	};
 	DSF dsflags;
 	void UpdatePointsFixedStatesFromMissingTrackEdges();
@@ -351,7 +351,7 @@ class doubleslip : public genericpoints {
 	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 };
 
-template<> struct enum_traits< doubleslip::DSF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< doubleslip::DSF > { static constexpr bool flags = true; };
 
 void DeserialisePointsCoupling(const deserialiser_input &di, error_collection &ec);
 

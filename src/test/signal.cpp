@@ -634,7 +634,7 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
 	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
 	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 1, route_class::RTC_ROUTE, tenv.s5, true);	//TODO: would 2 be better than 1?
+	checksignal2(tenv.s4, 0, 1, route_class::RTC_ROUTE, tenv.s5, true);    //TODO: would 2 be better than 1?
 	checksignal2(tenv.s5, 0, 0, route_class::RTC_NULL, 0, false);
 	checksignal2(tenv.s6, 0, 0, route_class::RTC_NULL, 0, false);
 
@@ -643,7 +643,7 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
 	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
 	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 1, route_class::RTC_ROUTE, tenv.s5, true);	//TODO: would 2 be better than 1?
+	checksignal2(tenv.s4, 0, 1, route_class::RTC_ROUTE, tenv.s5, true);    //TODO: would 2 be better than 1?
 	checksignal2(tenv.s5, 0, 0, route_class::RTC_NULL, 0, false);
 	checksignal2(tenv.s6, 0, 0, route_class::RTC_NULL, 0, false);
 
@@ -1069,7 +1069,7 @@ TEST_CASE( "signal/callon/general", "Test call-on routes" ) {
 
 	env.w.ResetLogText();
 
-	settcstate("T3", false);	//do this to avoid triggering approach locking
+	settcstate("T3", false);    //do this to avoid triggering approach locking
 	env.w.SubmitAction(action_unreservetrack(env.w, *s3));
 	env.w.GameStep(1);
 	settcstate("T3", true);
@@ -1289,21 +1289,21 @@ TEST_CASE( "signal/updates", "Test basic signal state and reservation state chan
 
 	env.w.SubmitAction(action_reservepath(env.w, tenv.s5, tenv.s6));
 	env.w.GameStep(1);
-	CHECK(env.w.GetLastUpdateSet().size() == 9);	//5 pieces on route, overlap (2) and 2 preceding signals.
+	CHECK(env.w.GetLastUpdateSet().size() == 9);    //5 pieces on route, overlap (2) and 2 preceding signals.
 
 	env.w.GameStep(1);
 	CHECK(env.w.GetLastUpdateSet().size() == 0);
 
 	env.w.SubmitAction(action_reservepath(env.w, tenv.s6, tenv.b));
 	env.w.GameStep(1);
-	CHECK(env.w.GetLastUpdateSet().size() == 7);	//5 pieces on route and 2 preceding signals.
+	CHECK(env.w.GetLastUpdateSet().size() == 7);    //5 pieces on route and 2 preceding signals.
 
 	env.w.GameStep(1);
 	CHECK(env.w.GetLastUpdateSet().size() == 0);
 
 	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s6));
 	env.w.GameStep(1);
-	CHECK(env.w.GetLastUpdateSet().size() == 7);	//5 pieces on route and 2 preceding signals.
+	CHECK(env.w.GetLastUpdateSet().size() == 7);    //5 pieces on route and 2 preceding signals.
 }
 
 TEST_CASE( "signal/propagation/repeater", "Test aspect propagation and route creation with aspected and non-aspected repeater signals") {

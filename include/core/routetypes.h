@@ -70,10 +70,10 @@ namespace route_class {
 	typedef unsigned char set;
 
 	enum {
-		RTCB_ALL		= ((1 << route_class::LAST_RTC) - 1) & ~(1 << RTC_NULL),
-		RTCB_SHUNTS		= (1 << RTC_SHUNT) | (1 << RTC_CALLON),
-		RTCB_ROUTES		= 1 << RTC_ROUTE,
-		RTCB_OVERLAPS		= (1 << RTC_OVERLAP) | (1 << RTC_ALTOVERLAP1) | (1 << RTC_ALTOVERLAP2) | (1 << RTC_ALTOVERLAP3),
+		RTCB_ALL         = ((1 << route_class::LAST_RTC) - 1) & ~(1 << RTC_NULL),
+		RTCB_SHUNTS      = (1 << RTC_SHUNT) | (1 << RTC_CALLON),
+		RTCB_ROUTES      = 1 << RTC_ROUTE,
+		RTCB_OVERLAPS    = (1 << RTC_OVERLAP) | (1 << RTC_ALTOVERLAP1) | (1 << RTC_ALTOVERLAP2) | (1 << RTC_ALTOVERLAP3),
 	};
 
 	inline void Set(set &s, ID r) { s |= (1<<r); }

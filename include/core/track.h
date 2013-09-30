@@ -83,8 +83,8 @@ class generictrack : public world_obj {
 	bool have_inited = false;
 
 	enum class GTPRIVF {
-		ZERO		= 0,
-		REVERSEAUTOCONN	= 1<<0,
+		ZERO                = 0,
+		REVERSEAUTOCONN     = 1<<0,
 	};
 	GTPRIVF gt_privflags = GTPRIVF::ZERO;
 
@@ -151,7 +151,7 @@ class generictrack : public world_obj {
 	virtual generictrack & SetElevationDelta(unsigned int elevationdelta);
 	virtual generictrack & SetTrackCircuit(track_circuit *tc);
 
-	virtual bool PostLayoutInit(error_collection &ec);	//return false to discontinue initing piece
+	virtual bool PostLayoutInit(error_collection &ec);    //return false to discontinue initing piece
 	inline bool IsPostLayoutInitDone() const { return have_inited; }
 	virtual bool AutoConnections(error_collection &ec);
 	virtual bool CheckUnconnectedEdges(error_collection &ec);
@@ -197,7 +197,7 @@ class generictrack : public world_obj {
 	private:
 	static bool TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target);
 };
-template<> struct enum_traits< generictrack::GTPRIVF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< generictrack::GTPRIVF > { static constexpr bool flags = true; };
 
 template <typename T> struct vartrack_target_ptr {
 	T *track;

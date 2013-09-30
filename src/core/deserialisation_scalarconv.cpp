@@ -71,7 +71,7 @@ namespace dsconv {
 			for(auto pf : postfixes) {
 				if(pf.postfix == postfix) {
 					uint64_t newvalue = value * ((uint64_t) pf.multiplier);
-					if(newvalue / ((uint64_t) pf.multiplier) != value) overflow = true;	//inefficient overflow check
+					if(newvalue / ((uint64_t) pf.multiplier) != value) overflow = true;    //inefficient overflow check
 					value = newvalue >> pf.postshift;
 					found = true;
 				}

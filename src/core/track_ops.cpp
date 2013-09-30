@@ -241,7 +241,7 @@ void future_reservetrack_base::Serialise(serialiser_output &so, error_collection
 const route *action_reservetrack_base::TestSwingOverlapAndReserve(const route *target_route, std::string *failreasonkey) const {
 	genericsignal *gs = FastSignalCast(target_route->start.track, target_route->start.direction);
 	if(!gs) return 0;
-	if(!target_route->RouteReservation(RRF::TRYRESERVE | RRF::IGNORE_OWN_OVERLAP)) return 0;	//can't reserve even when ignoring the overlap
+	if(!target_route->RouteReservation(RRF::TRYRESERVE | RRF::IGNORE_OWN_OVERLAP)) return 0;    //can't reserve even when ignoring the overlap
 
 	if(!gs->IsOverlapSwingPermitted(failreasonkey)) return 0;
 
@@ -360,7 +360,7 @@ bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_t
 		return false;
 	}
 
-	if(sig->GetSignalFlags() & GSF::APPROACHLOCKINGMODE) return true;	//don't try to unreserve again
+	if(sig->GetSignalFlags() & GSF::APPROACHLOCKINGMODE) return true;    //don't try to unreserve again
 
 	//approach locking checks
 	if(sig->GetAspect() > 0) {
@@ -368,8 +368,10 @@ bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_t
 		unsigned int backaspect = 0;
 
 		auto checksignal = [&](const genericsignal *gs) -> bool {
-			bool aspectchange = gs->GetReservedAspect() > backaspect;	//cancelling route would reduce signal aspect
-											//this includes existing approach control aspects
+			bool aspectchange = gs->GetReservedAspect() > backaspect;
+				//cancelling route would reduce signal aspect
+				//this includes existing approach control aspects
+
 			backaspect++;
 			return aspectchange;
 		};
@@ -377,7 +379,7 @@ bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_t
 		auto checkpiece = [&](const track_target_ptr &piece) -> bool {
 			track_circuit *tc = piece.track->GetTrackCircuit();
 			if(tc && tc->Occupied()) {
-				approachlocking_engage = true;		//found an occupied piece, train is on approach
+				approachlocking_engage = true;    //found an occupied piece, train is on approach
 				return false;
 			}
 			else return true;

@@ -32,13 +32,13 @@
 bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, RRF in_rr_flags, const route *resroute, std::string* failreasonkey) {
 	if(in_rr_flags & (RRF::RESERVE | RRF::TRYRESERVE | RRF::PROVISIONAL_RESERVE)) {
 		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-			if(it->rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {	//track already reserved
+			if(it->rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {    //track already reserved
 				if(in_rr_flags & RRF::IGNORE_OWN_OVERLAP && it->reserved_route && it->reserved_route->start == resroute->start && route_class::IsOverlap(it->reserved_route->type)) {
 					//do nothing, own overlap is being ignored
 				}
 				else if(it->direction != in_dir || it->index != in_index) {
 					if(failreasonkey) *failreasonkey = "track/reservation/conflict";
-					return false;	//reserved piece doesn't match
+					return false;    //reserved piece doesn't match
 				}
 			}
 			if(it->rr_flags & RRF::PROVISIONAL_RESERVE && in_rr_flags & RRF::RESERVE) {

@@ -166,24 +166,28 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 
 		unsigned int free_edges = edges.size();
 		for(auto &it : edges) {
-			if(it.target->track == gt->GetPreviousTrackPiece()) {	//if we are connected to the previous (in the layout) track piece, use that connection/edge as the reference
+			if(it.target->track == gt->GetPreviousTrackPiece()) {
+					//if we are connected to the previous (in the layout) track piece, use that connection/edge as the reference
+
 				startedge = it.edge;
 				break;;
 			}
-			if(it.target->track == gt->GetNextTrackPiece()) {	//if we are connected to the next (in the layout) track piece,
-									//don't use that connection/edge, use the remaining edge as the reference
-									//if there are multiple remaining edges, report an error
+			if(it.target->track == gt->GetNextTrackPiece()) {
+					//if we are connected to the next (in the layout) track piece,
+					//don't use that connection/edge, use the remaining edge as the reference
+					//if there are multiple remaining edges, report an error
+
 				free_edges--;
 				it.edge = EDGETYPE::EDGE_NULL;
 			}
 		}
 
-		if(startedge == EDGETYPE::EDGE_NULL) {	//check that there is one free edge in the edgelist and use that
+		if(startedge == EDGETYPE::EDGE_NULL) {    //check that there is one free edge in the edgelist and use that
 			if(free_edges != 1) {
 				ec.RegisterNewError<error_layout>(*this, string_format("Ambiguous relative layout declaration: %d possible edges to choose from, try using the 'prevedge' parameter", free_edges));
 				return;
 			}
-			for(auto &it : edges) {		//find the free edge
+			for(auto &it : edges) {    //find the free edge
 				if(it.edge != EDGETYPE::EDGE_NULL) {
 					startedge = it.edge;
 					break;

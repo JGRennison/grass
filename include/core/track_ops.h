@@ -64,9 +64,9 @@ class future_pointsaction : public future {
 class action_pointsaction : public action {
 	public:
 	enum class APAF {
-		ZERO			= 0,
-		IGNORERESERVATION	= 1<<0,
-		NOOVERLAPSWING		= 1<<1,
+		ZERO                     = 0,
+		IGNORERESERVATION        = 1<<0,
+		NOOVERLAPSWING           = 1<<1,
 	};
 
 	private:
@@ -91,7 +91,7 @@ class action_pointsaction : public action {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 	inline APAF SetFlagsMasked(APAF flags, APAF mask);
 };
-template<> struct enum_traits< action_pointsaction::APAF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< action_pointsaction::APAF > { static constexpr bool flags = true; };
 
 inline action_pointsaction::APAF action_pointsaction::SetFlagsMasked(action_pointsaction::APAF flags, action_pointsaction::APAF mask) { aflags = (aflags & (~mask)) | flags; return aflags; }
 

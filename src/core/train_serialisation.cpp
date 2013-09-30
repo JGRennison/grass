@@ -134,7 +134,7 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 
 	//todo: timetables, headcode
 
-	CalculateTrainMotionProperties(1<<8);	// TODO: replace this with the proper value
+	CalculateTrainMotionProperties(1<<8);    // TODO: replace this with the proper value
 }
 
 void train::Serialise(serialiser_output &so, error_collection &ec) const {

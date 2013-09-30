@@ -182,12 +182,12 @@ void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di
 void world_serialisation::ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec) {
 	auto templ = template_map.find(name);
 	if(templ != template_map.end() && templ->second.json) {
-		if(templ->second.beingexpanded) {		//recursive expansion detection
+		if(templ->second.beingexpanded) {    //recursive expansion detection
 			ec.RegisterNewError<error_deserialisation>(di, string_format("Template: \"%s\": Recursive expansion detected: Aborting.", name.c_str()));
 			return;
 		}
 		else {
-			templ->second.beingexpanded = true;	//recursive expansion detection
+			templ->second.beingexpanded = true;    //recursive expansion detection
 			obj.DeserialiseObject(deserialiser_input(*(templ->second.json), "Template: " + name, di), ec);
 			templ->second.beingexpanded = false;
 		}

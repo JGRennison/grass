@@ -509,7 +509,7 @@ bool doubleslip::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_fla
 	if(IsFlagsImmovable(pf)) {
 		if(!(pf & PTF::REV) != !index) {
 			GetReservationFailureReason(pf, failreasonkey);
-			return false;	//points locked in wrong direction
+			return false;    //points locked in wrong direction
 		}
 	}
 
@@ -521,7 +521,7 @@ bool doubleslip::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_fla
 	if(IsFlagsImmovable(exitpf)) {
 		if(!(exitpf & PTF::REV) != !exitpointsrev) {
 			GetReservationFailureReason(exitpf, failreasonkey);
-			return false;	//points locked in wrong direction
+			return false;    //points locked in wrong direction
 		}
 	}
 

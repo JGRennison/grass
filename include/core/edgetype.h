@@ -29,20 +29,20 @@
 
 typedef enum {
 	EDGE_NULL = 0,
-	EDGE_FRONT,		//front edge/forward direction on track
-	EDGE_BACK,		//back edge/reverse direction on track
+	EDGE_FRONT,         //front edge/forward direction on track
+	EDGE_BACK,          //back edge/reverse direction on track
 
-	EDGE_PTS_FACE,		//points: facing direction
-	EDGE_PTS_NORMAL,	//points: normal trailing direction
-	EDGE_PTS_REVERSE,	//points: reverse trailing direction
+	EDGE_PTS_FACE,      //points: facing direction
+	EDGE_PTS_NORMAL,    //points: normal trailing direction
+	EDGE_PTS_REVERSE,   //points: reverse trailing direction
 
-	EDGE_X_LEFT,		//crossover: Left edge (seen from front)
-	EDGE_X_RIGHT,		//crossover: Right edge (seen from front)
+	EDGE_X_LEFT,        //crossover: Left edge (seen from front)
+	EDGE_X_RIGHT,       //crossover: Right edge (seen from front)
 
-	EDGE_DS_FL,		//double-slip: front edge, left track
-	EDGE_DS_FR,		//double-slip: front edge, right track
-	EDGE_DS_BL,		//double-slip: back edge, left track (as seen from front)
-	EDGE_DS_BR,		//double-slip: back edge, right track (as seen from front)
+	EDGE_DS_FL,         //double-slip: front edge, left track
+	EDGE_DS_FR,         //double-slip: front edge, right track
+	EDGE_DS_BL,         //double-slip: back edge, left track (as seen from front)
+	EDGE_DS_BR,         //double-slip: back edge, right track (as seen from front)
 } EDGETYPE;
 
 std::ostream& operator<<(std::ostream& os, const EDGETYPE& obj);

@@ -36,22 +36,22 @@
 class route;
 
 enum class RRF : unsigned int {
-	ZERO				= 0,
-	RESERVE				= 1<<0,
-	UNRESERVE			= 1<<1,
-	TRYRESERVE			= 1<<2,
-	TRYUNRESERVE			= 1<<3,
-	AUTOROUTE			= 1<<4,
-	STARTPIECE			= 1<<5,
-	ENDPIECE			= 1<<6,
+	ZERO                    = 0,
+	RESERVE                 = 1<<0,
+	UNRESERVE               = 1<<1,
+	TRYRESERVE              = 1<<2,
+	TRYUNRESERVE            = 1<<3,
+	AUTOROUTE               = 1<<4,
+	STARTPIECE              = 1<<5,
+	ENDPIECE                = 1<<6,
 
-	PROVISIONAL_RESERVE		= 1<<8,	//for generictrack::RouteReservation, to prevent action/future race condition
-	STOP_ON_OCCUPIED_TC		= 1<<9,	//for track dereservations, stop upon reaching an occupied track circuit
-	IGNORE_OWN_OVERLAP		= 1<<10,//for overlap swinging checks
+	PROVISIONAL_RESERVE     = 1<<8,       //for generictrack::RouteReservation, to prevent action/future race condition
+	STOP_ON_OCCUPIED_TC     = 1<<9,       //for track dereservations, stop upon reaching an occupied track circuit
+	IGNORE_OWN_OVERLAP      = 1<<10,      //for overlap swinging checks
 
-	SAVEMASK			= AUTOROUTE | STARTPIECE | ENDPIECE | RESERVE | PROVISIONAL_RESERVE,
+	SAVEMASK                = AUTOROUTE | STARTPIECE | ENDPIECE | RESERVE | PROVISIONAL_RESERVE,
 };
-template<> struct enum_traits< RRF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< RRF > { static constexpr bool flags = true; };
 
 class track_reservation_state;
 
@@ -65,14 +65,14 @@ class inner_track_reservation_state {
 };
 
 enum class GTF : unsigned int {
-	ZERO		= 0,
-	ROUTESET	= 1<<0,
-	ROUTETHISDIR	= 1<<1,
-	ROUTEFORK	= 1<<2,
-	ROUTINGPOINT	= 1<<3,		//this track object **MUST** be static_castable to routingpoint
-	SIGNAL		= 1<<4,		//this track object **MUST** be static_castable to genericsignal
+	ZERO             = 0,
+	ROUTESET         = 1<<0,
+	ROUTETHISDIR     = 1<<1,
+	ROUTEFORK        = 1<<2,
+	ROUTINGPOINT     = 1<<3,        //this track object **MUST** be static_castable to routingpoint
+	SIGNAL           = 1<<4,        //this track object **MUST** be static_castable to genericsignal
 };
-template<> struct enum_traits< GTF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< GTF > { static constexpr bool flags = true; };
 
 class track_reservation_state : public serialisable_obj {
 	std::vector<inner_track_reservation_state> itrss;

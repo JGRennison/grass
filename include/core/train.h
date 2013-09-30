@@ -35,18 +35,18 @@
 
 struct vehicle_class : public serialisable_obj {
 	const std::string name;
-	unsigned int length = 0;			// mm
-	unsigned int max_speed = 0;			// mm/s (μm/ms)
-	unsigned int tractive_force = 0;		// kg μm/(ms^2) --> N
-	unsigned int tractive_power = 0;		// 1000 * N mm/s --> W
-	unsigned int braking_force = 0;			// N
-	unsigned int nominal_rail_traction_limit = 0;	// N
-	unsigned int cumul_drag_const = 0;		// N
-	unsigned int cumul_drag_v = 0;			// N/(m/s)
-	unsigned int cumul_drag_v2 = 0;			// N/(m/s)^2
-	unsigned int face_drag_v2 = 0;			// N/(m/s)^2
-	unsigned int fullmass = 0;			// kg
-	unsigned int emptymass = 0;			// kg
+	unsigned int length = 0;                        // mm
+	unsigned int max_speed = 0;                     // mm/s (μm/ms)
+	unsigned int tractive_force = 0;                // kg μm/(ms^2) --> N
+	unsigned int tractive_power = 0;                // 1000 * N mm/s --> W
+	unsigned int braking_force = 0;                 // N
+	unsigned int nominal_rail_traction_limit = 0;   // N
+	unsigned int cumul_drag_const = 0;              // N
+	unsigned int cumul_drag_v = 0;                  // N/(m/s)
+	unsigned int cumul_drag_v2 = 0;                 // N/(m/s)^2
+	unsigned int face_drag_v2 = 0;                  // N/(m/s)^2
+	unsigned int fullmass = 0;                      // kg
+	unsigned int emptymass = 0;                     // kg
 	tractionset tractiontypes;
 
 	vehicle_class(const std::string &name_) : name(name_) { }
@@ -66,15 +66,15 @@ struct train_unit {
 	unsigned int veh_multiplier = 0;
 	unsigned int segment_total_mass = 0;
 	enum class STF {
-		ZERO		= 0,
-		REV		= 1<<0,
-		FULL		= 1<<1,
+		ZERO        = 0,
+		REV         = 1<<0,
+		FULL        = 1<<1,
 	};
 	STF stflags = STF::ZERO;
 
 	void CalculateSegmentMass();
 };
-template<> struct enum_traits< train_unit::STF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< train_unit::STF > { static constexpr bool flags = true; };
 
 struct train_track_speed_limit_item {
 	unsigned int speed;
@@ -105,9 +105,9 @@ struct train_motion_state {
 
 class train : public world_obj, protected train_dynamics, protected train_motion_state {
 	enum class TF {
-		ZERO		= 0,
-		CONSISTREVDIR	= 1<<0,
-		WAITINGREDSIG	= 1<<1,
+		ZERO            = 0,
+		CONSISTREVDIR   = 1<<0,
+		WAITINGREDSIG   = 1<<1,
 	};
 	TF tflags = TF::ZERO;
 
@@ -152,6 +152,6 @@ class train : public world_obj, protected train_dynamics, protected train_motion
 
 	void GenerateName();
 };
-template<> struct enum_traits< train::TF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< train::TF > { static constexpr bool flags = true; };
 
 #endif

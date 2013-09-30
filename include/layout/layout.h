@@ -75,10 +75,10 @@ namespace guilayout {
 		int ry = 0;
 
 		enum {
-			LOSM_X		= 1<<0,
-			LOSM_Y		= 1<<1,
-			LOSM_RX		= 1<<2,
-			LOSM_RY		= 1<<3,
+			LOSM_X      = 1<<0,
+			LOSM_Y      = 1<<1,
+			LOSM_RX     = 1<<2,
+			LOSM_RY     = 1<<3,
 		};
 		unsigned int setmembers = 0;
 
@@ -104,12 +104,12 @@ namespace guilayout {
 		EDGETYPE prev_edge = EDGETYPE::EDGE_NULL;
 
 		enum {
-			LTOSM_LENGTH	= 1<<16,
-			LTOSM_LEFTSIDE	= 1<<17,
-			LTOSM_RIGHTSIDE	= 1<<18,
-			LTOSM_LAYOUTDIR	= 1<<19,
-			LTOSM_PREV	= 1<<20,
-			LTOSM_PREVEDGE	= 1<<21,
+			LTOSM_LENGTH       = 1<<16,
+			LTOSM_LEFTSIDE     = 1<<17,
+			LTOSM_RIGHTSIDE    = 1<<18,
+			LTOSM_LAYOUTDIR    = 1<<19,
+			LTOSM_PREV         = 1<<20,
+			LTOSM_PREVEDGE     = 1<<21,
 		};
 
 		struct edge_def {
@@ -136,7 +136,7 @@ namespace guilayout {
 		int length = 0;
 
 		enum {
-			LBOSM_LENGTH	= 1<<16,
+			LBOSM_LENGTH      = 1<<16,
 		};
 
 		public:
@@ -153,9 +153,9 @@ namespace guilayout {
 		std::string graphics;
 
 		enum {
-			LGOSM_DX		= 1<<16,
-			LGOSM_DY		= 1<<17,
-			LGOSM_GRAPHICS		= 1<<18,
+			LGOSM_DX          = 1<<16,
+			LGOSM_DY          = 1<<17,
+			LGOSM_GRAPHICS    = 1<<18,
 		};
 
 		public:

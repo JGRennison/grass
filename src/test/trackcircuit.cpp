@@ -314,7 +314,7 @@ TEST_CASE( "berth/step/3", "Berth stepping test no 3: check stepping when route 
 	routingpoint *c = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("C"));
 
 	env.w.SubmitAction(action_reservepath(env.w, s2, c));
-	env.w.GameStep(100000);		//give points enough time to move
+	env.w.GameStep(100000);    //give points enough time to move
 	CHECK(env.w.GetLogText() == "");
 	if(env.ec.GetErrorCount()) {
 		FAIL("Error Collection: " << env.ec);

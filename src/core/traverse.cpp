@@ -53,7 +53,7 @@ unsigned int AdvanceDisplacement(unsigned int displacement, track_location &trac
 			if(targ.IsValid()) {
 				track.SetTargetStartLocation(targ);
 			}
-			else {	//run out of valid track
+			else {    //run out of valid track
 				track.GetOffset() = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), length_on_piece);
 				return displacement;
 			}

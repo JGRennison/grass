@@ -110,7 +110,7 @@ class world : public named_futurable_obj {
 	GAMEMODE mode = GAMEMODE::SINGLE;
 	error_collection ec;
 	unsigned int auto_seq_item = 0;
-	uint64_t load_count = 0;		// incremented on each save/load cycle
+	uint64_t load_count = 0;    // incremented on each save/load cycle
 
 	public:
 	future_deserialisation_type_factory future_types;

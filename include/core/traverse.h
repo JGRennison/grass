@@ -33,12 +33,12 @@ unsigned int AdvanceDisplacement(unsigned int displacement, track_location &trac
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/, std::function<void(track_location & /*old*/, track_location & /*new*/)> func);
 
 enum class TSEF {
-	ZERO			= 0,
-	OUTOFTRACK		= 1<<0,
-	JUNCTIONLIMITREACHED	= 1<<1,
-	LENGTHLIMIT		= 1<<2,
+	ZERO                    = 0,
+	OUTOFTRACK              = 1<<0,
+	JUNCTIONLIMITREACHED    = 1<<1,
+	LENGTHLIMIT             = 1<<2,
 };
-template<> struct enum_traits< TSEF > {	static constexpr bool flags = true; };
+template<> struct enum_traits< TSEF > { static constexpr bool flags = true; };
 
 struct route_recording_item {
 	track_target_ptr location;

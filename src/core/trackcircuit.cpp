@@ -33,14 +33,14 @@
 void CheckUnreserveTrackCircuit(track_circuit *tc);
 
 enum {
-	BPFF_SOFT	= 1<<0,
+	BPFF_SOFT      = 1<<0,
 };
 
 static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int flags = 0) {
 	auto it = rt->berths.begin();
-	if(it == rt->berths.end()) return;	//no berths here
+	if(it == rt->berths.end()) return;    //no berths here
 
-	if(flags & BPFF_SOFT) {			//don't insert berth value if any berths are already occupied, insert into last berth
+	if(flags & BPFF_SOFT) {    //don't insert berth value if any berths are already occupied, insert into last berth
 		for(; it != rt->berths.end(); ++it) {
 			if(!(*it).berth->contents.empty()) return;
 		}
@@ -272,7 +272,7 @@ void track_circuit::OccupationTrigger() {
 	const route *found = 0;
 	GetSetRoutes(routes);
 	for(const route *rt : routes) {
-		if(route_class::IsOverlap(rt->type)) continue;	// we don't want overlaps
+		if(route_class::IsOverlap(rt->type)) continue;    // we don't want overlaps
 		if(!rt->trackcircuits.empty() && rt->trackcircuits[0] == this) {
 			found = rt;
 			break;

@@ -56,9 +56,11 @@ std::string string_format(const std::string &fmt, ...) {
 }
 
 std::string gr_strftime(const std::string &format, const struct tm *tm, time_t timestamp, bool localtime) {
-	#ifdef _WIN32		//%z is broken in MSVCRT, use a replacement
-				//also add %F, %R, %T, %s
-				//this is adapted from retcon tpanel.cpp adapted from npipe var.cpp
+	#ifdef _WIN32
+		//%z is broken in MSVCRT, use a replacement
+		//also add %F, %R, %T, %s
+		//this is adapted from retcon tpanel.cpp adapted from npipe var.cpp
+
 	std::string newfmt;
 	std::string &real_format=newfmt;
 	const char *ch=format.c_str();

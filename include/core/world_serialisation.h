@@ -59,8 +59,8 @@ class world_serialisation {
 	public:
 	struct ws_dtf_params {
 		enum class WSDTFP_FLAGS {
-			ZERO		= 0,
-			NONEWTRACK	= 1<<0,
+			ZERO          = 0,
+			NONEWTRACK    = 1<<0,
 		};
 		WSDTFP_FLAGS flags;
 		ws_dtf_params(WSDTFP_FLAGS flags_ = WSDTFP_FLAGS::ZERO) : flags(flags_) { }
@@ -95,6 +95,6 @@ class world_serialisation {
 	inline unsigned int GetCurrentContentIndex() const { return current_content_index; }
 	void DeserialiseGameState(error_collection &ec);
 };
-template<> struct enum_traits< world_serialisation::ws_dtf_params::WSDTFP_FLAGS > {	static constexpr bool flags = true; };
+template<> struct enum_traits< world_serialisation::ws_dtf_params::WSDTFP_FLAGS > { static constexpr bool flags = true; };
 
 #endif
