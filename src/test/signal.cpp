@@ -1306,9 +1306,9 @@ TEST_CASE( "signal/updates", "Test basic signal state and reservation state chan
 	CHECK(env.w.GetLastUpdateSet().size() == 7);	//5 pieces on route and 2 preceding signals.
 }
 
-TEST_CASE( "signal/propagation/repeater", "Test aspect propagation and route creation with aspected repeater signals") {
+TEST_CASE( "signal/propagation/repeater", "Test aspect propagation and route creation with aspected and non-aspected repeater signals") {
 	auto test = [&](bool nonaspected) {
-		SCOPED_INFO("Non-aspected test: " << nonaspected);
+		SCOPED_INFO("Test: " << (nonaspected ? "non-" : "") << "aspected");
 		test_fixture_world_init_checked env(
 			string_format(
 				R"({ "content" : [ )"
