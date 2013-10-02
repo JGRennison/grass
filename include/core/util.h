@@ -28,6 +28,8 @@
 #include <ctime>
 #include <string>
 #include <iterator>
+#include <vector>
+#include <utility>
 
 //adapted from http://forums.devshed.com/showpost.php?p=2678621&postcount=9
 //Newton-Raphson
@@ -85,5 +87,7 @@ template <typename C, typename UP> unsigned int container_unordered_remove_if(C 
 	}
 	return removecount;
 }
+
+void SplitString(const char *in, size_t len, char delim, std::vector<std::pair<const char*, size_t>> &result);
 
 #endif

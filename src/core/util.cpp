@@ -157,3 +157,15 @@ size_t GetLineNumberOfStringOffset(const std::string &input, size_t offset, size
 	}
 	return lineno;
 }
+
+void SplitString(const char *in, size_t len, char delim, std::vector<std::pair<const char*, size_t>> &result) {
+	result.clear();
+	size_t pos = 0;
+	for(size_t i = 0; i < len; i++) {
+		if(in[i] == delim) {
+			result.emplace_back(in + pos, i - pos);
+			pos = i + 1;
+		}
+	}
+	result.emplace_back(in + pos, len - pos);
+}
