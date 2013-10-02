@@ -29,6 +29,7 @@
 #include "core/routetypes_serialisation.h"
 #include "core/deserialisation_scalarconv.h"
 #include "core/trackcircuit.h"
+#include "core/util.h"
 
 void routingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	genericzlentrack::Deserialise(di, ec);
@@ -81,9 +82,63 @@ static bool DeserialiseAspectProps(unsigned int &aspect_mask, const deserialiser
 	};
 
 	unsigned int max_aspect;
+	std::string aspect_string;
 	if(CheckTransJsonValue(max_aspect, di, "maxaspect", ec)) {
 		if(max_aspect > 32) too_large(max_aspect);
 		else aspect_mask = (1 << max_aspect) - 1;
+		return true;
+	}
+	else if(CheckTransJsonValue(aspect_string, di, "allowedaspects", ec)) {
+		auto invalid_format = [&](const char *str, size_t len) {
+			ec.RegisterNewError<error_deserialisation>(di, string_format("Invalid format for allowed aspects: '%s'", std::string(str, len).c_str()));
+		};
+		auto getnumber = [&](const char *str, size_t len) -> unsigned int {
+			unsigned int num = 0;
+			bool error = false;
+			for(size_t i = 0; i < len; i++) {
+				char c = str[i];
+				if(c >= '0' && c <= '9') num = (num * 10) + c - '0';
+				else {
+					error = true;
+					break;
+				}
+				if(num > 32) {
+					error = true;
+					break;
+				}
+			}
+			if(num == 0) error = true;
+			if(error) ec.RegisterNewError<error_deserialisation>(di, string_format("Invalid numeric format for allowed aspects: '%s' is not an integer between 1 and 32", std::string(str, len).c_str()));
+			return num;
+		};
+
+		aspect_mask = 0;
+		std::vector<std::pair<const char*, size_t>> splitresult;
+		std::vector<std::pair<const char*, size_t>> innersplitresult;
+		SplitString(aspect_string.c_str(), aspect_string.size(), ',', splitresult);
+		for(auto &it : splitresult) {
+			const char *str = it.first;
+			size_t len = it.second;
+			SplitString(str, len, '-', innersplitresult);
+			if(innersplitresult.size() > 2) {
+				invalid_format(str, len);
+			}
+			else {
+				unsigned int vallow;
+				unsigned int valhigh;
+
+				vallow= getnumber(innersplitresult[0].first, innersplitresult[0].second);
+				if(innersplitresult.size() == 2) {
+					valhigh= getnumber(innersplitresult[1].first, innersplitresult[1].second);
+					if(vallow > valhigh) std::swap(vallow, valhigh);
+				}
+				else valhigh = vallow;
+
+				unsigned int highmask = (valhigh == 32) ? 0xFFFFFFFF : ((1 << valhigh) - 1);
+				unsigned int lowmask = (vallow == 32) ? 0x7FFFFFFF : (((1 << vallow) - 1) >> 1);
+				aspect_mask |= highmask ^ lowmask;
+			}
+		}
 		return true;
 	}
 	return false;

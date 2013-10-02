@@ -1446,3 +1446,57 @@ TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal a
 	multitest("routeprovedelay", 500, 2001);
 	multitest("routesetdelay", 500, 2001);
 }
+
+TEST_CASE( "signal/aspect/discontinous", "Test discontinuous allowed signal aspects") {
+	auto test = [&](std::string allowed_aspects, unsigned int expected_mask, const std::vector<unsigned int> &aspects) {
+		SCOPED_INFO("Allowed aspects: " << allowed_aspects);
+
+		unsigned int signals = aspects.size();
+		std::string content =
+			R"({ "content" : [ )"
+			R"({ "type" : "startofline", "name" : "A" }, )";
+
+		for(unsigned int i = 0; i < signals; i++) {
+			std::string aspectstr;
+			if(i == 0) aspectstr = ", \"allowedaspects\" : \"" + allowed_aspects + "\"";
+			else aspectstr = ", \"allowedaspects\" : \"1-32\"";
+
+			content += string_format(
+				R"({ "type" : "autosignal", "name" : "S%d", "routesignal" : true %s }, )"
+				R"({ "type" : "routingmarker", "end" : { "allow" : "overlap" } }, )"
+				R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "T%d" }, )"
+				, i
+				, aspectstr.c_str()
+				, i
+			);
+		}
+		content +=
+			R"({ "type" : "endofline", "name" : "B",  "end" : { "allow" : [ "overlap", "route" ] } } )"
+			"] }";
+
+		test_fixture_world_init_checked env(content);
+		CHECK(env.w.GetLogText() == "");
+		genericsignal *s0 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S0"));
+		env.w.GameStep(1);
+
+		const route *rt = s0->GetCurrentForwardRoute();
+		REQUIRE(rt != 0);
+		CHECK(rt->aspect_mask == expected_mask);
+
+		unsigned int currentaspect = aspects.size();
+		while(currentaspect--) {    //count down from aspects.size()-1 to 0
+			unsigned int expectedaspect = aspects[currentaspect];
+			SCOPED_INFO("Current Aspect: " << currentaspect << ", Expected Aspect: " << expectedaspect);
+			track_circuit *t = env.w.track_circuits.FindOrMakeByName(string_format("T%d", currentaspect));
+			t->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+			env.w.GameStep(1);
+			CHECK(s0->GetAspect() == expectedaspect);
+		}
+	};
+
+	test("1-3", 0x7, std::vector<unsigned int> { 0, 1, 2, 3, 3 });
+	test("3-2", 0x6, std::vector<unsigned int> { 0, 0, 2, 3, 3 });
+	test("1,3,3-5", 0x1D, std::vector<unsigned int> { 0, 1, 1, 3, 4, 5 });
+	test("1-3,2-4,6", 0x2F, std::vector<unsigned int> { 0, 1, 2, 3, 4, 4, 6 });
+	test("1-32", 0xFFFFFFFF, std::vector<unsigned int> { 0, 1, 2, 3, 4, 5 });
+}
