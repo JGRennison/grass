@@ -176,6 +176,7 @@ struct route {
 	unsigned int routeprove_delay = 0;
 	unsigned int routeclear_delay = 0;
 	unsigned int routeset_delay = 0;
+	unsigned int aspect_mask = 0;
 
 	enum class RF {
 		ZERO                  = 0,
@@ -185,7 +186,7 @@ struct route {
 	};
 	RF routeflags = RF::ZERO;
 
-	routingpoint *parent  = 0;
+	routingpoint *parent = 0;
 	unsigned int index  = 0;
 
 	route() : type(route_class::RTC_NULL) { }
@@ -212,6 +213,7 @@ class route_restriction {
 	unsigned int routeprove_delay;
 	unsigned int routeclear_delay;
 	unsigned int routeset_delay;
+	unsigned int aspect_mask;
 	unsigned int approachcontrol_triggerdelay = 0;
 	track_train_counter_block *approachcontrol_trigger = 0;
 	track_train_counter_block *overlaptimeout_trigger = 0;
@@ -232,6 +234,7 @@ class route_restriction {
 		ROUTEPROVEDELAY_SET         = 1<<11,
 		ROUTECLEARDELAY_SET         = 1<<12,
 		ROUTESETDELAY_SET           = 1<<13,
+		ASPECTMASK_SET              = 1<<14,
 	};
 	RRF routerestrictionflags = RRF::ZERO;
 	route_class::set allowedtypes = route_class::All();
@@ -306,7 +309,7 @@ class genericsignal : public trackroutingpoint {
 	world_time last_route_prove_time = 0;
 	world_time last_route_clear_time = 0;
 	world_time last_route_set_time = 0;
-	unsigned int max_aspect = 1;
+	unsigned int default_aspect_mask = 1;
 	unsigned int overlapswingminaspectdistance = 1;
 
 	std::array<unsigned int, route_class::LAST_RTC> approachlocking_default_timeouts;

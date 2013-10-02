@@ -437,6 +437,8 @@ void genericsignal::UpdateSignalState() {
 		aspect_target = *next_repeater;
 	}
 
+	unsigned int max_aspect = set_route->aspect_mask ? (sizeof(set_route->aspect_mask) * 8) - __builtin_clz(set_route->aspect_mask) : 0;
+
 	if(route_class::IsAspectLimitedToUnity(set_route->type)) reserved_aspect = aspect = std::min((unsigned int) 1, max_aspect);
 	else {
 		if(max_aspect <= 1) reserved_aspect = aspect = max_aspect;
@@ -457,6 +459,10 @@ void genericsignal::UpdateSignalState() {
 	if(last_state_update - last_route_prove_time < set_route->routeprove_delay) aspect = 0;
 	if(last_state_update - last_route_clear_time < set_route->routeclear_delay) aspect = 0;
 	if(last_state_update - last_route_set_time < set_route->routeset_delay) aspect = 0;
+	while(aspect) {
+		if(set_route->aspect_mask & (1 << (aspect - 1))) break;     //aspect is in mask: OK
+		aspect--;                                                   //aspect not in mask, try one lower
+	}
 	check_aspect_change();
 }
 
@@ -768,6 +774,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						rt->routeprove_delay = routeprove_default_delay;
 						rt->routeclear_delay = routeclear_default_delay;
 						rt->routeset_delay = routeset_default_delay;
+						rt->aspect_mask = default_aspect_mask;
 						rt->FillLists();
 						rt->parent = this;
 
@@ -993,6 +1000,7 @@ void route_restriction::ApplyRestriction(route &rt) const {
 	if(routerestrictionflags & RRF::ROUTEPROVEDELAY_SET) rt.routeprove_delay = routeprove_delay;
 	if(routerestrictionflags & RRF::ROUTECLEARDELAY_SET) rt.routeclear_delay = routeclear_delay;
 	if(routerestrictionflags & RRF::ROUTESETDELAY_SET) rt.routeset_delay = routeset_delay;
+	if(routerestrictionflags & RRF::ASPECTMASK_SET) rt.aspect_mask = aspect_mask;
 	if(approachcontrol_trigger) rt.approachcontrol_trigger = approachcontrol_trigger;
 	if(overlaptimeout_trigger) rt.overlaptimeout_trigger = overlaptimeout_trigger;
 }

@@ -74,13 +74,28 @@ void trackroutingpoint::Serialise(serialiser_output &so, error_collection &ec) c
 	routingpoint::Serialise(so, ec);
 }
 
+//returns true if value set
+static bool DeserialiseAspectProps(unsigned int &aspect_mask, const deserialiser_input &di, error_collection &ec) {
+	auto too_large = [&](unsigned int value) {
+		ec.RegisterNewError<error_deserialisation>(di, string_format("Maximum signal aspect cannot exceed 32. %d given.", value));
+	};
+
+	unsigned int max_aspect;
+	if(CheckTransJsonValue(max_aspect, di, "maxaspect", ec)) {
+		if(max_aspect > 32) too_large(max_aspect);
+		else aspect_mask = (1 << max_aspect) - 1;
+		return true;
+	}
+	return false;
+}
+
 void genericsignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	trackroutingpoint::Deserialise(di, ec);
 
 	CheckTransJsonSubObj(start_trs, di, "start_trs", "trs", ec);
 	CheckTransJsonSubObj(end_trs, di, "end_trs", "trs", ec);
 
-	CheckTransJsonValue(max_aspect, di, "maxaspect", ec);
+	DeserialiseAspectProps(default_aspect_mask, di, ec);
 	CheckTransJsonValueFlag(sflags, GSF::APPROACHLOCKINGMODE, di, "approachlockingmode", ec);
 	CheckTransJsonValueFlag(sflags, GSF::OVERLAPTIMEOUTSTARTED, di, "overlaptimeoutstarted", ec);
 	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) CheckTransJsonValue(overlap_timeout_start, di, "overlap_timeout_start", ec);
@@ -261,6 +276,7 @@ void route_restriction_set::DeserialiseRestriction(const deserialiser_input &sub
 	if(CheckTransJsonValueProc(rr.routeprove_delay, subdi, "routeprovedelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::ROUTEPROVEDELAY_SET;
 	if(CheckTransJsonValueProc(rr.routeclear_delay, subdi, "routecleardelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::ROUTECLEARDELAY_SET;
 	if(CheckTransJsonValueProc(rr.routeset_delay, subdi, "routesetdelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::ROUTESETDELAY_SET;
+	if(DeserialiseAspectProps(rr.aspect_mask, subdi, ec)) rr.routerestrictionflags |= route_restriction::RRF::ASPECTMASK_SET;
 	deserialise_ttcb("overlaptimeouttrigger", [&](route_restriction &rr, track_train_counter_block *ttcb) {
 		rr.overlaptimeout_trigger = ttcb;
 	});
