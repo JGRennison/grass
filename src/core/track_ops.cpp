@@ -481,7 +481,7 @@ void action_reservepath::ExecuteAction() const {
 	std::vector<std::shared_ptr<future> > failmessages;
 
 	for(auto it = routes.begin(); it != routes.end(); ++it) {
-		if(it->rt->routeflags & route::RF::EXITSIGCONTROL) {
+		if(it->rt->routecommonflags & route::RCF::EXITSIGCONTROL) {
 			genericsignal *gs = FastSignalCast(it->rt->end.track, it->rt->end.direction);
 			if(gs) {
 				if(gs->GetCurrentForwardRoute()) {
@@ -494,7 +494,7 @@ void action_reservepath::ExecuteAction() const {
 		genericsignal *startgs = FastSignalCast(it->rt->start.track, it->rt->start.direction);
 		bool isbackexitsigroute = false;
 		startgs->EnumerateCurrentBackwardsRoutes([&](const route *r) {
-			if(r->routeflags & route::RF::EXITSIGCONTROL) isbackexitsigroute = true;
+			if(r->routecommonflags & route::RCF::EXITSIGCONTROL) isbackexitsigroute = true;
 		});
 		if(isbackexitsigroute) {
 			ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(w, action_time+1, &w, "track/reservation/fail", "track/reservation/routesettothissignal"));

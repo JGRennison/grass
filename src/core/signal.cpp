@@ -393,7 +393,7 @@ void genericsignal::UpdateSignalState() {
 		}
 	}
 
-	if(set_route->routeflags & route::RF::APCONTROL && aspect == 0) {
+	if(set_route->routecommonflags & route::RCF::APCONTROL && aspect == 0) {
 		bool can_trigger = false;
 
 		auto test_ttcb = [&](track_train_counter_block *ttcb) {
@@ -729,7 +729,7 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 		route *rt = &this->signal_routes.back();
 		rt->index = route_index;
 		rt->type = type;
-		if(route_class::DefaultApproachControlOn(type)) rt->routeflags |= route::RF::APCONTROL;
+		if(route_class::DefaultApproachControlOn(type)) rt->routecommonflags |= route::RCF::APCONTROL;
 		route_index++;
 		return rt;
 	});
@@ -769,12 +769,8 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						rt->start = vartrack_target_ptr<routingpoint>(this, EDGE_FRONT);
 						rt->pieces = route_pieces;
 						rt->end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
-						if(route_class::IsOverlap(type)) rt->overlap_timeout = overlap_default_timeout;
-						else rt->approachlocking_timeout = approachlocking_default_timeouts[type];
-						rt->routeprove_delay = routeprove_default_delay;
-						rt->routeclear_delay = routeclear_default_delay;
-						rt->routeset_delay = routeset_default_delay;
-						rt->aspect_mask = default_aspect_mask;
+						route_defaults.ApplyTo(*rt);
+						rt->approachlocking_timeout = approachlocking_default_timeouts[type];
 						rt->FillLists();
 						rt->parent = this;
 
@@ -851,166 +847,6 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 		ec.RegisterNewError<error_signalinit>(*this, std::string("Track scan failed constraints: ") + GetTrackScanErrorFlagsStr(error_flags));
 	}
 	return continue_initing;
-}
-
-//returns false on failure/partial completion
-bool route::RouteReservation(RRF reserve_flags, std::string *failreasonkey) const {
-	if(!start.track->Reservation(start.direction, 0, reserve_flags | RRF::STARTPIECE, this, failreasonkey)) return false;
-
-	for(auto it = pieces.begin(); it != pieces.end(); ++it) {
-		if(!it->location.track->Reservation(it->location.direction, it->connection_index, reserve_flags, this, failreasonkey)) return false;
-	}
-
-	if(!end.track->Reservation(end.direction, 0, reserve_flags | RRF::ENDPIECE, this, failreasonkey)) return false;
-	return true;
-}
-
-//returns false on failure/partial completion
-bool route::PartialRouteReservationWithActions(RRF reserve_flags, std::string *failreasonkey, RRF action_reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const {
-	if(!start.track->Reservation(start.direction, 0, reserve_flags | RRF::STARTPIECE, this, failreasonkey)) return false;
-	start.track->ReservationActions(start.direction, 0, action_reserve_flags | RRF::STARTPIECE, this, actioncallback);
-
-	for(auto it = pieces.begin(); it != pieces.end(); ++it) {
-		if(!it->location.track->Reservation(it->location.direction, it->connection_index, reserve_flags, this, failreasonkey)) return false;
-		it->location.track->ReservationActions(it->location.direction, it->connection_index, action_reserve_flags, this, actioncallback);
-	}
-
-	if(!end.track->Reservation(end.direction, 0, reserve_flags | RRF::ENDPIECE, this, failreasonkey)) return false;
-	end.track->ReservationActions(end.direction, 0, action_reserve_flags | RRF::ENDPIECE, this, actioncallback);
-	return true;
-}
-
-void route::RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const {
-	start.track->ReservationActions(start.direction, 0, reserve_flags | RRF::STARTPIECE, this, actioncallback);
-
-	for(auto it = pieces.begin(); it != pieces.end(); ++it) {
-		it->location.track->ReservationActions(it->location.direction, it->connection_index, reserve_flags, this, actioncallback);
-	}
-
-	end.track->ReservationActions(end.direction, 0, reserve_flags | RRF::ENDPIECE, this, actioncallback);
-}
-
-void route::FillLists() {
-	track_circuit *last_tc = 0;
-	for(auto it = pieces.begin(); it != pieces.end(); ++it) {
-		track_circuit *this_tc = it->location.track->GetTrackCircuit();
-		if(this_tc && this_tc != last_tc) {
-			last_tc = this_tc;
-			trackcircuits.push_back(this_tc);
-		}
-		routingpoint *target_routing_piece = FastRoutingpointCast(it->location.track, it->location.direction);
-		if(target_routing_piece && target_routing_piece->GetAvailableRouteTypes(it->location.direction).flags & RPRT_FLAGS::VIA) {
-			vias.push_back(target_routing_piece);
-		}
-		genericsignal *this_signal = FastSignalCast(target_routing_piece, it->location.direction);
-		if(this_signal && this_signal->RepeaterAspectMeaningfulForRouteType(type)) {
-			repeatersignals.push_back(this_signal);
-		}
-		if(!it->location.track->IsTrackAlwaysPassable()) {
-			passtestlist.push_back(*it);
-		}
-		if(it->location.track->HasBerth(it->location.direction)) {
-			berths.emplace_back(it->location.track->GetBerth(), it->location.track);
-		}
-		if(it->location.track->GetFlags(it->location.track->GetDefaultValidDirecton()) & GTF::SIGNAL) berths.clear();	//if we reach a signal, remove any berths we saw beforehand
-	}
-}
-
-bool route::TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const {
-	return checkend == end.track && checkvias == vias;
-}
-
-bool route::IsRouteSubSet(const route *subset) const {
-	const vartrack_target_ptr<routingpoint> &substart = subset->start;
-
-	auto this_it = pieces.begin();
-	if(substart != start) {    //scan along route for start
-		while(true) {
-			if(this_it->location == substart) break;
-			++this_it;
-			if(this_it == pieces.end()) return false;
-		}
-		++this_it;
-	}
-
-	auto sub_it = subset->pieces.begin();
-
-	//sub_it and this_it should now point to same track piece if route is a subset
-
-	for(; sub_it != subset->pieces.end() && this_it != pieces.end(); ++sub_it, ++this_it) {
-		if(*this_it != *sub_it) return false;
-	}
-
-	if(sub_it == subset->pieces.end()) {
-		if(this_it == pieces.end()) return subset->end == end;
-		else return subset->end == this_it->location;
-	}
-	else {
-		return false;
-	}
-}
-
-bool route::IsStartAnchored(RRF checkmask) const {
-	bool anchored = false;
-	start.track->ReservationEnumerationInDirection(start.direction, [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if(rr_flags && RRF::STARTPIECE && reserved_route == this) {
-			anchored = true;
-		}
-	}, checkmask);
-	return anchored;
-}
-
-bool route::IsRouteTractionSuitable(const train* t) const {
-	for(auto it = pieces.begin(); it != pieces.end(); ++it) {
-		const tractionset *ts = it->location.track->GetTractionTypes();
-		if(ts && !ts->CanTrainPass(t)) return false;
-	}
-	return true;
-}
-
-//return true if restriction applies
-bool route_restriction::CheckRestriction(route_class::set &allowed_routes, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
-	if(!targets.empty() && std::find(targets.begin(), targets.end(), piece.track->GetName()) == targets.end()) return false;
-
-	auto via_start = via.begin();
-	for(auto it = route_pieces.begin(); it != route_pieces.end(); ++it) {
-		if(!notvia.empty() && std::find(notvia.begin(), notvia.end(), it->location.track->GetName()) != notvia.end()) return false;
-		if(!via.empty()) {
-			auto found_via = std::find(via_start, via.end(), it->location.track->GetName());
-			if(found_via != via.end()) {
-				via_start = std::next(found_via, 1);
-			}
-		}
-	}
-	if(via_start != via.end()) return false;
-
-	allowed_routes &= allowedtypes;
-	return true;
-}
-
-void route_restriction::ApplyRestriction(route &rt) const {
-	if(routerestrictionflags & RRF::PRIORITYSET) rt.priority = priority;
-	if(routerestrictionflags & RRF::APLOCK_TIMEOUTSET) rt.approachlocking_timeout = approachlocking_timeout;
-	if(routerestrictionflags & RRF::OVERLAPTIMEOUTSET) rt.overlap_timeout = overlap_timeout;
-	if(routerestrictionflags & RRF::APCONTROLTRIGGERDELAY_SET) rt.approachcontrol_triggerdelay = approachcontrol_triggerdelay;
-	if(routerestrictionflags & RRF::APCONTROL_SET) SetOrClearBitsRef(rt.routeflags, route::RF::APCONTROL, routerestrictionflags & RRF::APCONTROL);
-	if(routerestrictionflags & RRF::TORR_SET) SetOrClearBitsRef(rt.routeflags, route::RF::TORR, routerestrictionflags & RRF::TORR);
-	if(routerestrictionflags & RRF::EXITSIGCONTROL_SET) SetOrClearBitsRef(rt.routeflags, route::RF::EXITSIGCONTROL, routerestrictionflags & RRF::EXITSIGCONTROL);
-	if(routerestrictionflags & RRF::OVERLAPTYPE_SET) rt.overlap_type = overlap_type;
-	if(routerestrictionflags & RRF::ROUTEPROVEDELAY_SET) rt.routeprove_delay = routeprove_delay;
-	if(routerestrictionflags & RRF::ROUTECLEARDELAY_SET) rt.routeclear_delay = routeclear_delay;
-	if(routerestrictionflags & RRF::ROUTESETDELAY_SET) rt.routeset_delay = routeset_delay;
-	if(routerestrictionflags & RRF::ASPECTMASK_SET) rt.aspect_mask = aspect_mask;
-	if(approachcontrol_trigger) rt.approachcontrol_trigger = approachcontrol_trigger;
-	if(overlaptimeout_trigger) rt.overlaptimeout_trigger = overlaptimeout_trigger;
-}
-
-route_class::set route_restriction_set::CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const {
-	route_class::set allowed = route_class::All();
-	for(auto it = restrictions.begin(); it != restrictions.end(); ++it) {
-		if(it->CheckRestriction(allowed, route_pieces, piece)) matching_restrictions.push_back(&(*it));
-	}
-	return allowed;
 }
 
 const track_target_ptr& startofline::GetEdgeConnectingPiece(EDGETYPE edgeid) const {

@@ -29,7 +29,6 @@
 #include "core/routetypes_serialisation.h"
 #include "core/deserialisation_scalarconv.h"
 #include "core/trackcircuit.h"
-#include "core/util.h"
 
 void routingpoint::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	genericzlentrack::Deserialise(di, ec);
@@ -75,91 +74,18 @@ void trackroutingpoint::Serialise(serialiser_output &so, error_collection &ec) c
 	routingpoint::Serialise(so, ec);
 }
 
-//returns true if value set
-static bool DeserialiseAspectProps(unsigned int &aspect_mask, const deserialiser_input &di, error_collection &ec) {
-	auto too_large = [&](unsigned int value) {
-		ec.RegisterNewError<error_deserialisation>(di, string_format("Maximum signal aspect cannot exceed 32. %d given.", value));
-	};
-
-	unsigned int max_aspect;
-	std::string aspect_string;
-	if(CheckTransJsonValue(max_aspect, di, "maxaspect", ec)) {
-		if(max_aspect > 32) too_large(max_aspect);
-		else aspect_mask = (1 << max_aspect) - 1;
-		return true;
-	}
-	else if(CheckTransJsonValue(aspect_string, di, "allowedaspects", ec)) {
-		auto invalid_format = [&](const char *str, size_t len) {
-			ec.RegisterNewError<error_deserialisation>(di, string_format("Invalid format for allowed aspects: '%s'", std::string(str, len).c_str()));
-		};
-		auto getnumber = [&](const char *str, size_t len) -> unsigned int {
-			unsigned int num = 0;
-			bool error = false;
-			for(size_t i = 0; i < len; i++) {
-				char c = str[i];
-				if(c >= '0' && c <= '9') num = (num * 10) + c - '0';
-				else {
-					error = true;
-					break;
-				}
-				if(num > 32) {
-					error = true;
-					break;
-				}
-			}
-			if(num == 0) error = true;
-			if(error) ec.RegisterNewError<error_deserialisation>(di, string_format("Invalid numeric format for allowed aspects: '%s' is not an integer between 1 and 32", std::string(str, len).c_str()));
-			return num;
-		};
-
-		aspect_mask = 0;
-		std::vector<std::pair<const char*, size_t>> splitresult;
-		std::vector<std::pair<const char*, size_t>> innersplitresult;
-		SplitString(aspect_string.c_str(), aspect_string.size(), ',', splitresult);
-		for(auto &it : splitresult) {
-			const char *str = it.first;
-			size_t len = it.second;
-			SplitString(str, len, '-', innersplitresult);
-			if(innersplitresult.size() > 2) {
-				invalid_format(str, len);
-			}
-			else {
-				unsigned int vallow;
-				unsigned int valhigh;
-
-				vallow= getnumber(innersplitresult[0].first, innersplitresult[0].second);
-				if(innersplitresult.size() == 2) {
-					valhigh= getnumber(innersplitresult[1].first, innersplitresult[1].second);
-					if(vallow > valhigh) std::swap(vallow, valhigh);
-				}
-				else valhigh = vallow;
-
-				unsigned int highmask = (valhigh == 32) ? 0xFFFFFFFF : ((1 << valhigh) - 1);
-				unsigned int lowmask = (vallow == 32) ? 0x7FFFFFFF : (((1 << vallow) - 1) >> 1);
-				aspect_mask |= highmask ^ lowmask;
-			}
-		}
-		return true;
-	}
-	return false;
-}
-
 void genericsignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	trackroutingpoint::Deserialise(di, ec);
 
 	CheckTransJsonSubObj(start_trs, di, "start_trs", "trs", ec);
 	CheckTransJsonSubObj(end_trs, di, "end_trs", "trs", ec);
 
-	DeserialiseAspectProps(default_aspect_mask, di, ec);
 	CheckTransJsonValueFlag(sflags, GSF::APPROACHLOCKINGMODE, di, "approachlockingmode", ec);
 	CheckTransJsonValueFlag(sflags, GSF::OVERLAPTIMEOUTSTARTED, di, "overlaptimeoutstarted", ec);
 	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) CheckTransJsonValue(overlap_timeout_start, di, "overlap_timeout_start", ec);
 	CheckTransJsonValue(last_route_prove_time, di, "lastrouteprovetime", ec);
 	CheckTransJsonValue(last_route_clear_time, di, "lastroutecleartime", ec);
 	CheckTransJsonValue(last_route_set_time, di, "lastroutesettime", ec);
-	CheckTransJsonValue(routeprove_default_delay, di, "routeprovedelay", ec);
-	CheckTransJsonValue(routeclear_default_delay, di, "routecleardelay", ec);
-	CheckTransJsonValue(routeset_default_delay, di, "routesetdelay", ec);
 }
 
 void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -246,7 +172,7 @@ void stdsignal::Deserialise(const deserialiser_input &di, error_collection &ec) 
 		}
 		else acfunc(sddi);
 	}
-	CheckTransJsonValue(overlap_default_timeout, di, "overlaptimeout", ec);
+	route_defaults.DeserialiseRouteCommon(di, ec, route_common::DeserialisationFlags::NO_APLOCK_TIMEOUT);
 }
 
 void stdsignal::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -285,98 +211,11 @@ void repeatersignal::Deserialise(const deserialiser_input &di, error_collection 
 		}
 	};
 	docompoundflag("routesignal", route_class::Flag(route_class::RTC_ROUTE));
+	route_defaults.DeserialiseRouteCommon(di, ec, route_common::DeserialisationFlags::ASPECTMASK_ONLY);
 }
 
 void repeatersignal::Serialise(serialiser_output &so, error_collection &ec) const {
 	genericsignal::Serialise(so, ec);
-}
-
-void route_restriction_set::DeserialiseRestriction(const deserialiser_input &subdi, error_collection &ec, bool isendtype) {
-	restrictions.emplace_back();
-	route_restriction &rr = restrictions.back();
-
-	auto deserialise_ttcb = [&](std::string prop, std::function<void(route_restriction &, track_train_counter_block *)> f) {
-		std::string approachcontroltrigger_ttcb;
-		if(CheckTransJsonValue(approachcontroltrigger_ttcb, subdi, prop.c_str(), ec)) {
-			world *w = subdi.w;
-			if(w) {
-				size_t rr_index = restrictions.size() - 1;
-				auto func = [this, approachcontroltrigger_ttcb, w, rr_index, prop, f](error_collection &ec) {
-					track_train_counter_block *ttcb = w->FindTrackTrainBlockOrTrackCircuitByName(approachcontroltrigger_ttcb);
-					if(ttcb) {
-						f(this->restrictions[rr_index], ttcb);
-					}
-					else {
-						ec.RegisterNewError<generic_error_obj>(prop + ": No such track circuit or track trigger: " + approachcontroltrigger_ttcb);
-					}
-				};
-				w->layout_init_final_fixups.AddFixup(func);
-			}
-			else {
-				ec.RegisterNewError<error_deserialisation>(subdi, prop + " not valid in this context (no world)");
-			}
-		}
-	};
-
-	if(isendtype) CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "routestart", ec, rr.targets);
-	else {
-		CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "targets", ec, rr.targets) ||
-			CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "routeend", ec, rr.targets);
-	}
-	CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "via", ec, rr.via);
-	CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "notvia", ec, rr.notvia);
-	if(CheckTransJsonValue(rr.priority, subdi, "priority", ec)) rr.routerestrictionflags |= route_restriction::RRF::PRIORITYSET;
-	if(CheckTransJsonValueProc(rr.approachlocking_timeout, subdi, "approachlockingtimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APLOCK_TIMEOUTSET;
-	if(CheckTransJsonValueProc(rr.overlap_timeout, subdi, "overlaptimeout", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTIMEOUTSET;
-	if(CheckTransJsonValueProc(rr.routeprove_delay, subdi, "routeprovedelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::ROUTEPROVEDELAY_SET;
-	if(CheckTransJsonValueProc(rr.routeclear_delay, subdi, "routecleardelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::ROUTECLEARDELAY_SET;
-	if(CheckTransJsonValueProc(rr.routeset_delay, subdi, "routesetdelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::ROUTESETDELAY_SET;
-	if(DeserialiseAspectProps(rr.aspect_mask, subdi, ec)) rr.routerestrictionflags |= route_restriction::RRF::ASPECTMASK_SET;
-	deserialise_ttcb("overlaptimeouttrigger", [&](route_restriction &rr, track_train_counter_block *ttcb) {
-		rr.overlaptimeout_trigger = ttcb;
-	});
-	bool res = CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::APCONTROL, subdi, "approachcontrol", ec);
-	if(res) rr.routerestrictionflags |= route_restriction::RRF::APCONTROL_SET;
-	if(!res || rr.routerestrictionflags & route_restriction::RRF::APCONTROL) {
-		if(CheckTransJsonValueProc(rr.approachcontrol_triggerdelay, subdi, "approachcontroltriggerdelay", ec, dsconv::Time)) rr.routerestrictionflags |= route_restriction::RRF::APCONTROLTRIGGERDELAY_SET | route_restriction::RRF::APCONTROL_SET | route_restriction::RRF::APCONTROL;
-		deserialise_ttcb("approachcontroltrigger", [&](route_restriction &rr, track_train_counter_block *ttcb) {
-			rr.approachcontrol_trigger = ttcb;
-			rr.routerestrictionflags |= route_restriction::RRF::APCONTROL_SET | route_restriction::RRF::APCONTROL;
-		});
-	}
-	if(CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::TORR, subdi, "torr", ec)) rr.routerestrictionflags |= route_restriction::RRF::TORR_SET;
-	if(CheckTransJsonValueFlag(rr.routerestrictionflags, route_restriction::RRF::EXITSIGCONTROL, subdi, "exitsignalcontrol", ec)) rr.routerestrictionflags |= route_restriction::RRF::EXITSIGCONTROL_SET;
-
-	route_class::DeserialiseGroup(rr.allowedtypes, subdi, ec);
-
-	flag_conflict_checker<route_class::set> conflictnegcheck;
-	route_class::set val = 0;
-	if(route_class::DeserialiseProp("applyonly", val, subdi, ec)) {
-		rr.applytotypes = val;
-		conflictnegcheck.RegisterFlags(true, val, subdi, "applyonly", ec);
-		conflictnegcheck.RegisterFlags(false, ~val, subdi, "applyonly", ec);
-	}
-	if(route_class::DeserialiseProp("applydeny", val, subdi, ec)) {
-		rr.applytotypes &= ~val;
-		conflictnegcheck.RegisterFlags(false, val, subdi, "applydeny", ec);
-	}
-
-	deserialiser_input odi(subdi.json["overlap"], "overlap", subdi);
-	if(!odi.json.IsNull()) {
-		subdi.RegisterProp("overlap");
-
-		if(odi.json.IsBool()) rr.overlap_type = odi.json.GetBool() ? route_class::ID::RTC_OVERLAP : route_class::ID::RTC_NULL;
-		else if(odi.json.IsString()) {
-			auto res = route_class::DeserialiseName(odi.json.GetString(), ec);
-			if(res.first) rr.overlap_type = res.second;
-			else ec.RegisterNewError<error_deserialisation>(odi, "Invalid overlap type definition: " + std::string(odi.json.GetString()));
-		}
-		else ec.RegisterNewError<error_deserialisation>(odi, "Invalid overlap type definition: wrong type");
-
-		rr.routerestrictionflags |= route_restriction::RRF::OVERLAPTYPE_SET;
-	}
-
-	subdi.PostDeserialisePropCheck(ec);
 }
 
 void startofline::Deserialise(const deserialiser_input &di, error_collection &ec) {

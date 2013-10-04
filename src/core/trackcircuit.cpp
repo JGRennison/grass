@@ -167,7 +167,7 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 			bt_piece->ReservationEnumeration([&](const route *chk_reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
 				if(reserved_route == chk_reserved_route) {
 					if(rr_flags & RRF::STARTPIECE) {
-						if(reserved_route->routeflags & route::RF::TORR) {
+						if(reserved_route->routecommonflags & route::RCF::TORR) {
 							//don't unreserve the start of the route unless TORR is enabled
 							unreserve = true;
 							unresdirection = direction;
