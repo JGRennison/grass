@@ -229,6 +229,7 @@ class genericsignal : public trackroutingpoint {
 	inline route_class::set GetAvailableOverlapTypes() const { return available_overlaps; }
 
 	virtual ASPECT_FLAGS GetAspectFlags() const override;
+	const route_common &GetRouteDefaults() const { return route_defaults; }
 
 	//function parameters: return true to continue, false to stop
 	void BackwardsReservedTrackScan(std::function<bool(const genericsignal*)> checksignal, std::function<bool(const track_target_ptr&)> checkpiece) const;

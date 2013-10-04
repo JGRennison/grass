@@ -437,7 +437,10 @@ void genericsignal::UpdateSignalState() {
 		aspect_target = *next_repeater;
 	}
 
-	unsigned int max_aspect = set_route->aspect_mask ? (sizeof(set_route->aspect_mask) * 8) - __builtin_clz(set_route->aspect_mask) : 0;
+	unsigned int aspect_mask;
+	if(GetSignalFlags() & GSF::REPEATER) aspect_mask = route_defaults.aspect_mask;
+	else aspect_mask = set_route->aspect_mask;
+	unsigned int max_aspect = aspect_mask ? (sizeof(aspect_mask) * 8) - __builtin_clz(aspect_mask) : 0;
 
 	if(route_class::IsAspectLimitedToUnity(set_route->type)) reserved_aspect = aspect = std::min((unsigned int) 1, max_aspect);
 	else {
@@ -460,8 +463,8 @@ void genericsignal::UpdateSignalState() {
 	if(last_state_update - last_route_clear_time < set_route->routeclear_delay) aspect = 0;
 	if(last_state_update - last_route_set_time < set_route->routeset_delay) aspect = 0;
 	while(aspect) {
-		if(set_route->aspect_mask & (1 << (aspect - 1))) break;     //aspect is in mask: OK
-		aspect--;                                                   //aspect not in mask, try one lower
+		if(aspect_mask & (1 << (aspect - 1))) break;     //aspect is in mask: OK
+		aspect--;                                        //aspect not in mask, try one lower
 	}
 	check_aspect_change();
 }
