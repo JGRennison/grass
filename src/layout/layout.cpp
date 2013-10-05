@@ -120,8 +120,9 @@ void guilayout::layouttrack_obj::Deserialise(const deserialiser_input &di, error
 	if(CheckTransJsonValue(leftside, di, "leftside", ec)) setmembers |= LTOSM_LEFTSIDE;
 	if(CheckTransJsonValue(rightside, di, "rightside", ec)) setmembers |= LTOSM_RIGHTSIDE;
 	if(CheckTransJsonValue(layoutdirection, di, "direction", ec)) setmembers |= LTOSM_LAYOUTDIR;
-	if(CheckTransJsonValue(prev, di, "prev", ec)) setmembers |= LTOSM_PREV;
-	if(CheckTransJsonValue(prev_edge, di, "prevedge", ec)) setmembers |= LTOSM_PREVEDGE;
+	if(CheckTransJsonValue(connectto, di, "connectto", ec)) setmembers |= LTOSM_CONNECT;
+	if(CheckTransJsonValue(connectto_edge, di, "connecttoedge", ec)) setmembers |= LTOSM_CONNECTEDGE;
+	if(CheckTransJsonValue(this_edge, di, "thisedge", ec)) setmembers |= LTOSM_THISEDGE;
 	if(CheckTransJsonValue(src_branch, di, "branch", ec)) dest_branch = src_branch;
 	else {
 		CheckTransJsonValue(src_branch, di, "srcbranch", ec);
@@ -143,24 +144,29 @@ void guilayout::layoutgui_obj::Deserialise(const deserialiser_input &di, error_c
 
 void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec) {
 	std::shared_ptr<layouttrack_obj> prevtrackobj;
-	if(setmembers & LTOSM_PREV) {
-		generictrack *targgt = wl.GetWorld().FindTrackByName(prev);
+	EDGETYPE prevtrackobj_edge = EDGETYPE::EDGE_NULL;
+	if(setmembers & LTOSM_CONNECT) {
+		generictrack *targgt = wl.GetWorld().FindTrackByName(connectto);
 		if(!targgt) {
-			ec.RegisterNewError<error_layout>(*this, "No such track piece: " + prev);
+			ec.RegisterNewError<error_layout>(*this, "No such track piece: " + connectto);
 			return;
 		}
 		prevtrackobj = wl.GetTrackLayoutObj(*this, targgt, ec);
+		if(setmembers & LTOSM_CONNECTEDGE) prevtrackobj_edge = connectto_edge;
+		else if(prevtrackobj) prevtrackobj_edge = prevtrackobj->most_probable_incoming_edge;
 	}
 	else {
-		prevtrackobj = wl.GetLayoutBranchRef(src_branch);
+		layout_branch &lb = wl.GetLayoutBranchRef(src_branch);
+		prevtrackobj = lb.track_obj;
+		prevtrackobj_edge = lb.edge;
 	}
 
 	bool x_relative = !(setmembers & LOSM_X);
 	bool y_relative = !(setmembers & LOSM_Y);
 
-	//work out which edge prevtrackobj/the given coords should be connected to
-	EDGETYPE startedge = prev_edge;
-	if(startedge == EDGETYPE::EDGE_NULL) {
+	//if relative, work out which edge prevtrackobj/the given coords should be connected to
+	EDGETYPE localedge = this_edge;
+	if(localedge == EDGETYPE::EDGE_NULL && (x_relative || y_relative)) {
 		std::vector<generictrack::edgelistitem> edges;
 		gt->GetListOfEdges(edges);
 
@@ -169,7 +175,7 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 			if(it.target->track == gt->GetPreviousTrackPiece()) {
 					//if we are connected to the previous (in the layout) track piece, use that connection/edge as the reference
 
-				startedge = it.edge;
+				localedge = it.edge;
 				break;;
 			}
 			if(it.target->track == gt->GetNextTrackPiece()) {
@@ -182,35 +188,71 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 			}
 		}
 
-		if(startedge == EDGETYPE::EDGE_NULL) {    //check that there is one free edge in the edgelist and use that
+		if(localedge == EDGETYPE::EDGE_NULL) {    //check that there is one free edge in the edgelist and use that
 			if(free_edges != 1) {
 				ec.RegisterNewError<error_layout>(*this, string_format("Ambiguous relative layout declaration: %d possible edges to choose from, try using the 'prevedge' parameter", free_edges));
 				return;
 			}
 			for(auto &it : edges) {    //find the free edge
 				if(it.edge != EDGETYPE::EDGE_NULL) {
-					startedge = it.edge;
+					localedge = it.edge;
 					break;
 				}
 			}
 		}
 	}
 
-	if(!prevtrackobj && (x_relative || y_relative)) {
-		ec.RegisterNewError<error_layout>(*this, "Cannot layout track piece relative to non-existent track piece");
-		return;
+	if(x_relative || y_relative) {
+		if(!prevtrackobj) {
+			ec.RegisterNewError<error_layout>(*this, "Cannot layout track piece relative to non-existent track piece");
+			return;
+		}
 	}
 
-	const genericsignal *gs = FastSignalCast(gt);
-	if(gs) {
-
-	}
-	const genericpoints *gp = dynamic_cast<const genericpoints*>(gt);
-	if(gp) {
-
+	if(layoutdirection == LAYOUT_DIR::NULLDIR) {
+		if(!prevtrackobj || prevtrackobj_edge == EDGETYPE::EDGE_NULL) {
+			ec.RegisterNewError<error_layout>(*this, "No layout direction given: direction cannot be otherwise infered without a relative reference.");
+			return;
+		}
 	}
 
-	auto finalise = [this](error_collection &ec) {
+	//this function will be called when the relative target (if any) is ready
+	//if this pieve is being positioned absolutely, then it is calle immediately
+	auto finalise = [this, prevtrackobj, prevtrackobj_edge, localedge, x_relative, y_relative](error_collection &ec) {
+
+		if(x_relative || y_relative) {
+			EDGETYPE prevtrackobj_realedge = prevtrackobj_edge;
+			if(prevtrackobj_edge == EDGETYPE::EDGE_NULL) prevtrackobj_realedge = prevtrackobj->most_probable_incoming_edge;
+			if(prevtrackobj_realedge == EDGETYPE::EDGE_NULL) {
+				ec.RegisterNewError<error_layout>(*this, "Cannot layout track piece relative to other track piece: target edge on other track piece unspecified/ambiguous.");
+				return;
+			}
+
+			const edge_def *target = prevtrackobj->GetEdgeDef(prevtrackobj_realedge);
+			if(!target) {
+				ec.RegisterNewError<error_layout>(*this, string_format("Edge: %s, is not valid for track piece: %s", SerialiseDirectionName(prevtrackobj_realedge), prevtrackobj->gt->GetFriendlyName().c_str()));
+				return;
+			}
+
+			if(layoutdirection == LAYOUT_DIR::NULLDIR) {
+				layoutdirection = target->outgoingdirection;
+			}
+			if(x_relative) x = target->x;
+			if(y_relative) y = target->y;
+		}
+
+		x += rx;
+		y += ry;
+
+		const genericsignal *gs = FastSignalCast(gt);
+		if(gs) {
+
+		}
+		const genericpoints *gp = dynamic_cast<const genericpoints*>(gt);
+		if(gp) {
+
+		}
+
 		for(auto &it : fixups) it(*this, ec);
 		fixups.clear();
 	};
@@ -220,6 +262,13 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 	};
 	if(x_relative || y_relative) prevtrackobj->RelativeFixup(*this, layoutfixup, ec);
 	else finalise(ec);
+}
+
+const guilayout::layouttrack_obj::edge_def *guilayout::layouttrack_obj::GetEdgeDef(EDGETYPE e) const {
+	for(auto &edge : edges) {
+		if(edge.edge == e) return &edge;
+	}
+	return 0;
 }
 
 void guilayout::layoutberth_obj::Process(world_layout &wl, error_collection &ec) {

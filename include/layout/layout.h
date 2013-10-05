@@ -100,22 +100,27 @@ namespace guilayout {
 		LAYOUT_DIR layoutdirection = LAYOUT_DIR::NULLDIR;
 		std::string src_branch = "default";
 		std::string dest_branch = "default";
-		std::string prev;
-		EDGETYPE prev_edge = EDGETYPE::EDGE_NULL;
+		std::string connectto;
+		EDGETYPE connectto_edge = EDGETYPE::EDGE_NULL;
+		EDGETYPE this_edge = EDGETYPE::EDGE_NULL;
 
 		enum {
 			LTOSM_LENGTH       = 1<<16,
 			LTOSM_LEFTSIDE     = 1<<17,
 			LTOSM_RIGHTSIDE    = 1<<18,
 			LTOSM_LAYOUTDIR    = 1<<19,
-			LTOSM_PREV         = 1<<20,
-			LTOSM_PREVEDGE     = 1<<21,
+			LTOSM_CONNECT      = 1<<20,
+			LTOSM_CONNECTEDGE  = 1<<21,
+			LTOSM_THISEDGE     = 1<<21,
 		};
+
+		EDGETYPE most_probable_incoming_edge = EDGETYPE::EDGE_NULL;
 
 		struct edge_def {
 			EDGETYPE edge;
-			int x;
-			int y;
+			int x;                        //these refer to where the next track piece should start from
+			int y;                        //"
+			LAYOUT_DIR outgoingdirection; //this refers to the direction of the first section of the joining track piece
 		};
 		std::vector<edge_def> edges;
 
@@ -127,6 +132,7 @@ namespace guilayout {
 		virtual void Process(world_layout &wl, error_collection &ec) override;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 		void RelativeFixup(const layout_obj &src, std::function<void(layouttrack_obj &obj, error_collection &ec)> f, error_collection &ec);
+		const edge_def *GetEdgeDef(EDGETYPE e) const;
 	};
 
 	class layoutberth_obj : public layout_obj {
@@ -174,17 +180,22 @@ namespace guilayout {
 
 	layoutoffsetdirectionresult LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length);
 
+	struct layout_branch {
+		std::shared_ptr<layouttrack_obj> track_obj;
+		EDGETYPE edge;
+	};
+
 	class world_layout : public std::enable_shared_from_this<world_layout> {
 		std::deque<std::shared_ptr<layout_obj> > objs;
 		std::map<const generictrack *, std::shared_ptr<layouttrack_obj> > tracktolayoutmap;
-		std::map<std::string, std::shared_ptr<layouttrack_obj> > layout_branches;
+		std::map<std::string, layout_branch> layout_branches;
 		const world &w;
 
 		public:
 		world_layout(const world &w_) : w(w_) { }
 		virtual ~world_layout() { }
 		const world & GetWorld() const { return w; }
-		std::shared_ptr<layouttrack_obj> & GetLayoutBranchRef(std::string name) { return layout_branches[name]; }
+		layout_branch & GetLayoutBranchRef(std::string name) { return layout_branches[name]; }
 		void AddLayoutObj(const std::shared_ptr<layout_obj> &obj);
 		void SetWorldSerialisationLayout(world_serialisation &ws);
 		void ProcessLayoutObjSet(error_collection &ec);
