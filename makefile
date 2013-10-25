@@ -81,7 +81,7 @@ else
 PLATFORM:=UNIX
 LIBS:=-lpcre -lrt
 LIBS_main:=`wx-config --libs`
-CFLAGS_main:= `wx-config --cxxflags`
+CFLAGS_main:=$(patsubst -I/%,-isystem /%,$(shell wx-config --cxxflags))
 GCC_MAJOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f1)
 GCC_MINOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f2)
 ARCH:=$(shell test $(GCC_MAJOR) -gt 4 -o \( $(GCC_MAJOR) -eq 4 -a $(GCC_MINOR) -ge 2 \) && echo native)
