@@ -208,13 +208,13 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 
 	if(layoutdirection == LAYOUT_DIR::NULLDIR) {
 		if(!prevtrackobj || prevtrackobj_edge == EDGETYPE::EDGE_NULL) {
-			ec.RegisterNewError<error_layout>(*this, "No layout direction given: direction cannot be otherwise infered without a relative reference.");
+			ec.RegisterNewError<error_layout>(*this, "No layout direction given: direction cannot be otherwise inferred without a relative reference.");
 			return;
 		}
 	}
 
 	//this function will be called when the relative target (if any) is ready
-	//if this pieve is being positioned absolutely, then it is calle immediately
+	//if this piece is being positioned absolutely, then it is called immediately
 	auto finalise = [this, prevtrackobj, prevtrackobj_edge, localedge, x_relative, y_relative](error_collection &ec) {
 
 		if(x_relative || y_relative) {
