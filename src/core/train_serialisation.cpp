@@ -98,7 +98,7 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 				return;
 			}
 
-			unsigned int segment_mass;
+			unsigned int segment_mass = 0;
 			bool got_segment_mass = CheckTransJsonValueProc(segment_mass, tsdi, "segmentmass", ec, dsconv::Mass);
 
 			add_train_segment(vehclassname,
