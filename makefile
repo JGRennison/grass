@@ -5,9 +5,11 @@
 #list: set to true to enable listings
 #map: set to true to enable linker map
 #noexceptions: set to build without exceptions
+#cross: set to true if building on Unix, but build target is Windows
 #On windows only:
 #x64: set to true to compile for x86_64/win64
 
+#Note that to build on or for Windows, hard-coded paths to wxwidgets include and lib directories will need to be edited.
 
 SRC_DIRS := main core test layout
 MAIN_DIRS := main core layout
@@ -28,6 +30,10 @@ CXXFLAGS:=-std=gnu++0x
 GCC:=g++
 LD:=ld
 DIRS = $(foreach dir,$(SRC_DIRS),$(call GENERIC_OBJ_DIR,$(dir))) $(call GENERIC_OBJ_DIR,test)/pch
+
+EXECPREFIX:=./
+PATHSEP:=/
+MKDIR:=mkdir -p
 
 ifdef noexceptions
 CXXFLAGS += -fno-exceptions
@@ -59,9 +65,11 @@ GCC32=i686-w64-mingw32-g++
 GCC64=x86_64-w64-mingw32-g++
 CFLAGS_main=-isystem C:/SourceCode/Libraries/wxWidgets2.8/include
 HDEPS:=
+ifndef cross
 EXECPREFIX:=
 PATHSEP:=\\
 MKDIR:=mkdir
+endif
 
 ifdef x64
 SIZEPOSTFIX:=64
@@ -85,9 +93,6 @@ CFLAGS_main:=$(patsubst -I/%,-isystem /%,$(shell wx-config --cxxflags))
 GCC_MAJOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f1)
 GCC_MINOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f2)
 ARCH:=$(shell test $(GCC_MAJOR) -gt 4 -o \( $(GCC_MAJOR) -eq 4 -a $(GCC_MINOR) -ge 2 \) && echo native)
-EXECPREFIX:=./
-PATHSEP:=/
-MKDIR:=mkdir -p
 
 wxconf:=$(shell wx-config --selected-config)
 ifeq (gtk, $(findstring gtk,$(wxconf)))
