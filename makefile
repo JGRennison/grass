@@ -9,7 +9,8 @@
 #On windows only:
 #x64: set to true to compile for x86_64/win64
 
-#Note that to build on or for Windows, hard-coded paths to wxwidgets include and lib directories will need to be edited.
+#Note that to build on or for Windows, the include/lib search paths will need to be edited below and/or
+#a number of libs/includes will need to be placed/built in a corresponding location where gcc can find them.
 
 SRC_DIRS := main core test layout
 MAIN_DIRS := main core layout
@@ -56,14 +57,14 @@ ifeq (mingw, $(findstring mingw,$(GCCMACHINE)))
 #WIN
 PLATFORM:=WIN
 AFLAGS+=-s -static -Llib
-AFLAGS_main+=-mwindows -LC:/SourceCode/Libraries/wxWidgets2.8/lib/gcc_lib
+AFLAGS_main+=-mwindows -Lwxlib
 GFLAGS=-mthreads
 SUFFIX:=.exe
 LIBS_main32=-lwxmsw28u_richtext -lwxmsw28u_aui -lwxbase28u_xml -lwxexpat -lwxmsw28u_html -lwxmsw28u_adv -lwxmsw28u_media -lwxmsw28u_core -lwxbase28u -lwxjpeg -lwxpng -lwxtiff -lwldap32 -lws2_32 -lgdi32 -lshell32 -lole32 -luuid -lcomdlg32 -lwinspool -lcomctl32 -loleaut32 -lwinmm
 LIBS_main64=
 GCC32=i686-w64-mingw32-g++
 GCC64=x86_64-w64-mingw32-g++
-CFLAGS_main=-isystem C:/SourceCode/Libraries/wxWidgets2.8/include
+CFLAGS_main=-isystem wxinclude
 HDEPS:=
 ifndef cross
 EXECPREFIX:=
