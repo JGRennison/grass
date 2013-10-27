@@ -29,6 +29,7 @@
 #include <map>
 #include <tuple>
 #include <vector>
+#include <functional>
 #include "core/edgetype.h"
 #include "core/error.h"
 
@@ -42,6 +43,11 @@ class world;
 namespace guilayout {
 	struct layout_obj;
 	class world_layout;
+	struct draw_cmd;
+	struct draw_options;
+	class draw_engine;
+
+	typedef std::function<std::vector<draw_cmd>(const draw_options &)> draw_func_type;
 
 	class error_layout : public error_obj {
 		public:
@@ -86,6 +92,9 @@ namespace guilayout {
 		virtual std::string GetFriendlyName() const = 0;
 		virtual void Process(world_layout &wl, error_collection &ec) = 0;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
+		draw_func_type drawfunction;
+		int GetX() const { return x; }
+		int GetY() const { return y; }
 	};
 
 	class layouttrack_obj : public layout_obj {
@@ -187,9 +196,10 @@ namespace guilayout {
 		std::map<const generictrack *, std::shared_ptr<layouttrack_obj> > tracktolayoutmap;
 		std::map<std::string, layout_branch> layout_branches;
 		const world &w;
+		std::shared_ptr<draw_engine> eng;
 
 		public:
-		world_layout(const world &w_) : w(w_) { }
+		world_layout(const world &w_, std::shared_ptr<draw_engine> eng_ = std::shared_ptr<draw_engine>()) : w(w_), eng(std::move(eng_)) { }
 		virtual ~world_layout() { }
 		const world & GetWorld() const { return w; }
 		layout_branch & GetLayoutBranchRef(std::string name) { return layout_branches[name]; }
@@ -198,6 +208,22 @@ namespace guilayout {
 		void ProcessLayoutObjSet(error_collection &ec);
 		std::shared_ptr<layouttrack_obj> GetTrackLayoutObj(const layout_obj &src, const generictrack *targetgt, error_collection &ec);
 		void LayoutTrackRelativeFixup(const layout_obj &src, const generictrack *targetgt, std::function<void(layouttrack_obj &obj, error_collection &ec)> f, error_collection &ec);
+		inline std::shared_ptr<draw_engine> GetDrawEngine() const { return eng; }
+	};
+
+	struct draw_cmd {
+
+	};
+
+	struct draw_options {
+
+	};
+
+	class draw_engine {
+		public:
+		virtual draw_func_type GetDrawTrack(const layouttrack_obj &obj, error_collection &ec);
+		virtual draw_func_type GetDrawBerth(const layoutberth_obj &obj, error_collection &ec);
+		virtual draw_func_type GetDrawObj(const layoutgui_obj &obj, error_collection &ec);
 	};
 
 };

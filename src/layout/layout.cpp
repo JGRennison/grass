@@ -215,7 +215,7 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 
 	//this function will be called when the relative target (if any) is ready
 	//if this piece is being positioned absolutely, then it is called immediately
-	auto finalise = [this, prevtrackobj, prevtrackobj_edge, localedge, x_relative, y_relative](error_collection &ec) {
+	auto finalise = [this, prevtrackobj, prevtrackobj_edge, localedge, x_relative, y_relative, &wl](error_collection &ec) {
 
 		if(x_relative || y_relative) {
 			EDGETYPE prevtrackobj_realedge = prevtrackobj_edge;
@@ -241,20 +241,14 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 		x += rx;
 		y += ry;
 
-		const genericsignal *gs = FastSignalCast(gt);
-		if(gs) {
-
-		}
-		const genericpoints *gp = dynamic_cast<const genericpoints*>(gt);
-		if(gp) {
-
-		}
+		auto eng = wl.GetDrawEngine();
+		if(eng) drawfunction = std::move(eng->GetDrawTrack(*this, ec));
 
 		for(auto &it : fixups) it(*this, ec);
 		fixups.clear();
 	};
 
-	auto layoutfixup = [&wl, prevtrackobj, this, finalise](layouttrack_obj &targobj, error_collection &ec) {
+	auto layoutfixup = [finalise](layouttrack_obj &targobj, error_collection &ec) {
 		finalise(ec);
 	};
 	if(x_relative || y_relative) prevtrackobj->RelativeFixup(*this, layoutfixup, ec);
@@ -269,11 +263,36 @@ const guilayout::layouttrack_obj::edge_def *guilayout::layouttrack_obj::GetEdgeD
 }
 
 void guilayout::layoutberth_obj::Process(world_layout &wl, error_collection &ec) {
+	bool x_relative = !(setmembers & LOSM_X);
+	bool y_relative = !(setmembers & LOSM_Y);
+	std::shared_ptr<layouttrack_obj> trackobj = wl.GetTrackLayoutObj(*this, gt, ec);
 
+	if((x_relative || y_relative) && !trackobj) {
+		ec.RegisterNewError<error_layout>(*this, "Cannot layout berth relative to non-existent track piece");
+		return;
+	}
+
+	auto finalise = [this, x_relative, y_relative, trackobj, &wl](error_collection &ec) {
+		if(x_relative) x = trackobj->GetX();
+		if(y_relative) y = trackobj->GetY();
+		x += rx;
+		y += ry;
+		auto eng = wl.GetDrawEngine();
+		if(eng) drawfunction = std::move(eng->GetDrawBerth(*this, ec));
+	};
+	if(x_relative || y_relative) trackobj->RelativeFixup(*this, [finalise](layouttrack_obj &targobj, error_collection &ec) { finalise(ec); }, ec);
+	else finalise(ec);
 }
 
 void guilayout::layoutgui_obj::Process(world_layout &wl, error_collection &ec) {
-
+	bool x_relative = !(setmembers & LOSM_X);
+	bool y_relative = !(setmembers & LOSM_Y);
+	if(x_relative || y_relative) {
+		ec.RegisterNewError<error_layout>(*this, "GUI layout objects must be positioned absolutely");
+		return;
+	}
+	auto eng = wl.GetDrawEngine();
+	if(eng) drawfunction = std::move(eng->GetDrawObj(*this, ec));
 }
 
 guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length) {
