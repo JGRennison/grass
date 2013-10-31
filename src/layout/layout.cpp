@@ -25,6 +25,7 @@
 #include "core/signal.h"
 #include "core/points.h"
 #include "core/serialisable_impl.h"
+#include "draw/drawmodule.h"
 
 namespace guilayout {
 
@@ -241,8 +242,8 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 		x += rx;
 		y += ry;
 
-		auto eng = wl.GetDrawEngine();
-		if(eng) drawfunction = std::move(eng->GetDrawTrack(*this, ec));
+		std::shared_ptr<draw::draw_module> dmod = wl.GetDrawEngine();
+		if(dmod) drawfunction = std::move(dmod->GetDrawTrack(*this, ec));
 
 		for(auto &it : fixups) it(*this, ec);
 		fixups.clear();
@@ -277,8 +278,8 @@ void guilayout::layoutberth_obj::Process(world_layout &wl, error_collection &ec)
 		if(y_relative) y = trackobj->GetY();
 		x += rx;
 		y += ry;
-		auto eng = wl.GetDrawEngine();
-		if(eng) drawfunction = std::move(eng->GetDrawBerth(*this, ec));
+		std::shared_ptr<draw::draw_module> dmod = wl.GetDrawEngine();
+		if(dmod) drawfunction = std::move(dmod->GetDrawBerth(*this, ec));
 	};
 	if(x_relative || y_relative) trackobj->RelativeFixup(*this, [finalise](layouttrack_obj &targobj, error_collection &ec) { finalise(ec); }, ec);
 	else finalise(ec);
@@ -291,8 +292,8 @@ void guilayout::layoutgui_obj::Process(world_layout &wl, error_collection &ec) {
 		ec.RegisterNewError<error_layout>(*this, "GUI layout objects must be positioned absolutely");
 		return;
 	}
-	auto eng = wl.GetDrawEngine();
-	if(eng) drawfunction = std::move(eng->GetDrawObj(*this, ec));
+	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawEngine();
+	if(dmod) drawfunction = std::move(dmod->GetDrawObj(*this, ec));
 }
 
 guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length) {
