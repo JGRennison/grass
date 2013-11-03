@@ -12,14 +12,14 @@
 #Note that to build on or for Windows, the include/lib search paths will need to be edited below and/or
 #a number of libs/includes will need to be placed/built in a corresponding location where gcc can find them.
 
-SRC_DIRS := main core test layout
-MAIN_DIRS := main core layout
+SRC_DIRS := main core test layout draw/wx
+MAIN_DIRS := main core layout draw/wx
 TEST_DIRS := test core
 
 GENERIC_SRC = $(wildcard src/$1/*.cpp)
 GENERIC_OBJ_DIR = objs/$1$(DIR_POSTFIX)
-GENERIC_CFLAGS = $(CFLAGS) $(CFLAGS_$1) -iquote include
-GENERIC_CXXFLAGS = $(CXXFLAGS) $(CXXFLAGS_$1)
+GENERIC_CFLAGS = $(CFLAGS) $(CFLAGS_$(subst /,_,$1)) -iquote include
+GENERIC_CXXFLAGS = $(CXXFLAGS) $(CXXFLAGS_$(subst /,_,$1))
 GENERIC_OBJS = $(patsubst src/$1/%.cpp,$(call GENERIC_OBJ_DIR,$1)/%.o,$(call GENERIC_SRC,$1))
 LIST_OBJS = $(foreach dir,$1,$(call GENERIC_OBJS,$(dir)))
 
@@ -35,6 +35,9 @@ DIRS = $(foreach dir,$(SRC_DIRS),$(call GENERIC_OBJ_DIR,$(dir))) $(call GENERIC_
 EXECPREFIX:=./
 PATHSEP:=/
 MKDIR:=mkdir -p
+
+CFLAGS_main=$(WX_CFLAGS)
+CFLAGS_draw_wx=$(WX_CFLAGS)
 
 ifdef noexceptions
 CXXFLAGS += -fno-exceptions
@@ -64,7 +67,7 @@ LIBS_main32=-lwxmsw28u_richtext -lwxmsw28u_aui -lwxbase28u_xml -lwxexpat -lwxmsw
 LIBS_main64=
 GCC32=i686-w64-mingw32-g++
 GCC64=x86_64-w64-mingw32-g++
-CFLAGS_main=-isystem wxinclude
+WX_CFLAGS+=-isystem wxinclude
 HDEPS:=
 ifndef cross
 EXECPREFIX:=
@@ -90,7 +93,7 @@ else
 PLATFORM:=UNIX
 LIBS:=-lpcre -lrt
 LIBS_main:=`wx-config --libs`
-CFLAGS_main:=$(patsubst -I/%,-isystem /%,$(shell wx-config --cxxflags))
+WX_CFLAGS+=$(patsubst -I/%,-isystem /%,$(shell wx-config --cxxflags))
 GCC_MAJOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f1)
 GCC_MINOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f2)
 ARCH:=$(shell test $(GCC_MAJOR) -gt 4 -o \( $(GCC_MAJOR) -eq 4 -a $(GCC_MINOR) -ge 2 \) && echo native)

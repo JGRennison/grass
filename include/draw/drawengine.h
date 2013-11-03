@@ -22,10 +22,36 @@
 #ifndef INC_DRAWENGINE_ALREADY
 #define INC_DRAWENGINE_ALREADY
 
+#include "draw/drawtypes.h"
+#include <string>
+#include <memory>
+
 namespace draw {
 
-	class draw_engine {
+	class draw_module;
 
+	class sprite_obj {
+		public:
+		virtual bool LoadFromFile(const std::string &file) = 0;
+		virtual bool LoadFromData(void *data, size_t length) = 0;
+		virtual void LoadFromSprite(sprite_ref sr) = 0;
+		virtual void FillColour(uint32_t rgb) = 0;
+		virtual void ReplaceColour(uint32_t rgb_src, uint32_t rgb_dest) = 0;
+	};
+
+	class draw_engine {
+		protected:
+		std::shared_ptr<draw_module> dmod;
+		unsigned int spritewidth;
+		unsigned int spriteheight;
+		std::shared_ptr<draw_options> dopt;
+
+		public:
+		draw_engine(std::shared_ptr<draw_module> dmod_, unsigned int sw, unsigned int sh, std::shared_ptr<draw_options> dopt_)
+			: dmod(dmod_), spritewidth(sw), spriteheight(sh), dopt(dopt_) { }
+		virtual std::string GetName() const = 0;
+		unsigned int GetSpriteWidth() const { return spritewidth; }
+		unsigned int GetSpriteHeight() const { return spriteheight; }
 	};
 
 };
