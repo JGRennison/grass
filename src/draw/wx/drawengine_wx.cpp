@@ -22,6 +22,8 @@
 #include "draw/wx/drawengine_wx.h"
 #include "draw/drawmodule.h"
 #include <wx/mstream.h>
+#include <wx/dcmemory.h>
+#include <wx/brush.h>
 
 namespace draw {
 
@@ -32,16 +34,19 @@ namespace draw {
 	}
 
 	bool wx_sprite_obj::LoadFromData(void *data, size_t length) {
+		bmp = wxBitmap();
 		wxMemoryInputStream memstream(data, length);
 		return img.LoadFile(memstream);
 	}
 
 	void wx_sprite_obj::LoadFromSprite(sprite_ref sr) {
+		bmp = wxBitmap();
 		wx_sprite_obj &src = eng->GetSpriteObj(sr, GST::IMG);
 		img = src.img;
 	}
 
 	void wx_sprite_obj::FillColour(uint32_t rgb) {
+		bmp = wxBitmap();
 		img.Create(eng->GetSpriteWidth(), eng->GetSpriteHeight(), true);
 		if(rgb) {
 			img.Replace(0, 0, 0,
@@ -50,8 +55,28 @@ namespace draw {
 	}
 
 	void wx_sprite_obj::ReplaceColour(uint32_t rgb_src, uint32_t rgb_dest) {
+		bmp = wxBitmap();
 		img.Replace((rgb_src >> 16) & 0xFF, (rgb_src >> 8) & 0xFF, rgb_src & 0xFF,
 			(rgb_dest >> 16) & 0xFF, (rgb_dest >> 8) & 0xFF, rgb_dest & 0xFF);
+	}
+
+	void wx_sprite_obj::DrawTextChar(const std::string &text, uint32_t foregroundcolour, uint32_t backgroundcolour) {
+		bmp = wxBitmap(eng->GetSpriteWidth(), eng->GetSpriteHeight());
+		wxMemoryDC memdc(bmp);
+		if(!memdc.IsOk()) {
+			bmp = wxBitmap();
+			return;
+		}
+		memdc.SetBackground(wxBrush(wxColour((backgroundcolour >> 16) & 0xFF, (backgroundcolour >> 8) & 0xFF, backgroundcolour & 0xFF)));
+		memdc.SetTextForeground(wxColour((foregroundcolour >> 16) & 0xFF, (foregroundcolour >> 8) & 0xFF, foregroundcolour & 0xFF));
+		memdc.SetBackgroundMode(wxTRANSPARENT);
+		memdc.Clear();
+		wxString wxtxt = wxString::FromUTF8(text.c_str());
+		wxCoord w, h, descent;
+		memdc.GetTextExtent(wxtxt, &w, &h, &descent);
+		memdc.DrawText(wxtxt, (eng->GetSpriteWidth() - w) / 2, (eng->GetSpriteHeight() - h) / 2);
+		memdc.SelectObjectAsSource(wxNullBitmap);
+		img = bmp.ConvertToImage();
 	}
 
 	void wx_sprite_obj::CheckType(GST type) {
@@ -71,6 +96,7 @@ namespace draw {
 					wxImage simg = img.Scale(eng->GetSpriteWidth(), eng->GetSpriteHeight());
 					bmp = wxBitmap(simg);
 				}
+				else bmp = wxBitmap(img);
 			}
 		}
 	}

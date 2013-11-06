@@ -52,6 +52,7 @@ namespace draw {
 		virtual void LoadFromSprite(sprite_ref sr) override;
 		virtual void FillColour(uint32_t rgb) override;
 		virtual void ReplaceColour(uint32_t rgb_src, uint32_t rgb_dest) override;
+		virtual void DrawTextChar(const std::string &text, uint32_t foregroundcolour, uint32_t backgroundcolour) override;
 
 	};
 

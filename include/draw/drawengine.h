@@ -37,6 +37,7 @@ namespace draw {
 		virtual void LoadFromSprite(sprite_ref sr) = 0;
 		virtual void FillColour(uint32_t rgb) = 0;
 		virtual void ReplaceColour(uint32_t rgb_src, uint32_t rgb_dest) = 0;
+		virtual void DrawTextChar(const std::string &text, uint32_t foregroundcolour, uint32_t backgroundcolour) = 0;
 	};
 
 	class draw_engine {
