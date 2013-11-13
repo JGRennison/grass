@@ -135,6 +135,8 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 		return;
 	}
 
+	wl.AddTrackLayoutObj(gt, std::static_pointer_cast<layouttrack_obj>(shared_from_this()));
+
 	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawEngine();
 	if(dmod) drawfunction = std::move(dmod->GetDrawTrack(*this, ec));
 }
@@ -276,14 +278,12 @@ void guilayout::world_layout::ProcessLayoutObjSet(error_collection &ec) {
 	for(auto &it : objs) {
 		it->Process(*this, ec);
 	}
-	tracktolayoutmap.clear();
 }
 
-std::shared_ptr<guilayout::layouttrack_obj> guilayout::world_layout::GetTrackLayoutObj(const layout_obj &src, const generictrack *targetgt, error_collection &ec) {
-	auto it = tracktolayoutmap.find(targetgt);
-	if(it == tracktolayoutmap.end()) {
-		ec.RegisterNewError<error_layout>(src, "Cannot layout object relative to track piece: not in layout: " + targetgt->GetFriendlyName());
-		return std::shared_ptr<layouttrack_obj>();
+void guilayout::world_layout::GetTrackLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<guilayout::layouttrack_obj> > &output) {
+	decltype(tracktolayoutmap)::iterator start, end;
+	std::tie(start, end) = tracktolayoutmap.equal_range(targetgt);
+	for(auto it = start; it != end; ++it) {
+		output.emplace_back(it->second);
 	}
-	return it->second;
 }

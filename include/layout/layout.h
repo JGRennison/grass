@@ -154,7 +154,7 @@ namespace guilayout {
 
 	class world_layout : public std::enable_shared_from_this<world_layout> {
 		std::deque<std::shared_ptr<layout_obj> > objs;
-		std::map<const generictrack *, std::shared_ptr<layouttrack_obj> > tracktolayoutmap;
+		std::multimap<const generictrack *, std::shared_ptr<layouttrack_obj> > tracktolayoutmap;
 		const world &w;
 		std::shared_ptr<draw::draw_module> eng;
 
@@ -165,8 +165,9 @@ namespace guilayout {
 		void AddLayoutObj(const std::shared_ptr<layout_obj> &obj);
 		void SetWorldSerialisationLayout(world_serialisation &ws);
 		void ProcessLayoutObjSet(error_collection &ec);
-		std::shared_ptr<layouttrack_obj> GetTrackLayoutObj(const layout_obj &src, const generictrack *targetgt, error_collection &ec);
+		void GetTrackLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<layouttrack_obj> > &output);
 		inline std::shared_ptr<draw::draw_module> GetDrawEngine() const { return eng; }
+		inline void AddTrackLayoutObj(const generictrack *gt, std::shared_ptr<layouttrack_obj> &&obj) { tracktolayoutmap.emplace(gt, std::move(obj)); }
 	};
 
 };
