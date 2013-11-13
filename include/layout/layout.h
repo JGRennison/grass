@@ -70,14 +70,10 @@ namespace guilayout {
 		protected:
 		int x = 0;
 		int y = 0;
-		int rx = 0;
-		int ry = 0;
 
 		enum {
 			LOSM_X      = 1<<0,
 			LOSM_Y      = 1<<1,
-			LOSM_RX     = 1<<2,
-			LOSM_RY     = 1<<3,
 		};
 		unsigned int setmembers = 0;
 
@@ -89,52 +85,26 @@ namespace guilayout {
 		virtual void Process(world_layout &wl, error_collection &ec) = 0;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 		draw::draw_func_type drawfunction;
-		int GetX() const { return x; }
-		int GetY() const { return y; }
 	};
 
 	class layouttrack_obj : public layout_obj {
 		protected:
 		const generictrack *gt;
 		int length = 0;
-		bool leftside = false;
-		bool rightside = false;
 		LAYOUT_DIR layoutdirection = LAYOUT_DIR::NULLDIR;
-		std::string src_branch = "default";
-		std::string dest_branch = "default";
-		std::string connectto;
-		EDGETYPE connectto_edge = EDGETYPE::EDGE_NULL;
-		EDGETYPE this_edge = EDGETYPE::EDGE_NULL;
+		std::string track_type;
 
 		enum {
 			LTOSM_LENGTH       = 1<<16,
-			LTOSM_LEFTSIDE     = 1<<17,
-			LTOSM_RIGHTSIDE    = 1<<18,
-			LTOSM_LAYOUTDIR    = 1<<19,
-			LTOSM_CONNECT      = 1<<20,
-			LTOSM_CONNECTEDGE  = 1<<21,
-			LTOSM_THISEDGE     = 1<<21,
+			LTOSM_LAYOUTDIR    = 1<<17,
+			LTOSM_TRACKTYPE    = 1<<18,
 		};
-
-		EDGETYPE most_probable_incoming_edge = EDGETYPE::EDGE_NULL;
-
-		struct edge_def {
-			EDGETYPE edge;
-			int x;                        //these refer to where the next track piece should start from
-			int y;                        //"
-			LAYOUT_DIR outgoingdirection; //this refers to the direction of the first section of the joining track piece
-		};
-		std::vector<edge_def> edges;
-
-		std::vector<std::function<void(layouttrack_obj &obj, error_collection &ec)> > fixups;
 
 		public:
 		layouttrack_obj(const generictrack *gt_) : gt(gt_) { }
 		virtual std::string GetFriendlyName() const override;
 		virtual void Process(world_layout &wl, error_collection &ec) override;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
-		void RelativeFixup(const layout_obj &src, std::function<void(layouttrack_obj &obj, error_collection &ec)> f, error_collection &ec);
-		const edge_def *GetEdgeDef(EDGETYPE e) const;
 	};
 
 	class layoutberth_obj : public layout_obj {
@@ -182,15 +152,9 @@ namespace guilayout {
 
 	layoutoffsetdirectionresult LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length);
 
-	struct layout_branch {
-		std::shared_ptr<layouttrack_obj> track_obj;
-		EDGETYPE edge;
-	};
-
 	class world_layout : public std::enable_shared_from_this<world_layout> {
 		std::deque<std::shared_ptr<layout_obj> > objs;
 		std::map<const generictrack *, std::shared_ptr<layouttrack_obj> > tracktolayoutmap;
-		std::map<std::string, layout_branch> layout_branches;
 		const world &w;
 		std::shared_ptr<draw::draw_module> eng;
 
@@ -198,12 +162,10 @@ namespace guilayout {
 		world_layout(const world &w_, std::shared_ptr<draw::draw_module> eng_ = std::shared_ptr<draw::draw_module>()) : w(w_), eng(std::move(eng_)) { }
 		virtual ~world_layout() { }
 		const world & GetWorld() const { return w; }
-		layout_branch & GetLayoutBranchRef(std::string name) { return layout_branches[name]; }
 		void AddLayoutObj(const std::shared_ptr<layout_obj> &obj);
 		void SetWorldSerialisationLayout(world_serialisation &ws);
 		void ProcessLayoutObjSet(error_collection &ec);
 		std::shared_ptr<layouttrack_obj> GetTrackLayoutObj(const layout_obj &src, const generictrack *targetgt, error_collection &ec);
-		void LayoutTrackRelativeFixup(const layout_obj &src, const generictrack *targetgt, std::function<void(layouttrack_obj &obj, error_collection &ec)> f, error_collection &ec);
 		inline std::shared_ptr<draw::draw_module> GetDrawEngine() const { return eng; }
 	};
 
