@@ -287,3 +287,37 @@ void guilayout::world_layout::GetTrackLayoutObjs(const layout_obj &src, const ge
 		output.emplace_back(it->second);
 	}
 }
+
+void guilayout::world_layout::GetTrackBerthLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<guilayout::layoutberth_obj> > &output) {
+	decltype(berthtolayoutmap)::iterator start, end;
+	std::tie(start, end) = berthtolayoutmap.equal_range(targetgt);
+	for(auto it = start; it != end; ++it) {
+		output.emplace_back(it->second);
+	}
+}
+
+void guilayout::world_layout::SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<guilayout::layout_obj> &owner, int level) {
+	pos_sprite_desc &psd = location_map[std::make_pair(x, y)];
+	if(level >= psd.level) {
+		psd.level = level;
+		psd.sprite = sprite;
+		psd.owner = owner;
+	}
+}
+
+const guilayout::pos_sprite_desc *guilayout::world_layout::GetSprite(int x, int y) {
+	const auto &it = location_map.find(std::make_pair(x, y));
+	if(it == location_map.end()) return 0;
+	else return &(it->second);
+}
+
+//*1 are inclusive limits, *2 are exclusive limits
+void guilayout::world_layout::GetSpritesInRect(int x1, int x2, int y1, int y2, std::map<std::pair<int, int>, const guilayout::pos_sprite_desc *> &sprites) const {
+	for(const auto &it : location_map) {
+		int x, y;
+		std::tie(x, y) = it.first;
+		if(x >= x1 && x < x2 && y >= y1 && y < y2) {
+			sprites[it.first] = &(it.second);
+		}
+	}
+}

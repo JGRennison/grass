@@ -30,6 +30,7 @@
 #include <tuple>
 #include <vector>
 #include <functional>
+#include <limits>
 #include "core/edgetype.h"
 #include "core/error.h"
 #include "draw/drawtypes.h"
@@ -152,11 +153,20 @@ namespace guilayout {
 
 	layoutoffsetdirectionresult LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length);
 
+	struct pos_sprite_desc {
+		int level = std::numeric_limits<int>::lowest();
+		draw::sprite_ref sprite = 0;
+		std::weak_ptr<layout_obj> owner;
+	};
+
 	class world_layout : public std::enable_shared_from_this<world_layout> {
 		std::deque<std::shared_ptr<layout_obj> > objs;
 		std::multimap<const generictrack *, std::shared_ptr<layouttrack_obj> > tracktolayoutmap;
+		std::multimap<const generictrack *, std::shared_ptr<layoutberth_obj> > berthtolayoutmap;
 		const world &w;
 		std::shared_ptr<draw::draw_module> eng;
+
+		std::map<std::pair<int, int>, pos_sprite_desc> location_map;
 
 		public:
 		world_layout(const world &w_, std::shared_ptr<draw::draw_module> eng_ = std::shared_ptr<draw::draw_module>()) : w(w_), eng(std::move(eng_)) { }
@@ -166,8 +176,14 @@ namespace guilayout {
 		void SetWorldSerialisationLayout(world_serialisation &ws);
 		void ProcessLayoutObjSet(error_collection &ec);
 		void GetTrackLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<layouttrack_obj> > &output);
+		void GetTrackBerthLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<layoutberth_obj> > &output);
 		inline std::shared_ptr<draw::draw_module> GetDrawEngine() const { return eng; }
 		inline void AddTrackLayoutObj(const generictrack *gt, std::shared_ptr<layouttrack_obj> &&obj) { tracktolayoutmap.emplace(gt, std::move(obj)); }
+		void SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<layout_obj> &owner, int level = 0);
+		const pos_sprite_desc *GetSprite(int x, int y);
+
+		//*1 are inclusive limits, *2 are exclusive limits
+		void GetSpritesInRect(int x1, int x2, int y1, int y2, std::map<std::pair<int, int>, const pos_sprite_desc *> &sprites) const;
 	};
 
 };

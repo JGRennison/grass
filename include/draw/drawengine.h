@@ -54,6 +54,7 @@ namespace draw {
 		virtual std::string GetName() const = 0;
 		unsigned int GetSpriteWidth() const { return spritewidth; }
 		unsigned int GetSpriteHeight() const { return spriteheight; }
+		const std::shared_ptr<draw_options> &GetOptions() const { return dopt; }
 	};
 
 };

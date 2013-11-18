@@ -64,7 +64,9 @@ namespace draw {
 
 		public:
 		wx_draw_engine(std::shared_ptr<draw_module> dmod_, unsigned int sw, unsigned int sh, std::shared_ptr<draw_options> dopt_);
-		std::string GetName() const { return "wx draw engine"; }
+		std::string GetName() const override { return "wx draw engine"; }
+		const wxBitmap &GetSpriteBitmap(sprite_ref sr) { return GetSpriteObj(sr, wx_sprite_obj::GST::BMP).bmp; }
+		const wxImage &GetSpriteImage(sprite_ref sr) { return GetSpriteObj(sr, wx_sprite_obj::GST::IMG).img; }
 	};
 
 };

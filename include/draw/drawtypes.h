@@ -31,7 +31,7 @@ namespace draw {
 	class draw_engine;
 
 	typedef uint32_t sprite_ref;
-	typedef std::function<sprite_ref(const draw_options &)> draw_func_type;
+	typedef std::function<void(const draw_engine &)> draw_func_type;
 };
 
 #endif
