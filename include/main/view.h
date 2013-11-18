@@ -25,17 +25,22 @@
 #include "layout/layout.h"
 #include "draw/wx/drawengine_wx.h"
 #include <memory>
-#include <wx/panel.h>
+#include <wx/scrolwin.h>
+#include <set>
 
 namespace maingui {
 
-	class grviewpanel : public wxPanel {
+	class grviewpanel : public wxScrolledWindow {
 		std::shared_ptr<guilayout::world_layout> layout;
 		std::shared_ptr<draw::wx_draw_engine> eng;
+		int layout_origin_x = 0;
+		int layout_origin_y = 0;
 
 		public:
 		grviewpanel(std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_);
-	};
+		void OnDraw(wxDC& dc);
 
+		DECLARE_EVENT_TABLE()
+	};
 };
 #endif

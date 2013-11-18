@@ -20,8 +20,41 @@
 //==========================================================================
 
 #include "main/view.h"
+#include "layout/layout.h"
+#include <wx/event.h>
+#include <wx/dcclient.h>
+#include <wx/region.h>
+
+BEGIN_EVENT_TABLE(maingui::grviewpanel, wxScrolledWindow)
+END_EVENT_TABLE()
 
 maingui::grviewpanel::grviewpanel(std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_)
 		: layout(layout_), eng(eng_) {
 
+}
+
+void maingui::grviewpanel::OnDraw(wxDC& dc) {
+	std::map<std::pair<int, int>, const guilayout::pos_sprite_desc *> redrawsprites;
+
+	wxRegionIterator upd(GetUpdateRegion());
+	while(upd) {
+		wxRect rect(upd.GetRect());
+		CalcUnscrolledPosition(rect.x, rect.y, &rect.x, &rect.y);
+		int x1 = (rect.GetLeft() + layout_origin_x) / eng->GetSpriteWidth();
+		int x2 = (rect.GetRight() + layout_origin_x) / eng->GetSpriteWidth();
+		int y1 = (rect.GetTop() + layout_origin_y) / eng->GetSpriteHeight();
+		int y2 = (rect.GetBottom() + layout_origin_y) / eng->GetSpriteHeight();
+		layout->GetSpritesInRect(x1, x2, y1, y2, redrawsprites);
+		upd++;
+	}
+
+	for(auto &obj : redrawsprites) {
+		int x, y, wx, wy;
+		std::tie(x, y) = obj.first;
+		wx = (x - layout_origin_x) * eng->GetSpriteWidth();
+		wy = (y - layout_origin_y) * eng->GetSpriteHeight();
+		CalcScrolledPosition(wx, wy, &wx, &wy);
+		const wxBitmap &sprite = eng->GetSpriteBitmap(obj.second->sprite);
+		dc.DrawBitmap(sprite, wx, wy, false);
+	}
 }
