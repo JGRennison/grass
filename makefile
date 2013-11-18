@@ -25,7 +25,8 @@ LIST_OBJS = $(foreach dir,$1,$(call GENERIC_OBJS,$(dir)))
 
 OUTNAME:=grass
 TESTOUTNAME=$(OUTNAME)-test
-CFLAGS=-O3 -Wextra -Wall -Wno-unused-parameter
+CFLAGS=-g -O3 -Wextra -Wall -Wno-unused-parameter
+AFLAGS=-g
 #-Wno-missing-braces -Wno-unused-parameter
 CXXFLAGS:=-std=gnu++0x
 GCC:=g++
@@ -48,7 +49,7 @@ endif
 
 ifdef debug
 CFLAGS=-g -Wextra -Wall -Wno-unused-parameter
-AFLAGS+=-g
+AFLAGS=-g
 #AFLAGS:=-Wl,-d,--export-all-symbols
 DEBUGPOSTFIX:=_debug
 DIR_POSTFIX:=$(DIR_POSTFIX)$(DEBUGPOSTFIX)
