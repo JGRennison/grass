@@ -82,15 +82,15 @@ struct deserialiser_input {
 	}
 	void PostDeserialisePropCheck(error_collection &ec) const;
 
-	class deserialiser_input_deep_clone {
+	class deserialiser_input_clone_with_ancestors {
 		std::vector< std::unique_ptr<deserialiser_input> > items;
 		deserialiser_input *top;
 		public:
-		deserialiser_input_deep_clone(deserialiser_input *top_, std::vector< std::unique_ptr<deserialiser_input> > &&items_) :
+		deserialiser_input_clone_with_ancestors(deserialiser_input *top_, std::vector< std::unique_ptr<deserialiser_input> > &&items_) :
 			items(std::move(items_)), top(top_) { }
 		deserialiser_input *GetTop() const { return top; };
 	};
-	std::shared_ptr<deserialiser_input_deep_clone> DeepClone() const;
+	std::shared_ptr<deserialiser_input_clone_with_ancestors> CloneWithAncestors() const;
 	deserialiser_input *Clone() const;
 };
 

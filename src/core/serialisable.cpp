@@ -131,7 +131,9 @@ deserialiser_input *deserialiser_input::Clone() const {
 	return out;
 }
 
-std::shared_ptr<deserialiser_input::deserialiser_input_deep_clone> deserialiser_input::DeepClone() const {
+//The purpose of this function is *not* to clone the parse tree *downwards*, but to clone the *deserialiser_input ancestry* from the given point *upwards*
+//ie. to enable a copy of *this to be made, which his still usable once this->parent, etc. go out of scope, whilst still maintaining a trace stack.
+std::shared_ptr<deserialiser_input::deserialiser_input_clone_with_ancestors> deserialiser_input::CloneWithAncestors() const {
 	std::vector< std::unique_ptr<deserialiser_input> > items;
 	std::function<deserialiser_input *(const deserialiser_input *)> clone = [&](const deserialiser_input *in) -> deserialiser_input * {
 		deserialiser_input *out =  in->Clone();
@@ -142,7 +144,7 @@ std::shared_ptr<deserialiser_input::deserialiser_input_deep_clone> deserialiser_
 		return out;
 	};
 	deserialiser_input *top = clone(this);
-	return std::make_shared<deserialiser_input::deserialiser_input_deep_clone>(top, std::move(items));
+	return std::make_shared<deserialiser_input::deserialiser_input_clone_with_ancestors>(top, std::move(items));
 }
 
 bool CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func, bool arrayonly) {

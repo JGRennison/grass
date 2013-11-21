@@ -48,7 +48,7 @@ void world_serialisation::LoadGame(const deserialiser_input &di, error_collectio
 
 	deserialiser_input gamestatetdi(di.json["gamestate"], "gamestate", "gamestate", di);
 	if(!gamestatetdi.json.IsNull()) {
-		auto deepclone = gamestatetdi.DeepClone();
+		auto deepclone = gamestatetdi.CloneWithAncestors();
 		gamestate_init.AddFixup([deepclone, this](error_collection &ec) {
 			DeserialiseRootObjArray(gamestate_object_types, ws_dtf_params(ws_dtf_params::WSDTFP_FLAGS::NONEWTRACK), *deepclone->GetTop(), ec);
 		});
