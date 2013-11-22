@@ -21,9 +21,12 @@
 
 #include "common.h"
 #include "core/util.h"
+#include "core/error.h"
 #include <cstring>
 #include <cstdarg>
 #include <cstdio>
+#include <fstream>
+#include <string>
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -165,4 +168,19 @@ void SplitString(const char *in, size_t len, char delim, std::vector<std::pair<c
 		}
 	}
 	result.emplace_back(in + pos, len - pos);
+}
+
+bool slurp_file(const std::string &filename, std::string &out, error_collection &ec) {
+	out.clear();
+	std::ifstream ifs(filename, std::ios_base::binary);
+	if(!ifs.is_open()) {
+		ec.RegisterNewError<generic_error_obj>(string_format("Error reading file: '%s'", filename.c_str()));
+		return false;
+	}
+	ifs.seekg(0, std::ios::end);
+	out.reserve(ifs.tellg());
+	ifs.seekg(0, std::ios::beg);
+	out.assign(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+	out.push_back(0);
+	return true;
 }
