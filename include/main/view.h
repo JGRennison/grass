@@ -39,6 +39,7 @@ namespace maingui {
 		public:
 		grviewpanel(std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_);
 		void OnDraw(wxDC& dc);
+		void InitLayout();
 
 		DECLARE_EVENT_TABLE()
 	};

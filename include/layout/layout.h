@@ -184,6 +184,7 @@ namespace guilayout {
 
 		//*1 are inclusive limits, *2 are exclusive limits
 		void GetSpritesInRect(int x1, int x2, int y1, int y2, std::map<std::pair<int, int>, const pos_sprite_desc *> &sprites) const;
+		void GetLayoutExtents(int &x1, int &x2, int &y1, int &y2, int margin = 0) const;
 	};
 
 };

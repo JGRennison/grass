@@ -321,3 +321,26 @@ void guilayout::world_layout::GetSpritesInRect(int x1, int x2, int y1, int y2, s
 		}
 	}
 }
+
+void guilayout::world_layout::GetLayoutExtents(int &x1, int &x2, int &y1, int &y2, int margin) const {
+	x1 = y1 = std::numeric_limits<int>::max();
+	x2 = y2 = std::numeric_limits<int>::lowest();
+
+	for(const auto &it : location_map) {
+		int x, y;
+		std::tie(x, y) = it.first;
+		if(x < x1) x1 = x;
+		if(x > x2) x2 = x;
+		if(y < y1) y1 = y;
+		if(y > y2) y2 = y;
+	}
+
+	if(x1 > x2 || y1 > y2) {
+		x1 = y1 = 0;
+		x2 = y2 = -1;
+	}
+	x1 -= margin;
+	x2 += 1 + margin;
+	y1 -= margin;
+	y2 += 1 + margin;
+}

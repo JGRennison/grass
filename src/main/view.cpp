@@ -30,7 +30,7 @@ END_EVENT_TABLE()
 
 maingui::grviewpanel::grviewpanel(std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_)
 		: layout(layout_), eng(eng_) {
-
+	InitLayout();
 }
 
 void maingui::grviewpanel::OnDraw(wxDC& dc) {
@@ -41,9 +41,9 @@ void maingui::grviewpanel::OnDraw(wxDC& dc) {
 		wxRect rect(upd.GetRect());
 		CalcUnscrolledPosition(rect.x, rect.y, &rect.x, &rect.y);
 		int x1 = (rect.GetLeft() + layout_origin_x) / eng->GetSpriteWidth();
-		int x2 = (rect.GetRight() + layout_origin_x) / eng->GetSpriteWidth();
+		int x2 = (rect.GetRight() + 1 +layout_origin_x) / eng->GetSpriteWidth();
 		int y1 = (rect.GetTop() + layout_origin_y) / eng->GetSpriteHeight();
-		int y2 = (rect.GetBottom() + layout_origin_y) / eng->GetSpriteHeight();
+		int y2 = (rect.GetBottom() + 1 + layout_origin_y) / eng->GetSpriteHeight();
 		layout->GetSpritesInRect(x1, x2, y1, y2, redrawsprites);
 		upd++;
 	}
@@ -57,4 +57,13 @@ void maingui::grviewpanel::OnDraw(wxDC& dc) {
 		const wxBitmap &sprite = eng->GetSpriteBitmap(obj.second->sprite);
 		dc.DrawBitmap(sprite, wx, wy, false);
 	}
+}
+
+void maingui::grviewpanel::InitLayout() {
+	int x1, x2, y1, y2;
+	layout->GetLayoutExtents(x1, x2, y1, y2, 2);
+	layout_origin_x = x1;
+	layout_origin_y = y1;
+	SetVirtualSize((x2 - x1) * eng->GetSpriteWidth(), (y2 - y1) * eng->GetSpriteHeight());
+	SetScrollbars(eng->GetSpriteWidth(), eng->GetSpriteHeight(), x2 - x1, y2 - y1);
 }
