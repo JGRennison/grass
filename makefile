@@ -92,7 +92,7 @@ endif
 else
 #UNIX
 PLATFORM:=UNIX
-LIBS:=-lpcre -lrt
+LIBS:=-lrt
 LIBS_main:=`wx-config --libs`
 WX_CFLAGS+=$(patsubst -I/%,-isystem /%,$(shell wx-config --cxxflags))
 GCC_MAJOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f1)
