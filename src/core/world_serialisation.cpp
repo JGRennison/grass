@@ -33,25 +33,34 @@
 #include "core/train.h"
 #include <typeinfo>
 
-void world_serialisation::ParseInputString(const std::string &input, error_collection &ec) {
+void world_serialisation::ParseInputString(const std::string &input, error_collection &ec, world_serialisation::WSLOADGAME_FLAGS flags) {
 	parsed_inputs.emplace_front();
 	rapidjson::Document &dc =  parsed_inputs.front();
 	if (dc.Parse<0>(input.c_str()).HasParseError()) {
 		ec.RegisterNewError<error_jsonparse>(input, dc.GetErrorOffset(), dc.GetParseError());
 	}
-	else LoadGame(deserialiser_input("", "[root]", dc, &w, this, 0), ec);
+	else LoadGame(deserialiser_input("", "[root]", dc, &w, this, 0), ec, flags);
 }
 
-void world_serialisation::LoadGame(const deserialiser_input &di, error_collection &ec) {
-	deserialiser_input contentdi(di.json["content"], "content", "content", di);
-	DeserialiseRootObjArray(content_object_types, ws_dtf_params(), contentdi, ec);
+void world_serialisation::LoadGame(const deserialiser_input &di, error_collection &ec, world_serialisation::WSLOADGAME_FLAGS flags) {
+	if(!(flags & WSLOADGAME_FLAGS::NOCONTENT)) {
+		deserialiser_input contentdi(di.json["content"], "content", "content", di);
+		if(!contentdi.json.IsNull()) {
+			DeserialiseRootObjArray(content_object_types, ws_dtf_params(), contentdi, ec);
+		}
+	}
 
-	deserialiser_input gamestatetdi(di.json["gamestate"], "gamestate", "gamestate", di);
-	if(!gamestatetdi.json.IsNull()) {
-		auto deepclone = gamestatetdi.CloneWithAncestors();
-		gamestate_init.AddFixup([deepclone, this](error_collection &ec) {
-			DeserialiseRootObjArray(gamestate_object_types, ws_dtf_params(ws_dtf_params::WSDTFP_FLAGS::NONEWTRACK), *deepclone->GetTop(), ec);
-		});
+	if(!(flags & WSLOADGAME_FLAGS::NOGAMESTATE)) {
+		deserialiser_input gamestatetdi(di.json["gamestate"], "gamestate", "gamestate", di);
+		if(!gamestatetdi.json.IsNull()) {
+			if(flags & WSLOADGAME_FLAGS::TRYREPLACEGAMESTATE) {
+				gamestate_init.Clear();
+			}
+			auto gsclone = gamestatetdi.CloneWithAncestors();
+			gamestate_init.AddFixup([gsclone, this](error_collection &ec) {
+				DeserialiseRootObjArray(gamestate_object_types, ws_dtf_params(ws_dtf_params::WSDTFP_FLAGS::NONEWTRACK), *gsclone->GetTop(), ec);
+			});
+		}
 	}
 }
 
@@ -303,4 +312,35 @@ void world_serialisation::DeserialiseObject(const ws_deserialisation_type_factor
 	if(!wdtf.FindAndDeserialise(di.type, di, ec, wdtf_params)) {
 		ec.RegisterNewError<error_deserialisation>(di, string_format("LoadGame: Unknown object type: %s", di.type.c_str()));
 	}
+}
+
+void world_serialisation::LoadGameFromStrings(const std::string &base, const std::string &save, error_collection &ec) {
+	if(!base.empty()) {
+		//load everything from base
+		ParseInputString(base, ec);
+	}
+
+	if(!save.empty()) {
+		//load gamestate from save, override any initial gamestate in base
+		ParseInputString(base, ec, WSLOADGAME_FLAGS::NOCONTENT | WSLOADGAME_FLAGS::TRYREPLACEGAMESTATE);
+	}
+
+	if(ec.GetErrorCount()) return;
+
+	w.LayoutInit(ec);
+	if(ec.GetErrorCount()) return;
+
+	w.PostLayoutInit(ec);
+	if(ec.GetErrorCount()) return;
+
+	DeserialiseGameState(ec);
+}
+
+void world_serialisation::LoadGameFromFiles(const std::string &basefile, const std::string &savefile, error_collection &ec) {
+	std::string base, save;
+	bool result = true;
+	if(result && !basefile.empty()) result = slurp_file(basefile, base, ec);
+	if(result && !savefile.empty()) result = slurp_file(savefile, save, ec);
+
+	if(result) LoadGameFromStrings(base, save, ec);
 }

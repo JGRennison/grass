@@ -72,10 +72,17 @@ class world_serialisation {
 	std::function<void(const trackberth *, const generictrack *, const deserialiser_input &, error_collection &)> gui_layout_trackberth;
 	std::function<void(const deserialiser_input &, error_collection &)> gui_layout_guiobject;
 
+	enum class WSLOADGAME_FLAGS {
+		ZERO                 = 0,
+		NOCONTENT            = 1<<0,
+		NOGAMESTATE          = 1<<1,
+		TRYREPLACEGAMESTATE  = 1<<2,
+	};
+
 	void InitObjectTypes();
 	world_serialisation(world &w_) : w(w_), previoustrackpiece(0) { InitObjectTypes(); }
-	void ParseInputString(const std::string &input, error_collection &ec);
-	void LoadGame(const deserialiser_input &di, error_collection &ec);
+	void ParseInputString(const std::string &input, error_collection &ec, WSLOADGAME_FLAGS flags = WSLOADGAME_FLAGS::ZERO);
+	void LoadGame(const deserialiser_input &di, error_collection &ec, WSLOADGAME_FLAGS flags = WSLOADGAME_FLAGS::ZERO);
 	void DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &contentdi, error_collection &ec);
 	void DeserialiseObject(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTemplate(const deserialiser_input &di, error_collection &ec);
@@ -91,7 +98,11 @@ class world_serialisation {
 	template <typename C> void MakeGenericTrackTypeWrapper();
 	inline unsigned int GetCurrentContentIndex() const { return current_content_index; }
 	void DeserialiseGameState(error_collection &ec);
+
+	void LoadGameFromStrings(const std::string &base, const std::string &save, error_collection &ec);
+	void LoadGameFromFiles(const std::string &basefile, const std::string &savefile, error_collection &ec);
 };
 template<> struct enum_traits< world_serialisation::ws_dtf_params::WSDTFP_FLAGS > { static constexpr bool flags = true; };
+template<> struct enum_traits< world_serialisation::WSLOADGAME_FLAGS > { static constexpr bool flags = true; };
 
 #endif
