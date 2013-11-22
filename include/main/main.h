@@ -20,13 +20,39 @@
 //==========================================================================
 
 #include <wx/app.h>
+#include <memory>
 
 #ifndef INC_MAIN_MAIN_ALREADY
 #define INC_MAIN_MAIN_ALREADY
 
+class error_collection;
+class world;
+namespace guilayout {
+	class world_layout;
+}
+namespace draw {
+	class wx_draw_engine;
+	class draw_options;
+	class draw_module;
+}
+
 class grassapp: public wxApp {
     virtual bool OnInit();
     virtual int OnExit();
+	virtual ~grassapp();
+
+	std::shared_ptr<world> w;
+	std::shared_ptr<guilayout::world_layout> layout;
+	std::shared_ptr<draw::wx_draw_engine> eng;
+	std::shared_ptr<draw::draw_options> opts;
+
+	public:
+	bool cmdlineproc(wxChar ** argv, int argc);
+	bool LoadGame(const wxString &base, const wxString &save);
+	std::pair<int, int> GetSpriteSizes() const;
+	std::shared_ptr<draw::draw_module> GetCurrentDrawModule();
+	std::shared_ptr<draw::draw_options> GetDrawOptions();
+	void DisplayErrors(error_collection &ec);
 };
 
 #endif

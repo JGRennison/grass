@@ -168,6 +168,9 @@ namespace guilayout {
 
 		std::map<std::pair<int, int>, pos_sprite_desc> location_map;
 
+		//this is so that we can hold onto w if it may go out of scope
+		std::shared_ptr<const world> w_ptr;
+
 		public:
 		world_layout(const world &w_, std::shared_ptr<draw::draw_module> eng_ = std::shared_ptr<draw::draw_module>()) : w(w_), eng(std::move(eng_)) { }
 		virtual ~world_layout() { }
@@ -185,6 +188,9 @@ namespace guilayout {
 		//*1 are inclusive limits, *2 are exclusive limits
 		void GetSpritesInRect(int x1, int x2, int y1, int y2, std::map<std::pair<int, int>, const pos_sprite_desc *> &sprites) const;
 		void GetLayoutExtents(int &x1, int &x2, int &y1, int &y2, int margin = 0) const;
+
+		//this is just for ref-counting purposes, not needed if world is static
+		void SetWorldSharedPtr(std::shared_ptr<const world> wp) { w_ptr = std::move(wp); }
 	};
 
 };

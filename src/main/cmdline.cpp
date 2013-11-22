@@ -22,17 +22,23 @@
 #include "common.h"
 #include "main/wxcommon.h"
 #include "main/SimpleOpt.h"
-#include "main/cmdline.h"
+#include "main/main.h"
 #include <wx/string.h>
 #include <wx/log.h>
 
 typedef CSimpleOptTempl<wxChar> CSO;
 
-enum { OPT_TESTMODE };
+enum {
+	OPT_NEWGAME,
+	OPT_LOAD,
+};
 
 CSO::SOption g_rgOptions[] =
 {
-	{ OPT_TESTMODE,  wxT("--test"),   SO_NONE  },
+	{ OPT_NEWGAME,  wxT("-n"),           SO_REQ_SHRT  },
+	{ OPT_NEWGAME,  wxT("--new-game"),   SO_REQ_SHRT  },
+	{ OPT_LOAD,     wxT("-l"),           SO_REQ_SHRT  },
+	{ OPT_LOAD,     wxT("--load-game"),  SO_REQ_SHRT  },
 
 	SO_END_OF_OPTIONS
 };
@@ -56,23 +62,27 @@ static const wxChar* cmdlineargerrorstr(ESOError err) {
 	}
 }
 
-bool cmdlineproc(wxChar ** argv, int argc) {
+bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 	CSO args(argc, argv, g_rgOptions, SO_O_CLUMP|SO_O_EXACT|SO_O_SHORTARG|SO_O_FILEARG|SO_O_CLUMP_ARGD|SO_O_NOSLASH);
+	auto argerror = [&](const wxChar* err) {
+		wxLogError(wxT("Command line processing error: %s, arg: %s"), err, args.OptionText());
+	};
 	while (args.Next()) {
 		if (args.LastError() != SO_SUCCESS) {
-			wxLogError(wxT("Command line processing error: %s, arg: %s"), cmdlineargerrorstr(args.LastError()), args.OptionText());
+			argerror(cmdlineargerrorstr(args.LastError()));
 			return false;
 		}
 		switch(args.OptionId()) {
-			/*case OPT_TESTMODE: {
-				Catch::Config config;
-				std::ostringstream oss;
-				config.setStreamBuf( oss.rdbuf() );
-				//Catch::Main( argc - args.m_nNextOption, argv + args.m_nNextOption, config );
-				Catch::Main(config);
-				wxLogError(wxT("Test results:\n%s"), wxString(oss.str().c_str(), wxConvLocal).c_str());
-				return false;
-			}*/
+			case OPT_NEWGAME: {
+				return LoadGame(args.OptionArg(), wxT(""));
+			}
+			case OPT_LOAD: {
+				if(args.m_nNextOption + 1 > args.m_nLastArg) {
+					argerror(cmdlineargerrorstr(SO_ARG_MISSING));
+					return false;
+				}
+				return LoadGame(args.OptionArg(), args.m_argv[args.m_nNextOption++]);
+			}
 		}
 	}
 	return true;

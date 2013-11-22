@@ -23,7 +23,14 @@
 #include "common.h"
 #include "main/wxcommon.h"
 #include "main/main.h"
-#include "main/cmdline.h"
+#include "main/wxutil.h"
+#include "core/world_serialisation.h"
+#include "core/world.h"
+#include "draw/wx/drawengine_wx.h"
+#include "draw/drawmodule.h"
+#include "draw/drawoptions.h"
+#include "layout/layout.h"
+#include <wx/log.h>
 
 IMPLEMENT_APP(grassapp)
 
@@ -36,4 +43,53 @@ bool grassapp::OnInit() {
 
 int grassapp::OnExit() {
 	return wxApp::OnExit();
+}
+
+bool grassapp::LoadGame(const wxString &base, const wxString &save) {
+	int x, y;
+	std::tie(x, y) = GetSpriteSizes();
+	if(!eng || x != (int) eng->GetSpriteWidth() || y != (int) eng->GetSpriteHeight()) {
+		eng = std::make_shared<draw::wx_draw_engine>(GetCurrentDrawModule(), x, y, GetDrawOptions());
+	}
+
+	error_collection ec;
+	w = std::make_shared<world>();
+	layout = std::make_shared<guilayout::world_layout>(*w, GetCurrentDrawModule());
+	layout->SetWorldSharedPtr(w);
+	world_serialisation ws(*w);
+	layout->SetWorldSerialisationLayout(ws);
+	ws.LoadGameFromFiles(stdstrwx(base), stdstrwx(save), ec);
+	if(ec.GetErrorCount()) {
+		DisplayErrors(ec);
+		return false;
+	}
+	else {
+		//run game
+		return true;
+	}
+}
+
+std::pair<int, int> grassapp::GetSpriteSizes() const {
+	//place-holder values
+	return std::make_pair(10, 20);
+}
+
+std::shared_ptr<draw::draw_module> grassapp::GetCurrentDrawModule() {
+	//TODO: add code here to do this
+	return std::shared_ptr<draw::draw_module>();
+}
+
+std::shared_ptr<draw::draw_options> grassapp::GetDrawOptions() {
+	if(!opts) opts = std::make_shared<draw::draw_options>();
+	return opts;
+}
+
+void grassapp::DisplayErrors(error_collection &ec) {
+	std::stringstream str;
+	str << ec;
+	wxLogError(wxT("One or more errors occurred, aborting:\n%s\n"), wxstrstd(str.str()).c_str());
+}
+
+grassapp::~grassapp() {
+
 }
