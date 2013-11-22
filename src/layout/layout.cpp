@@ -137,7 +137,7 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 
 	wl.AddTrackLayoutObj(gt, std::static_pointer_cast<layouttrack_obj>(shared_from_this()));
 
-	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawEngine();
+	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
 	if(dmod) drawfunction = std::move(dmod->GetDrawTrack(*this, ec));
 }
 
@@ -147,7 +147,7 @@ void guilayout::layoutberth_obj::Process(world_layout &wl, error_collection &ec)
 		return;
 	}
 
-	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawEngine();
+	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
 	if(dmod) drawfunction = std::move(dmod->GetDrawBerth(*this, ec));
 }
 
@@ -156,7 +156,7 @@ void guilayout::layoutgui_obj::Process(world_layout &wl, error_collection &ec) {
 		ec.RegisterNewError<error_layout>(*this, "x and/or y coordinate missing: gui layout objects must be positioned absolutely");
 		return;
 	}
-	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawEngine();
+	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
 	if(dmod) drawfunction = std::move(dmod->GetDrawObj(*this, ec));
 }
 

@@ -177,7 +177,7 @@ namespace guilayout {
 		void ProcessLayoutObjSet(error_collection &ec);
 		void GetTrackLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<layouttrack_obj> > &output);
 		void GetTrackBerthLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<layoutberth_obj> > &output);
-		inline std::shared_ptr<draw::draw_module> GetDrawEngine() const { return eng; }
+		inline std::shared_ptr<draw::draw_module> GetDrawModule() const { return eng; }
 		inline void AddTrackLayoutObj(const generictrack *gt, std::shared_ptr<layouttrack_obj> &&obj) { tracktolayoutmap.emplace(gt, std::move(obj)); }
 		void SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<layout_obj> &owner, int level = 0);
 		const pos_sprite_desc *GetSprite(int x, int y);

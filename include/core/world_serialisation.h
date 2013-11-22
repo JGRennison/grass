@@ -1,4 +1,4 @@
-//  retcon
+//  grass - Generic Rail And Signalling Simulator
 //
 //  WEBSITE: http://bitbucket.org/JGRennison/grass
 //  WEBSITE: http://grss.sourceforge.net
