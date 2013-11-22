@@ -65,12 +65,20 @@ class fixup_list {
 	std::deque<std::function<void(error_collection &ec)> > fixups;
 
 	public:
-	void AddFixup(std::function<void(error_collection &ec)> fixup) { fixups.push_back(fixup); }
+	void AddFixup(std::function<void(error_collection &ec)> fixup) {
+		fixups.push_back(fixup);
+	}
 	void Execute(error_collection &ec) {
 		for(auto it = fixups.begin(); it != fixups.end(); ++it) {
 			(*it)(ec);
 		}
 		fixups.clear();
+	}
+	void Clear() {
+		fixups.clear();
+	}
+	size_t Count() const {
+		return fixups.size();
 	}
 };
 
