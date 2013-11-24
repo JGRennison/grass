@@ -107,6 +107,7 @@ namespace guilayout {
 		layouttrack_obj(const generictrack *gt_) : gt(gt_) { }
 		inline int GetLength() const { return length; }
 		inline const generictrack * GetTrack() const { return gt; }
+		inline LAYOUT_DIR GetLayoutDirection() const { return layoutdirection; }
 		virtual std::string GetFriendlyName() const override;
 		virtual void Process(world_layout &wl, error_collection &ec) override;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
@@ -180,6 +181,8 @@ namespace guilayout {
 		//this is so that we can hold onto w if it may go out of scope
 		std::shared_ptr<const world> w_ptr;
 
+		std::set<layout_obj *> objs_updated;
+
 		public:
 		world_layout(const world &w_, std::shared_ptr<draw::draw_module> eng_ = std::shared_ptr<draw::draw_module>()) : w(w_), eng(std::move(eng_)) { }
 		virtual ~world_layout() { }
@@ -207,7 +210,16 @@ namespace guilayout {
 		std::shared_ptr<world_layout> GetSharedPtrThis() { return shared_from_this(); }
 		std::shared_ptr<const world_layout> GetSharedPtrThis() const { return shared_from_this(); }
 
-		std::set<layout_obj *> objs_updated;
+		void ClearUpdateSet() { objs_updated.clear(); }
+		void IterateUpdateSet(std::function<void(layout_obj *)> func) {
+			for(auto &it : objs_updated) { func(it); }
+		}
+		void IterateAllLayoutObjects(std::function<void(layout_obj *)> func) {
+			for(auto &it : objs) { func(it.get()); }
+		}
+		void MarkUpdated(layout_obj *obj) {
+			objs_updated.insert(obj);
+		}
 	};
 
 };

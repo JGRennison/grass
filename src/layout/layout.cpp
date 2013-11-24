@@ -131,7 +131,7 @@ static void RegisterUpdateHook(guilayout::world_layout &wl, const generictrack *
 	//NB: casting away constness to insert update hook!
 	const_cast<generictrack *>(gt)->AddUpdateHook([wlptr, obj](updatable_obj*, world &) {
 		std::shared_ptr<guilayout::world_layout> wl = wlptr.lock();
-		if(wl) wl->objs_updated.insert(obj);
+		if(wl) wl->MarkUpdated(obj);
 	});
 }
 
