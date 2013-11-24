@@ -125,6 +125,16 @@ void guilayout::layoutgui_obj::Deserialise(const deserialiser_input &di, error_c
 	if(CheckTransJsonValue(graphics, di, "graphics", ec)) setmembers |= LGOSM_GRAPHICS;
 }
 
+static void RegisterUpdateHook(guilayout::world_layout &wl, const generictrack *gt, guilayout::layout_obj *obj) {
+	std::weak_ptr<guilayout::world_layout> wlptr = wl.GetSharedPtrThis();
+
+	//NB: casting away constness to insert update hook!
+	const_cast<generictrack *>(gt)->AddUpdateHook([wlptr, obj](updatable_obj*, world &) {
+		std::shared_ptr<guilayout::world_layout> wl = wlptr.lock();
+		if(wl) wl->objs_updated.insert(obj);
+	});
+}
+
 void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec) {
 	if(!(setmembers & LOSM_X) || !(setmembers & LOSM_Y)) {
 		ec.RegisterNewError<error_layout>(*this, "x and/or y coordinate missing: layout track pieces must be positioned absolutely");
@@ -139,7 +149,10 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 	wl.AddTrackLayoutObj(gt, std::static_pointer_cast<layouttrack_obj>(shared_from_this()));
 
 	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
-	if(dmod) drawfunction = std::move(dmod->GetDrawTrack(*this, ec));
+	if(dmod) {
+		drawfunction = std::move(dmod->GetDrawTrack(std::static_pointer_cast<layouttrack_obj>(shared_from_this()), ec));
+		RegisterUpdateHook(wl, gt, this);
+	}
 }
 
 void guilayout::layoutberth_obj::Process(world_layout &wl, error_collection &ec) {
@@ -149,7 +162,10 @@ void guilayout::layoutberth_obj::Process(world_layout &wl, error_collection &ec)
 	}
 
 	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
-	if(dmod) drawfunction = std::move(dmod->GetDrawBerth(*this, ec));
+	if(dmod) {
+		drawfunction = std::move(dmod->GetDrawBerth(std::static_pointer_cast<layoutberth_obj>(shared_from_this()), ec));
+		RegisterUpdateHook(wl, gt, this);
+	}
 }
 
 void guilayout::layoutgui_obj::Process(world_layout &wl, error_collection &ec) {
@@ -158,7 +174,7 @@ void guilayout::layoutgui_obj::Process(world_layout &wl, error_collection &ec) {
 		return;
 	}
 	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
-	if(dmod) drawfunction = std::move(dmod->GetDrawObj(*this, ec));
+	if(dmod) drawfunction = std::move(dmod->GetDrawObj(std::static_pointer_cast<layoutgui_obj>(shared_from_this()), ec));
 }
 
 guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length) {
@@ -297,24 +313,57 @@ void guilayout::world_layout::GetTrackBerthLayoutObjs(const layout_obj &src, con
 	}
 }
 
-void guilayout::world_layout::SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<guilayout::layout_obj> &owner, int level) {
-	pos_sprite_desc &psd = location_map[std::make_pair(x, y)];
-	if(level >= psd.level) {
-		psd.level = level;
-		psd.sprite = sprite;
-		psd.owner = owner;
-		psd.text.reset();
+guilayout::pos_sprite_desc &guilayout::world_layout::GetLocationRef(int x, int y, int level) {
+	std::forward_list<pos_sprite_desc> &psd_list = location_map[std::make_pair(x, y)];
+
+	auto prev = psd_list.before_begin();
+	auto cur = std::next(prev);
+	for(; cur != psd_list.end(); prev = cur, ++cur) {
+		if(level == cur->level) {
+			return *cur;
+		}
+		if(level > cur->level) break;
 	}
+
+	//couldn't find existing, make a new one
+	auto newpsd = psd_list.emplace_after(prev);
+	newpsd->level = level;
+	return *newpsd;
+}
+
+void guilayout::world_layout::SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<guilayout::layout_obj> &owner, int level) {
+	pos_sprite_desc &psd = GetLocationRef(x, y, level);
+	psd.sprite = sprite;
+	psd.owner = owner;
+	psd.text.reset();
+	redraw_map.insert(std::make_pair(x, y));
 }
 
 void guilayout::world_layout::SetTextChar(int x, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<guilayout::layout_obj> &owner, int level) {
-	pos_sprite_desc &psd = location_map[std::make_pair(x, y)];
-	if(level >= psd.level) {
-		psd.level = level;
-		psd.sprite = 0;
-		psd.owner = owner;
-		psd.text = std::move(dt);
+	pos_sprite_desc &psd = GetLocationRef(x, y, level);
+	psd.sprite = 0;
+	psd.owner = owner;
+	psd.text = std::move(dt);
+	redraw_map.insert(std::make_pair(x, y));
+}
+
+void guilayout::world_layout::ClearSpriteLevel(int x, int y, int level) {
+	auto it = location_map.find(std::make_pair(x, y));
+	if(it == location_map.end()) return;
+
+	std::forward_list<pos_sprite_desc> &psd_list = it->second;
+
+	psd_list.remove_if([&](pos_sprite_desc &p) {
+		if(p.level == level) {
+			redraw_map.insert(std::make_pair(x, y));
+			return true;
+		}
+		else return false;
+	});
+	if(psd_list.empty()) {
+		location_map.erase(it);
 	}
+
 }
 
 int guilayout::world_layout::SetTextString(int startx, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<guilayout::layout_obj> &owner, int level, int minlength, int maxlength) {
@@ -349,7 +398,10 @@ int guilayout::world_layout::SetTextString(int startx, int y, std::unique_ptr<dr
 const guilayout::pos_sprite_desc *guilayout::world_layout::GetSprite(int x, int y) {
 	const auto &it = location_map.find(std::make_pair(x, y));
 	if(it == location_map.end()) return 0;
-	else return &(it->second);
+
+	std::forward_list<pos_sprite_desc> &psd_list = it->second;
+	if(!psd_list.empty()) return &(psd_list.front());
+	else return 0;
 }
 
 //*1 are inclusive limits, *2 are exclusive limits
@@ -358,7 +410,8 @@ void guilayout::world_layout::GetSpritesInRect(int x1, int x2, int y1, int y2, s
 		int x, y;
 		std::tie(x, y) = it.first;
 		if(x >= x1 && x < x2 && y >= y1 && y < y2) {
-			sprites[it.first] = &(it.second);
+			const std::forward_list<pos_sprite_desc> &psd_list = it.second;
+			if(!psd_list.empty()) sprites[it.first] = &(psd_list.front());
 		}
 	}
 }

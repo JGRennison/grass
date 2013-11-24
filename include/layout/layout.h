@@ -31,6 +31,8 @@
 #include <vector>
 #include <functional>
 #include <limits>
+#include <set>
+#include <forward_list>
 #include "core/edgetype.h"
 #include "core/error.h"
 #include "draw/drawtypes.h"
@@ -172,7 +174,8 @@ namespace guilayout {
 		const world &w;
 		std::shared_ptr<draw::draw_module> eng;
 
-		std::map<std::pair<int, int>, pos_sprite_desc> location_map;
+		std::map<std::pair<int, int>, std::forward_list<pos_sprite_desc> > location_map;
+		std::set<std::pair<int, int>> redraw_map;
 
 		//this is so that we can hold onto w if it may go out of scope
 		std::shared_ptr<const world> w_ptr;
@@ -192,6 +195,8 @@ namespace guilayout {
 		void SetTextChar(int x, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner, int level = 0);
 		int SetTextString(int startx, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner, int level = 0, int minlength = -1, int maxlength = -1);
 		const pos_sprite_desc *GetSprite(int x, int y);
+		pos_sprite_desc &GetLocationRef(int x, int y, int level);
+		void ClearSpriteLevel(int x, int y, int level);
 
 		//*1 are inclusive limits, *2 are exclusive limits
 		void GetSpritesInRect(int x1, int x2, int y1, int y2, std::map<std::pair<int, int>, const pos_sprite_desc *> &sprites) const;
@@ -199,6 +204,10 @@ namespace guilayout {
 
 		//this is just for ref-counting purposes, not needed if world is static
 		void SetWorldSharedPtr(std::shared_ptr<const world> wp) { w_ptr = std::move(wp); }
+		std::shared_ptr<world_layout> GetSharedPtrThis() { return shared_from_this(); }
+		std::shared_ptr<const world_layout> GetSharedPtrThis() const { return shared_from_this(); }
+
+		std::set<layout_obj *> objs_updated;
 	};
 
 };
