@@ -33,10 +33,10 @@ namespace draw {
 
 	class wx_sprite_obj : public sprite_obj {
 		friend wx_draw_engine;
-		sprite_ref this_sr = 0;
+		sprite_ref this_sr;
 		wxImage img;
 		wxBitmap bmp;
-		wx_draw_engine *eng = 0;
+		wx_draw_engine *eng;
 
 		enum class GST {
 			OBJ,
@@ -46,7 +46,12 @@ namespace draw {
 
 		void CheckType(GST type);
 
+		wx_sprite_obj()
+			: this_sr(0), eng(0) { }
+
 		public:
+		wx_sprite_obj(wx_draw_engine *eng_, sprite_ref this_sr_)
+			: this_sr(this_sr_), eng(eng_) { }
 		virtual bool LoadFromFile(const std::string &file) override;
 		virtual bool LoadFromData(void *data, size_t length) override;
 		virtual void LoadFromSprite(sprite_ref sr) override;
@@ -54,6 +59,14 @@ namespace draw {
 		virtual void ReplaceColour(uint32_t rgb_src, uint32_t rgb_dest) override;
 		virtual void DrawTextChar(const std::string &text, uint32_t foregroundcolour, uint32_t backgroundcolour) override;
 		virtual void Mirror(bool horizontally) override;
+		const wxBitmap &GetSpriteBitmap() {
+			CheckType(wx_sprite_obj::GST::BMP);
+			return bmp;
+		}
+		const wxImage &GetSpriteImage() {
+			CheckType(wx_sprite_obj::GST::IMG);
+			return img;
+		}
 
 	};
 

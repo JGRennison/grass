@@ -157,6 +157,7 @@ namespace guilayout {
 		int level = std::numeric_limits<int>::lowest();
 		draw::sprite_ref sprite = 0;
 		std::weak_ptr<layout_obj> owner;
+		std::unique_ptr<draw::drawtextchar> text;
 	};
 
 	class world_layout : public std::enable_shared_from_this<world_layout> {
@@ -183,6 +184,8 @@ namespace guilayout {
 		inline std::shared_ptr<draw::draw_module> GetDrawModule() const { return eng; }
 		inline void AddTrackLayoutObj(const generictrack *gt, std::shared_ptr<layouttrack_obj> &&obj) { tracktolayoutmap.emplace(gt, std::move(obj)); }
 		void SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<layout_obj> &owner, int level = 0);
+		void SetTextChar(int x, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner, int level = 0);
+		int SetTextString(int startx, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner, int level = 0, int minlength = -1, int maxlength = -1);
 		const pos_sprite_desc *GetSprite(int x, int y);
 
 		//*1 are inclusive limits, *2 are exclusive limits

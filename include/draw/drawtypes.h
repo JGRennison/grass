@@ -25,13 +25,23 @@
 #include <functional>
 #include <cstdint>
 
+namespace guilayout {
+	class world_layout;
+};
+
 namespace draw {
 	struct draw_options;
 	class draw_module;
 	class draw_engine;
 
 	typedef uint32_t sprite_ref;
-	typedef std::function<void(const draw_engine &)> draw_func_type;
+	typedef std::function<void(const draw_engine &, guilayout::world_layout &)> draw_func_type;
+
+	struct drawtextchar {
+		std::string text;
+		uint32_t foregroundcolour;
+		uint32_t backgroundcolour;
+	};
 };
 
 #endif

@@ -26,6 +26,7 @@
 #include "core/points.h"
 #include "core/serialisable_impl.h"
 #include "draw/drawmodule.h"
+#include "utf8.h"
 
 namespace guilayout {
 
@@ -302,7 +303,47 @@ void guilayout::world_layout::SetSprite(int x, int y, draw::sprite_ref sprite, c
 		psd.level = level;
 		psd.sprite = sprite;
 		psd.owner = owner;
+		psd.text.reset();
 	}
+}
+
+void guilayout::world_layout::SetTextChar(int x, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<guilayout::layout_obj> &owner, int level) {
+	pos_sprite_desc &psd = location_map[std::make_pair(x, y)];
+	if(level >= psd.level) {
+		psd.level = level;
+		psd.sprite = 0;
+		psd.owner = owner;
+		psd.text = std::move(dt);
+	}
+}
+
+int guilayout::world_layout::SetTextString(int startx, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<guilayout::layout_obj> &owner, int level, int minlength, int maxlength) {
+	std::unique_ptr<draw::drawtextchar> tdt = std::move(dt);
+
+	int len = strlen_utf8(tdt->text);
+	if(len > maxlength) len = maxlength;
+
+	auto puttext = [&](int x, std::string text) {
+		std::unique_ptr<draw::drawtextchar> cdt(new draw::drawtextchar);
+		cdt->text = std::move(text);
+		cdt->foregroundcolour = dt->foregroundcolour;
+		cdt->backgroundcolour = dt->backgroundcolour;
+		SetTextChar(x, y, std::move(cdt), owner, level);
+	};
+
+	const char *str = tdt->text.c_str();
+	for(int i = 0; i < len; i++) {
+		int bytes = utf8firsttonumbytes(*str);
+		puttext(startx + i, std::string(str, bytes));
+		str += bytes;
+	}
+	if(minlength >= 0 && len < minlength) {
+		for(int i = len; i < minlength; i++) {
+			puttext(startx + i, " ");
+		}
+		len = minlength;
+	}
+	return len;
 }
 
 const guilayout::pos_sprite_desc *guilayout::world_layout::GetSprite(int x, int y) {

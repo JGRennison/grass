@@ -54,8 +54,16 @@ void maingui::grviewpanel::OnDraw(wxDC& dc) {
 		wx = (x - layout_origin_x) * eng->GetSpriteWidth();
 		wy = (y - layout_origin_y) * eng->GetSpriteHeight();
 		CalcScrolledPosition(wx, wy, &wx, &wy);
-		const wxBitmap &sprite = eng->GetSpriteBitmap(obj.second->sprite);
-		dc.DrawBitmap(sprite, wx, wy, false);
+		if(obj.second->text) {
+			draw::drawtextchar &dt = *(obj.second->text);
+			draw::wx_sprite_obj txt(eng.get(), 0);
+			txt.DrawTextChar(dt.text, dt.foregroundcolour, dt.backgroundcolour);
+			dc.DrawBitmap(txt.GetSpriteBitmap(), wx, wy, false);
+		}
+		else {
+			const wxBitmap &sprite = eng->GetSpriteBitmap(obj.second->sprite);
+			dc.DrawBitmap(sprite, wx, wy, false);
+		}
 	}
 }
 
