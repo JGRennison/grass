@@ -28,9 +28,8 @@
 BEGIN_EVENT_TABLE(maingui::grviewpanel, wxScrolledWindow)
 END_EVENT_TABLE()
 
-maingui::grviewpanel::grviewpanel(std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_)
-		: layout(layout_), eng(eng_) {
-	InitLayout();
+maingui::grviewpanel::grviewpanel(wxWindow *parent, std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_)
+		: wxScrolledWindow(parent), layout(layout_), eng(eng_) {
 }
 
 void maingui::grviewpanel::OnDraw(wxDC& dc) {
@@ -40,10 +39,10 @@ void maingui::grviewpanel::OnDraw(wxDC& dc) {
 	while(upd) {
 		wxRect rect(upd.GetRect());
 		CalcUnscrolledPosition(rect.x, rect.y, &rect.x, &rect.y);
-		int x1 = (rect.GetLeft() + layout_origin_x) / eng->GetSpriteWidth();
-		int x2 = (rect.GetRight() + 1 +layout_origin_x) / eng->GetSpriteWidth();
-		int y1 = (rect.GetTop() + layout_origin_y) / eng->GetSpriteHeight();
-		int y2 = (rect.GetBottom() + 1 + layout_origin_y) / eng->GetSpriteHeight();
+		int x1 = layout_origin_x + (rect.GetLeft() / (int) eng->GetSpriteWidth());
+		int x2 = layout_origin_x + 1 + (rect.GetRight() / (int) eng->GetSpriteWidth());
+		int y1 = layout_origin_y + (rect.GetTop() / (int) eng->GetSpriteHeight());
+		int y2 = layout_origin_y + 1 + (rect.GetBottom() / (int) eng->GetSpriteHeight());
 		layout->GetSpritesInRect(x1, x2, y1, y2, redrawsprites);
 		upd++;
 	}
@@ -53,7 +52,7 @@ void maingui::grviewpanel::OnDraw(wxDC& dc) {
 		std::tie(x, y) = obj.first;
 		wx = (x - layout_origin_x) * eng->GetSpriteWidth();
 		wy = (y - layout_origin_y) * eng->GetSpriteHeight();
-		CalcScrolledPosition(wx, wy, &wx, &wy);
+
 		if(obj.second->text) {
 			draw::drawtextchar &dt = *(obj.second->text);
 			draw::wx_sprite_obj txt(eng.get(), 0);
@@ -72,6 +71,9 @@ void maingui::grviewpanel::InitLayout() {
 	layout->GetLayoutExtents(x1, x2, y1, y2, 2);
 	layout_origin_x = x1;
 	layout_origin_y = y1;
-	SetVirtualSize((x2 - x1) * eng->GetSpriteWidth(), (y2 - y1) * eng->GetSpriteHeight());
-	SetScrollbars(eng->GetSpriteWidth(), eng->GetSpriteHeight(), x2 - x1, y2 - y1);
+	int w = std::max(x2 - x1, 1);
+	int h = std::max(y2 - y1, 1);
+
+	SetScrollbars(eng->GetSpriteWidth(), eng->GetSpriteHeight(), w, h);
+	Refresh(true);
 }

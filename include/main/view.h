@@ -26,9 +26,12 @@
 #include "draw/wx/drawengine_wx.h"
 #include <memory>
 #include <wx/scrolwin.h>
+#include <wx/frame.h>
 #include <set>
 
 namespace maingui {
+
+	class grviewwinlist;
 
 	class grviewpanel : public wxScrolledWindow {
 		std::shared_ptr<guilayout::world_layout> layout;
@@ -37,9 +40,10 @@ namespace maingui {
 		int layout_origin_y = 0;
 
 		public:
-		grviewpanel(std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_);
+		grviewpanel(wxWindow *parent, std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_);
 		void OnDraw(wxDC& dc);
 		void InitLayout();
+		void RefreshSprites(int x, int y, int w = 1, int h = 1);
 
 		DECLARE_EVENT_TABLE()
 	};
