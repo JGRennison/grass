@@ -81,7 +81,7 @@ namespace guilayout {
 		public:
 		virtual ~layout_obj() { }
 		std::pair<unsigned int, unsigned int> GetDimensions() const;
-		std::pair<int, int> GetPosition() const;
+		inline std::pair<int, int> GetPosition() const { return std::make_pair(x, y); }
 		virtual std::string GetFriendlyName() const = 0;
 		virtual void Process(world_layout &wl, error_collection &ec) = 0;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
@@ -91,7 +91,7 @@ namespace guilayout {
 	class layouttrack_obj : public layout_obj {
 		protected:
 		const generictrack *gt;
-		int length = 0;
+		int length = 1;
 		LAYOUT_DIR layoutdirection = LAYOUT_DIR::NULLDIR;
 		std::string track_type;
 
@@ -103,6 +103,8 @@ namespace guilayout {
 
 		public:
 		layouttrack_obj(const generictrack *gt_) : gt(gt_) { }
+		inline int GetLength() const { return length; }
+		inline const generictrack * GetTrack() const { return gt; }
 		virtual std::string GetFriendlyName() const override;
 		virtual void Process(world_layout &wl, error_collection &ec) override;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
@@ -112,7 +114,7 @@ namespace guilayout {
 		protected:
 		const generictrack *gt = 0;
 		const trackberth *b = 0;
-		int length = 0;
+		int length = 4;
 
 		enum {
 			LBOSM_LENGTH      = 1<<16,
@@ -120,6 +122,9 @@ namespace guilayout {
 
 		public:
 		layoutberth_obj(const generictrack *gt_, const trackberth *b_) : gt(gt_), b(b_) { }
+		inline int GetLength() const { return length; }
+		inline const generictrack * GetTrack() const { return gt; }
+		inline const trackberth * GetBerth() const { return b; }
 		virtual std::string GetFriendlyName() const override;
 		virtual void Process(world_layout &wl, error_collection &ec) override;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
