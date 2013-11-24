@@ -77,3 +77,24 @@ void maingui::grviewpanel::InitLayout() {
 	SetScrollbars(eng->GetSpriteWidth(), eng->GetSpriteHeight(), w, h);
 	Refresh(true);
 }
+
+void maingui::grviewpanel::RefreshSprites(int x, int y, int w, int h) {
+	int wx = (x - layout_origin_x) * eng->GetSpriteWidth();
+	int wy = (y - layout_origin_y) * eng->GetSpriteHeight();
+	int dx = w * eng->GetSpriteWidth();
+	int dy = h * eng->GetSpriteHeight();
+	RefreshRect(wxRect(wx, wy, dx, dy));
+}
+
+maingui::grviewwin::grviewwin(std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_, std::shared_ptr<maingui::grviewwinlist> winlist_)
+	: wxFrame(0, wxID_ANY, wxT("GRASS")), winlist(std::move(winlist_)) {
+	panel = new grviewpanel(this, std::move(layout_), std::move(eng_));
+	panel->InitLayout();
+	winlist->viewpanels.emplace_front(panel);
+	winlist->toplevelpanels.emplace_front(this);
+}
+
+maingui::grviewwin::~grviewwin() {
+	winlist->viewpanels.remove(panel);
+	winlist->toplevelpanels.remove(this);
+}

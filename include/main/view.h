@@ -47,5 +47,19 @@ namespace maingui {
 
 		DECLARE_EVENT_TABLE()
 	};
+
+	class grviewwin : public wxFrame {
+		grviewpanel *panel;
+		std::shared_ptr<grviewwinlist> winlist;
+
+		public:
+		grviewwin(std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_, std::shared_ptr<grviewwinlist> winlist_);
+		~grviewwin();
+	};
+
+	struct grviewwinlist {
+		std::forward_list<grviewpanel *> viewpanels;
+		std::forward_list<grviewwin *> toplevelpanels;
+	};
 };
 #endif
