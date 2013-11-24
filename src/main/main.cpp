@@ -24,6 +24,7 @@
 #include "main/wxcommon.h"
 #include "main/main.h"
 #include "main/wxutil.h"
+#include "main/view.h"
 #include "core/world_serialisation.h"
 #include "core/world.h"
 #include "draw/wx/drawengine_wx.h"
@@ -31,6 +32,7 @@
 #include "draw/drawoptions.h"
 #include "layout/layout.h"
 #include <wx/log.h>
+
 
 IMPLEMENT_APP(grassapp)
 
@@ -59,12 +61,15 @@ bool grassapp::LoadGame(const wxString &base, const wxString &save) {
 	world_serialisation ws(*w);
 	layout->SetWorldSerialisationLayout(ws);
 	ws.LoadGameFromFiles(stdstrwx(base), stdstrwx(save), ec);
+	layout->ProcessLayoutObjSet(ec);
 	if(ec.GetErrorCount()) {
 		DisplayErrors(ec);
 		return false;
 	}
 	else {
-		//run game
+		InitialDrawAll();
+		RunGameTimer();
+		MakeNewViewWin();
 		return true;
 	}
 }
@@ -90,6 +95,51 @@ void grassapp::DisplayErrors(error_collection &ec) {
 	wxLogError(wxT("One or more errors occurred, aborting:\n%s\n"), wxstrstd(str.str()).c_str());
 }
 
+grassapp::grassapp() {
+	panelset.reset(new maingui::grviewwinlist);
+}
+
 grassapp::~grassapp() {
 
+}
+
+void grassapp::RunGameTimer() {
+	if(!timer) timer.reset(new gametimer(this));
+	if(ispaused || speedfactor == 0) {
+		timer->Stop();
+	}
+	else {
+		timer->Start(timestepms * 256 / speedfactor, wxTIMER_CONTINUOUS);
+	}
+}
+
+void gametimer::Notify() {
+	if(app->layout) {
+		app->layout->ClearUpdateSet();
+		app->layout->ClearRedrawMap();
+	}
+	app->w->GameStep(app->timestepms);
+	if(app->eng && app->layout) {
+		app->layout->IterateUpdateSet([&](guilayout::layout_obj *obj) {
+			obj->drawfunction(*(app->eng), *(app->layout));
+		});
+		app->layout->IterateRedrawMap([&](int x, int y) {
+			for(auto &it : app->panelset->viewpanels) {
+				it->RefreshSprites(x, y, 1, 1);
+			}
+		});
+	}
+}
+
+void grassapp::MakeNewViewWin() {
+	maingui::grviewwin *view = new maingui::grviewwin(layout, eng, panelset);
+	view->Show(true);
+}
+
+void grassapp::InitialDrawAll() {
+	if(eng && layout) {
+		layout->IterateAllLayoutObjects([&](guilayout::layout_obj *obj) {
+			obj->drawfunction(*eng, *layout);
+		});
+	}
 }

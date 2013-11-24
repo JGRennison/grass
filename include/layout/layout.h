@@ -220,6 +220,10 @@ namespace guilayout {
 		void MarkUpdated(layout_obj *obj) {
 			objs_updated.insert(obj);
 		}
+		void ClearRedrawMap() { redraw_map.clear(); }
+		void IterateRedrawMap(std::function<void(int x, int y)> func) {
+			for(auto &it : redraw_map) { func(it.first, it.second); }
+		}
 	};
 
 };

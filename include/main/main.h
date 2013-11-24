@@ -20,13 +20,16 @@
 //==========================================================================
 
 #include <wx/app.h>
+#include <wx/timer.h>
 #include <memory>
+#include <forward_list>
 
 #ifndef INC_MAIN_MAIN_ALREADY
 #define INC_MAIN_MAIN_ALREADY
 
 class error_collection;
 class world;
+class grassapp;
 namespace guilayout {
 	class world_layout;
 }
@@ -35,24 +38,49 @@ namespace draw {
 	class draw_options;
 	class draw_module;
 }
+namespace maingui {
+	class grviewwin;
+	struct grviewwinlist;
+}
+
+class gametimer : public wxTimer {
+	grassapp *app;
+
+	public:
+	gametimer(grassapp *app_) : app(app_) { }
+	virtual void Notify() override;
+};
 
 class grassapp: public wxApp {
-    virtual bool OnInit();
-    virtual int OnExit();
-	virtual ~grassapp();
+	friend gametimer;
+
+	virtual bool OnInit();
+	virtual int OnExit();
 
 	std::shared_ptr<world> w;
 	std::shared_ptr<guilayout::world_layout> layout;
 	std::shared_ptr<draw::wx_draw_engine> eng;
 	std::shared_ptr<draw::draw_options> opts;
+	unsigned int timestepms = 50;
+	unsigned int speedfactor = 256;
+	bool ispaused = false;
+	std::unique_ptr<gametimer> timer;
+	std::shared_ptr<maingui::grviewwinlist> panelset;
 
 	public:
+	grassapp();
+	virtual ~grassapp();
 	bool cmdlineproc(wxChar ** argv, int argc);
 	bool LoadGame(const wxString &base, const wxString &save);
 	std::pair<int, int> GetSpriteSizes() const;
 	std::shared_ptr<draw::draw_module> GetCurrentDrawModule();
 	std::shared_ptr<draw::draw_options> GetDrawOptions();
 	void DisplayErrors(error_collection &ec);
+	void MakeNewViewWin();
+
+	protected:
+	void RunGameTimer();
+	void InitialDrawAll();
 };
 
 #endif
