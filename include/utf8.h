@@ -35,7 +35,7 @@ inline int getcharfromstr_utf8(const char *str) {
 	else return 0xFFFD;
 }
 
-inline int getcharfromstr_utf8_ret(char **str) {
+inline int getcharfromstr_utf8_ret(const char **str) {
 	char c1=(*str)[0];
 	if(!(c1&0x80)) {
 		(*str)++;
