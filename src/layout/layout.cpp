@@ -177,7 +177,7 @@ void guilayout::layoutgui_obj::Process(world_layout &wl, error_collection &ec) {
 	if(dmod) drawfunction = std::move(dmod->GetDrawObj(std::static_pointer_cast<layoutgui_obj>(shared_from_this()), ec));
 }
 
-guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length) {
+guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length, std::function<void(int, int, LAYOUT_DIR)> stepfunc) {
 	if(ld == LAYOUT_DIR::NULLDIR || !length) {
 		return layoutoffsetdirectionresult{ startx, starty, startx, starty, ld };
 	}
@@ -242,11 +242,13 @@ guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int star
 	};
 
 	while(true) {
+		if(stepfunc) stepfunc(next_x, next_y, outld);
 		stepcarddir(step1);
 		outld = stepend1;
 		length--;
 		if(!length) break;
 
+		if(stepfunc) stepfunc(next_x, next_y, outld);
 		stepcarddir(step2);
 		outld = stepend2;
 		length--;

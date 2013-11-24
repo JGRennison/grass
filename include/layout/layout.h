@@ -159,7 +159,7 @@ namespace guilayout {
 		LAYOUT_DIR nextdir;
 	};
 
-	layoutoffsetdirectionresult LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length);
+	layoutoffsetdirectionresult LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length, std::function<void(int, int, LAYOUT_DIR)> stepfunc = std::function<void(int, int, LAYOUT_DIR)>());
 
 	struct pos_sprite_desc {
 		int level = std::numeric_limits<int>::lowest();
