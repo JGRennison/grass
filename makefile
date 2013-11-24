@@ -1,4 +1,5 @@
-#variables which can be pre-set (non-exhaustive list)
+#Variables which can be pre-set (non-exhaustive list)
+
 #ARCH: value for the switch: -march=
 #GCC: path to g++
 #debug: set to true to for a debug build
@@ -6,6 +7,10 @@
 #map: set to true to enable linker map
 #noexceptions: set to build without exceptions
 #cross: set to true if building on Unix, but build target is Windows
+
+#On Unixy platforms only
+#WXCFGFLAGS: additional arguments for wx-config
+
 #On windows only:
 #x64: set to true to compile for x86_64/win64
 
@@ -54,6 +59,7 @@ AFLAGS=-g
 DEBUGPOSTFIX:=_debug
 DIR_POSTFIX:=$(DIR_POSTFIX)$(DEBUGPOSTFIX)
 OUTNAME:=$(OUTNAME)$(DEBUGPOSTFIX)
+WXCFGFLAGS:=--debug=yes
 endif
 
 GCCMACHINE:=$(shell $(GCC) -dumpmachine)
@@ -93,8 +99,8 @@ else
 #UNIX
 PLATFORM:=UNIX
 LIBS:=-lrt
-LIBS_main:=`wx-config --libs`
-WX_CFLAGS+=$(patsubst -I/%,-isystem /%,$(shell wx-config --cxxflags))
+LIBS_main:=`wx-config --libs $(WXCFGFLAGS)`
+WX_CFLAGS+=$(patsubst -I/%,-isystem /%,$(shell wx-config --cxxflags $(WXCFGFLAGS)))
 GCC_MAJOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f1)
 GCC_MINOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f2)
 ARCH:=$(shell test $(GCC_MAJOR) -gt 4 -o \( $(GCC_MAJOR) -eq 4 -a $(GCC_MINOR) -ge 2 \) && echo native)
