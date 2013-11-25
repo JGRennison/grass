@@ -20,6 +20,8 @@
 SRC_DIRS := main core test layout draw/wx draw/mod
 MAIN_DIRS := main core layout draw/wx draw/mod
 TEST_DIRS := test core
+RES_DIRS := draw/res
+MAIN_RES := draw/res
 
 GENERIC_SRC = $(wildcard src/$1/*.cpp)
 GENERIC_OBJ_DIR = objs/$1$(DIR_POSTFIX)
@@ -27,6 +29,8 @@ GENERIC_CFLAGS = $(CFLAGS) $(CFLAGS_$(subst /,_,$1)) -iquote include
 GENERIC_CXXFLAGS = $(CXXFLAGS) $(CXXFLAGS_$(subst /,_,$1))
 GENERIC_OBJS = $(patsubst src/$1/%.cpp,$(call GENERIC_OBJ_DIR,$1)/%.o,$(call GENERIC_SRC,$1))
 LIST_OBJS = $(foreach dir,$1,$(call GENERIC_OBJS,$(dir)))
+GENERIC_RESOBJS = $(patsubst src/$1/%,$(call GENERIC_OBJ_DIR,$1)/%.o,$(wildcard src/$1/*))
+LIST_RESOBJS = $(foreach dir,$1,$(call GENERIC_RESOBJS,$(dir)))
 
 OUTNAME:=grass
 TESTOUTNAME=$(OUTNAME)-test
@@ -36,7 +40,7 @@ AFLAGS=-g
 CXXFLAGS:=-std=gnu++0x
 GCC:=g++
 LD:=ld
-DIRS = $(foreach dir,$(SRC_DIRS),$(call GENERIC_OBJ_DIR,$(dir))) $(call GENERIC_OBJ_DIR,test)/pch
+DIRS = $(foreach dir,$(SRC_DIRS),$(call GENERIC_OBJ_DIR,$(dir))) $(foreach dir,$(RES_DIRS),$(call GENERIC_OBJ_DIR,$(dir))) $(call GENERIC_OBJ_DIR,test)/pch
 
 EXECPREFIX:=./
 PATHSEP:=/
@@ -144,11 +148,11 @@ test: $(TESTOUTNAME)$(SUFFIX)
 
 $(call GENERIC_OBJS,test): $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch
 
-OBJS:=$(call LIST_OBJS,$(MAIN_DIRS))
+OBJS:=$(call LIST_OBJS,$(MAIN_DIRS)) $(call LIST_RESOBJS,$(MAIN_RES))
 $(OUTNAME)$(SUFFIX): $(OBJS)
 	$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX) $(LIBS) $(LIBS_main) $(AFLAGS) $(AFLAGS_main) $(GFLAGS)
 
-TEST_OBJS:=$(call LIST_OBJS,$(TEST_DIRS))
+TEST_OBJS:=$(call LIST_OBJS,$(TEST_DIRS)) $(call LIST_RESOBJS,$(TEST_RES))
 $(TESTOUTNAME)$(SUFFIX): $(TEST_OBJS)
 	$(GCC) $(TEST_OBJS) -o $(TESTOUTNAME)$(SUFFIX) $(LIBS) $(AFLAGS) $(AFLAGS_test) $(GFLAGS)
 	$(EXECPREFIX)$(TESTOUTNAME)$(SUFFIX)
@@ -159,7 +163,21 @@ define COMPILE_RULE
 $$(call GENERIC_OBJ_DIR,$1)/%.o: src/$1/%.cpp | $$(call GENERIC_OBJ_DIR,$1) ; $$(GCC) -c $$< -o $$@ $$(call GENERIC_CFLAGS,$1) $$(call GENERIC_CXXFLAGS,$1) $$(GFLAGS) $$(MAKEDEPS)
 endef
 
+
+RES_OBJCOPY = objcopy --rename-section .data=.rodata,alloc,load,readonly,data,contents $$@ $$@
+ifeq "$(PLATFORM)" "WIN"
+define RES_RULE
+$$(call GENERIC_OBJ_DIR,$1)/%.o: src/$1/% | $$(call GENERIC_OBJ_DIR,$1) ; $$(GCC) -Wl,-r -Wl,-b,binary $$< -o $$@ -nostdlib; $(RES_OBJCOPY)
+endef
+else
+define RES_RULE
+$$(call GENERIC_OBJ_DIR,$1)/%.o: src/$1/% | $$(call GENERIC_OBJ_DIR,$1) ; $$(LD) -r -b binary $$< -o $$@; $(RES_OBJCOPY)
+endef
+endif
+
 $(foreach DIR,$(SRC_DIRS),$(eval $(call COMPILE_RULE,$(DIR))))
+
+$(foreach DIR,$(RES_DIRS),$(eval $(call RES_RULE,$(DIR))))
 
 $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch: include/test/catch.hpp | $(call GENERIC_OBJ_DIR,test)/pch
 	$(GCC) -c include/test/catch.hpp -o $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch $(call GENERIC_CFLAGS,test) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
