@@ -26,6 +26,7 @@
 #include "draw/drawengine.h"
 #include <wx/bitmap.h>
 #include <wx/image.h>
+#include <wx/font.h>
 
 namespace draw {
 
@@ -74,12 +75,14 @@ namespace draw {
 		friend wx_sprite_obj;
 		std::unordered_map<sprite_ref, wx_sprite_obj> sprites;
 		wx_sprite_obj &GetSpriteObj(sprite_ref sr, wx_sprite_obj::GST type);
+		wxFont textfont;
 
 		public:
 		wx_draw_engine(std::shared_ptr<draw_module> dmod_, unsigned int sw, unsigned int sh, std::shared_ptr<draw_options> dopt_);
 		std::string GetName() const override { return "wx draw engine"; }
 		const wxBitmap &GetSpriteBitmap(sprite_ref sr) { return GetSpriteObj(sr, wx_sprite_obj::GST::BMP).bmp; }
 		const wxImage &GetSpriteImage(sprite_ref sr) { return GetSpriteObj(sr, wx_sprite_obj::GST::IMG).img; }
+		const wxFont &GetTextFont() const { return textfont; }
 	};
 
 };

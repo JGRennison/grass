@@ -71,6 +71,7 @@ namespace draw {
 		memdc.SetTextForeground(wxColour((foregroundcolour >> 16) & 0xFF, (foregroundcolour >> 8) & 0xFF, foregroundcolour & 0xFF));
 		memdc.SetBackgroundMode(wxTRANSPARENT);
 		memdc.Clear();
+		memdc.SetFont(eng->GetTextFont());
 		wxString wxtxt = wxString::FromUTF8(text.c_str());
 		wxCoord w, h, descent;
 		memdc.GetTextExtent(wxtxt, &w, &h, &descent);
@@ -109,6 +110,11 @@ namespace draw {
 	wx_draw_engine::wx_draw_engine(std::shared_ptr<draw_module> dmod_, unsigned int sw, unsigned int sh, std::shared_ptr<draw_options> dopt_)
 		: draw_engine(dmod_, sw, sh, dopt_) {
 		wxInitAllImageHandlers();
+		wxFont *textfont_p = wxFont::New(wxSize(sw, sh), wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
+		if(textfont_p) {
+			textfont = *textfont_p;
+			delete textfont_p;
+		}
 	}
 
 	wx_sprite_obj &wx_draw_engine::GetSpriteObj(sprite_ref sr, wx_sprite_obj::GST type) {
