@@ -33,6 +33,7 @@
 #include "layout/layout.h"
 #include <wx/log.h>
 
+#include "draw/mod/drawmod_ukgeneric.h"
 
 IMPLEMENT_APP(grassapp)
 
@@ -80,8 +81,8 @@ std::pair<int, int> grassapp::GetSpriteSizes() const {
 }
 
 std::shared_ptr<draw::draw_module> grassapp::GetCurrentDrawModule() {
-	//TODO: add code here to do this
-	return std::shared_ptr<draw::draw_module>();
+	//TODO: make this user-controllable
+	return std::shared_ptr<draw::draw_module>(new draw::draw_module_ukgeneric);
 }
 
 std::shared_ptr<draw::draw_options> grassapp::GetDrawOptions() {
