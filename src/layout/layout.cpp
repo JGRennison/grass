@@ -202,14 +202,14 @@ guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int star
 
 	for(auto &it : layout_table) {
 		if(it.dir == ld) {
-			step1 = it.step1;
-			step2 = it.step2;
+			step1 = it.step2;
+			step2 = it.step1;
 			stepend1 = it.altstep;
 			break;
 		}
 		else if(it.altstep == ld) {
-			step1 = it.step2;
-			step2 = it.step1;
+			step1 = it.step1;
+			step2 = it.step2;
 			stepend1 = it.dir;
 			break;
 		}
