@@ -24,13 +24,14 @@
 #include <wx/mstream.h>
 #include <wx/dcmemory.h>
 #include <wx/brush.h>
+#include <wx/file.h>
 
 namespace draw {
 
 	bool wx_sprite_obj::LoadFromFile(const std::string &file) {
 		wxString str;
 		str.FromUTF8(file.c_str(), file.length());
-		return img.LoadFile(str);
+		return wxFile::Exists(str) && img.LoadFile(str);
 	}
 
 	bool wx_sprite_obj::LoadFromData(void *data, size_t length) {
