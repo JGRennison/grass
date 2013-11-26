@@ -20,15 +20,43 @@
 //==========================================================================
 
 #include "draw/mod/drawmod_ukgeneric.h"
+#include "draw/drawres.h"
+#include "draw/drawengine.h"
 #include "layout/layout.h"
 #include "core/track.h"
 #include "core/signal.h"
 #include "core/routetypes.h"
 #include "core/trackpiece.h"
+#include "core/trackcircuit.h"
 #include <tuple>
+
+IMG_EXTERN(track_v_png, track_v)
+IMG_EXTERN(track_d_png, track_d)
 
 #define BERTHLEVEL 10
 #define UNKNOWNLEVEL 20
+
+namespace {
+	enum sprite_ids {
+		SID_typemask        = 0xFF,
+		SID_trackseg        = 1,
+
+		SID_dirmask         = 0xF00,
+		SID_dirshift        = 8,
+
+		SID_raw_img         = 0x1000,
+
+		SID_has_tc          = 0x2000,
+		SID_tc_occ          = 0x4000,
+	};
+
+	guilayout::LAYOUT_DIR spriteid_to_layoutdir(draw::sprite_ref sid) {
+		return static_cast<guilayout::LAYOUT_DIR>((sid & SID_dirmask) >> SID_dirshift);
+	}
+	draw::sprite_ref layoutdir_to_spriteid(guilayout::LAYOUT_DIR dir) {
+		return static_cast<std::underlying_type<guilayout::LAYOUT_DIR>::type>(dir) << SID_dirshift;
+	}
+}
 
 namespace draw {
 
@@ -75,21 +103,23 @@ namespace draw {
 				int x;
 				int y;
 				guilayout::LAYOUT_DIR direction;
+				draw::sprite_ref base_sprite;
 			};
 			auto points = std::make_shared<std::vector<tracksegpointinfo> >();
 
 			guilayout::LayoutOffsetDirection(x, y, obj->GetLayoutDirection(), obj->GetLength(), [&](int sx, int sy, guilayout::LAYOUT_DIR sdir) {
-				points->push_back({sx, sy, sdir});
+				draw::sprite_ref base_sprite = SID_trackseg | layoutdir_to_spriteid(guilayout::FoldLayoutDirection(sdir));
+				if(ts->GetTrackCircuit()) base_sprite |= SID_has_tc;
+				points->push_back({sx, sy, sdir, base_sprite});
 			});
 
 			return [points, ts, obj](const draw_engine &eng, guilayout::world_layout &layout) {
 				for(auto &it : *points) {
 					//temporary drawing function
-					std::unique_ptr<draw::drawtextchar> drawtext(new draw::drawtextchar);
-					drawtext->text = "T";
-					drawtext->foregroundcolour = 0xFFFFFF;
-					drawtext->backgroundcolour = 0;
-					layout.SetTextChar(it.x, it.y, std::move(drawtext), obj, 0);
+					draw::sprite_ref spid = it.base_sprite;
+					track_circuit *tc = ts->GetTrackCircuit();
+					if(tc && tc->Occupied()) spid |= SID_tc_occ;
+					layout.SetSprite(it.x, it.y, spid, obj, 0);
 				}
 			};
 		}
@@ -140,7 +170,77 @@ namespace draw {
 	}
 
 	void draw_module_ukgeneric::BuildSprite(sprite_ref sr, sprite_obj &sp, const draw_options &dopt) {  // must be re-entrant
+		using guilayout::LAYOUT_DIR;
 
+		auto getdirchangespid = [&](LAYOUT_DIR newdir) -> sprite_ref {
+			return (sr & ~SID_dirmask) | layoutdir_to_spriteid(newdir);
+		};
+
+		//this converts a folded direction into either U or UR
+		//returns true if handled
+		auto dirrelative1 = [&](LAYOUT_DIR dir) -> bool {
+			switch(dir) {
+				case LAYOUT_DIR::U:
+					return false;
+				case LAYOUT_DIR::UR:
+					return false;
+				case LAYOUT_DIR::RU:
+					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::RD));
+					sp.Mirror(false);
+					return true;
+				case LAYOUT_DIR::R:
+					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::U));
+					sp.Rotate90(true);
+					return true;
+				case LAYOUT_DIR::RD:
+					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::UR));
+					sp.Mirror(true);
+					return true;
+				case LAYOUT_DIR::DR:
+					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::UR));
+					sp.Mirror(false);
+					return true;
+				default:
+					return false;
+			}
+		};
+
+		unsigned int type = sr & SID_typemask;
+		LAYOUT_DIR dir = spriteid_to_layoutdir(sr);
+
+		if(sr & SID_raw_img) {
+			switch(type) {
+				case SID_trackseg:
+					if(dirrelative1(dir)) return;
+					if(dir == LAYOUT_DIR::U) {
+						sp.LoadFromFileDataFallback("track_v.png", GetImageData_track_v());
+						return;
+					}
+					if(dir == LAYOUT_DIR::UR) {
+						sp.LoadFromFileDataFallback("track_d.png", GetImageData_track_d());
+						return;
+					}
+					break;
+
+				default:
+					break;
+			}
+		}
+		else {
+			switch(type) {
+				case SID_trackseg:
+					sp.LoadFromSprite((sr & (SID_typemask | SID_dirmask)) | SID_raw_img);
+					if(sr & SID_has_tc) sp.ReplaceColour(0x0000FF, 0xFF0000);
+					else sp.ReplaceColour(0x0000FF, 0x000000);
+					if(!(sr & SID_tc_occ)) sp.ReplaceColour(0xFF0000, 0xAAAAAA);
+					return;
+
+				default:
+					break;
+			}
+		}
+
+		sp.DrawTextChar("?", 0xFF00FF, 0x00FF00);
 	}
 
 };
