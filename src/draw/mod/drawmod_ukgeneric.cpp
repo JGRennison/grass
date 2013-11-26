@@ -31,6 +31,7 @@
 #include <tuple>
 
 IMG_EXTERN(track_v_png, track_v)
+IMG_EXTERN(track_h_png, track_h)
 IMG_EXTERN(track_d_png, track_d)
 
 #define BERTHLEVEL 10
@@ -176,9 +177,14 @@ namespace draw {
 			return (sr & ~SID_dirmask) | layoutdir_to_spriteid(newdir);
 		};
 
-		//this converts a folded direction into either U or UR
+		enum {
+			DIRF_H         = 1<<0,
+		};
+
+		//this converts a folded direction into either U, UR or:
+		// if DIRF_H is set: R
 		//returns true if handled
-		auto dirrelative1 = [&](LAYOUT_DIR dir) -> bool {
+		auto dirrelative1 = [&](LAYOUT_DIR dir, unsigned int flags) -> bool {
 			switch(dir) {
 				case LAYOUT_DIR::U:
 					return false;
@@ -189,6 +195,7 @@ namespace draw {
 					sp.Mirror(false);
 					return true;
 				case LAYOUT_DIR::R:
+					if(flags & DIRF_H) return false;
 					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::U));
 					sp.Rotate90(true);
 					return true;
@@ -211,13 +218,17 @@ namespace draw {
 		if(sr & SID_raw_img) {
 			switch(type) {
 				case SID_trackseg:
-					if(dirrelative1(dir)) return;
+					if(dirrelative1(dir, DIRF_H)) return;
 					if(dir == LAYOUT_DIR::U) {
 						sp.LoadFromFileDataFallback("track_v.png", GetImageData_track_v());
 						return;
 					}
 					if(dir == LAYOUT_DIR::UR) {
 						sp.LoadFromFileDataFallback("track_d.png", GetImageData_track_d());
+						return;
+					}
+					if(dir == LAYOUT_DIR::R) {
+						sp.LoadFromFileDataFallback("track_h.png", GetImageData_track_h());
 						return;
 					}
 					break;
