@@ -69,6 +69,36 @@ namespace guilayout {
 		UL,
 	};
 
+	inline LAYOUT_DIR ReverseLayoutDirection(LAYOUT_DIR dir) {
+		switch(dir) {
+			case LAYOUT_DIR::NULLDIR: return LAYOUT_DIR::NULLDIR;
+			case LAYOUT_DIR::U:       return LAYOUT_DIR::D;
+			case LAYOUT_DIR::UR:      return LAYOUT_DIR::LD;
+			case LAYOUT_DIR::RU:      return LAYOUT_DIR::DL;
+			case LAYOUT_DIR::R:       return LAYOUT_DIR::L;
+			case LAYOUT_DIR::RD:      return LAYOUT_DIR::UL;
+			case LAYOUT_DIR::DR:      return LAYOUT_DIR::LU;
+			case LAYOUT_DIR::D:       return LAYOUT_DIR::U;
+			case LAYOUT_DIR::DL:      return LAYOUT_DIR::RU;
+			case LAYOUT_DIR::LD:      return LAYOUT_DIR::UR;
+			case LAYOUT_DIR::L:       return LAYOUT_DIR::R;
+			case LAYOUT_DIR::LU:      return LAYOUT_DIR::DR;
+			case LAYOUT_DIR::UL:      return LAYOUT_DIR::RD;
+		}
+		return LAYOUT_DIR::NULLDIR;
+	}
+
+	//This reduces the input set by half
+	//In that if two directions are reverse, they will fold to the same value
+	inline LAYOUT_DIR FoldLayoutDirection(LAYOUT_DIR dir) {
+		if(static_cast<std::underlying_type<guilayout::LAYOUT_DIR>::type>(dir) >= static_cast<std::underlying_type<guilayout::LAYOUT_DIR>::type>(LAYOUT_DIR::D)) {
+			return ReverseLayoutDirection(dir);
+		}
+		else {
+			return dir;
+		}
+	}
+
 	class layout_obj : public std::enable_shared_from_this<layout_obj> {
 		protected:
 		int x = 0;
