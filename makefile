@@ -149,8 +149,11 @@ test: $(TESTOUTNAME)$(SUFFIX)
 $(call GENERIC_OBJS,test): $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch
 
 OBJS:=$(call LIST_OBJS,$(MAIN_DIRS)) $(call LIST_RESOBJS,$(MAIN_RES))
+#This is to avoid unpleasant side-effects of over-writing executable in-place if it is currently running
 $(OUTNAME)$(SUFFIX): $(OBJS)
-	$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX) $(LIBS) $(LIBS_main) $(AFLAGS) $(AFLAGS_main) $(GFLAGS)
+	$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX).tmp $(LIBS) $(LIBS_main) $(AFLAGS) $(AFLAGS_main) $(GFLAGS)
+	rm $(OUTNAME)$(SUFFIX)
+	mv $(OUTNAME)$(SUFFIX).tmp $(OUTNAME)$(SUFFIX)
 
 TEST_OBJS:=$(call LIST_OBJS,$(TEST_DIRS)) $(call LIST_RESOBJS,$(TEST_RES))
 $(TESTOUTNAME)$(SUFFIX): $(TEST_OBJS)
