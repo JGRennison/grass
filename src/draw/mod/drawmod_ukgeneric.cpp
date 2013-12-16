@@ -37,6 +37,8 @@ IMG_EXTERN(track_d_png, track_d)
 #define BERTHLEVEL 10
 #define UNKNOWNLEVEL 20
 
+#define APPROACHLOCKING_FLASHINTERVAL 500
+
 namespace {
 	enum sprite_ids {
 		SID_typemask        = 0xFF,
@@ -71,10 +73,17 @@ namespace draw {
 			return [x, y, gs, obj](const draw_engine &eng, guilayout::world_layout &layout) {
 				//temporary drawing function
 				std::unique_ptr<draw::drawtextchar> drawtext(new draw::drawtextchar);
+				std::shared_ptr<guilayout::pos_sprite_desc_opts> options;
 				drawtext->backgroundcolour = 0;
 				if(gs->GetAspect() == 0) {
 					drawtext->text = "R";
 					drawtext->foregroundcolour = 0xFF0000;
+					if(gs->GetSignalFlags() & GSF::APPROACHLOCKINGMODE) {
+						unsigned int timebin = layout.GetWorld().GetGameTime() / APPROACHLOCKING_FLASHINTERVAL;
+						if(timebin & 1) drawtext->text = "";
+						if(!options) options = std::make_shared<guilayout::pos_sprite_desc_opts>();
+						options->refresh_interval_ms = APPROACHLOCKING_FLASHINTERVAL;
+					}
 				}
 				else if(route_class::IsRoute(gs->GetAspectType())) {
 					if(gs->GetAspect() == 1) {
@@ -94,7 +103,7 @@ namespace draw {
 					drawtext->text = "S";
 					drawtext->foregroundcolour = 0xFFFFFF;
 				}
-				layout.SetTextChar(x, y, std::move(drawtext), obj, 0);
+				layout.SetTextChar(x, y, std::move(drawtext), obj, 0, std::move(options));
 			};
 		}
 
