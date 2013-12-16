@@ -33,6 +33,7 @@
 #include <limits>
 #include <set>
 #include <forward_list>
+#include "common.h"
 #include "core/edgetype.h"
 #include "core/error.h"
 #include "draw/drawtypes.h"
@@ -191,11 +192,16 @@ namespace guilayout {
 
 	layoutoffsetdirectionresult LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length, std::function<void(int, int, LAYOUT_DIR)> stepfunc = std::function<void(int, int, LAYOUT_DIR)>());
 
+	struct pos_sprite_desc_opts {
+		unsigned int refresh_interval_ms = 0;
+	};
+
 	struct pos_sprite_desc {
 		int level = std::numeric_limits<int>::lowest();
 		draw::sprite_ref sprite = 0;
 		std::weak_ptr<layout_obj> owner;
 		std::unique_ptr<draw::drawtextchar> text;
+		std::shared_ptr<const pos_sprite_desc_opts> options;
 	};
 
 	class world_layout : public std::enable_shared_from_this<world_layout> {
@@ -207,6 +213,14 @@ namespace guilayout {
 
 		std::map<std::pair<int, int>, std::forward_list<pos_sprite_desc> > location_map;
 		std::set<std::pair<int, int>> redraw_map;
+
+		struct refresh_item {
+			int x;
+			int y;
+			int level;
+			std::weak_ptr<layout_obj> owner;
+		};
+		std::map<unsigned int, std::forward_list<refresh_item> > refresh_items;
 
 		//this is so that we can hold onto w if it may go out of scope
 		std::shared_ptr<const world> w_ptr;
@@ -224,12 +238,19 @@ namespace guilayout {
 		void GetTrackBerthLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<layoutberth_obj> > &output);
 		inline std::shared_ptr<draw::draw_module> GetDrawModule() const { return eng; }
 		inline void AddTrackLayoutObj(const generictrack *gt, std::shared_ptr<layouttrack_obj> &&obj) { tracktolayoutmap.emplace(gt, std::move(obj)); }
-		void SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<layout_obj> &owner, int level = 0);
-		void SetTextChar(int x, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner, int level = 0);
-		int SetTextString(int startx, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner, int level = 0, int minlength = -1, int maxlength = -1);
+		void SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<layout_obj> &owner,
+				int level = 0, std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
+		void SetTextChar(int x, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner,
+				int level = 0, std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
+		int SetTextString(int startx, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner,
+				int level = 0, int minlength = -1, int maxlength = -1, std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
 		const pos_sprite_desc *GetSprite(int x, int y);
 		pos_sprite_desc &GetLocationRef(int x, int y, int level);
 		void ClearSpriteLevel(int x, int y, int level);
+		void ChangeSpriteLevelOptions(pos_sprite_desc &psd, int x, int y, int level, std::shared_ptr<const pos_sprite_desc_opts> options);
+		void RemoveSpriteLevelOptions(pos_sprite_desc &psd, int x, int y, int level) {
+			ChangeSpriteLevelOptions(psd, x, y, level, std::shared_ptr<const pos_sprite_desc_opts>());
+		}
 
 		//*1 are inclusive limits, *2 are exclusive limits
 		void GetSpritesInRect(int x1, int x2, int y1, int y2, std::map<std::pair<int, int>, const pos_sprite_desc *> &sprites) const;
@@ -254,6 +275,8 @@ namespace guilayout {
 		void IterateRedrawMap(std::function<void(int x, int y)> func) {
 			for(auto &it : redraw_map) { func(it.first, it.second); }
 		}
+
+		void LayoutTimeStep(world_time oldtime, world_time newtime);
 	};
 
 };

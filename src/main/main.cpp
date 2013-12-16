@@ -119,8 +119,11 @@ void gametimer::Notify() {
 		app->layout->ClearUpdateSet();
 		app->layout->ClearRedrawMap();
 	}
+	world_time oldtime = app->w->GetGameTime();
 	app->w->GameStep(app->timestepms);
+	world_time newtime = app->w->GetGameTime();
 	if(app->eng && app->layout) {
+		app->layout->LayoutTimeStep(oldtime, newtime);
 		app->layout->IterateUpdateSet([&](guilayout::layout_obj *obj) {
 			obj->drawfunction(*(app->eng), *(app->layout));
 		});

@@ -333,19 +333,23 @@ guilayout::pos_sprite_desc &guilayout::world_layout::GetLocationRef(int x, int y
 	return *newpsd;
 }
 
-void guilayout::world_layout::SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<guilayout::layout_obj> &owner, int level) {
+void guilayout::world_layout::SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<guilayout::layout_obj> &owner,
+		int level, std::shared_ptr<const pos_sprite_desc_opts> options) {
 	pos_sprite_desc &psd = GetLocationRef(x, y, level);
 	psd.sprite = sprite;
 	psd.owner = owner;
 	psd.text.reset();
+	ChangeSpriteLevelOptions(psd, x, y, level, options);
 	redraw_map.insert(std::make_pair(x, y));
 }
 
-void guilayout::world_layout::SetTextChar(int x, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<guilayout::layout_obj> &owner, int level) {
+void guilayout::world_layout::SetTextChar(int x, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<guilayout::layout_obj> &owner,
+		int level, std::shared_ptr<const pos_sprite_desc_opts> options) {
 	pos_sprite_desc &psd = GetLocationRef(x, y, level);
 	psd.sprite = 0;
 	psd.owner = owner;
 	psd.text = std::move(dt);
+	ChangeSpriteLevelOptions(psd, x, y, level, options);
 	redraw_map.insert(std::make_pair(x, y));
 }
 
@@ -358,6 +362,7 @@ void guilayout::world_layout::ClearSpriteLevel(int x, int y, int level) {
 	psd_list.remove_if([&](pos_sprite_desc &p) {
 		if(p.level == level) {
 			redraw_map.insert(std::make_pair(x, y));
+			RemoveSpriteLevelOptions(p, x, y, level);
 			return true;
 		}
 		else return false;
@@ -368,7 +373,8 @@ void guilayout::world_layout::ClearSpriteLevel(int x, int y, int level) {
 
 }
 
-int guilayout::world_layout::SetTextString(int startx, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<guilayout::layout_obj> &owner, int level, int minlength, int maxlength) {
+int guilayout::world_layout::SetTextString(int startx, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<guilayout::layout_obj> &owner,
+		int level, int minlength, int maxlength, std::shared_ptr<const pos_sprite_desc_opts> options) {
 	std::unique_ptr<draw::drawtextchar> tdt = std::move(dt);
 
 	int len = strlen_utf8(tdt->text);
@@ -379,7 +385,7 @@ int guilayout::world_layout::SetTextString(int startx, int y, std::unique_ptr<dr
 		cdt->text = std::move(text);
 		cdt->foregroundcolour = dt->foregroundcolour;
 		cdt->backgroundcolour = dt->backgroundcolour;
-		SetTextChar(x, y, std::move(cdt), owner, level);
+		SetTextChar(x, y, std::move(cdt), owner, level, options);
 	};
 
 	const char *str = tdt->text.c_str();
@@ -439,4 +445,40 @@ void guilayout::world_layout::GetLayoutExtents(int &x1, int &x2, int &y1, int &y
 	x2 += 1 + margin;
 	y1 -= margin;
 	y2 += 1 + margin;
+}
+
+//This should be used for all set/remove operations involving the options field of pos_sprite_desc objects
+//This handles (un)registering refresh intervals
+void guilayout::world_layout::ChangeSpriteLevelOptions(pos_sprite_desc &psd, int x, int y, int level, std::shared_ptr<const pos_sprite_desc_opts> options) {
+	if(psd.options) {
+		if(psd.options->refresh_interval_ms) {
+			refresh_items[psd.options->refresh_interval_ms].remove_if([&](const refresh_item &r) {
+				return r.x == x && r.y == y && r.level == level;
+			});
+		}
+	}
+	psd.options = options;
+	if(options) {
+		if(options->refresh_interval_ms) {
+			refresh_items[options->refresh_interval_ms].push_front(refresh_item({x, y, level, psd.owner}));
+		}
+	}
+}
+
+//This adds layout objects which have refresh intervals to the updated list, as necessary
+void guilayout::world_layout::LayoutTimeStep(world_time oldtime, world_time newtime) {
+	for(auto it : refresh_items) {
+		unsigned int time_ms = it.first;
+		unsigned int div = oldtime / time_ms;
+		if(newtime >= time_ms * (div + 1)) {
+			//need to update these objects
+			auto rl = it.second;
+			for(auto &jt : rl) {
+				std::shared_ptr<layout_obj> obj = jt.owner.lock();
+				if(obj) {
+					MarkUpdated(obj.get());
+				}
+			}
+		}
+	}
 }
