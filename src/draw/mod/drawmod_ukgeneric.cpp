@@ -28,6 +28,7 @@
 #include "core/routetypes.h"
 #include "core/trackpiece.h"
 #include "core/trackcircuit.h"
+#include "core/trackreservation.h"
 #include <tuple>
 
 IMG_EXTERN(track_v_png, track_v)
@@ -51,6 +52,7 @@ namespace {
 
 		SID_has_tc          = 0x2000,
 		SID_tc_occ          = 0x4000,
+		SID_reserved        = 0x8000,
 	};
 
 	guilayout::LAYOUT_DIR spriteid_to_layoutdir(draw::sprite_ref sid) {
@@ -120,6 +122,9 @@ namespace draw {
 			guilayout::LayoutOffsetDirection(x, y, obj->GetLayoutDirection(), obj->GetLength(), [&](int sx, int sy, guilayout::LAYOUT_DIR sdir) {
 				draw::sprite_ref base_sprite = SID_trackseg | layoutdir_to_spriteid(guilayout::FoldLayoutDirection(sdir));
 				if(ts->GetTrackCircuit()) base_sprite |= SID_has_tc;
+				reservationcountset rcs;
+				ts->ReservationTypeCount(rcs);
+				if(rcs.routeset > rcs.routesetauto) base_sprite |= SID_reserved;
 				points->push_back({sx, sy, sdir, base_sprite});
 			});
 
@@ -253,6 +258,9 @@ namespace draw {
 					if(sr & SID_has_tc) sp.ReplaceColour(0x0000FF, 0xFF0000);
 					else sp.ReplaceColour(0x0000FF, 0x000000);
 					if(!(sr & SID_tc_occ)) sp.ReplaceColour(0xFF0000, 0xAAAAAA);
+					if((sr & SID_reserved) && !(sr & SID_tc_occ)) {
+						sp.ReplaceColour(0xAAAAAA, 0xFFFFFF);
+					}
 					return;
 
 				default:
