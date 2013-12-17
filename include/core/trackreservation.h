@@ -71,6 +71,11 @@ enum class GTF : unsigned int {
 };
 template<> struct enum_traits< GTF > { static constexpr bool flags = true; };
 
+struct reservationcountset {
+	unsigned int routeset = 0;
+	unsigned int routesetauto = 0;
+};
+
 class track_reservation_state : public serialisable_obj {
 	std::vector<inner_track_reservation_state> itrss;
 
@@ -82,6 +87,8 @@ class track_reservation_state : public serialisable_obj {
 	bool IsReservedInDirection(EDGETYPE direction) const;
 	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask = RRF::RESERVE) const;
 	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask = RRF::RESERVE) const;
+	void ReservationTypeCount(reservationcountset &rcs) const;
+	void ReservationTypeCountInDirection(reservationcountset &rcs, EDGETYPE direction) const;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;

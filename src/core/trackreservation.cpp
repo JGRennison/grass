@@ -122,6 +122,24 @@ unsigned int track_reservation_state::ReservationEnumerationInDirection(EDGETYPE
 	return counter;
 }
 
+void track_reservation_state::ReservationTypeCount(reservationcountset &rcs) const {
+	for(auto &it : itrss) {
+		if(it.rr_flags & RRF::RESERVE) {
+			rcs.routeset++;
+			if(it.rr_flags & RRF::AUTOROUTE) rcs.routesetauto++;
+		}
+	}
+}
+
+void track_reservation_state::ReservationTypeCountInDirection(reservationcountset &rcs, EDGETYPE direction) const {
+	for(auto &it : itrss) {
+		if(it.rr_flags & RRF::RESERVE && it.direction == direction) {
+			rcs.routeset++;
+			if(it.rr_flags & RRF::AUTOROUTE) rcs.routesetauto++;
+		}
+	}
+}
+
 void track_reservation_state::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	itrss.clear();
 	CheckIterateJsonArrayOrType<json_object>(di, "reservations", "track_reservation", ec, [&](const deserialiser_input &innerdi, error_collection &ec) {

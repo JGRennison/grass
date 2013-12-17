@@ -48,6 +48,7 @@ class track_train_counter_block;
 class track_reservation_state;
 enum class RRF : unsigned int;
 enum class GTF : unsigned int;
+struct reservationcountset;
 
 struct speed_restriction {
 	unsigned int speed;
@@ -168,6 +169,8 @@ class generictrack : public world_obj {
 
 	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask);
 	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask);
+	void ReservationTypeCount(reservationcountset &rcs) const;
+	void ReservationTypeCountInDirection(reservationcountset &rcs, EDGETYPE direction) const;
 
 	struct edgelistitem {
 		EDGETYPE edge;

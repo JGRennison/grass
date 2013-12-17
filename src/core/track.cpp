@@ -164,6 +164,22 @@ unsigned int generictrack::ReservationEnumerationInDirection(EDGETYPE direction,
 	return counter;
 }
 
+void generictrack::ReservationTypeCount(reservationcountset &rcs) const {
+	std::vector<track_reservation_state *> trslist;
+	const_cast<generictrack *>(this)->GetTRSList(trslist);
+	for(auto &it : trslist) {
+		it->ReservationTypeCount(rcs);
+	}
+}
+
+void generictrack::ReservationTypeCountInDirection(reservationcountset &rcs, EDGETYPE direction) const {
+	std::vector<track_reservation_state *> trslist;
+	const_cast<generictrack *>(this)->GetTRSList(trslist);
+	for(auto &it : trslist) {
+		it->ReservationTypeCountInDirection(rcs, direction);
+	}
+}
+
 unsigned int generictrack::GetSightingDistance(EDGETYPE direction) const {
 	for(auto it : sighting_distances) {
 		if(it.first == direction) return it.second;
