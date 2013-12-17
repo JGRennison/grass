@@ -84,6 +84,7 @@ ifndef cross
 EXECPREFIX:=
 PATHSEP:=\\
 MKDIR:=mkdir
+HOST:=WIN
 endif
 
 ifdef x64
@@ -151,9 +152,13 @@ $(call GENERIC_OBJS,test): $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch
 OBJS:=$(call LIST_OBJS,$(MAIN_DIRS)) $(call LIST_RESOBJS,$(MAIN_RES))
 #This is to avoid unpleasant side-effects of over-writing executable in-place if it is currently running
 $(OUTNAME)$(SUFFIX): $(OBJS)
+ifeq "$(HOST)" "WIN"
+	$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX) $(LIBS) $(LIBS_main) $(AFLAGS) $(AFLAGS_main) $(GFLAGS)
+else
 	$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX).tmp $(LIBS) $(LIBS_main) $(AFLAGS) $(AFLAGS_main) $(GFLAGS)
 	rm -f $(OUTNAME)$(SUFFIX)
 	mv $(OUTNAME)$(SUFFIX).tmp $(OUTNAME)$(SUFFIX)
+endif
 
 TEST_OBJS:=$(call LIST_OBJS,$(TEST_DIRS)) $(call LIST_RESOBJS,$(TEST_RES))
 $(TESTOUTNAME)$(SUFFIX): $(TEST_OBJS)
