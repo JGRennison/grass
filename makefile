@@ -7,6 +7,7 @@
 #map: set to true to enable linker map
 #noexceptions: set to build without exceptions
 #cross: set to true if building on Unix, but build target is Windows
+#V: set to true to show full command lines
 
 #On Unixy platforms only
 #WXCFGFLAGS: additional arguments for wx-config
@@ -138,6 +139,22 @@ ifneq ($(ARCH),)
 CFLAGS += -march=$(ARCH)
 endif
 
+ifdef V
+define EXEC
+	$1
+endef
+else
+ifeq ($HOST, WIN)
+define EXEC
+	@$1
+endef
+else
+define EXEC
+	@$1 ; rv=$$? ; [ $${rv} -ne 0 ] && echo 'Failed: $(subst ','"'"',$(1))' ; exit $${rv}
+endef
+endif
+endif
+
 .SUFFIXES:
 
 all: $(OUTNAME)$(SUFFIX)
@@ -152,46 +169,54 @@ $(call GENERIC_OBJS,test): $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch
 OBJS:=$(call LIST_OBJS,$(MAIN_DIRS)) $(call LIST_RESOBJS,$(MAIN_RES))
 #This is to avoid unpleasant side-effects of over-writing executable in-place if it is currently running
 $(OUTNAME)$(SUFFIX): $(OBJS)
+	@echo '    Link       $(OUTNAME)$(SUFFIX)'
 ifeq "$(HOST)" "WIN"
-	$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX) $(LIBS) $(LIBS_main) $(AFLAGS) $(AFLAGS_main) $(GFLAGS)
+	$(call EXEC,$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX) $(LIBS) $(LIBS_main) $(AFLAGS) $(AFLAGS_main) $(GFLAGS))
 else
-	$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX).tmp $(LIBS) $(LIBS_main) $(AFLAGS) $(AFLAGS_main) $(GFLAGS)
-	rm -f $(OUTNAME)$(SUFFIX)
-	mv $(OUTNAME)$(SUFFIX).tmp $(OUTNAME)$(SUFFIX)
+	$(call EXEC,$(GCC) $(OBJS) -o $(OUTNAME)$(SUFFIX).tmp $(LIBS) $(LIBS_main) $(AFLAGS) $(AFLAGS_main) $(GFLAGS))
+	$(call EXEC,rm -f $(OUTNAME)$(SUFFIX))
+	$(call EXEC,mv $(OUTNAME)$(SUFFIX).tmp $(OUTNAME)$(SUFFIX))
 endif
 
 TEST_OBJS:=$(call LIST_OBJS,$(TEST_DIRS)) $(call LIST_RESOBJS,$(TEST_RES))
 $(TESTOUTNAME)$(SUFFIX): $(TEST_OBJS)
-	$(GCC) $(TEST_OBJS) -o $(TESTOUTNAME)$(SUFFIX) $(LIBS) $(AFLAGS) $(AFLAGS_test) $(GFLAGS)
-	$(EXECPREFIX)$(TESTOUTNAME)$(SUFFIX)
+	@echo '    Link       $(TESTOUTNAME)$(SUFFIX)'
+	$(call EXEC,$(GCC) $(TEST_OBJS) -o $(TESTOUTNAME)$(SUFFIX) $(LIBS) $(AFLAGS) $(AFLAGS_test) $(GFLAGS))
+	$(call EXEC,$(EXECPREFIX)$(TESTOUTNAME)$(SUFFIX))
 
 MAKEDEPS = -MMD -MP -MT '$@ $(@:.o=.d)'
 
 define COMPILE_RULE
-$$(call GENERIC_OBJ_DIR,$1)/%.o: src/$1/%.cpp | $$(call GENERIC_OBJ_DIR,$1) ; $$(GCC) -c $$< -o $$@ $$(call GENERIC_CFLAGS,$1) $$(call GENERIC_CXXFLAGS,$1) $$(GFLAGS) $$(MAKEDEPS)
+$$(call GENERIC_OBJ_DIR,$1)/%.o: src/$1/%.cpp | $$(call GENERIC_OBJ_DIR,$1)
+	@echo '    g++        $$<'
+	$$(call EXEC,$$(GCC) -c $$< -o $$@ $$(call GENERIC_CFLAGS,$1) $$(call GENERIC_CXXFLAGS,$1) $$(GFLAGS) $$(MAKEDEPS))
 endef
 
 
-RES_OBJCOPY = objcopy --rename-section .data=.rodata,alloc,load,readonly,data,contents $$@ $$@
+RES_OBJCOPY = objcopy --rename-section .data=.rodata,alloc,load,readonly,data,contents $@ $@
 ifeq "$(PLATFORM)" "WIN"
-define RES_RULE
-$$(call GENERIC_OBJ_DIR,$1)/%.o: src/$1/% | $$(call GENERIC_OBJ_DIR,$1) ; $$(GCC) -Wl,-r -Wl,-b,binary $$< -o $$@ -nostdlib; $(RES_OBJCOPY)
-endef
+RES_LINK = $(GCC) -Wl,-r -Wl,-b,binary $< -o $@ -nostdlib
 else
-define RES_RULE
-$$(call GENERIC_OBJ_DIR,$1)/%.o: src/$1/% | $$(call GENERIC_OBJ_DIR,$1) ; $$(LD) -r -b binary $$< -o $$@; $(RES_OBJCOPY)
-endef
+RES_LINK = $(LD) -r -b binary $< -o $@
 endif
+
+define RES_RULE
+$$(call GENERIC_OBJ_DIR,$1)/%.o: src/$1/% | $$(call GENERIC_OBJ_DIR,$1)
+	@echo '    res        $$<'
+	$$(call EXEC,$$(RES_LINK))
+	$$(call EXEC,$$(RES_OBJCOPY))
+endef
 
 $(foreach DIR,$(SRC_DIRS),$(eval $(call COMPILE_RULE,$(DIR))))
 
 $(foreach DIR,$(RES_DIRS),$(eval $(call RES_RULE,$(DIR))))
 
 $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch: include/test/catch.hpp | $(call GENERIC_OBJ_DIR,test)/pch
-	$(GCC) -c include/test/catch.hpp -o $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch $(call GENERIC_CFLAGS,test) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS)
+	@echo '    g++ (pch)  $<' ;
+	$(call EXEC,$(GCC) -c include/test/catch.hpp -o $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch $(call GENERIC_CFLAGS,test) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS))
 
 $(DIRS):
-	-$(MKDIR) $(subst /,$(PATHSEP),$@)
+	-$(call EXEC,$(MKDIR) $(subst /,$(PATHSEP),$@))
 
 .PHONY: clean install uninstall all main test
 
@@ -199,18 +224,22 @@ ALL_OBJS:=$(call LIST_OBJS,$(SRC_DIRS))
 -include $(ALL_OBJS:.o=.d)
 
 clean:
-	rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.ii) $(ALL_OBJS:.o=.lst) $(ALL_OBJS:.o=.d) $(ALL_OBJS:.o=.s) $(OUTNAME)$(SUFFIX) $(TESTOUTNAME)$(SUFFIX) $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch
+	@echo '    Clean all'
+	$(call EXEC,rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.ii) $(ALL_OBJS:.o=.lst) $(ALL_OBJS:.o=.d) $(ALL_OBJS:.o=.s) $(OUTNAME)$(SUFFIX) $(OUTNAME)$(SUFFIX).tmp $(TESTOUTNAME)$(SUFFIX) $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.d)
+	$(call EXEC,rm -f $(call LIST_RESOBJS,$(RES_DIRS)) $(subst .o,.d,$(call LIST_RESOBJS,$(RES_DIRS))))
 
 install:
 ifeq "$(PLATFORM)" "WIN"
 	@echo Install only supported on Unixy platforms
 else
-	cp --remove-destination $(OUTNAME)$(SUFFIX) /usr/local/bin/$(OUTNAME)$(SUFFIX)
+	@echo '    Install to /usr/local/bin/$(OUTNAME)$(SUFFIX)'
+	$(call EXEC,cp --remove-destination $(OUTNAME)$(SUFFIX) /usr/local/bin/$(OUTNAME)$(SUFFIX))
 endif
 
 uninstall:
 ifeq "$(PLATFORM)" "WIN"
 	@echo Uninstall only supported on Unixy platforms
 else
-	rm /usr/local/bin/$(OUTNAME)$(SUFFIX)
+	@echo '    Delete from /usr/local/bin/$(OUTNAME)$(SUFFIX)'
+	$(call EXEC,rm /usr/local/bin/$(OUTNAME)$(SUFFIX))
 endif
