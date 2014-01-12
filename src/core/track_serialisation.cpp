@@ -312,7 +312,7 @@ void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec)
 	CheckTransJsonValueFlag(dsflags, DSF::NO_FL_BR, di, "notrack_fl_br", ec);
 	CheckTransJsonValueFlag(dsflags, DSF::NO_FR_BR, di, "notrack_fr_br", ec);
 
-	if(__builtin_popcount(dsflags&DSF::NO_TRACK_MASK) >= 2) {
+	if(__builtin_popcount(flag_unwrap<DSF>(dsflags&DSF::NO_TRACK_MASK)) >= 2) {
 		ec.RegisterNewError<error_deserialisation>(di, "Cannot remove more than one track edge from a double-slip, use points or a crossover instead");
 		return;
 	}

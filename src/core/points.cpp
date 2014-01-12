@@ -431,13 +431,13 @@ const track_target_ptr & doubleslip::GetConnectingPiece(EDGETYPE direction) cons
 unsigned int doubleslip::GetMaxConnectingPieces(EDGETYPE direction) const {
 	switch(direction) {
 		case EDGE_DS_FL:
-			return 2 - __builtin_popcount(dsflags&(DSF::NO_FL_BL | DSF::NO_FL_BR));
+			return 2 - __builtin_popcount(flag_unwrap<DSF>(dsflags & (DSF::NO_FL_BL | DSF::NO_FL_BR)));
 		case EDGE_DS_FR:
-			return 2 - __builtin_popcount(dsflags&(DSF::NO_FR_BL | DSF::NO_FR_BR));
+			return 2 - __builtin_popcount(flag_unwrap<DSF>(dsflags & (DSF::NO_FR_BL | DSF::NO_FR_BR)));
 		case EDGE_DS_BR:
-			return 2 - __builtin_popcount(dsflags&(DSF::NO_FL_BR | DSF::NO_FR_BR));
+			return 2 - __builtin_popcount(flag_unwrap<DSF>(dsflags & (DSF::NO_FL_BR | DSF::NO_FR_BR)));
 		case EDGE_DS_BL:
-			return 2 - __builtin_popcount(dsflags&(DSF::NO_FL_BL | DSF::NO_FR_BL));
+			return 2 - __builtin_popcount(flag_unwrap<DSF>(dsflags & (DSF::NO_FL_BL | DSF::NO_FR_BL)));
 		default:
 			assert(false);
 			return 0;
@@ -446,7 +446,7 @@ unsigned int doubleslip::GetMaxConnectingPieces(EDGETYPE direction) const {
 
 const track_target_ptr & doubleslip::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
 	genericpoints::PTF pf = GetCurrentPointFlags(direction);
-	bool isrev = (pf & PTF::FIXED) ? (pf & PTF::REV) : index;
+	bool isrev = (pf & PTF::FIXED) ? static_cast<bool>(pf & PTF::REV) : index != 0;
 
 	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isrev);
 	return GetInputPieceOrEmpty(exitdirection);
@@ -510,7 +510,7 @@ bool doubleslip::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_fla
 		}
 	}
 
-	bool isrev = (pf & PTF::FIXED) ? (pf & PTF::REV) : index;
+	bool isrev = (pf & PTF::FIXED) ? static_cast<bool>(pf & PTF::REV) : index != 0;
 	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isrev);
 	PTF exitpf = GetCurrentPointFlags(exitdirection);
 	bool exitpointsrev = (GetConnectingPointDirection(exitdirection, true) == direction);
@@ -529,7 +529,7 @@ void doubleslip::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF
 	if(rr_flags & RRF::RESERVE) {
 		unsigned int entranceindex = GetPointsIndexByEdge(direction);
 		PTF entrancepf = GetCurrentPointFlags(direction);
-		bool isentrancerev = (entrancepf & PTF::FIXED) ? (entrancepf & PTF::REV) : index;
+		bool isentrancerev = (entrancepf & PTF::FIXED) ? static_cast<bool>(entrancepf & PTF::REV) : index != 0;
 
 		EDGETYPE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
 

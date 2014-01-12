@@ -39,6 +39,7 @@ template <typename C> class flagwrapper {
 	operator bool() { return flags != static_cast<C>(0); }
 	operator C&() { return flags; }
 	operator C() const { return flags; }
+	template <typename D> operator D() = delete;
 	flagwrapper &operator&=(C r) { flags &= r; return *this; }
 	flagwrapper &operator^=(C r) { flags ^= r; return *this; }
 	flagwrapper &operator|=(C r) { flags |= r; return *this; }
@@ -91,6 +92,10 @@ operator<<(std::ostream& os, flagwrapper<C> val) {
 	os << val.get();
 	return os;
 }
+
+template <typename C> typename std::enable_if<enum_traits<C>::flags, flagwrapper<C>>::type flag_wrap(typename std::underlying_type<C>::type in) { return static_cast<C>(in); }
+template <typename C> typename std::enable_if<enum_traits<C>::flags, typename std::underlying_type<C>::type>::type flag_unwrap(C in) { return static_cast<typename std::underlying_type<C>::type>(in); }
+template <typename C> typename std::enable_if<enum_traits<C>::flags, typename std::underlying_type<C>::type>::type flag_unwrap(flagwrapper<C> in) { return static_cast<typename std::underlying_type<C>::type>(in.get()); }
 
 #endif
 
