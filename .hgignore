@@ -1,4 +1,0 @@
-syntax: regexp
-
-^objs/
-^grass(_nx)?(_debug)?(-test)?(\.exe)?$
