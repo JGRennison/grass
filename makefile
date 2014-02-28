@@ -26,7 +26,7 @@ MAIN_RES := draw/res
 
 GENERIC_SRC = $(wildcard src/$1/*.cpp)
 GENERIC_OBJ_DIR = objs/$1$(DIR_POSTFIX)
-GENERIC_CFLAGS = $(CFLAGS) $(CFLAGS_$(subst /,_,$1)) -iquote include
+GENERIC_CFLAGS = $(CFLAGS) $(CFLAGS_$(subst /,_,$1)) -iquote include -iquote deps/include
 GENERIC_CXXFLAGS = $(CXXFLAGS) $(CXXFLAGS_$(subst /,_,$1))
 GENERIC_OBJS = $(patsubst src/$1/%.cpp,$(call GENERIC_OBJ_DIR,$1)/%.o,$(call GENERIC_SRC,$1))
 LIST_OBJS = $(foreach dir,$1,$(call GENERIC_OBJS,$(dir)))
@@ -215,9 +215,9 @@ $(foreach DIR,$(SRC_DIRS),$(eval $(call COMPILE_RULE,$(DIR))))
 
 $(foreach DIR,$(RES_DIRS),$(eval $(call RES_RULE,$(DIR))))
 
-$(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch: include/test/catch.hpp | $(call GENERIC_OBJ_DIR,test)/pch
+$(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch: deps/include/test/catch.hpp | $(call GENERIC_OBJ_DIR,test)/pch
 	@echo '    g++ (pch)  $<' ;
-	$(call EXEC,$(GCC) -c include/test/catch.hpp -o $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch $(call GENERIC_CFLAGS,test) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS))
+	$(call EXEC,$(GCC) -c deps/include/test/catch.hpp -o $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch $(call GENERIC_CFLAGS,test) $(CXXFLAGS) $(GFLAGS) $(MAKEDEPS))
 
 $(DIRS) $(OUTDIR):
 	-$(call EXEC,$(MKDIR) $(subst /,$(PATHSEP),$@))
