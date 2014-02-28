@@ -50,6 +50,7 @@ MKDIR:=mkdir -p
 
 CFLAGS_main=$(WX_CFLAGS)
 CFLAGS_draw_wx=$(WX_CFLAGS)
+CFLAGS_test=-O0
 
 ifdef noexceptions
 CXXFLAGS += -fno-exceptions
