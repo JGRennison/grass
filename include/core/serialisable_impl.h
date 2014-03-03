@@ -239,7 +239,8 @@ template <typename C, typename D> inline bool CheckTransJsonValueDef(C &var, con
 	return res;
 }
 
-template <typename C> inline bool TransJsonValueProc(const rapidjson::Value &subval, C &var, const deserialiser_input &di, const char *prop, error_collection &ec, std::function<bool(const std::string &, uint64_t &, error_collection &)> conv, bool mandatory=false) {
+//! Where F is a functor with the signature bool(const std::string &, uint64_t &, error_collection &)
+template <typename C, typename F> inline bool TransJsonValueProc(const rapidjson::Value &subval, C &var, const deserialiser_input &di, const char *prop, error_collection &ec, F conv, bool mandatory = false) {
 	if(subval.IsString()) {
 		uint64_t value;
 		std::string strvalue(subval.GetString(), subval.GetStringLength());
@@ -264,7 +265,8 @@ template <typename C> inline bool TransJsonValueProc(const rapidjson::Value &sub
 	}
 }
 
-template <typename C> inline bool CheckTransJsonValueProc(C &var, const deserialiser_input &di, const char *prop, error_collection &ec, std::function<bool(const std::string &, uint64_t &, error_collection &)> conv, bool mandatory=false) {
+//! Where F is a functor with the signature bool(const std::string &, uint64_t &, error_collection &)
+template <typename C, typename F> inline bool CheckTransJsonValueProc(C &var, const deserialiser_input &di, const char *prop, error_collection &ec, F conv, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
 	if(!subval.IsNull()) di.RegisterProp(prop);
 	else return false;
@@ -272,7 +274,8 @@ template <typename C> inline bool CheckTransJsonValueProc(C &var, const deserial
 	return TransJsonValueProc(subval, var, di, prop, ec, conv, mandatory);
 }
 
-template <typename C, typename D> inline bool CheckTransJsonValueDefProc(C &var, const deserialiser_input &di, const char *prop, const D def, error_collection &ec, std::function<bool(const std::string &, uint64_t &, error_collection &)> conv) {
+//! Where F is a functor with the signature bool(const std::string &, uint64_t &, error_collection &)
+template <typename C, typename D, typename F> inline bool CheckTransJsonValueDefProc(C &var, const deserialiser_input &di, const char *prop, const D def, error_collection &ec, F conv) {
 	bool res = CheckTransJsonValueProc(var, di, prop, ec, conv, false);
 	if(!res) var = def;
 	return res;
@@ -355,7 +358,8 @@ template <typename C, typename D> inline C CheckGetJsonValueDef(const deserialis
 	return res?static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval)):def;
 }
 
-template <typename C> inline bool CheckTransJsonTypeFunc(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, std::function<void(const deserialiser_input &di, error_collection &ec)> func, bool mandatory=false) {
+//! Where F is a functor with the signature void(const deserialiser_input &di, error_collection &ec)
+template <typename C, typename F> inline bool CheckTransJsonTypeFunc(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec, F func, bool mandatory=false) {
 	const rapidjson::Value &subval=di.json[prop];
 	if(!subval.IsNull()) di.RegisterProp(prop);
 	bool res = IsType<C>(subval);
@@ -433,15 +437,23 @@ template <typename C> inline void SerialiseFlagJson(C value, C mask, serialiser_
 	SetType<bool>(so.json_out, value & mask);
 }
 
-template <typename C, typename D> inline void SerialiseObjectArrayContainer(const C &container, serialiser_output &so, const char *prop, std::function<void(serialiser_output &so, const D &val)> func) {
+//! Where F is a functor with the signature void(serialiser_output &so, const typename C::value_type &val)
+template <typename C, typename F> inline void SerialiseArrayContainer(const C &container, serialiser_output &so, const char *prop, F func) {
 	so.json_out.String(prop);
 	so.json_out.StartArray();
 	for(auto &it : container) {
-		so.json_out.StartObject();
 		func(so, it);
-		so.json_out.EndObject();
 	}
 	so.json_out.EndArray();
+}
+
+//! Where F is a functor with the signature void(serialiser_output &so, const typename C::value_type &val)
+template <typename C, typename F> inline void SerialiseObjectArrayContainer(const C &container, serialiser_output &so, const char *prop, F func) {
+	SerialiseArrayContainer(container, so, prop, [&](serialiser_output &so, const typename C::value_type &val) {
+		so.json_out.StartObject();
+		func(so, val);
+		so.json_out.EndObject();
+	});
 }
 
 #endif

@@ -291,13 +291,13 @@ void lookahead::Deserialise(const deserialiser_input &di, error_collection &ec) 
 
 void lookahead::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(current_offset, so, "current_offset");
-	SerialiseObjectArrayContainer<decltype(l1_list), lookaheadroutingpoint>(l1_list, so, "l1", [&](serialiser_output &so, const lookaheadroutingpoint &l1) {
+	SerialiseObjectArrayContainer(l1_list, so, "l1", [&](serialiser_output &so, const lookaheadroutingpoint &l1) {
 		SerialiseValueJson(l1.offset, so, "offset");
 		SerialiseValueJson(l1.sighting_offset, so, "sighting_offset");
 		track_target_ptr ttp = l1.gs;
 		ttp.Serialise("gs", so, ec);
 		SerialiseValueJson(l1.last_aspect, so, "last_aspect");
-		SerialiseObjectArrayContainer<decltype(l1.l2_list), lookaheaditem>(l1.l2_list, so, "l2", [&](serialiser_output &so, const lookaheaditem &l2) {
+		SerialiseObjectArrayContainer(l1.l2_list, so, "l2", [&](serialiser_output &so, const lookaheaditem &l2) {
 			SerialiseValueJson(l2.start_offset, so, "start_offset");
 			SerialiseValueJson(l2.end_offset, so, "end_offset");
 			SerialiseValueJson(l2.sighting_offset, so, "sighting_offset");

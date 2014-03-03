@@ -137,7 +137,7 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 void train::Serialise(serialiser_output &so, error_collection &ec) const {
 	world_obj::Serialise(so, ec);
 
-	SerialiseObjectArrayContainer<std::list<train_unit>, train_unit>(train_segments, so, "vehicleclasses", [&](serialiser_output &so, const train_unit &tu) {
+	SerialiseObjectArrayContainer(train_segments, so, "vehicleclasses", [&](serialiser_output &so, const train_unit &tu) {
 		SerialiseValueJson(tu.vehtype->name, so, "classname");
 		SerialiseValueJson(tu.veh_multiplier, so, "count");
 		SerialiseFlagJson(tu.stflags, train_unit::STF::FULL, so, "full");
