@@ -26,6 +26,8 @@
 #define __STDC_FORMAT_MACROS
 #endif
 #include <cinttypes>
+#include <functional>
+#include <memory>
 #include "core/flags.h"
 #include "core/serialisable.h"
 #include "core/error.h"
@@ -94,10 +96,30 @@ struct deserialiser_input {
 	deserialiser_input *Clone() const;
 };
 
+enum class SOUTPUT_FLAGS {
+	OUTPUT_STATIC   = 1<<0,
+};
+template<> struct enum_traits< SOUTPUT_FLAGS > { static constexpr bool flags = true; };
+
+struct serialiser_output_callbacks {
+	virtual void StartStaticOutput() { }
+	virtual void EndStaticOutput() { }
+};
+
 struct serialiser_output {
 	Handler &json_out;
+	flagwrapper<SOUTPUT_FLAGS> flags;
+	std::unique_ptr<serialiser_output_callbacks> callbacks; //optional
 
 	serialiser_output(Handler &h) : json_out(h) { }
+
+	template <typename T> void OutputStatic(T func) {
+		if(flags & SOUTPUT_FLAGS::OUTPUT_STATIC) {
+			if(callbacks) callbacks->StartStaticOutput();
+			func();
+			if(callbacks) callbacks->EndStaticOutput();
+		}
+	}
 };
 
 class error_deserialisation : public error_obj {
