@@ -22,6 +22,7 @@
 #ifndef INC_FLAGS_ALREADY
 #define INC_FLAGS_ALREADY
 
+#include <cstddef>
 #include <type_traits>
 #include <ostream>
 #include <ios>
@@ -35,7 +36,9 @@ template <typename C> class flagwrapper {
 	C flags;
 
 	public:
+	flagwrapper() : flags(static_cast<C>(0)) { }
 	flagwrapper(C f) : flags(f) { }
+	flagwrapper(std::nullptr_t n) : flags(static_cast<C>(0)) { }
 	operator bool() { return flags != static_cast<C>(0); }
 	operator C&() { return flags; }
 	operator C() const { return flags; }
@@ -47,9 +50,10 @@ template <typename C> class flagwrapper {
 	flagwrapper &operator^=(const flagwrapper<C> &r) { flags ^= r; return *this; }
 	flagwrapper &operator|=(const flagwrapper<C> &r) { flags |= r; return *this; }
 	flagwrapper &operator=(C r) { flags = r; return *this; }
+	flagwrapper &operator=(std::nullptr_t n) { flags = static_cast<C>(0); return *this; }
 	bool operator!=(C r) { return flags != r; }
 	bool operator==(C r) { return flags == r; }
-	C &get() { return flags; }
+	C &getref() { return flags; }
 	C get() const { return flags; }
 };
 template <typename C> flagwrapper<C> operator|(const flagwrapper<C> &l, C r) { return flagwrapper<C>(l.get() | r); }
@@ -60,8 +64,6 @@ template <typename C> flagwrapper<C> operator&(const flagwrapper<C> &l, const fl
 template <typename C> flagwrapper<C> operator^(const flagwrapper<C> &l, const flagwrapper<C> &r) { return flagwrapper<C>(l.get() ^ r.get()); }
 template <typename C> flagwrapper<C> operator~(const flagwrapper<C> &l) { return flagwrapper<C>(~(l.get())); }
 
-//enum_traits<C>::flags
-//std::is_enum<C>::value
 template <typename C> typename std::enable_if<enum_traits<C>::flags, flagwrapper<C>>::type operator|(C l, C r) { return flagwrapper<C>(static_cast<C>(static_cast<typename std::underlying_type<C>::type >(l) | static_cast<typename std::underlying_type<C>::type >(r))); }
 template <typename C> typename std::enable_if<enum_traits<C>::flags, flagwrapper<C>>::type operator&(C l, C r) { return flagwrapper<C>(static_cast<C>(static_cast<typename std::underlying_type<C>::type >(l) & static_cast<typename std::underlying_type<C>::type >(r))); }
 template <typename C> typename std::enable_if<enum_traits<C>::flags, flagwrapper<C>>::type operator^(C l, C r) { return flagwrapper<C>(static_cast<C>(static_cast<typename std::underlying_type<C>::type >(l) ^ static_cast<typename std::underlying_type<C>::type >(r))); }
