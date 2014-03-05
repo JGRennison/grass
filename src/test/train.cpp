@@ -30,7 +30,7 @@
 static void checkvc(world &w, const std::string &name, unsigned int length, unsigned int max_speed, unsigned int tractive_force, unsigned int tractive_power,
 	unsigned int braking_force, unsigned int nominal_rail_traction_limit, unsigned int cumul_drag_const, unsigned int cumul_drag_v, unsigned int cumul_drag_v2,
 	unsigned int face_drag_v2, unsigned int fullmass, unsigned int emptymass, const std::string &traction_str) {
-	SCOPED_INFO("checkvc for: " + name);
+	INFO("checkvc for: " + name);
 	vehicle_class *vc = w.FindVehicleClassByName(name);
 	REQUIRE(vc != 0);
 	CHECK(vc->name == name);
@@ -88,7 +88,7 @@ TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialis
 
 	auto parsecheckerr = [&](const std::string &json, const std::string &errstr) {
 		test_fixture_world env(json);
-		SCOPED_INFO("Error Collection: " << env.ec);
+		INFO("Error Collection: " << env.ec);
 		CHECK(env.ec.GetErrorCount() == 1);
 		std::stringstream s;
 		s << env.ec;
@@ -122,7 +122,7 @@ TEST_CASE("/train/train/deserialisation/typeerror", "Check that trains cannot ap
 	auto parsecheckerr = [&](const std::string &json, const std::string &errstr) {
 		test_fixture_world env(json);
 		env.ws.DeserialiseGameState(env.ec);
-		SCOPED_INFO("Error Collection: " << env.ec);
+		INFO("Error Collection: " << env.ec);
 		CHECK(env.ec.GetErrorCount() == 1);
 		std::stringstream s;
 		s << env.ec;
@@ -174,7 +174,7 @@ TEST_CASE("/train/train/deserialisation/dynamics", "Train deserialisation and dy
 
 	auto test_one_train = [&](const std::string &vehstring, const std::string &activetractions, std::function<void(train &)> f) {
 		test_fixture_world &env = *make_test_tenv(vehstring, activetractions);
-		SCOPED_INFO("Error Collection: " << env.ec);
+		INFO("Error Collection: " << env.ec);
 		REQUIRE(env.ec.GetErrorCount() == 0);
 
 		unsigned int count = 0;
@@ -189,37 +189,37 @@ TEST_CASE("/train/train/deserialisation/dynamics", "Train deserialisation and dy
 
 	auto test_one_train_expect_err = [&](const std::string &vehstring, const std::string &activetractions, unsigned int errcount) {
 		test_fixture_world &env = *make_test_tenv(vehstring, activetractions);
-		SCOPED_INFO("Error Collection: " << env.ec);
+		INFO("Error Collection: " << env.ec);
 		CHECK(env.ec.GetErrorCount() == errcount);
 		delete &env;
 	};
 
 	test_one_train(veh1, "[\"diesel\"]", [&](train &t) {
-		SCOPED_INFO("Test 1");
+		INFO("Test 1");
 		checktd(t.GetTrainDynamics(), 55000, 30000, 500000, 746000, 1000000 * 2, 1000, 200, 250, 25000);
 	});
 	test_one_train(veh1, "[\"AC\"]", [&](train &t) {
-		SCOPED_INFO("Test 2");
+		INFO("Test 2");
 		checktd(t.GetTrainDynamics(), 55000, 30000, 500000 * 2, 746000 * 2, 1000000 * 2, 1000, 200, 250, 25000);
 	});
 	test_one_train(veh1, "[\"diesel\",\"AC\"]", [&](train &t) {
-		SCOPED_INFO("Test 3");
+		INFO("Test 3");
 		checktd(t.GetTrainDynamics(), 55000, 30000, 500000 * 2, 746000 * 2, 1000000 * 2, 1000, 200, 250, 25000);
 	});
 	test_one_train(veh1, "[]", [&](train &t) {
-		SCOPED_INFO("Test 4");
+		INFO("Test 4");
 		checktd(t.GetTrainDynamics(), 55000, 30000, 0, 0, 1000000 * 2, 1000, 200, 250, 25000);
 	});
 	test_one_train(veh2, "[\"AC\"]", [&](train &t) {
-		SCOPED_INFO("Test 5");
+		INFO("Test 5");
 		checktd(t.GetTrainDynamics(), 85000, 30000, 500000 * 3, 746000 * 3, 1000000 * 3, 1500, 300, 250, 45000);
 	});
 	{
-		SCOPED_INFO("Test 6");
+		INFO("Test 6");
 		test_one_train_expect_err(veh3, "[\"AC\"]", 1);
 	}
 	test_one_train(veh4, "[\"AC\"]", [&](train &t) {
-		SCOPED_INFO("Test 7");
+		INFO("Test 7");
 		checktd(t.GetTrainDynamics(), 50000, 30000, 500000 * 2, 746000 * 2, 1000000 * 2, 1000, 200, 500, 24000);
 	});
 }

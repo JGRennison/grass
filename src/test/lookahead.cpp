@@ -90,7 +90,7 @@ void CheckLookahead(const train *t, lookahead &l, const track_location &pos, std
 void CheckLookaheadResult(const track_location &pos, std::map<unsigned int, unsigned int> &map, unsigned int distance, unsigned int speed) {
 	auto it = map.find(distance);
 	if(it != map.end()) {
-		SCOPED_INFO("CheckLookaheadResult: " << distance << " -> " << speed << " (" << pos << ")");
+		INFO("CheckLookaheadResult: " << distance << " -> " << speed << " (" << pos << ")");
 		CHECK(it->second == speed);
 		map.erase(it);
 	}

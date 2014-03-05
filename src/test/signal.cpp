@@ -262,7 +262,7 @@ R"({ "content" : [ )"
 std::function<void(routingpoint *, unsigned int, route_class::ID, routingpoint *, routingpoint *)> makechecksignal(world &w) {
 	return [&w](routingpoint *signal, unsigned int aspect, route_class::ID aspect_type, routingpoint *aspect_target, routingpoint *aspect_route_target) {
 		REQUIRE(signal != 0);
-		SCOPED_INFO("Signal check for: " << signal->GetName() << ", at time: " << w.GetGameTime());
+		INFO("Signal check for: " << signal->GetName() << ", at time: " << w.GetGameTime());
 
 		CHECK(signal->GetAspect() == aspect);
 		CHECK(signal->GetAspectType() == aspect_type);
@@ -499,7 +499,7 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 
 	auto checksignal2 = [&](routingpoint *signal, unsigned int aspect, unsigned int reserved_aspect, route_class::ID aspect_type, routingpoint *target, bool approachlocking) {
 		tenv.checksignal(signal, aspect, aspect_type, target, target);
-		SCOPED_INFO("Signal check for: " << signal->GetName() << ", at time: " << env.w.GetGameTime());
+		INFO("Signal check for: " << signal->GetName() << ", at time: " << env.w.GetGameTime());
 		CHECK(signal->GetReservedAspect() == reserved_aspect);
 		genericsignal *sig = dynamic_cast<genericsignal*>(signal);
 		if(sig) {
@@ -517,7 +517,7 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	checksignal2(tenv.s6, 1, 1, route_class::RTC_SHUNT, tenv.b, false);
 
 	auto routecheck = [&](genericsignal *s, routingpoint *backtarget, routingpoint *forwardtarget, world_time timeout) {
-		SCOPED_INFO("Signal route check for: " << s->GetName());
+		INFO("Signal route check for: " << s->GetName());
 		unsigned int count = 0;
 		s->EnumerateCurrentBackwardsRoutes([&](const route *rt){
 			count++;
@@ -700,7 +700,7 @@ TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
 	CHECK(env.w.GetLogText() == "");
 
 	auto overlapparamcheck = [&](genericsignal *s, world_time timeout) {
-		SCOPED_INFO("Overlap parameter check for signal: " << s->GetName());
+		INFO("Overlap parameter check for signal: " << s->GetName());
 		const route *ovlp = s->GetCurrentForwardOverlap();
 		REQUIRE(ovlp != 0);
 		CHECK(ovlp->overlap_timeout == timeout);
@@ -723,7 +723,7 @@ TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
 	//timing
 
 	auto overlapcheck = [&](genericsignal *s, bool exists) {
-		SCOPED_INFO("Overlap check for signal: " << s->GetName() << ", at time: " << env.w.GetGameTime());
+		INFO("Overlap check for signal: " << s->GetName() << ", at time: " << env.w.GetGameTime());
 		const route *ovlp = s->GetCurrentForwardOverlap();
 		if(exists) {
 			CHECK(ovlp != 0);
@@ -926,7 +926,7 @@ TEST_CASE( "signal/approachcontrol/general", "Test basic approach control" ) {
 	CHECK(env.w.GetLogText() == "");
 
 	auto checksignals = [&](unsigned int line, unsigned int s1a, unsigned int s3a, unsigned int s4a, unsigned int s5a, unsigned int s6a) {
-		SCOPED_INFO("Signal check at time: " << env.w.GetGameTime() << ", line: " << line);
+		INFO("Signal check at time: " << env.w.GetGameTime() << ", line: " << line);
 		CHECK(s1->GetAspect() == s1a);
 		CHECK(s3->GetAspect() == s3a);
 		CHECK(s4->GetAspect() == s4a);
@@ -1305,7 +1305,7 @@ TEST_CASE( "signal/updates", "Test basic signal state and reservation state chan
 
 TEST_CASE( "signal/propagation/repeater", "Test aspect propagation and route creation with aspected and non-aspected repeater signals") {
 	auto test = [&](bool nonaspected) {
-		SCOPED_INFO("Test: " << (nonaspected ? "non-" : "") << "aspected");
+		INFO("Test: " << (nonaspected ? "non-" : "") << "aspected");
 		test_fixture_world_init_checked env(
 			string_format(
 				R"({ "content" : [ )"
@@ -1354,7 +1354,7 @@ TEST_CASE( "signal/propagation/repeater", "Test aspect propagation and route cre
 
 TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal aspect based on route prove, clear, or set time") {
 	auto test = [&](std::string testname, std::string sigparam, std::string rrparam, world_time expected_time) {
-		SCOPED_INFO("Test: " << testname << ", Signal Parameter: " << sigparam << ", Route Restriction Parameter: " << rrparam << ", Expected Time: " << expected_time);
+		INFO("Test: " << testname << ", Signal Parameter: " << sigparam << ", Route Restriction Parameter: " << rrparam << ", Expected Time: " << expected_time);
 		test_fixture_world_init_checked env(
 			string_format(
 				R"({ "content" : [ )"
@@ -1383,7 +1383,7 @@ TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal a
 
 		world_time cumuldelay = 0;
 		auto checkdelay = [&](world_time delay) {
-			SCOPED_INFO("Test at cumulative delay: " << cumuldelay);
+			INFO("Test at cumulative delay: " << cumuldelay);
 			world_time newcumuldelay = cumuldelay + delay;
 			if(newcumuldelay > expected_time) {
 				world_time initial_delay = expected_time - cumuldelay - 1;
@@ -1393,13 +1393,13 @@ TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal a
 					cumuldelay += initial_delay;
 				}
 				{
-					SCOPED_INFO("Pre-check at cumulative delay: " << cumuldelay << ", Game Time: " << env.w.GetGameTime());
+					INFO("Pre-check at cumulative delay: " << cumuldelay << ", Game Time: " << env.w.GetGameTime());
 					CHECK(s1->GetAspect() == 0);
 				}
 				env.w.GameStep(2);
 				cumuldelay += 2;
 				{
-					SCOPED_INFO("Post-check at cumulative delay: " << cumuldelay << ", Game Time: " << env.w.GetGameTime());
+					INFO("Post-check at cumulative delay: " << cumuldelay << ", Game Time: " << env.w.GetGameTime());
 					CHECK(s1->GetAspect() == 1);
 				}
 				env.w.GameStep(newcumuldelay - cumuldelay);
@@ -1428,7 +1428,7 @@ TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal a
 	};
 
 	auto multitest = [&](std::string paramname, unsigned int paramvalue, world_time expected_time) {
-		SCOPED_INFO("Multi-Test: Parameter: " << paramname << ", Value: " << paramvalue << ", Expected Time: " << expected_time);
+		INFO("Multi-Test: Parameter: " << paramname << ", Value: " << paramvalue << ", Expected Time: " << expected_time);
 		auto mkparam = [&](unsigned int value) {
 			return string_format(R"( "%s" : %d )", paramname.c_str(), value);
 		};
@@ -1446,7 +1446,7 @@ TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal a
 
 TEST_CASE( "signal/aspect/discontinous", "Test discontinuous allowed signal aspects") {
 	auto test = [&](std::string allowed_aspects, unsigned int expected_mask, const std::vector<unsigned int> &aspects, bool repeatermode) {
-		SCOPED_INFO("Allowed aspects: " << allowed_aspects << ", Repeater Mode: " << repeatermode);
+		INFO("Allowed aspects: " << allowed_aspects << ", Repeater Mode: " << repeatermode);
 
 		std::string targsigname = repeatermode ? "Srep" : "S0";
 
@@ -1508,7 +1508,7 @@ TEST_CASE( "signal/aspect/discontinous", "Test discontinuous allowed signal aspe
 		unsigned int currentaspect = aspects.size();
 		while(currentaspect--) {    //count down from aspects.size()-1 to 0
 			unsigned int expectedaspect = aspects[currentaspect];
-			SCOPED_INFO("Current Aspect: " << currentaspect << ", Expected Aspect: " << expectedaspect);
+			INFO("Current Aspect: " << currentaspect << ", Expected Aspect: " << expectedaspect);
 			track_circuit *t = env.w.track_circuits.FindOrMakeByName(string_format("T%d", currentaspect));
 			t->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 			env.w.GameStep(1);

@@ -120,7 +120,7 @@ class overlap_ops_test_class_1 {
 	}
 	void checksignal(genericsignal *signal, unsigned int aspect, route_class::ID aspect_type, routingpoint *aspect_target, routingpoint *aspect_route_target, routingpoint *overlapend) {
 		REQUIRE(signal != 0);
-		SCOPED_INFO("Signal check for: " << signal->GetName() << ", at time: " << w.GetGameTime());
+		INFO("Signal check for: " << signal->GetName() << ", at time: " << w.GetGameTime());
 
 		CHECK(signal->GetAspect() == aspect);
 		CHECK(signal->GetAspectType() == aspect_type);

@@ -123,7 +123,7 @@ TEST_CASE( "deserialisation/template/basic", "Test basic templating" ) {
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	auto checkrmrtflags = [&](const char *name, RPRT frontflags, RPRT backflags) {
-		SCOPED_INFO("Routing Marker check for: " << name);
+		INFO("Routing Marker check for: " << name);
 
 		routingmarker *rm = dynamic_cast<routingmarker *>(env.w.FindTrackByName(name));
 		REQUIRE(rm != 0);

@@ -82,7 +82,7 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 			bool found = false;
 			piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
 				if(reserved_route == rt) {
-					SCOPED_INFO("checkstate: piece: " << piece->GetName());
+					INFO("checkstate: piece: " << piece->GetName());
 					found = true;
 					if(piece == end) {
 						CHECK(hasroute(piece->GetConnectingPieceByIndex(r_direction, r_index).track, reserved_route) == false);
@@ -215,7 +215,7 @@ TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 	generictrack *t[7];
 	trackberth *b[7];
 	for(unsigned int i = 0; i < sizeof(t)/sizeof(t[0]); i++) {
-		SCOPED_INFO("Load loop: " << i);
+		INFO("Load loop: " << i);
 		t[i] = PTR_CHECK(env.w.FindTrackByName(string_format("TS%d", i)));
 		b[i] = t[i]->GetBerth();
 	}
@@ -239,11 +239,11 @@ TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 	PTR_CHECK(t[1]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 
 	auto advance = [&](unsigned int index, unsigned int berthindex) {
-		SCOPED_INFO("Berth advance: " << index << ", expected berth: " << berthindex);
+		INFO("Berth advance: " << index << ", expected berth: " << berthindex);
 		PTR_CHECK(t[index]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 		PTR_CHECK(t[index-1]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
 		for(unsigned int i = 0; i < sizeof(b)/sizeof(b[0]); i++) {
-			SCOPED_INFO("Testing berth: " << i << ", expected berth: " << berthindex);
+			INFO("Testing berth: " << i << ", expected berth: " << berthindex);
 			if(i == berthindex) {
 				REQUIRE(b[i] != 0);
 				CHECK(b[i]->contents == "test");
@@ -262,27 +262,27 @@ TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 }
 
 void FillBerth(test_fixture_world &env, const std::string &name, std::string &&val) {
-	SCOPED_INFO("FillBerth: " << name << ", " << val);
+	INFO("FillBerth: " << name << ", " << val);
 	generictrack *gt = PTR_CHECK(env.w.FindTrackByName(name));
 	REQUIRE(gt->HasBerth() == true);
 	PTR_CHECK(gt->GetBerth())->contents = std::move(val);
 }
 
 void SetTrackTC(test_fixture_world &env, const std::string &name, bool val) {
-	SCOPED_INFO("SetTrackTC: " << name << ", " << val);
+	INFO("SetTrackTC: " << name << ", " << val);
 	generictrack *gt = PTR_CHECK(env.w.FindTrackByName(name));
 	PTR_CHECK(gt->GetTrackCircuit())->SetTCFlagsMasked(val ? track_circuit::TCF::FORCEOCCUPIED : track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
 }
 
 void CheckBerth(test_fixture_world &env, const std::string &name, const std::string &val) {
-	SCOPED_INFO("CheckBerth: " << name << ", " << val);
+	INFO("CheckBerth: " << name << ", " << val);
 	generictrack *gt = PTR_CHECK(env.w.FindTrackByName(name));
 	REQUIRE(gt->HasBerth() == true);
 	CHECK(PTR_CHECK(gt->GetBerth())->contents == val);
 }
 
 void SetRoute(test_fixture_world &env, const std::string &start, const std::string &end) {
-	SCOPED_INFO("SetRoute: " << start << " -> " << end);
+	INFO("SetRoute: " << start << " -> " << end);
 	routingpoint *s = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>(start));
 	routingpoint *e = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>(end));
 

@@ -314,7 +314,7 @@ TEST_CASE( "track/deserialisation/doubleslip", "Test basic doubleslip deserialis
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	auto checkds = [&](const char *name, genericpoints::PTF pffl, genericpoints::PTF pffr, genericpoints::PTF pfbl, genericpoints::PTF pfbr) {
-		SCOPED_INFO("Double-slip check for: " << name);
+		INFO("Double-slip check for: " << name);
 
 		doubleslip *ds = dynamic_cast<doubleslip *>(env.w.FindTrackByName(name));
 		REQUIRE(ds != 0);
@@ -358,7 +358,7 @@ TEST_CASE( "track/conn/doubleslip", "Test basic doubleslip connectivity" ) {
 	generictrack *br = env.w.FindTrackByName("BR");
 
 	auto checkdstraverse = [&](const char *name, generictrack *flt, generictrack *frt, generictrack *blt, generictrack *brt) {
-		SCOPED_INFO("Double-slip check for: " << name);
+		INFO("Double-slip check for: " << name);
 
 		doubleslip *ds = dynamic_cast<doubleslip *>(env.w.FindTrackByName(name));
 		REQUIRE(ds != 0);
@@ -374,7 +374,7 @@ TEST_CASE( "track/conn/doubleslip", "Test basic doubleslip connectivity" ) {
 	};
 
 	auto dsmovepoints = [&](const char *name, EDGETYPE direction, bool rev) {
-		SCOPED_INFO("Double-slip check for: " << name);
+		INFO("Double-slip check for: " << name);
 
 		doubleslip *ds = dynamic_cast<doubleslip *>(env.w.FindTrackByName(name));
 		REQUIRE(ds != 0);
@@ -502,7 +502,7 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	auto checkds = [&](const char *name, genericpoints::PTF pffl, genericpoints::PTF pffr, genericpoints::PTF pfbl, genericpoints::PTF pfbr) {
-		SCOPED_INFO("Double-slip check for: " << name << ", at time: " << env.w.GetGameTime());
+		INFO("Double-slip check for: " << name << ", at time: " << env.w.GetGameTime());
 
 		doubleslip *ds = dynamic_cast<doubleslip *>(env.w.FindTrackByName(name));
 		REQUIRE(ds != 0);
@@ -512,7 +512,7 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 		CHECK(ds->GetCurrentPointFlags(EDGE_DS_BR) == pfbr);
 	};
 	auto checkp = [&](const char *name, genericpoints::PTF pflags) {
-		SCOPED_INFO("Points check for: " << name << ", at time: " << env.w.GetGameTime());
+		INFO("Points check for: " << name << ", at time: " << env.w.GetGameTime());
 
 		points *p = dynamic_cast<points *>(env.w.FindTrackByName(name));
 		REQUIRE(p != 0);
@@ -576,7 +576,7 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	auto checkpoints = [&](const std::string &name, unsigned int norm_dist, unsigned int rev_dist, unsigned int face_dist) {
-		SCOPED_INFO("Points check for: " << name);
+		INFO("Points check for: " << name);
 		generictrack *p = env.w.FindTrackByName(name);
 		REQUIRE(p != 0);
 		CHECK(p->GetSightingDistance(EDGE_PTS_NORMAL) == norm_dist);
@@ -585,7 +585,7 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 		CHECK(p->GetSightingDistance(EDGE_FRONT) == 0);
 	};
 	auto checksig = [&](const std::string &name, unsigned int dist) {
-		SCOPED_INFO("Signal check for: " << name);
+		INFO("Signal check for: " << name);
 		generictrack *s = env.w.FindTrackByName(name);
 		REQUIRE(s != 0);
 		CHECK(s->GetSightingDistance(EDGE_FRONT) == dist);
