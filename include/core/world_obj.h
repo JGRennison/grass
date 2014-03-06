@@ -27,6 +27,8 @@
 #include <functional>
 #include "core/future.h"
 #include "core/serialisable.h"
+#include "core/util.h"
+#include "core/flags.h"
 
 class world;
 
@@ -43,6 +45,11 @@ class world_obj : public serialisable_futurable_obj, public updatable_obj {
 	std::string name;
 	world &w;
 
+	enum class WOPRIVF {
+		AUTONAME     = 1<<0,
+	};
+	flagwrapper<WOPRIVF> wo_privflags;
+
 	public:
 	world_obj(world &w_) : w(w_) { }
 	virtual std::string GetTypeName() const = 0;
@@ -52,8 +59,11 @@ class world_obj : public serialisable_futurable_obj, public updatable_obj {
 	virtual std::string GetFriendlyName() const;
 	world &GetWorld() const { return w; }
 	void MarkUpdated() { updatable_obj::MarkUpdated(w); }
+	bool IsAutoNamed() const { return wo_privflags & WOPRIVF::AUTONAME; }
+	void SetAutoName(bool autoname) { SetOrClearBitsRef(wo_privflags.getref(), WOPRIVF::AUTONAME, autoname); }
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 };
+template<> struct enum_traits< world_obj::WOPRIVF > { static constexpr bool flags = true; };
 
 #endif

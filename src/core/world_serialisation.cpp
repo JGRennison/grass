@@ -99,8 +99,10 @@ void world_deserialisation::DeserialiseRootObjArray(const ws_deserialisation_typ
 
 template <typename T> T* world_deserialisation::MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec, bool findonly) {
 	std::string trackname;
+	bool isautoname = false;
 	if(!CheckTransJsonValue(trackname, di, "name", ec)) {
 		trackname=string_format("#%d", current_content_index);
+		isautoname = true;
 	}
 
 	std::unique_ptr<generictrack> &ptr = w.all_pieces[trackname];
@@ -113,6 +115,7 @@ template <typename T> T* world_deserialisation::MakeOrFindGenericTrack(const des
 	else if(!findonly) {
 		ptr.reset(new T(w));
 		ptr->SetName(trackname);
+		ptr->SetAutoName(isautoname);
 		ptr->SetPreviousTrackPiece(previoustrackpiece);
 		if(previoustrackpiece) previoustrackpiece->SetNextTrackPiece(ptr.get());
 		previoustrackpiece = ptr.get();
