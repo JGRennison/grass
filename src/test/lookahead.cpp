@@ -335,7 +335,7 @@ TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserial
 	auto serialise_lookahead = [&](const lookahead &l) -> std::string {
 		std::string json;
 		writestream wr(json);
-		Handler hn(wr);
+		WriterHandler hn(wr);
 		serialiser_output so(hn);
 		so.json_out.StartObject();
 		l.Serialise(so, env.ec);

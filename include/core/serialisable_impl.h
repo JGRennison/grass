@@ -50,14 +50,49 @@ struct writestream {
 	inline void Put(char ch) { str.push_back(ch); }
 };
 
-struct Handler : public rapidjson::Writer<writestream> {
-	using rapidjson::Writer<writestream>::String;
+struct Handler {
+	virtual Handler& Null() = 0;
+	virtual Handler& Bool(bool b) = 0;
+	virtual Handler& Int(int i) = 0;
+	virtual Handler& Uint(unsigned u) = 0;
+	virtual Handler& Int64(int64_t i64) = 0;
+	virtual Handler& Uint64(uint64_t u64) = 0;
+	virtual Handler& Double(double d) = 0;
+	virtual Handler& String(const char* str, rapidjson::SizeType length, bool copy = false) = 0;
+	virtual Handler& StartObject() = 0;
+	virtual Handler& EndObject(rapidjson::SizeType memberCount = 0) = 0;
+	virtual Handler& StartArray() = 0;
+	virtual Handler& EndArray(rapidjson::SizeType elementCount = 0) = 0;
+	virtual Handler& String(const char* str) = 0;
 	Handler& String(const std::string &str) {
-		rapidjson::Writer<writestream>::String(str.c_str(), str.size());
+		String(str.c_str(), str.size());
 		return *this;
 	}
-	Handler(writestream &wr) : rapidjson::Writer<writestream>::Writer(wr) { }
 };
+
+template<typename A, typename B> struct GenericWriterHandler : public Handler {
+	private:
+	A writer;
+
+	public:
+	GenericWriterHandler(B &wr) : writer(wr) { }
+
+	GenericWriterHandler& Null() { writer.Null(); return *this; }
+	GenericWriterHandler& Bool(bool b) { writer.Bool(b); return *this; }
+	GenericWriterHandler& Int(int i) { writer.Int(i); return *this; }
+	GenericWriterHandler& Uint(unsigned u) { writer.Uint(u); return *this; }
+	GenericWriterHandler& Int64(int64_t i64) { writer.Int64(i64); return *this; }
+	GenericWriterHandler& Uint64(uint64_t u64) { writer.Uint64(u64); return *this; }
+	GenericWriterHandler& Double(double d) { writer.Double(d); return *this; }
+	GenericWriterHandler& String(const char* str, rapidjson::SizeType length, bool copy = false) { writer.String(str, length, copy); return *this; }
+	GenericWriterHandler& StartObject() { writer.StartObject(); return *this; }
+	GenericWriterHandler& EndObject(rapidjson::SizeType memberCount = 0) { writer.EndObject(memberCount); return *this; }
+	GenericWriterHandler& StartArray() { writer.StartArray(); return *this; }
+	GenericWriterHandler& EndArray(rapidjson::SizeType elementCount = 0) { writer.EndArray(elementCount); return *this; }
+	GenericWriterHandler& String(const char* str) { writer.String(str); return *this; }
+};
+
+using WriterHandler = GenericWriterHandler<rapidjson::Writer<writestream>, writestream>;
 
 inline std::string MkArrayRefName(unsigned int i) {
 	return "Array Element " + std::to_string(i);
