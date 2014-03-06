@@ -103,13 +103,13 @@ struct deserialiser_input {
 	std::string reference_name;
 	const rapidjson::Value &json;
 	world *w;
-	world_serialisation *ws;
+	world_deserialisation *ws;
 	const deserialiser_input *parent;
 	mutable std::vector<const char *> seenprops;
 	deserialiser_input *objpreparse = 0;
 	deserialiser_input *objpostparse = 0;
 
-	deserialiser_input(const std::string &t, const std::string &r, const rapidjson::Value &j, world *w_=0, world_serialisation *ws_=0, const deserialiser_input *base=0) : type(t), reference_name(r), json(j), w(w_), ws(ws_), parent(base) { }
+	deserialiser_input(const std::string &t, const std::string &r, const rapidjson::Value &j, world *w_=0, world_deserialisation *ws_=0, const deserialiser_input *base=0) : type(t), reference_name(r), json(j), w(w_), ws(ws_), parent(base) { }
 	deserialiser_input(const std::string &t, const std::string &r, const rapidjson::Value &j, const deserialiser_input &base) : type(t), reference_name(r), json(j), w(base.w), ws(base.ws), parent(&base) { }
 	deserialiser_input(const rapidjson::Value &j, const std::string &t, const std::string &r, const deserialiser_input &base) : type(t), reference_name(r), json(j), w(base.w), ws(base.ws), parent(&base) { }
 	deserialiser_input(const rapidjson::Value &j, const std::string &r, const deserialiser_input &base) : reference_name(r), json(j), w(base.w), ws(base.ws), parent(&base) { }

@@ -30,7 +30,7 @@
 
 struct test_fixture_world {
 	world_test w;
-	world_serialisation ws;
+	world_deserialisation ws;
 	error_collection ec;
 
 	test_fixture_world(std::string input) : ws(w) {

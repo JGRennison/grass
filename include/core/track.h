@@ -42,7 +42,7 @@ typedef vartrack_target_ptr<generictrack> track_target_ptr;
 class track_location;
 class route;
 class action;
-class world_serialisation;
+class world_deserialisation;
 class track_circuit;
 class track_train_counter_block;
 class track_reservation_state;
@@ -88,7 +88,7 @@ class generictrack : public world_obj {
 
 	std::unique_ptr<trackberth> berth;
 
-	friend world_serialisation;
+	friend world_deserialisation;
 	void SetPreviousTrackPiece(generictrack *prev) { prevtrack = prev; }
 	void SetNextTrackPiece(generictrack *next) { nexttrack = next; }
 	public:

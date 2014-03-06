@@ -31,7 +31,7 @@
 #include "core/future.h"
 #include "core/edgetype.h"
 
-class world_serialisation;
+class world_deserialisation;
 class action;
 class generictrack;
 class textpool;
@@ -104,7 +104,7 @@ class track_train_counter_block_container {
 };
 
 class world : public named_futurable_obj {
-	friend world_serialisation;
+	friend world_deserialisation;
 	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
 	std::unordered_map<std::string, std::unique_ptr<vehicle_class> > all_vehicle_classes;
 	std::forward_list<train> all_trains;

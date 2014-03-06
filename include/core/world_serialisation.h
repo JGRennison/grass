@@ -46,7 +46,7 @@ struct template_def {
 	bool beingexpanded = false;
 };
 
-class world_serialisation {
+class world_deserialisation {
 	world &w;
 	std::map<std::string, template_def> template_map;
 	std::forward_list<rapidjson::Document> parsed_inputs;
@@ -80,7 +80,7 @@ class world_serialisation {
 	};
 
 	void InitObjectTypes();
-	world_serialisation(world &w_) : w(w_), previoustrackpiece(0) { InitObjectTypes(); }
+	world_deserialisation(world &w_) : w(w_), previoustrackpiece(0) { InitObjectTypes(); }
 	void ParseInputString(const std::string &input, error_collection &ec, WSLOADGAME_FLAGS flags = WSLOADGAME_FLAGS::ZERO);
 	void LoadGame(const deserialiser_input &di, error_collection &ec, WSLOADGAME_FLAGS flags = WSLOADGAME_FLAGS::ZERO);
 	void DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &contentdi, error_collection &ec);
@@ -102,7 +102,7 @@ class world_serialisation {
 	void LoadGameFromStrings(const std::string &base, const std::string &save, error_collection &ec);
 	void LoadGameFromFiles(const std::string &basefile, const std::string &savefile, error_collection &ec);
 };
-template<> struct enum_traits< world_serialisation::ws_dtf_params::WSDTFP_FLAGS > { static constexpr bool flags = true; };
-template<> struct enum_traits< world_serialisation::WSLOADGAME_FLAGS > { static constexpr bool flags = true; };
+template<> struct enum_traits< world_deserialisation::ws_dtf_params::WSDTFP_FLAGS > { static constexpr bool flags = true; };
+template<> struct enum_traits< world_deserialisation::WSLOADGAME_FLAGS > { static constexpr bool flags = true; };
 
 #endif

@@ -38,7 +38,7 @@
 #include "core/error.h"
 #include "draw/drawtypes.h"
 
-class world_serialisation;
+class world_deserialisation;
 class generictrack;
 class trackberth;
 class error_collection;
@@ -232,7 +232,7 @@ namespace guilayout {
 		virtual ~world_layout() { }
 		const world & GetWorld() const { return w; }
 		void AddLayoutObj(const std::shared_ptr<layout_obj> &obj);
-		void SetWorldSerialisationLayout(world_serialisation &ws);
+		void SetWorldSerialisationLayout(world_deserialisation &ws);
 		void ProcessLayoutObjSet(error_collection &ec);
 		void GetTrackLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<layouttrack_obj> > &output);
 		void GetTrackBerthLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<layoutberth_obj> > &output);

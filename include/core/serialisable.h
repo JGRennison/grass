@@ -27,7 +27,7 @@
 
 struct deserialiser_input;
 struct serialiser_output;
-class world_serialisation;
+class world_deserialisation;
 
 template <typename... Args> class deserialisation_type_factory {
 	std::map<std::string, std::function<void(const deserialiser_input &di, error_collection &ec, Args...)> > typemapping;
@@ -48,7 +48,7 @@ template <typename... Args> class deserialisation_type_factory {
 };
 
 class serialisable_obj {
-	friend world_serialisation;
+	friend world_deserialisation;
 
 	void DeserialisePrePost(const char *name, const deserialiser_input &di, error_collection &ec);
 

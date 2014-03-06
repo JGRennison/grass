@@ -33,7 +33,7 @@
 #include "core/train.h"
 #include <typeinfo>
 
-void world_serialisation::ParseInputString(const std::string &input, error_collection &ec, world_serialisation::WSLOADGAME_FLAGS flags) {
+void world_deserialisation::ParseInputString(const std::string &input, error_collection &ec, world_deserialisation::WSLOADGAME_FLAGS flags) {
 	parsed_inputs.emplace_front();
 	rapidjson::Document &dc =  parsed_inputs.front();
 	if (dc.Parse<0>(input.c_str()).HasParseError()) {
@@ -42,7 +42,7 @@ void world_serialisation::ParseInputString(const std::string &input, error_colle
 	else LoadGame(deserialiser_input("", "[root]", dc, &w, this, 0), ec, flags);
 }
 
-void world_serialisation::LoadGame(const deserialiser_input &di, error_collection &ec, world_serialisation::WSLOADGAME_FLAGS flags) {
+void world_deserialisation::LoadGame(const deserialiser_input &di, error_collection &ec, world_deserialisation::WSLOADGAME_FLAGS flags) {
 	if(!(flags & WSLOADGAME_FLAGS::NOCONTENT)) {
 		deserialiser_input contentdi(di.json["content"], "content", "content", di);
 		if(!contentdi.json.IsNull()) {
@@ -64,11 +64,11 @@ void world_serialisation::LoadGame(const deserialiser_input &di, error_collectio
 	}
 }
 
-void world_serialisation::DeserialiseGameState(error_collection &ec) {
+void world_deserialisation::DeserialiseGameState(error_collection &ec) {
 	gamestate_init.Execute(ec);
 }
 
-void world_serialisation::DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &contentdi, error_collection &ec) {
+void world_deserialisation::DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &contentdi, error_collection &ec) {
 	if(contentdi.json.IsArray()) {
 		for(rapidjson::SizeType i = 0; i < contentdi.json.Size(); i++) {
 			deserialiser_input subdi("", MkArrayRefName(i), contentdi.json[i], &w, this, &contentdi);
@@ -97,7 +97,7 @@ void world_serialisation::DeserialiseRootObjArray(const ws_deserialisation_type_
 	}
 }
 
-template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec, bool findonly) {
+template <typename T> T* world_deserialisation::MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec, bool findonly) {
 	std::string trackname;
 	if(!CheckTransJsonValue(trackname, di, "name", ec)) {
 		trackname=string_format("#%d", current_content_index);
@@ -124,7 +124,7 @@ template <typename T> T* world_serialisation::MakeOrFindGenericTrack(const deser
 	return static_cast<T*>(ptr.get());
 }
 
-template <typename T> T* world_serialisation::DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+template <typename T> T* world_deserialisation::DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 	T* target = MakeOrFindGenericTrack<T>(di, ec, wdp.flags & ws_dtf_params::WSDTFP_FLAGS::NONEWTRACK);
 	if(target) {
 		target->DeserialiseObject(di, ec);
@@ -132,7 +132,7 @@ template <typename T> T* world_serialisation::DeserialiseGenericTrack(const dese
 	return target;
 }
 
-void world_serialisation::DeserialiseTemplate(const deserialiser_input &di, error_collection &ec) {
+void world_deserialisation::DeserialiseTemplate(const deserialiser_input &di, error_collection &ec) {
 	const rapidjson::Value *contentval;
 	std::string name;
 	if(CheckTransJsonValue(name, di, "name", ec) && CheckTransRapidjsonValue<json_object>(contentval, di, "content", ec)) {
@@ -144,7 +144,7 @@ void world_serialisation::DeserialiseTemplate(const deserialiser_input &di, erro
 	}
 }
 
-void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di, error_collection &ec) {
+void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &di, error_collection &ec) {
 	std::string newtype;
 	std::string basetype;
 	if(CheckTransJsonValue(newtype, di, "newtype", ec) && CheckTransJsonValue(basetype, di, "basetype", ec)) {
@@ -185,7 +185,7 @@ void world_serialisation::DeserialiseTypeDefinition(const deserialiser_input &di
 	}
 }
 
-void world_serialisation::ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec) {
+void world_deserialisation::ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec) {
 	auto templ = template_map.find(name);
 	if(templ != template_map.end() && templ->second.json) {
 		if(templ->second.beingexpanded) {    //recursive expansion detection
@@ -203,7 +203,7 @@ void world_serialisation::ExecuteTemplate(serialisable_obj &obj, std::string nam
 	}
 }
 
-void world_serialisation::DeserialiseTractionType(const deserialiser_input &di, error_collection &ec) {
+void world_deserialisation::DeserialiseTractionType(const deserialiser_input &di, error_collection &ec) {
 	std::string name;
 	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
 		di.w->AddTractionType(name, CheckGetJsonValueDef<bool, bool>(di, "alwaysavailable", false, ec));
@@ -214,7 +214,7 @@ void world_serialisation::DeserialiseTractionType(const deserialiser_input &di, 
 	}
 }
 
-void world_serialisation::DeserialiseTrackCircuit(const deserialiser_input &di, error_collection &ec) {
+void world_deserialisation::DeserialiseTrackCircuit(const deserialiser_input &di, error_collection &ec) {
 	std::string name;
 	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
 		track_circuit *tc = di.w->track_circuits.FindOrMakeByName(name);
@@ -225,7 +225,7 @@ void world_serialisation::DeserialiseTrackCircuit(const deserialiser_input &di, 
 	}
 }
 
-void world_serialisation::DeserialiseTrackTrainBlock(const deserialiser_input &di, error_collection &ec) {
+void world_deserialisation::DeserialiseTrackTrainBlock(const deserialiser_input &di, error_collection &ec) {
 	std::string name;
 	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
 		track_train_counter_block *tc = di.w->track_triggers.FindOrMakeByName(name);
@@ -236,7 +236,7 @@ void world_serialisation::DeserialiseTrackTrainBlock(const deserialiser_input &d
 	}
 }
 
-void world_serialisation::DeserialiseVehicleClass(const deserialiser_input &di, error_collection &ec) {
+void world_deserialisation::DeserialiseVehicleClass(const deserialiser_input &di, error_collection &ec) {
 	std::string name;
 	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
 		vehicle_class *vc = di.w->FindOrMakeVehicleClassByName(name);
@@ -247,7 +247,7 @@ void world_serialisation::DeserialiseVehicleClass(const deserialiser_input &di, 
 	}
 }
 
-void world_serialisation::DeserialiseTrain(const deserialiser_input &di, error_collection &ec) {
+void world_deserialisation::DeserialiseTrain(const deserialiser_input &di, error_collection &ec) {
 	if(di.w) {
 		std::string name;
 		train *t = 0;
@@ -270,7 +270,7 @@ void world_serialisation::DeserialiseTrain(const deserialiser_input &di, error_c
 	}
 }
 
-template <typename C> void world_serialisation::MakeGenericTrackTypeWrapper() {
+template <typename C> void world_deserialisation::MakeGenericTrackTypeWrapper() {
 	auto func = [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		this->DeserialiseGenericTrack<C>(di, ec, wdp);
 	};
@@ -278,7 +278,7 @@ template <typename C> void world_serialisation::MakeGenericTrackTypeWrapper() {
 	gamestate_object_types.RegisterType(C::GetTypeSerialisationNameStatic(), func);
 }
 
-void world_serialisation::InitObjectTypes() {
+void world_deserialisation::InitObjectTypes() {
 	MakeGenericTrackTypeWrapper<trackseg>();
 	MakeGenericTrackTypeWrapper<points>();
 	MakeGenericTrackTypeWrapper<autosignal>();
@@ -308,13 +308,13 @@ void world_serialisation::InitObjectTypes() {
 	});
 }
 
-void world_serialisation::DeserialiseObject(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &di, error_collection &ec) {
+void world_deserialisation::DeserialiseObject(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &di, error_collection &ec) {
 	if(!wdtf.FindAndDeserialise(di.type, di, ec, wdtf_params)) {
 		ec.RegisterNewError<error_deserialisation>(di, string_format("LoadGame: Unknown object type: %s", di.type.c_str()));
 	}
 }
 
-void world_serialisation::LoadGameFromStrings(const std::string &base, const std::string &save, error_collection &ec) {
+void world_deserialisation::LoadGameFromStrings(const std::string &base, const std::string &save, error_collection &ec) {
 	if(!base.empty()) {
 		//load everything from base
 		ParseInputString(base, ec);
@@ -336,7 +336,7 @@ void world_serialisation::LoadGameFromStrings(const std::string &base, const std
 	DeserialiseGameState(ec);
 }
 
-void world_serialisation::LoadGameFromFiles(const std::string &basefile, const std::string &savefile, error_collection &ec) {
+void world_deserialisation::LoadGameFromFiles(const std::string &basefile, const std::string &savefile, error_collection &ec) {
 	std::string base, save;
 	bool result = true;
 	if(result && !basefile.empty()) result = slurp_file(basefile, base, ec);

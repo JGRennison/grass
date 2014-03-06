@@ -258,7 +258,7 @@ guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int star
 	return layoutoffsetdirectionresult { end_x, end_y, next_x, next_y, outld };
 }
 
-void guilayout::world_layout::SetWorldSerialisationLayout(world_serialisation &ws) {
+void guilayout::world_layout::SetWorldSerialisationLayout(world_deserialisation &ws) {
 	std::weak_ptr<world_layout> wl_weak = shared_from_this();
 	ws.gui_layout_generictrack = [wl_weak](const generictrack *gt, const deserialiser_input &di, error_collection &ec) {
 		std::shared_ptr<world_layout> wl = wl_weak.lock();

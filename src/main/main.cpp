@@ -59,7 +59,7 @@ bool grassapp::LoadGame(const wxString &base, const wxString &save) {
 	w = std::make_shared<world>();
 	layout = std::make_shared<guilayout::world_layout>(*w, GetCurrentDrawModule());
 	layout->SetWorldSharedPtr(w);
-	world_serialisation ws(*w);
+	world_deserialisation ws(*w);
 	layout->SetWorldSerialisationLayout(ws);
 	ws.LoadGameFromFiles(stdstrwx(base), stdstrwx(save), ec);
 	layout->ProcessLayoutObjSet(ec);
