@@ -82,9 +82,9 @@ TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialis
 	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	checkvc(env.w, "VC1", 25000, 56098, 500000, 746000, 1000000, 1200000, 500, 100, 200, 50, 15000, 10000, "AC,diesel");
-	checkvc(env.w, "VC2", 27420, 47260, 500000, 746000, 1000000, 1200000, 500, 100, 0, 0, 15000, 15000, "AC");
-	checkvc(env.w, "VC3", 36600, UINT_MAX, 4555, 684, 1000000, 1000000, 0, 0, 0, 0, 15000, 15000, "");
+	checkvc(*(env.w), "VC1", 25000, 56098, 500000, 746000, 1000000, 1200000, 500, 100, 200, 50, 15000, 10000, "AC,diesel");
+	checkvc(*(env.w), "VC2", 27420, 47260, 500000, 746000, 1000000, 1200000, 500, 100, 0, 0, 15000, 15000, "AC");
+	checkvc(*(env.w), "VC3", 36600, UINT_MAX, 4555, 684, 1000000, 1000000, 0, 0, 0, 0, 15000, 15000, "");
 
 	auto parsecheckerr = [&](const std::string &json, const std::string &errstr) {
 		test_fixture_world env(json);
@@ -121,7 +121,7 @@ TEST_CASE("/train/train/deserialisation/typeerror", "Check that trains cannot ap
 
 	auto parsecheckerr = [&](const std::string &json, const std::string &errstr) {
 		test_fixture_world env(json);
-		env.ws.DeserialiseGameState(env.ec);
+		env.ws->DeserialiseGameState(env.ec);
 		INFO("Error Collection: " << env.ec);
 		CHECK(env.ec.GetErrorCount() == 1);
 		std::stringstream s;
@@ -168,7 +168,7 @@ TEST_CASE("/train/train/deserialisation/dynamics", "Train deserialisation and dy
 
 	auto make_test_tenv = [&](const std::string &vehstring, const std::string &activetractions) {
 		test_fixture_world *env = mktenv(string_format(string_format(test_train_deserialisation_dynamics, vehstring.c_str()), activetractions.c_str()));
-		env->ws.DeserialiseGameState(env->ec);
+		env->ws->DeserialiseGameState(env->ec);
 		return env;
 	};
 
@@ -178,7 +178,7 @@ TEST_CASE("/train/train/deserialisation/dynamics", "Train deserialisation and dy
 		REQUIRE(env.ec.GetErrorCount() == 0);
 
 		unsigned int count = 0;
-		unsigned int traincount = env.w.EnumerateTrains([&](train &t) {
+		unsigned int traincount = env.w->EnumerateTrains([&](train &t) {
 			count++;
 			f(t);
 		});

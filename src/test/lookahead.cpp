@@ -111,25 +111,25 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 
 	test_fixture_world_init_checked env(lookahead_test_str_1);
 
-	env.w.GameStep(1);
+	env.w->GameStep(1);
 
-	generictrack *ts1 = env.w.FindTrackByName("TS1");
+	generictrack *ts1 = env.w->FindTrackByName("TS1");
 	REQUIRE(ts1 != 0);
-	generictrack *ts2 = env.w.FindTrackByName("TS2");
+	generictrack *ts2 = env.w->FindTrackByName("TS2");
 	REQUIRE(ts2 != 0);
-	genericsignal *s1 = env.w.FindTrackByNameCast<genericsignal>("S1");
+	genericsignal *s1 = env.w->FindTrackByNameCast<genericsignal>("S1");
 	REQUIRE(s1 != 0);
-	genericsignal *s2 = env.w.FindTrackByNameCast<genericsignal>("S2");
+	genericsignal *s2 = env.w->FindTrackByNameCast<genericsignal>("S2");
 	REQUIRE(s2 != 0);
-	genericsignal *s3 = env.w.FindTrackByNameCast<genericsignal>("S3");
+	genericsignal *s3 = env.w->FindTrackByNameCast<genericsignal>("S3");
 	REQUIRE(s3 != 0);
-	genericsignal *s4 = env.w.FindTrackByNameCast<genericsignal>("S4");
+	genericsignal *s4 = env.w->FindTrackByNameCast<genericsignal>("S4");
 	REQUIRE(s4 != 0);
-	routingpoint *b = env.w.FindTrackByNameCast<routingpoint>("B");
+	routingpoint *b = env.w->FindTrackByNameCast<routingpoint>("B");
 	REQUIRE(b != 0);
-	routingpoint *c = env.w.FindTrackByNameCast<routingpoint>("C");
+	routingpoint *c = env.w->FindTrackByNameCast<routingpoint>("C");
 	REQUIRE(c != 0);
-	points *p1 = env.w.FindTrackByNameCast<points>("P1");
+	points *p1 = env.w->FindTrackByNameCast<points>("P1");
 	REQUIRE(p1 != 0);
 
 	lookahead l;
@@ -151,24 +151,24 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	FinaliseLookaheadCheck(pos, map);
 
 	p1->SetPointsFlagsMasked(0, points::PTF::REV, points::PTF::REV);
-	env.w.SubmitAction(action_reservepath(env.w, s3, c));
-	env.w.GameStep(1);
-	CHECK(env.w.GetLogText() == "");
+	env.w->SubmitAction(action_reservepath(*(env.w), s3, c));
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() == "");
 	CheckLookahead(0, l, pos, map);
 	CheckLookaheadResult(pos, map, 100000, 200);
 	CheckLookaheadResult(pos, map, 1500000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
 	CHECK(s3->GetCurrentForwardRoute() != 0);
-	env.w.SubmitAction(action_unreservetrackroute(env.w, *s3->GetCurrentForwardRoute()));
-	env.w.GameStep(1);
+	env.w->SubmitAction(action_unreservetrackroute(*(env.w), *s3->GetCurrentForwardRoute()));
+	env.w->GameStep(1);
 	CheckLookahead(0, l, pos, map, lookahead::LA_ERROR::SIG_ASPECT_LESS_THAN_EXPECTED, track_target_ptr(s2, EDGE_FRONT));
 	CheckLookaheadResult(pos, map, 100000, 200);
 	CheckLookaheadResult(pos, map, 600000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
-	env.w.SubmitAction(action_reservepath(env.w, s3, c));
-	env.w.GameStep(1);
+	env.w->SubmitAction(action_reservepath(*(env.w), s3, c));
+	env.w->GameStep(1);
 
 	l.Advance(500000);
 	pos = track_location(ts2, EDGE_FRONT, 400000);
@@ -178,14 +178,14 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	FinaliseLookaheadCheck(pos, map);
 
 	CHECK(s3->GetCurrentForwardRoute() != 0);
-	env.w.SubmitAction(action_unreservetrackroute(env.w, *s3->GetCurrentForwardRoute()));
-	env.w.GameStep(1);
+	env.w->SubmitAction(action_unreservetrackroute(*(env.w), *s3->GetCurrentForwardRoute()));
+	env.w->GameStep(1);
 
 	p1->SetPointsFlagsMasked(0, points::PTF::ZERO, points::PTF::REV);
-	env.w.SubmitAction(action_reservepath(env.w, s3, s4));
-	env.w.SubmitAction(action_reservepath(env.w, s4, b));
-	env.w.GameStep(1);
-	CHECK(env.w.GetLogText() == "");
+	env.w->SubmitAction(action_reservepath(*(env.w), s3, s4));
+	env.w->SubmitAction(action_reservepath(*(env.w), s4, b));
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() == "");
 
 	CheckLookahead(0, l, pos, map, lookahead::LA_ERROR::SIG_TARGET_CHANGE, track_target_ptr(s3, EDGE_FRONT));
 	CheckLookaheadResult(pos, map, 0, 200);
@@ -198,19 +198,19 @@ TEST_CASE( "lookahead/unrouted", "Test unrouted track lookahead" ) {
 
 	test_fixture_world_init_checked env(lookahead_test_str_1);
 
-	env.w.GameStep(1);
+	env.w->GameStep(1);
 
-	generictrack *ts3 = env.w.FindTrackByName("TS3");
+	generictrack *ts3 = env.w->FindTrackByName("TS3");
 	REQUIRE(ts3 != 0);
-	generictrack *ts4 = env.w.FindTrackByName("TS4");
+	generictrack *ts4 = env.w->FindTrackByName("TS4");
 	REQUIRE(ts4 != 0);
-	genericsignal *s3 = env.w.FindTrackByNameCast<genericsignal>("S3");
+	genericsignal *s3 = env.w->FindTrackByNameCast<genericsignal>("S3");
 	REQUIRE(s3 != 0);
-	genericsignal *s4 = env.w.FindTrackByNameCast<genericsignal>("S4");
+	genericsignal *s4 = env.w->FindTrackByNameCast<genericsignal>("S4");
 	REQUIRE(s4 != 0);
-	routingpoint *b = env.w.FindTrackByNameCast<routingpoint>("B");
+	routingpoint *b = env.w->FindTrackByNameCast<routingpoint>("B");
 	REQUIRE(b != 0);
-	points *p1 = env.w.FindTrackByNameCast<points>("P1");
+	points *p1 = env.w->FindTrackByNameCast<points>("P1");
 	REQUIRE(p1 != 0);
 
 	lookahead l;
@@ -257,8 +257,8 @@ TEST_CASE( "lookahead/unrouted", "Test unrouted track lookahead" ) {
 	CheckLookaheadResult(pos, map, 0, 0);
 	FinaliseLookaheadCheck(pos, map);
 
-	env.w.SubmitAction(action_reservepath(env.w, s4, b));
-	env.w.GameStep(1);
+	env.w->SubmitAction(action_reservepath(*(env.w), s4, b));
+	env.w->GameStep(1);
 	CheckLookahead(0, l, pos, map);
 	CheckLookaheadResult(pos, map, 0, 100);
 	CheckLookaheadResult(pos, map, 500000, 0);
@@ -269,19 +269,19 @@ TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 
 	test_fixture_world_init_checked env(lookahead_test_str_2, true, true);
 
-	generictrack *ts1 = env.w.FindTrackByName("TS1");
+	generictrack *ts1 = env.w->FindTrackByName("TS1");
 	REQUIRE(ts1 != 0);
-	generictrack *s1 = env.w.FindTrackByName("S1");
+	generictrack *s1 = env.w->FindTrackByName("S1");
 	REQUIRE(s1 != 0);
-	traction_type *ac = env.w.GetTractionTypeByName("AC");
+	traction_type *ac = env.w->GetTractionTypeByName("AC");
 	REQUIRE(ac != 0);
-	traction_type *diesel = env.w.GetTractionTypeByName("diesel");
+	traction_type *diesel = env.w->GetTractionTypeByName("diesel");
 	REQUIRE(diesel != 0);
 
-	env.w.GameStep(1);
+	env.w->GameStep(1);
 
 	train *t = 0;
-	unsigned int traincount = env.w.EnumerateTrains([&](train &t_) {
+	unsigned int traincount = env.w->EnumerateTrains([&](train &t_) {
 		t = &t_;
 	});
 	REQUIRE(traincount == 1);
@@ -320,17 +320,17 @@ TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserialisation" ) {
 	test_fixture_world_init_checked env(lookahead_test_str_1);
 
-	env.w.GameStep(1);
+	env.w->GameStep(1);
 
-	routingpoint *a = env.w.FindTrackByNameCast<routingpoint>("A");
+	routingpoint *a = env.w->FindTrackByNameCast<routingpoint>("A");
 	REQUIRE(a != 0);
-	genericsignal *s3 = env.w.FindTrackByNameCast<genericsignal>("S3");
+	genericsignal *s3 = env.w->FindTrackByNameCast<genericsignal>("S3");
 	REQUIRE(s3 != 0);
-	genericsignal *s4 = env.w.FindTrackByNameCast<genericsignal>("S4");
+	genericsignal *s4 = env.w->FindTrackByNameCast<genericsignal>("S4");
 	REQUIRE(s4 != 0);
-	env.w.SubmitAction(action_reservepath(env.w, s3, s4));
+	env.w->SubmitAction(action_reservepath(*(env.w), s3, s4));
 
-	env.w.GameStep(1);
+	env.w->GameStep(1);
 
 	auto serialise_lookahead = [&](const lookahead &l) -> std::string {
 		std::string json;
@@ -348,7 +348,7 @@ TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserial
 			env.ec.RegisterNewError<error_jsonparse>(json, dc.GetErrorOffset(), dc.GetParseError());
 			FAIL("JSON parsing error: \n" << env.ec);
 		}
-		deserialiser_input di("lookahead", "lookahead", dc, &env.w);
+		deserialiser_input di("lookahead", "lookahead", dc, env.w.get());
 		l.Deserialise(di, env.ec);
 		di.PostDeserialisePropCheck(env.ec);
 		if(env.ec.GetErrorCount()) { FAIL("JSON deserialisation error: \n" << env.ec); }

@@ -29,24 +29,39 @@
 #include "core/world_serialisation.h"
 
 struct test_fixture_world {
-	world_test w;
-	world_deserialisation ws;
-	error_collection ec;
+	//These are pointers to make test_fixture_world movable/move assignable
+	std::unique_ptr<world_test> w;
+	std::unique_ptr<world_deserialisation> ws;
 
-	test_fixture_world(std::string input) : ws(w) {
-		ws.ParseInputString(input, ec);
+	error_collection ec;
+	std::string orig_input;
+
+	private:
+	//common constructor
+	test_fixture_world()
+			: w(new world_test), ws(new world_deserialisation(*w)) { }
+
+	public:
+	test_fixture_world(std::string input) : test_fixture_world() {
+		ws->ParseInputString(input, ec);
+		orig_input = std::move(input);
 	}
 };
 
 struct test_fixture_world_init_checked : public test_fixture_world {
-	test_fixture_world_init_checked(std::string input, bool pli = true, bool gs = false, bool li = true) : test_fixture_world(input) {
-		if(li) w.LayoutInit(ec);
-		if(pli) w.PostLayoutInit(ec);
-		if(gs) ws.DeserialiseGameState(ec);
+	void Init(bool pli, bool gs, bool li) {
+		if(li) w->LayoutInit(ec);
+		if(pli) w->PostLayoutInit(ec);
+		if(gs) ws->DeserialiseGameState(ec);
 
 		if(ec.GetErrorCount()) {
 			FAIL("Error Collection: " << ec);
 		}
+	}
+
+	//! Loads everything from one string, also combined with a call to Init
+	test_fixture_world_init_checked(std::string input, bool pli = true, bool gs = false, bool li = true) : test_fixture_world(input) {
+		Init(pli, gs, li);
 	}
 };
 

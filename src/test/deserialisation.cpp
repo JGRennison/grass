@@ -125,7 +125,7 @@ TEST_CASE( "deserialisation/template/basic", "Test basic templating" ) {
 	auto checkrmrtflags = [&](const char *name, RPRT frontflags, RPRT backflags) {
 		INFO("Routing Marker check for: " << name);
 
-		routingmarker *rm = dynamic_cast<routingmarker *>(env.w.FindTrackByName(name));
+		routingmarker *rm = dynamic_cast<routingmarker *>(env.w->FindTrackByName(name));
 		REQUIRE(rm != 0);
 		CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == frontflags);
 		CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == backflags);
@@ -149,7 +149,7 @@ TEST_CASE( "deserialisation/template/nested", "Test nested templating" ) {
 	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	routingmarker *rm = dynamic_cast<routingmarker *>(env.w.FindTrackByName("R1"));
+	routingmarker *rm = dynamic_cast<routingmarker *>(env.w->FindTrackByName("R1"));
 	REQUIRE(rm != 0);
 	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(0, route_class::All(), 0));
 	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::RTC_OVERLAP), 0));
@@ -167,7 +167,7 @@ TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	routingmarker *rm = dynamic_cast<routingmarker *>(env.w.FindTrackByName("R1"));
+	routingmarker *rm = dynamic_cast<routingmarker *>(env.w->FindTrackByName("R1"));
 	REQUIRE(rm != 0);
 	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == RPRT());
 	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::RTC_OVERLAP), 0));
@@ -246,11 +246,11 @@ TEST_CASE( "deserialisation/scalartypeconv/length", "Test scalar type conversion
 	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	CHECK(PTR_CHECK(env.w.FindTrackByName("#0"))->GetLength(EDGE_FRONT) == 1000);
-	CHECK(PTR_CHECK(env.w.FindTrackByName("#1"))->GetLength(EDGE_FRONT) == 1000000);
-	CHECK(PTR_CHECK(env.w.FindTrackByName("#2"))->GetLength(EDGE_FRONT) == 2400000);
-	CHECK(PTR_CHECK(env.w.FindTrackByName("#3"))->GetLength(EDGE_FRONT) == 901232);
-	CHECK(PTR_CHECK(env.w.FindTrackByName("#4"))->GetLength(EDGE_FRONT) == 4294966826);
+	CHECK(PTR_CHECK(env.w->FindTrackByName("#0"))->GetLength(EDGE_FRONT) == 1000);
+	CHECK(PTR_CHECK(env.w->FindTrackByName("#1"))->GetLength(EDGE_FRONT) == 1000000);
+	CHECK(PTR_CHECK(env.w->FindTrackByName("#2"))->GetLength(EDGE_FRONT) == 2400000);
+	CHECK(PTR_CHECK(env.w->FindTrackByName("#3"))->GetLength(EDGE_FRONT) == 901232);
+	CHECK(PTR_CHECK(env.w->FindTrackByName("#4"))->GetLength(EDGE_FRONT) == 4294966826);
 }
 
 TEST_CASE( "deserialisation/scalartypeconv/errors", "Test scalar type conversion error detection" ) {
@@ -282,7 +282,7 @@ TEST_CASE( "deserialisation/scalartypeconv/errors", "Test scalar type conversion
 TEST_CASE( "deserialisation/gamestateload/typeerror", "Check that content section only types produce an error when encountered in gamestate section" ) {
 	auto check_parse_err = [&](const std::string &str) {
 		test_fixture_world env_err(str);
-		env_err.ws.DeserialiseGameState(env_err.ec);
+		env_err.ws->DeserialiseGameState(env_err.ec);
 		INFO("Error Collection: " << env_err.ec);
 		CHECK(env_err.ec.GetErrorCount() == 1);
 		std::stringstream s;

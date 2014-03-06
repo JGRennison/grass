@@ -57,12 +57,12 @@ R"({ "content" : [ )"
 TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route dereservation" ) {
 	test_fixture_world_init_checked env(tcdereservation_test_str_1);
 
-	genericsignal *s1 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S1"));
-	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
-	routingpoint *b = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("B"));
+	genericsignal *s1 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S1"));
+	genericsignal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S2"));
+	routingpoint *b = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>("B"));
 
 	auto settcstate = [&](const std::string &tcname, bool enter) {
-		track_circuit *tc = env.w.track_circuits.FindOrMakeByName(tcname);
+		track_circuit *tc = env.w->track_circuits.FindOrMakeByName(tcname);
 		tc->SetTCFlagsMasked(enter ? track_circuit::TCF::FORCEOCCUPIED : track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
 	};
 
@@ -120,17 +120,17 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 		checkpiece(rt->end.track);
 	};
 
-	env.w.SubmitAction(action_reservepath(env.w, s1, s2));
-	env.w.SubmitAction(action_reservepath(env.w, s2, b));
-	env.w.GameStep(1);
+	env.w->SubmitAction(action_reservepath(*(env.w), s1, s2));
+	env.w->SubmitAction(action_reservepath(*(env.w), s2, b));
+	env.w->GameStep(1);
 
 	const route *s1rt = s1->GetCurrentForwardRoute();
 	const route *s2rt = s2->GetCurrentForwardRoute();
 	CHECK(s1rt != 0);
 	CHECK(s2rt != 0);
 
-	env.w.GameStep(1);
-	CHECK(env.w.GetLogText() == "");
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() == "");
 
 	settcstate("T1", true);
 	INFO("Check 1");
@@ -144,8 +144,8 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	INFO("Check 3");
 	checkunreserved(s1rt);
 
-	env.w.SubmitAction(action_reservepath(env.w, s1, s2));
-	env.w.GameStep(1);
+	env.w->SubmitAction(action_reservepath(*(env.w), s1, s2));
+	env.w->GameStep(1);
 
 	settcstate("T2", true);
 	settcstate("T3", true);
@@ -157,11 +157,11 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	settcstate("T3", true);
 	settcstate("T2", false);
 	INFO("Check 6");
-	checkstate(env.w.FindTrackByName("TS3"), s2, s1rt);
+	checkstate(env.w->FindTrackByName("TS3"), s2, s1rt);
 	settcstate("T4", true);
 	settcstate("T4", false);
 	INFO("Check 7");
-	checkstate(env.w.FindTrackByName("TS3"), s2, s1rt);
+	checkstate(env.w->FindTrackByName("TS3"), s2, s1rt);
 	settcstate("T3", false);
 	INFO("Check 8");
 	checkunreserved(s1rt);
@@ -172,8 +172,8 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	checkstate(s2, b, s2rt);
 
 	settcstate("T7", true);
-	env.w.SubmitAction(action_unreservetrack(env.w, *s2));
-	env.w.GameStep(1);
+	env.w->SubmitAction(action_unreservetrack(*(env.w), *s2));
+	env.w->GameStep(1);
 	settcstate("T7", false);
 	INFO("Check 10");
 	checkunreserved(s2rt);
@@ -210,13 +210,13 @@ R"({ "content" : [ )"
 TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 	test_fixture_world_init_checked env(berth_test_str_1);
 
-	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
-	genericsignal *s3 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S3"));
+	genericsignal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S2"));
+	genericsignal *s3 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S3"));
 	generictrack *t[7];
 	trackberth *b[7];
 	for(unsigned int i = 0; i < sizeof(t)/sizeof(t[0]); i++) {
 		INFO("Load loop: " << i);
-		t[i] = PTR_CHECK(env.w.FindTrackByName(string_format("TS%d", i)));
+		t[i] = PTR_CHECK(env.w->FindTrackByName(string_format("TS%d", i)));
 		b[i] = t[i]->GetBerth();
 	}
 
@@ -232,8 +232,8 @@ TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 	CHECK(b[4]->contents == "");
 	CHECK(b[6]->contents == "");
 
-	env.w.SubmitAction(action_reservepath(env.w, s2, s3));
-	env.w.GameStep(1);
+	env.w->SubmitAction(action_reservepath(*(env.w), s2, s3));
+	env.w->GameStep(1);
 
 	b[2]->contents = "test";
 	PTR_CHECK(t[1]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
@@ -263,35 +263,35 @@ TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 
 void FillBerth(test_fixture_world &env, const std::string &name, std::string &&val) {
 	INFO("FillBerth: " << name << ", " << val);
-	generictrack *gt = PTR_CHECK(env.w.FindTrackByName(name));
+	generictrack *gt = PTR_CHECK(env.w->FindTrackByName(name));
 	REQUIRE(gt->HasBerth() == true);
 	PTR_CHECK(gt->GetBerth())->contents = std::move(val);
 }
 
 void SetTrackTC(test_fixture_world &env, const std::string &name, bool val) {
 	INFO("SetTrackTC: " << name << ", " << val);
-	generictrack *gt = PTR_CHECK(env.w.FindTrackByName(name));
+	generictrack *gt = PTR_CHECK(env.w->FindTrackByName(name));
 	PTR_CHECK(gt->GetTrackCircuit())->SetTCFlagsMasked(val ? track_circuit::TCF::FORCEOCCUPIED : track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
 }
 
 void CheckBerth(test_fixture_world &env, const std::string &name, const std::string &val) {
 	INFO("CheckBerth: " << name << ", " << val);
-	generictrack *gt = PTR_CHECK(env.w.FindTrackByName(name));
+	generictrack *gt = PTR_CHECK(env.w->FindTrackByName(name));
 	REQUIRE(gt->HasBerth() == true);
 	CHECK(PTR_CHECK(gt->GetBerth())->contents == val);
 }
 
 void SetRoute(test_fixture_world &env, const std::string &start, const std::string &end) {
 	INFO("SetRoute: " << start << " -> " << end);
-	routingpoint *s = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>(start));
-	routingpoint *e = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>(end));
+	routingpoint *s = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>(start));
+	routingpoint *e = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>(end));
 
-	std::string logtext = env.w.GetLogText();
-	env.w.SubmitAction(action_reservepath(env.w, s, e));
-	env.w.GameStep(1);
-	env.w.GameStep(10000);
+	std::string logtext = env.w->GetLogText();
+	env.w->SubmitAction(action_reservepath(*(env.w), s, e));
+	env.w->GameStep(1);
+	env.w->GameStep(10000);
 
-	CHECK(logtext == env.w.GetLogText());
+	CHECK(logtext == env.w->GetLogText());
 }
 
 TEST_CASE( "berth/step/2", "Berth stepping test no 2: check no stepping when no route" ) {
@@ -307,12 +307,12 @@ TEST_CASE( "berth/step/2", "Berth stepping test no 2: check no stepping when no 
 TEST_CASE( "berth/step/3", "Berth stepping test no 3: check stepping when route has partial TC coverage" ) {
 	test_fixture_world_init_checked env(berth_test_str_1);
 
-	genericsignal *s2 = PTR_CHECK(env.w.FindTrackByNameCast<genericsignal>("S2"));
-	routingpoint *c = PTR_CHECK(env.w.FindTrackByNameCast<routingpoint>("C"));
+	genericsignal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S2"));
+	routingpoint *c = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>("C"));
 
-	env.w.SubmitAction(action_reservepath(env.w, s2, c));
-	env.w.GameStep(100000);    //give points enough time to move
-	CHECK(env.w.GetLogText() == "");
+	env.w->SubmitAction(action_reservepath(*(env.w), s2, c));
+	env.w->GameStep(100000);    //give points enough time to move
+	CHECK(env.w->GetLogText() == "");
 	if(env.ec.GetErrorCount()) {
 		FAIL("Error Collection: " << env.ec);
 	}
@@ -585,22 +585,22 @@ TEST_CASE( "berth/step/18", "Berth stepping test no 18: check stepping out of la
 TEST_CASE( "track_circuit/updates", "Test basic track circuit updates" ) {
 	test_fixture_world_init_checked env(tcdereservation_test_str_1);
 
-	env.w.GameStep(1);
+	env.w->GameStep(1);
 
-	env.w.GameStep(1);
-	CHECK(env.w.GetLastUpdateSet().size() == 0);
+	env.w->GameStep(1);
+	CHECK(env.w->GetLastUpdateSet().size() == 0);
 
-	track_circuit *tc = PTR_CHECK(env.w.track_circuits.FindOrMakeByName("T1"));
+	track_circuit *tc = PTR_CHECK(env.w->track_circuits.FindOrMakeByName("T1"));
 
 	tc->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
-	CHECK(env.w.GetLastUpdateSet().size() == 2);
+	CHECK(env.w->GetLastUpdateSet().size() == 2);
 
-	env.w.GameStep(1);
-	CHECK(env.w.GetLastUpdateSet().size() == 0);
+	env.w->GameStep(1);
+	CHECK(env.w->GetLastUpdateSet().size() == 0);
 
 	tc->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
-	CHECK(env.w.GetLastUpdateSet().size() == 2);
+	CHECK(env.w->GetLastUpdateSet().size() == 2);
 
-	env.w.GameStep(1);
-	CHECK(env.w.GetLastUpdateSet().size() == 0);
+	env.w->GameStep(1);
+	CHECK(env.w->GetLastUpdateSet().size() == 0);
 }

@@ -29,35 +29,35 @@
 #include "core/var.h"
 #include "core/signal.h"
 
-
-struct test_fixture_world_ops_1 {
-	world_test w;
-	points p1;
-	test_fixture_world_ops_1() : p1(w) {
-		p1.SetName("P1");
-	}
-};
+std::string points_move_ops_test_str_1 =
+R"({ "content" : [ )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "points", "name" : "P1" }, )"
+	R"({ "type" : "endofline", "name" : "B" }, )"
+	R"({ "type" : "endofline", "name" : "C", "connect" : { "to" : "P1" } } )"
+"] }";
 
 TEST_CASE( "track/ops/points/movement", "Test basic points movement future" ) {
-	test_fixture_world_ops_1 env;
+	test_fixture_world_init_checked env(points_move_ops_test_str_1);
+	points *p1 = PTR_CHECK(env.w->FindTrackByNameCast<points>("P1"));
 
-	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
 
-	REQUIRE(env.p1.GetPointsFlags(0) == genericpoints::PTF::ZERO);
-	env.w.GameStep(500);
-	REQUIRE(env.p1.GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::OOC));
-	env.w.GameStep(4500);
-	REQUIRE(env.p1.GetPointsFlags(0) == genericpoints::PTF::REV);
+	REQUIRE(p1->GetPointsFlags(0) == genericpoints::PTF::ZERO);
+	env.w->GameStep(500);
+	REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::OOC));
+	env.w->GameStep(4500);
+	REQUIRE(p1->GetPointsFlags(0) == genericpoints::PTF::REV);
 
-	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::LOCKED, genericpoints::PTF::LOCKED));
-	env.w.GameStep(50);
-	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
-	env.w.GameStep(50);
-	REQUIRE(env.p1.GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
-	env.w.SubmitAction(action_pointsaction(env.w, env.p1, 0, genericpoints::PTF::ZERO, genericpoints::PTF::REV));
-	env.w.GameStep(4900);
-	REQUIRE(env.p1.GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
-	REQUIRE(env.w.GetLogText() == "Points P1 not movable: Locked\n");
+	env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::LOCKED, genericpoints::PTF::LOCKED));
+	env.w->GameStep(50);
+	env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	env.w->GameStep(50);
+	REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
+	env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::ZERO, genericpoints::PTF::REV));
+	env.w->GameStep(4900);
+	REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
+	REQUIRE(env.w->GetLogText() == "Points P1 not movable: Locked\n");
 }
 
 std::string overlap_ops_test_str_1 =
@@ -138,7 +138,7 @@ class overlap_ops_test_class_1 {
 TEST_CASE( "track/ops/overlap/reservationswing", "Test track reservation overlap swinging" ) {
 	test_fixture_world_init_checked env(overlap_ops_test_str_1);
 
-	overlap_ops_test_class_1 tenv(env.w);
+	overlap_ops_test_class_1 tenv(*(env.w));
 
 	std::vector<routingpoint::gmr_routeitem> routeset;
 	REQUIRE(tenv.s2->GetMatchingRoutes(routeset, tenv.b, route_class::All(), GMRF::DONTSORT) == 1);
@@ -152,114 +152,114 @@ TEST_CASE( "track/ops/overlap/reservationswing", "Test track reservation overlap
 	tenv.checksignal(tenv.s1, 0, route_class::RTC_NULL, 0, 0, 0);
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
 
-	env.w.GameStep(1);
+	env.w->GameStep(1);
 	tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
 
-	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.c));
-	env.w.GameStep(1);
-	CHECK(env.w.GetLogText() == "");
+	env.w->SubmitAction(action_reservepath(*(env.w), tenv.s2, tenv.c));
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() == "");
 	REQUIRE(tenv.p1 != 0);
 	CHECK(tenv.p1->GetPointsFlags(0) == (genericpoints::PTF::OOC | genericpoints::PTF::REV));
 	tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
 
-	env.w.GameStep(100000);
-	CHECK(env.w.GetLogText() == "");
+	env.w->GameStep(100000);
+	CHECK(env.w->GetLogText() == "");
 	CHECK(tenv.p1->GetPointsFlags(0) == genericpoints::PTF::REV);
 	tenv.checksignal(tenv.s1, 2, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 1, route_class::RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
 
-	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.b));
-	env.w.GameStep(1);
-	CHECK(env.w.GetLogText() != "");
+	env.w->SubmitAction(action_reservepath(*(env.w), tenv.s2, tenv.b));
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() != "");
 	CHECK(tenv.p1->GetPointsFlags(0) == genericpoints::PTF::REV);
 	tenv.checksignal(tenv.s1, 2, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 1, route_class::RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
-	env.w.ResetLogText();
+	env.w->ResetLogText();
 
-	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s2));
-	env.w.GameStep(1);
-	CHECK(env.w.GetLogText() == "");
+	env.w->SubmitAction(action_unreservetrack(*(env.w), *tenv.s2));
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() == "");
 	tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
 
-	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.d));
-	env.w.GameStep(1);
-	CHECK(env.w.GetLogText() != "");
+	env.w->SubmitAction(action_reservepath(*(env.w), tenv.s2, tenv.d));
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() != "");
 	tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
-	env.w.ResetLogText();
+	env.w->ResetLogText();
 }
 
 TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swinging" ) {
 	test_fixture_world_init_checked env(overlap_ops_test_str_1);
 
-	overlap_ops_test_class_1 tenv(env.w);
+	overlap_ops_test_class_1 tenv(*(env.w));
 
-	env.w.GameStep(1);
+	env.w->GameStep(1);
 	tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
 
 	REQUIRE(tenv.p1 != 0);
-	env.w.SubmitAction(action_pointsaction(env.w, *tenv.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
-	env.w.GameStep(1);
+	env.w->SubmitAction(action_pointsaction(*(env.w), *tenv.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	env.w->GameStep(1);
 
-	CHECK(env.w.GetLogText() == "");
+	CHECK(env.w->GetLogText() == "");
 	CHECK(tenv.p1->GetPointsFlags(0) == (genericpoints::PTF::OOC | genericpoints::PTF::REV));
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
 
 	REQUIRE(tenv.p2 != 0);
-	env.w.SubmitAction(action_pointsaction(env.w, *tenv.p2, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
-	env.w.GameStep(1);
+	env.w->SubmitAction(action_pointsaction(*(env.w), *tenv.p2, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	env.w->GameStep(1);
 
-	CHECK(env.w.GetLogText() != "");
+	CHECK(env.w->GetLogText() != "");
 	CHECK(tenv.p1->GetPointsFlags(0) == (genericpoints::PTF::OOC | genericpoints::PTF::REV));
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
-	env.w.ResetLogText();
+	env.w->ResetLogText();
 
-	env.w.SubmitAction(action_pointsaction(env.w, *tenv.p1, 0, genericpoints::PTF::ZERO, genericpoints::PTF::REV));
-	env.w.GameStep(1);
-	env.w.SubmitAction(action_pointsaction(env.w, *tenv.p2, 0, genericpoints::PTF::REV | genericpoints::PTF::REMINDER, genericpoints::PTF::REV | genericpoints::PTF::REMINDER));
-	env.w.GameStep(1);
-	CHECK(env.w.GetLogText() == "");
+	env.w->SubmitAction(action_pointsaction(*(env.w), *tenv.p1, 0, genericpoints::PTF::ZERO, genericpoints::PTF::REV));
+	env.w->GameStep(1);
+	env.w->SubmitAction(action_pointsaction(*(env.w), *tenv.p2, 0, genericpoints::PTF::REV | genericpoints::PTF::REMINDER, genericpoints::PTF::REV | genericpoints::PTF::REMINDER));
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() == "");
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
 
-	env.w.SubmitAction(action_pointsaction(env.w, *tenv.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
-	env.w.GameStep(1);
-	CHECK(env.w.GetLogText() != "");
+	env.w->SubmitAction(action_pointsaction(*(env.w), *tenv.p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() != "");
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
 }
 
 TEST_CASE( "track/ops/reservation/overset", "Test overset track reservation and dereservation" ) {
 	test_fixture_world_init_checked env(overlap_ops_test_str_1);
 
-	overlap_ops_test_class_1 tenv(env.w);
+	overlap_ops_test_class_1 tenv(*(env.w));
 
-	env.w.GameStep(1);
+	env.w->GameStep(1);
 	tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
 
 	CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 2);
 
-	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.c));
-	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.c));
-	env.w.GameStep(100000);
-	CHECK(env.w.GetLogText() == "");
+	env.w->SubmitAction(action_reservepath(*(env.w), tenv.s2, tenv.c));
+	env.w->SubmitAction(action_reservepath(*(env.w), tenv.s2, tenv.c));
+	env.w->GameStep(100000);
+	CHECK(env.w->GetLogText() == "");
 	tenv.checksignal(tenv.s1, 2, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 1, route_class::RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
 
-	env.w.SubmitAction(action_reservepath(env.w, tenv.s2, tenv.c));
-	env.w.GameStep(100000);
-	CHECK(env.w.GetLogText() == "");
+	env.w->SubmitAction(action_reservepath(*(env.w), tenv.s2, tenv.c));
+	env.w->GameStep(100000);
+	CHECK(env.w->GetLogText() == "");
 	tenv.checksignal(tenv.s1, 2, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 1, route_class::RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
 
 	CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 3);
 
-	env.w.SubmitAction(action_unreservetrack(env.w, *tenv.s2));
-	env.w.GameStep(100000);
-	CHECK(env.w.GetLogText() == "");
+	env.w->SubmitAction(action_unreservetrack(*(env.w), *tenv.s2));
+	env.w->GameStep(100000);
+	CHECK(env.w->GetLogText() == "");
 	tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
 
