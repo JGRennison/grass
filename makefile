@@ -173,7 +173,7 @@ $(call GENERIC_OBJS,test): $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch
 
 OBJS:=$(call LIST_OBJS,$(MAIN_DIRS)) $(call LIST_RESOBJS,$(MAIN_RES))
 #This is to avoid unpleasant side-effects of over-writing executable in-place if it is currently running
-$(FULLOUTNAME): $(OBJS) $(OUTDIR)
+$(FULLOUTNAME): $(OBJS) | $(OUTDIR)
 	@echo '    Link       $(FULLOUTNAME)'
 ifeq "$(HOST)" "WIN"
 	$(call EXEC,$(GCC) $(OBJS) -o $(FULLOUTNAME) $(LIBS) $(LIBS_main) $(AFLAGS) $(AFLAGS_main) $(GFLAGS))
@@ -184,7 +184,7 @@ else
 endif
 
 TEST_OBJS:=$(call LIST_OBJS,$(TEST_DIRS)) $(call LIST_RESOBJS,$(TEST_RES))
-$(FULLTESTOUTNAME): $(TEST_OBJS) $(OUTDIR)
+$(FULLTESTOUTNAME): $(TEST_OBJS) | $(OUTDIR)
 	@echo '    Link       $(FULLTESTOUTNAME)'
 	$(call EXEC,$(GCC) $(TEST_OBJS) -o $(FULLTESTOUTNAME) $(LIBS) $(AFLAGS) $(AFLAGS_test) $(GFLAGS))
 	$(call EXEC,$(EXECPREFIX)$(FULLTESTOUTNAME))
