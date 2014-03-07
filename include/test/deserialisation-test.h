@@ -35,6 +35,7 @@ struct test_fixture_world {
 
 	error_collection ec;
 	std::string orig_input;
+	std::string orig_input_gamstate;
 
 	private:
 	//common constructor
@@ -45,6 +46,12 @@ struct test_fixture_world {
 	test_fixture_world(std::string input) : test_fixture_world() {
 		ws->ParseInputString(input, ec);
 		orig_input = std::move(input);
+	}
+	test_fixture_world(std::string input, std::string input_gamestate) : test_fixture_world() {
+		ws->ParseInputString(input, ec, world_deserialisation::WSLOADGAME_FLAGS::NOGAMESTATE);
+		ws->ParseInputString(input_gamestate, ec, world_deserialisation::WSLOADGAME_FLAGS::NOCONTENT);
+		orig_input = std::move(input);
+		orig_input_gamstate = std::move(input_gamestate);
 	}
 };
 
@@ -63,6 +70,45 @@ struct test_fixture_world_init_checked : public test_fixture_world {
 	test_fixture_world_init_checked(std::string input, bool pli = true, bool gs = false, bool li = true) : test_fixture_world(input) {
 		Init(pli, gs, li);
 	}
+
+	//! Loads content and gamestate from two strings, doesn't call Init
+	test_fixture_world_init_checked(std::string input, std::string input_gamestate)
+			: test_fixture_world(input, input_gamestate) {
+	}
 };
+
+//! This clones a test_fixture_world using a gamestate serialisation round-trip, and the original content json
+//! This uses the same layout/post layout init settings as the original
+inline test_fixture_world_init_checked RoundTripCloneTestFixtureWorld(const test_fixture_world &tfw) {
+	auto wflags = tfw.w->GetWFlags();
+
+	error_collection ec;
+	world_serialisation ws(*(tfw.w));
+	std::string gamestate = ws.SaveGameToString(ec, world_serialisation::WSSAVEGAME_FLAGS::PRETTYMODE);
+
+	if(ec.GetErrorCount()) {
+		FAIL("Error Collection: " << ec);
+	}
+
+	test_fixture_world_init_checked rt_tfw(tfw.orig_input, gamestate);
+	rt_tfw.Init(wflags & world::WFLAGS::DONE_POSTLAYOUTINIT, true, wflags & world::WFLAGS::DONE_LAYOUTINIT);
+	return std::move(rt_tfw);
+}
+
+//! Where F has the signature void(test_fixture_world &)
+//! This executes the tests, both with and without a serialisation round-trip
+template<typename F> inline void ExecTestFixtureWorldWithRoundTrip(test_fixture_world &tfw, F func) {
+	test_fixture_world_init_checked rt_tfw = RoundTripCloneTestFixtureWorld(tfw);
+
+	{
+		INFO("Testing without serialisation round-trip");
+		func(tfw);
+	}
+	{
+		INFO("Testing with serialisation round-trip");
+		INFO("Gamestate: " + rt_tfw.orig_input_gamstate);
+		func(rt_tfw);
+	}
+}
 
 #endif

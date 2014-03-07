@@ -30,6 +30,7 @@
 #include "core/serialisable.h"
 #include "core/future.h"
 #include "core/edgetype.h"
+#include "core/flags.h"
 
 class world_deserialisation;
 class world_serialisation;
@@ -128,6 +129,15 @@ class world : public serialisable_futurable_obj {
 	uint64_t load_count = 0;    // incremented on each save/load cycle
 
 	public:
+	enum class WFLAGS {
+		DONE_LAYOUTINIT      = 1<<0,
+		DONE_POSTLAYOUTINIT  = 1<<1,
+	};
+
+	private:
+	flagwrapper<WFLAGS> wflags;
+
+	public:
 	future_deserialisation_type_factory future_types;
 	future_set futures;
 	fixup_list layout_init_final_fixups;
@@ -180,8 +190,11 @@ class world : public serialisable_futurable_obj {
 	void MarkUpdated(updatable_obj *wo);
 	const std::set<updatable_obj *> &GetLastUpdateSet() const { return update_set; }
 
+	flagwrapper<WFLAGS> GetWFlags() const { return wflags; }
+
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
+template<> struct enum_traits< world::WFLAGS > { static constexpr bool flags = true; };
 
 #endif

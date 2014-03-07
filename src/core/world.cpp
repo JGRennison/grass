@@ -87,6 +87,7 @@ void world::LayoutInit(error_collection &ec) {
 	for(auto it = all_pieces.begin(); it != all_pieces.end(); ++it) {
 		it->second->CheckUnconnectedEdges(ec);
 	}
+	wflags |= WFLAGS::DONE_LAYOUTINIT;
 }
 
 void world::PostLayoutInit(error_collection &ec) {
@@ -94,6 +95,7 @@ void world::PostLayoutInit(error_collection &ec) {
 		it->second->PostLayoutInit(ec);
 	}
 	post_layout_init_final_fixups.Execute(ec);
+	wflags |= WFLAGS::DONE_POSTLAYOUTINIT;
 }
 
 named_futurable_obj *world::FindFuturableByName(const std::string &name) {
