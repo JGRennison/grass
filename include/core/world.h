@@ -32,6 +32,7 @@
 #include "core/edgetype.h"
 
 class world_deserialisation;
+class world_serialisation;
 class action;
 class generictrack;
 class textpool;
@@ -101,10 +102,19 @@ class track_train_counter_block_container {
 		if(! tc.get()) tc.reset(new C(w, name));
 		return tc.get();
 	}
+	template <typename F> void Enumerate(F func) const {
+		for(auto &it : all_items) {
+			func(*(it.second));
+		}
+	}
+	template <typename F> void Enumerate(F func) {
+		const_cast<const track_train_counter_block_container<C>*>(this)->EnumerateTrains([&](const C& t) { f(const_cast<C&>(t)); });
+	}
 };
 
-class world : public named_futurable_obj {
+class world : public serialisable_futurable_obj {
 	friend world_deserialisation;
+	friend world_serialisation;
 	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
 	std::unordered_map<std::string, std::unique_ptr<vehicle_class> > all_vehicle_classes;
 	std::forward_list<train> all_trains;
@@ -145,8 +155,8 @@ class world : public named_futurable_obj {
 	void SubmitAction(const action &request);
 	void ExecuteIfActionScope(std::function<void()> func);
 	named_futurable_obj *FindFuturableByName(const std::string &name);
-	virtual std::string GetTypeSerialisationClassName() const override { return ""; }
-	virtual std::string GetSerialisationName() const override { return "world"; }
+	virtual std::string GetTypeSerialisationClassName() const override { return "world"; }
+	virtual std::string GetSerialisationName() const override { return ""; }
 	virtual textpool &GetUserMessageTextpool();
 	virtual void LogUserMessageLocal(LOGCATEGORY lc, const std::string &message);
 	virtual void GameStep(world_time delta);
@@ -169,6 +179,9 @@ class world : public named_futurable_obj {
 	vehicle_class *FindVehicleClassByName(const std::string &name);
 	void MarkUpdated(updatable_obj *wo);
 	const std::set<updatable_obj *> &GetLastUpdateSet() const { return update_set; }
+
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 #endif

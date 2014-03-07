@@ -114,6 +114,7 @@ bool futurable_obj::HaveFutures() const {
 void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di, error_collection &ec, const future_deserialisation_type_factory &dtf, future_container &fc) {
 	deserialiser_input futuresdi(di.json["futures"], "futures", "futures", di);
 	if(futuresdi.json.IsArray()) {
+		di.RegisterProp("futures");
 		for(rapidjson::SizeType i = 0; i < futuresdi.json.Size(); i++) {
 			deserialiser_input subdi(futuresdi.json[i], "", MkArrayRefName(i), futuresdi);
 			if(subdi.json.IsObject()) {

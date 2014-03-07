@@ -31,6 +31,7 @@
 #include "core/signal.h"
 #include "core/trackcircuit.h"
 #include "core/train.h"
+#include "core/pretty_serialiser.h"
 #include <typeinfo>
 
 void world_deserialisation::ParseInputString(const std::string &input, error_collection &ec, world_deserialisation::WSLOADGAME_FLAGS flags) {
@@ -273,12 +274,16 @@ void world_deserialisation::DeserialiseTrain(const deserialiser_input &di, error
 	}
 }
 
+template <typename... Args> void wd_RegisterBothTypes(world_deserialisation &wd, Args... args) {
+	wd.content_object_types.RegisterType(args...);
+	wd.gamestate_object_types.RegisterType(args...);
+}
+
 template <typename C> void world_deserialisation::MakeGenericTrackTypeWrapper() {
 	auto func = [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		this->DeserialiseGenericTrack<C>(di, ec, wdp);
 	};
-	content_object_types.RegisterType(C::GetTypeSerialisationNameStatic(), func);
-	gamestate_object_types.RegisterType(C::GetTypeSerialisationNameStatic(), func);
+	wd_RegisterBothTypes(*this, C::GetTypeSerialisationNameStatic(), func);
 }
 
 void world_deserialisation::InitObjectTypes() {
@@ -302,6 +307,7 @@ void world_deserialisation::InitObjectTypes() {
 	content_object_types.RegisterType("couplepoints", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialisePointsCoupling(di, ec); });
 	content_object_types.RegisterType("vehicleclass", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseVehicleClass(di, ec); });
 	gamestate_object_types.RegisterType("train", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTrain(di, ec); });
+	wd_RegisterBothTypes(*this, "world", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { w.DeserialiseObject(di, ec); });
 
 	gui_layout_generictrack = [](const generictrack *t, const deserialiser_input &di, error_collection &ec) { };
 	gui_layout_trackberth = [](const trackberth *b, const generictrack *t, const deserialiser_input &di, error_collection &ec) { };
@@ -346,4 +352,50 @@ void world_deserialisation::LoadGameFromFiles(const std::string &basefile, const
 	if(result && !savefile.empty()) result = slurp_file(savefile, save, ec);
 
 	if(result) LoadGameFromStrings(base, save, ec);
+}
+
+std::string world_serialisation::SaveGameToString(error_collection &ec, flagwrapper<world_serialisation::WSSAVEGAME_FLAGS> ws_flags) {
+	auto exec = [&](Handler &hndl) {
+		serialiser_output so(hndl);
+		so.flags |= SOUTPUT_FLAGS::OUTPUT_ALLNAMES;
+
+		hndl.StartObject();
+		hndl.String("gamestate");
+		hndl.StartArray();
+
+		hndl.StartObject();
+		w.Serialise(so, ec);
+		hndl.EndObject();
+		for(auto &it : w.all_pieces) {
+			generictrack &gt = *(it.second);
+			hndl.StartObject();
+			gt.Serialise(so, ec);
+			hndl.EndObject();
+		}
+		w.track_circuits.Enumerate([&](track_circuit &tc) {
+			hndl.StartObject();
+			tc.Serialise(so, ec);
+			hndl.EndObject();
+		});
+		w.track_triggers.Enumerate([&](track_train_counter_block &ttcb) {
+			hndl.StartObject();
+			ttcb.Serialise(so, ec);
+			hndl.EndObject();
+		});
+
+		hndl.EndArray();
+		hndl.EndObject();
+	};
+
+	std::string output;
+	writestream wr(output);
+	if(ws_flags & WSSAVEGAME_FLAGS::PRETTYMODE) {
+		PrettyWriterHandler hndl(wr);
+		exec(hndl);
+	}
+	else {
+		WriterHandler hndl(wr);
+		exec(hndl);
+	}
+	return std::move(output);
 }

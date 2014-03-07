@@ -105,4 +105,18 @@ class world_deserialisation {
 template<> struct enum_traits< world_deserialisation::ws_dtf_params::WSDTFP_FLAGS > { static constexpr bool flags = true; };
 template<> struct enum_traits< world_deserialisation::WSLOADGAME_FLAGS > { static constexpr bool flags = true; };
 
+
+class world_serialisation {
+	const world &w;
+
+	public:
+	world_serialisation(const world &w_) : w(w_) { }
+
+	enum class WSSAVEGAME_FLAGS {
+		PRETTYMODE           = 1<<0,
+	};
+	std::string SaveGameToString(error_collection &ec, flagwrapper<WSSAVEGAME_FLAGS> ws_flags = 0);
+};
+template<> struct enum_traits< world_serialisation::WSSAVEGAME_FLAGS > { static constexpr bool flags = true; };
+
 #endif

@@ -30,6 +30,7 @@
 #include "core/textpool.h"
 #include "core/signal.h"
 #include "core/train.h"
+#include "core/serialisable_impl.h"
 #include <iostream>
 
 world::world() : track_circuits(*this), track_triggers(*this) {
@@ -235,4 +236,18 @@ vehicle_class *world::FindVehicleClassByName(const std::string &name) {
 
 void world::MarkUpdated(updatable_obj *wo) {
 	update_set.insert(wo);
+}
+
+void world::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	CheckTransJsonValue(gametime, di, "gametime", ec);
+	CheckTransJsonValue(load_count, di, "load_count", ec);
+	load_count++;
+}
+
+void world::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseValueJson(GetTypeSerialisationClassName(), so, "type");
+	SerialiseValueJson(gametime, so, "gametime");
+	SerialiseValueJson(load_count, so, "load_count");
+
+	serialisable_futurable_obj::Serialise(so, ec);
 }
