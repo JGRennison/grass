@@ -33,4 +33,21 @@ template <typename C> C* CheckPtr(C* in, const char *file, unsigned int line) {
 
 #define PTR_CHECK(p) CheckPtr(p, __FILE__, __LINE__)
 
+class info_rescoped_generic {
+	public:
+	virtual void AddMsg(Catch::ScopedMessage *msg) = 0;
+};
+
+class info_rescoped_unique : public info_rescoped_generic {
+	std::unique_ptr<Catch::ScopedMessage> ptr;
+
+	public:
+	virtual void AddMsg(Catch::ScopedMessage *msg) override {
+		ptr.reset(msg);
+	}
+};
+
+#define INFO_RESCOPED(container, msg) \
+	(container).AddMsg(new Catch::ScopedMessage(Catch::MessageBuilder( "INFO", CATCH_INTERNAL_LINEINFO, Catch::ResultWas::Info ) << msg));
+
 #endif
