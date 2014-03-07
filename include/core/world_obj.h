@@ -62,7 +62,12 @@ class world_obj : public serialisable_futurable_obj, public updatable_obj {
 	bool IsAutoNamed() const { return wo_privflags & WOPRIVF::AUTONAME; }
 	void SetAutoName(bool autoname) { SetOrClearBitsRef(wo_privflags.getref(), WOPRIVF::AUTONAME, autoname); }
 
+	virtual std::string GetTypeSerialisationName() const {
+		return GetTypeSerialisationClassName();
+	}
+
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 template<> struct enum_traits< world_obj::WOPRIVF > { static constexpr bool flags = true; };
 

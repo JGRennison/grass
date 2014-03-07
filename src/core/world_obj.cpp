@@ -45,3 +45,17 @@ std::string world_obj::GetFriendlyName() const {
 void world_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	DeserialiseFutures(di, ec, w.future_types, w.futures);
 }
+
+void world_obj::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseValueJson(GetTypeSerialisationName(), so, "type");
+
+	bool serialise_name = false;
+	if(so.flags & SOUTPUT_FLAGS::OUTPUT_ALLNAMES) serialise_name = true;
+	else if(so.flags & SOUTPUT_FLAGS::OUTPUT_NONAUTONAMES && !IsAutoNamed()) serialise_name = true;
+
+	if(serialise_name) {
+		SerialiseValueJson(GetSerialisationName(), so, "name");
+	}
+
+	serialisable_futurable_obj::Serialise(so, ec);
+}

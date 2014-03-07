@@ -158,9 +158,8 @@ class generictrack : public world_obj {
 
 	virtual GTF GetFlags(EDGETYPE direction) const = 0;
 
-	void Deserialise(const deserialiser_input &di, error_collection &ec) override;
-	void Serialise(serialiser_output &so, error_collection &ec) const override;
-	virtual std::string GetTypeSerialisationName() const = 0;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	virtual void TrackTick() { }
 

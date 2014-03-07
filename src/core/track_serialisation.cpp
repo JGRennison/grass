@@ -175,6 +175,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 }
 
 void generictrack::Serialise(serialiser_output &so, error_collection &ec) const {
+	world_obj::Serialise(so, ec);
 	if(berth) {
 		SerialiseValueJson(berth->contents, so, "berthstr");
 	}
