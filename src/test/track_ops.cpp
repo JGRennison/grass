@@ -22,6 +22,7 @@
 #include "test/catch.hpp"
 #include "test/deserialisation-test.h"
 #include "test/world-test.h"
+#include "test/testutil.h"
 #include "core/track_ops.h"
 #include "core/track.h"
 #include "core/points.h"
@@ -41,23 +42,43 @@ TEST_CASE( "track/ops/points/movement", "Test basic points movement future" ) {
 	test_fixture_world_init_checked env(points_move_ops_test_str_1);
 	points *p1 = PTR_CHECK(env.w->FindTrackByNameCast<points>("P1"));
 
-	env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	std::function<void()> RoundTrip;
 
-	REQUIRE(p1->GetPointsFlags(0) == genericpoints::PTF::ZERO);
-	env.w->GameStep(500);
-	REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::OOC));
-	env.w->GameStep(4500);
-	REQUIRE(p1->GetPointsFlags(0) == genericpoints::PTF::REV);
+	auto test = [&]() {
+		env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
 
-	env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::LOCKED, genericpoints::PTF::LOCKED));
-	env.w->GameStep(50);
-	env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
-	env.w->GameStep(50);
-	REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
-	env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::ZERO, genericpoints::PTF::REV));
-	env.w->GameStep(4900);
-	REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
-	REQUIRE(env.w->GetLogText() == "Points P1 not movable: Locked\n");
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == genericpoints::PTF::ZERO);
+		env.w->GameStep(500);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::OOC));
+		env.w->GameStep(4500);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == genericpoints::PTF::REV);
+
+		env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::LOCKED, genericpoints::PTF::LOCKED));
+		env.w->GameStep(50);
+		env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+		env.w->GameStep(50);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
+		env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::ZERO, genericpoints::PTF::REV));
+		env.w->GameStep(4900);
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
+		REQUIRE(env.w->GetLogText() == "Points P1 not movable: Locked\n");
+	};
+
+	SECTION("No serialisation round-trip") {
+		RoundTrip = []() { };
+		test();
+	}
+	SECTION("With serialisation round-trip") {
+		RoundTrip = [&]() {
+			env = RoundTripCloneTestFixtureWorld(env);
+			p1 = PTR_CHECK(env.w->FindTrackByNameCast<points>("P1"));
+		};
+		test();
+	}
 }
 
 std::string overlap_ops_test_str_1 =
