@@ -73,8 +73,9 @@ TEST_CASE( "track/ops/points/movement", "Test basic points movement future" ) {
 		test();
 	}
 	SECTION("With serialisation round-trip") {
+		info_rescoped_unique roundtrip_msg;
 		RoundTrip = [&]() {
-			env = RoundTripCloneTestFixtureWorld(env);
+			env = RoundTripCloneTestFixtureWorld(env, &roundtrip_msg);
 			p1 = PTR_CHECK(env.w->FindTrackByNameCast<points>("P1"));
 		};
 		test();

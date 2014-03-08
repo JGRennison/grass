@@ -24,6 +24,7 @@
 
 #include "test/catch.hpp"
 #include "test/world-test.h"
+#include "test/testutil.h"
 #include "core/error.h"
 #include "core/world.h"
 #include "core/world_serialisation.h"
@@ -77,21 +78,29 @@ struct test_fixture_world_init_checked : public test_fixture_world {
 	}
 };
 
-//! This clones a test_fixture_world using a gamestate serialisation round-trip, and the original content json
-//! This uses the same layout/post layout init settings as the original
-inline test_fixture_world_init_checked RoundTripCloneTestFixtureWorld(const test_fixture_world &tfw) {
-	auto wflags = tfw.w->GetWFlags();
-
+inline std::string SerialiseGameState(const test_fixture_world &tfw) {
 	error_collection ec;
 	world_serialisation ws(*(tfw.w));
 	std::string gamestate = ws.SaveGameToString(ec, world_serialisation::WSSAVEGAME_FLAGS::PRETTYMODE);
-
 	if(ec.GetErrorCount()) {
 		FAIL("Error Collection: " << ec);
 	}
+	return std::move(gamestate);
+}
 
+//! This clones a test_fixture_world using a gamestate serialisation round-trip, and the original content json
+//! This uses the same layout/post layout init settings as the original
+inline test_fixture_world_init_checked RoundTripCloneTestFixtureWorld(const test_fixture_world &tfw, info_rescoped_generic *msgtarg = 0) {
+	info_rescoped_unique msgtarg_local;
+	if(!msgtarg) msgtarg = &msgtarg_local;
+	auto wflags = tfw.w->GetWFlags();
+
+	std::string gamestate = SerialiseGameState(tfw);
+
+	INFO_RESCOPED(*msgtarg, "gamestate:\n" + gamestate);
 	test_fixture_world_init_checked rt_tfw(tfw.orig_input, gamestate);
 	rt_tfw.Init(wflags & world::WFLAGS::DONE_POSTLAYOUTINIT, true, wflags & world::WFLAGS::DONE_LAYOUTINIT);
+
 	return std::move(rt_tfw);
 }
 
