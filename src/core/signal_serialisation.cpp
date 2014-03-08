@@ -33,6 +33,32 @@ void routingpoint::Deserialise(const deserialiser_input &di, error_collection &e
 		[&](const deserialiser_input &subdi, error_collection &ec) {
 			endrestrictions.DeserialiseRestriction(subdi, ec, true);
 		});
+
+	CheckTransJsonValue(aspect, di, "aspect", ec);
+	CheckTransJsonValue(reserved_aspect, di, "reserved_aspect", ec);
+	CheckTransJsonValue(aspect_type, di, "aspect_type", ec);
+
+	std::string targetname;
+	if(CheckTransJsonValue(targetname, di, "aspect_target", ec)) {
+		aspect_target = FastRoutingpointCast(GetWorld().FindTrackByName(targetname));
+	}
+	if(CheckTransJsonValue(targetname, di, "aspect_route_target", ec)) {
+		aspect_route_target = FastRoutingpointCast(GetWorld().FindTrackByName(targetname));
+	}
+	if(CheckTransJsonValue(targetname, di, "aspect_backwards_dependency", ec)) {
+		aspect_backwards_dependency = FastRoutingpointCast(GetWorld().FindTrackByName(targetname));
+	}
+}
+
+void routingpoint::Serialise(serialiser_output &so, error_collection &ec) const {
+	genericzlentrack::Serialise(so, ec);
+	if(aspect) SerialiseValueJson(aspect, so, "aspect");
+	if(reserved_aspect) SerialiseValueJson(reserved_aspect, so, "reserved_aspect");
+	if(aspect_type != route_class::RTC_NULL) SerialiseValueJson(aspect_type, so, "aspect_type");
+
+	if(aspect_target) SerialiseValueJson(aspect_target->GetName(), so, "aspect_target");
+	if(aspect_route_target) SerialiseValueJson(aspect_route_target->GetName(), so, "aspect_route_target");
+	if(aspect_backwards_dependency) SerialiseValueJson(aspect_backwards_dependency->GetName(), so, "aspect_backwards_dependency");
 }
 
 class trackroutingpoint_deserialisation_extras : public trackroutingpoint_deserialisation_extras_base {
