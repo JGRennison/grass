@@ -604,3 +604,32 @@ TEST_CASE( "track_circuit/updates", "Test basic track circuit updates" ) {
 	env.w->GameStep(1);
 	CHECK(env.w->GetLastUpdateSet().size() == 0);
 }
+
+TEST_CASE( "track_circuit/deserialisation/gamestate/basicload", "Test basic gamestate loading, including track circuit/trigger creation check" ) {
+	test_fixture_world env1(R"({ "gamestate" : [ )"
+		R"({ "type" : "track_circuit", "name" : "T1" } )"
+	"] }");
+	INFO("Error Collection: " << env1.ec);
+	CHECK(env1.ec.GetErrorCount() == 0);
+	env1.ws->DeserialiseGameState(env1.ec);
+	INFO("Error Collection: " << env1.ec);
+	CHECK(env1.ec.GetErrorCount() == 1);
+
+	test_fixture_world env2(R"({ "gamestate" : [ )"
+		R"({ "type" : "tracktraincounterblock", "name" : "T1", "forceoccupied" : true } )"
+	"],"
+	R"("content" : [ )"
+		R"({ "type" : "tracktraincounterblock", "name" : "T1" } )"
+	"] }");
+	INFO("Error Collection: " << env2.ec);
+	CHECK(env2.ec.GetErrorCount() == 0);
+
+	track_train_counter_block *t1 = PTR_CHECK(env2.w->track_triggers.FindByName("T1"));
+	CHECK(t1->GetTCFlags() == track_train_counter_block::TCF::ZERO);
+
+	env2.ws->DeserialiseGameState(env2.ec);
+	INFO("Error Collection: " << env2.ec);
+	CHECK(env2.ec.GetErrorCount() == 0);
+
+	CHECK(t1->GetTCFlags() == track_train_counter_block::TCF::FORCEOCCUPIED);
+}

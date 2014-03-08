@@ -299,9 +299,6 @@ TEST_CASE( "deserialisation/gamestateload/typeerror", "Check that content sectio
 		R"({ "type" : "tractiontype" } )"
 	"] }");
 	check_parse_err(R"({ "gamestate" : [ )"
-		R"({ "type" : "trackcircuit" } )"
-	"] }");
-	check_parse_err(R"({ "gamestate" : [ )"
 		R"({ "type" : "couplepoints" } )"
 	"] }");
 	check_parse_err(R"({ "gamestate" : [ )"

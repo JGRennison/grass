@@ -218,25 +218,24 @@ void world_deserialisation::DeserialiseTractionType(const deserialiser_input &di
 	}
 }
 
-void world_deserialisation::DeserialiseTrackCircuit(const deserialiser_input &di, error_collection &ec) {
+template<typename T> void DeserialiseTrackTrainCounterBlockCommon(const deserialiser_input &di, error_collection &ec, const world_deserialisation::ws_dtf_params &wdp, track_train_counter_block_container<T> &ttcb_container) {
 	std::string name;
 	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
-		track_circuit *tc = di.w->track_circuits.FindOrMakeByName(name);
-		tc->DeserialiseObject(di, ec);
+		T *ttcb = nullptr;
+		if(wdp.flags & world_deserialisation::ws_dtf_params::WSDTFP_FLAGS::NONEWTRACK) {
+			ttcb = ttcb_container.FindByName(name);
+			if(!ttcb) {
+				ec.RegisterNewError<error_deserialisation>(di, "No such track circuit/track train counter block: " + name);
+				return;
+			}
+		}
+		else {
+			ttcb = ttcb_container.FindOrMakeByName(name);
+		}
+		ttcb->DeserialiseObject(di, ec);
 	}
 	else {
-		ec.RegisterNewError<error_deserialisation>(di, "Invalid track circuit definition");
-	}
-}
-
-void world_deserialisation::DeserialiseTrackTrainBlock(const deserialiser_input &di, error_collection &ec) {
-	std::string name;
-	if(CheckTransJsonValue(name, di, "name", ec) && di.w) {
-		track_train_counter_block *tc = di.w->track_triggers.FindOrMakeByName(name);
-		tc->DeserialiseObject(di, ec);
-	}
-	else {
-		ec.RegisterNewError<error_deserialisation>(di, "Invalid track train counter block definition");
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid track circuit/track train counter definition");
 	}
 }
 
@@ -302,8 +301,12 @@ void world_deserialisation::InitObjectTypes() {
 	content_object_types.RegisterType("template", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTemplate(di, ec); });
 	content_object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTypeDefinition(di, ec); });
 	content_object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTractionType(di, ec); });
-	content_object_types.RegisterType("trackcircuit", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTrackCircuit(di, ec); });
-	content_object_types.RegisterType("tracktraincounterblock", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTrackTrainBlock(di, ec); });
+	wd_RegisterBothTypes(*this, "trackcircuit", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+		DeserialiseTrackTrainCounterBlockCommon<track_circuit>(di, ec, wdp, w.track_circuits);
+	});
+	wd_RegisterBothTypes(*this, "tracktraincounterblock", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+		DeserialiseTrackTrainCounterBlockCommon<track_train_counter_block>(di, ec, wdp, w.track_triggers);
+	});
 	content_object_types.RegisterType("couplepoints", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialisePointsCoupling(di, ec); });
 	content_object_types.RegisterType("vehicleclass", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseVehicleClass(di, ec); });
 	gamestate_object_types.RegisterType("train", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTrain(di, ec); });
