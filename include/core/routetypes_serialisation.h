@@ -38,7 +38,30 @@ namespace route_class {
 		flag_conflict_checker<set> conflictcheck;
 		DeserialiseGroupProp(s, di, prop, ec, conflictcheck);
 	}
-	std::pair<bool, ID> DeserialiseName(const std::string &name, error_collection &ec);
+	std::pair<bool, ID> DeserialiseName(const std::string &name);
 }
+
+template <> inline bool IsType<route_class::ID>(const rapidjson::Value& val) {
+	if(val.IsString()) {
+		auto pair = route_class::DeserialiseName(val.GetString());
+		return pair.first;
+	}
+	else return false;
+}
+
+template <> inline route_class::ID GetType<route_class::ID>(const rapidjson::Value& val) {
+	auto pair = route_class::DeserialiseName(val.GetString());
+	return pair.second;
+}
+
+template <> inline void SetType<route_class::ID>(Handler &out, route_class::ID val) {
+	out.String(route_class::route_names[val].name);
+}
+
+template <> inline const char *GetTypeFriendlyName<route_class::ID>() { return "route class ID"; }
+
+template <> struct flagtyperemover<route_class::ID> {
+	typedef route_class::ID type;
+};
 
 #endif

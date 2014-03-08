@@ -152,7 +152,7 @@ void route_common::DeserialiseRouteCommon(const deserialiser_input &subdi, error
 
 		if(odi.json.IsBool()) overlap_type = odi.json.GetBool() ? route_class::ID::RTC_OVERLAP : route_class::ID::RTC_NULL;
 		else if(odi.json.IsString()) {
-			auto res = route_class::DeserialiseName(odi.json.GetString(), ec);
+			auto res = route_class::DeserialiseName(odi.json.GetString());
 			if(res.first) overlap_type = res.second;
 			else ec.RegisterNewError<error_deserialisation>(odi, "Invalid overlap type definition: " + std::string(odi.json.GetString()));
 		}
