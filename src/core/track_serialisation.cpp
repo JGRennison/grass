@@ -357,18 +357,25 @@ void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deseria
 		auto routetargetresolutionerror = [](error_collection &ec, const std::string &targname) {
 			ec.RegisterNewError<generic_error_obj>("Cannot resolve route target: " + targname);
 		};
+		auto routeindexresolutionerror = [](error_collection &ec, const std::string &targname, unsigned int index) {
+			ec.RegisterNewError<generic_error_obj>("Cannot resolve route target: " + targname + ", index: " + std::to_string(index));
+		};
 
 		if(di.w) {
 			routingpoint *rp = FastRoutingpointCast(di.w->FindTrackByName(targname));
 			if(rp) {
 				output = rp->GetRouteByIndex(index);
+				if(!output) routeindexresolutionerror(ec, targname, index);
 				return;
 			}
 			else if(after_layout_init_resolve) {
 				world *w = di.w;
-				auto resolveroutetarget = [w, targname, index, &output, routetargetresolutionerror](error_collection &ec) {
+				auto resolveroutetarget = [w, targname, index, &output, routetargetresolutionerror, routeindexresolutionerror](error_collection &ec) {
 					routingpoint *rp = FastRoutingpointCast(w->FindTrackByName(targname));
-					if(rp) output = rp->GetRouteByIndex(index);
+					if(rp) {
+						output = rp->GetRouteByIndex(index);
+						if(!output) routeindexresolutionerror(ec, targname, index);
+					}
 					else routetargetresolutionerror(ec, targname);
 				};
 				di.w->layout_init_final_fixups.AddFixup(resolveroutetarget);
