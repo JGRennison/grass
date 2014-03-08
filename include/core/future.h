@@ -22,7 +22,7 @@
 #ifndef INC_FUTURE_ALREADY
 #define INC_FUTURE_ALREADY
 
-#include <forward_list>
+#include <list>
 #include <memory>
 #include <map>
 #include <string>
@@ -83,7 +83,10 @@ class future_set : public future_container {
 class serialisable_futurable_obj;
 
 class futurable_obj {
-	std::forward_list<future *> own_futures;
+	//Use list because various parts of the code erase elements whilst iterating the list
+	//vector iterator invalidation would break this
+	//Don't use forward_list, because this reverses the order on serialisation round-trip
+	std::list<future *> own_futures;
 
 	public:
 	virtual ~futurable_obj() { }

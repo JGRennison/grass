@@ -33,6 +33,7 @@ void future_usermessage::InitVariables(message_formatter &mf, world &w) {
 }
 
 void future_usermessage::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	future::Deserialise(di, ec);
 	w = di.w;
 }
 
@@ -56,6 +57,7 @@ void future_genericusermessage::Deserialise(const deserialiser_input &di, error_
 }
 
 void future_genericusermessage::Serialise(serialiser_output &so, error_collection &ec) const {
+	future_usermessage::Serialise(so, ec);
 	SerialiseValueJson(textkey, so, "textkey");
 }
 

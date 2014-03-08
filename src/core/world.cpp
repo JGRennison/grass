@@ -244,6 +244,8 @@ void world::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonValue(gametime, di, "gametime", ec);
 	CheckTransJsonValue(load_count, di, "load_count", ec);
 	load_count++;
+
+	DeserialiseFutures(di, ec, future_types, futures);
 }
 
 void world::Serialise(serialiser_output &so, error_collection &ec) const {

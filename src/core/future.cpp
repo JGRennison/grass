@@ -80,7 +80,7 @@ void future_set::ExecuteUpTo(world_time ft) {
 }
 
 void futurable_obj::RegisterFuture(future *f) {
-	own_futures.emplace_front(f);
+	own_futures.emplace_back(f);
 }
 
 void futurable_obj::DeregisterFuture(future *f) {
