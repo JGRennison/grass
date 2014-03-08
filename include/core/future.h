@@ -45,8 +45,6 @@ class future : public serialisable_obj {
 	const uint64_t future_id = 1;
 	future_set *registered_fs = 0;
 
-	static uint64_t lastid;
-
 	virtual void ExecuteAction() = 0;
 
 	public:
@@ -58,11 +56,6 @@ class future : public serialisable_obj {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 	futurable_obj &GetTarget() const { return target; }
 	world_time GetTriggerTime() const { return trigger_time; }
-
-	private:
-	uint64_t MakeNewID() { return ++lastid; }
-	public:
-	static uint64_t &GetLastIDRef() { return lastid; }
 };
 
 class future_container {

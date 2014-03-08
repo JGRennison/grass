@@ -43,7 +43,7 @@ void action::ActionCancelFuture(future &f) const {
 }
 
 void action::ActionRegisterFutureAction(futurable_obj &targ, world_time ft, std::unique_ptr<action> &&a) const {
-	ActionRegisterLocalFuture(std::make_shared<future_action_wrapper>(targ, ft, std::move(a)));
+	ActionRegisterLocalFuture(std::make_shared<future_action_wrapper>(targ, ft, w.MakeNewFutureID(), std::move(a)));
 }
 
 void future_action_wrapper::ExecuteAction() {

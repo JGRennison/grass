@@ -554,6 +554,8 @@ void action_unreservetrackroute::ExecuteAction() const {
 	GenericRouteUnreservation(targetroute, targetroute->start.track, RRF::STOP_ON_OCCUPIED_TC);
 }
 
+future_signalflags::future_signalflags(genericsignal &targ, world_time ft, GSF bits_, GSF mask_)
+		: future(targ, ft, targ.GetWorld().MakeNewFutureID()), bits(bits_), mask(mask_) { };
 
 void future_signalflags::ExecuteAction() {
 	genericsignal *sig = dynamic_cast<genericsignal *>(&GetTarget());

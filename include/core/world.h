@@ -127,6 +127,7 @@ class world : public serialisable_futurable_obj {
 	error_collection ec;
 	unsigned int auto_seq_item = 0;
 	uint64_t load_count = 0;    // incremented on each save/load cycle
+	uint64_t last_future_id = 0;
 
 	public:
 	enum class WFLAGS {
@@ -191,6 +192,8 @@ class world : public serialisable_futurable_obj {
 	const std::set<updatable_obj *> &GetLastUpdateSet() const { return update_set; }
 
 	flagwrapper<WFLAGS> GetWFlags() const { return wflags; }
+
+	uint64_t MakeNewFutureID() { return ++last_future_id; }
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;

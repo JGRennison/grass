@@ -242,6 +242,7 @@ void world::MarkUpdated(updatable_obj *wo) {
 
 void world::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonValue(gametime, di, "gametime", ec);
+	CheckTransJsonValue(last_future_id, di, "last_future_id", ec);
 	CheckTransJsonValue(load_count, di, "load_count", ec);
 	load_count++;
 
@@ -251,6 +252,7 @@ void world::Deserialise(const deserialiser_input &di, error_collection &ec) {
 void world::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(GetTypeSerialisationClassName(), so, "type");
 	SerialiseValueJson(gametime, so, "gametime");
+	SerialiseValueJson(last_future_id, so, "last_future_id");
 	SerialiseValueJson(load_count, so, "load_count");
 
 	serialisable_futurable_obj::Serialise(so, ec);

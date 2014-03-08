@@ -34,7 +34,7 @@ class future_usermessage : public future {
 
 	public:
 	future_usermessage(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id), w(0) {  };
-	future_usermessage(futurable_obj &targ, world_time ft, world *w_) : future(targ, ft, 0), w(w_) {  };
+	future_usermessage(futurable_obj &targ, world_time ft, world *w_) : future(targ, ft, w_->MakeNewFutureID()), w(w_) {  };
 
 	virtual void ExecuteAction() = 0;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;

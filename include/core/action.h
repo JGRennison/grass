@@ -55,7 +55,7 @@ class future_action_wrapper : public future {
 	std::unique_ptr<action> act;
 
 	future_action_wrapper(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id) { };
-	future_action_wrapper(futurable_obj &targ, world_time ft, std::unique_ptr<action> &&a_) : future(targ, ft, 0), act(std::move(a_)) { };
+	future_action_wrapper(futurable_obj &targ, world_time ft, future_id_type id, std::unique_ptr<action> &&a_) : future(targ, ft, id), act(std::move(a_)) { };
 	static std::string GetTypeSerialisationNameStatic() { return "future_action_wrapper"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() override;

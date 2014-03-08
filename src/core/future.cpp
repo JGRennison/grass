@@ -23,10 +23,8 @@
 #include "core/future.h"
 #include "core/serialisable_impl.h"
 
-uint64_t future::lastid = 0;
-
-future::future(futurable_obj &targ, world_time ft, future_id_type id) : target(targ), trigger_time(ft), future_id(id ? id : MakeNewID()) {
-
+future::future(futurable_obj &targ, world_time ft, future_id_type id) : target(targ), trigger_time(ft), future_id(id) {
+	assert(id > 0);
 }
 
 future::~future() {
