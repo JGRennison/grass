@@ -391,7 +391,8 @@ void speedrestrictionset::Deserialise(const deserialiser_input &di, error_collec
 	for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
 		deserialiser_input subdi(di.json[i], "speedrestriction", MkArrayRefName(i), di);
 		speed_restriction sr;
-		if(subdi.json.IsObject() && CheckTransJsonValueDef(sr.speedclass, subdi, "speedclass", "", ec) && CheckTransJsonValueDefProc(sr.speed, subdi, "speed", 0, ec, dsconv::Length)) {
+		if(subdi.json.IsObject() && CheckTransJsonValueDef(sr.speedclass, subdi, "speedclass", "", ec)
+				&& CheckTransJsonValueDefProc(sr.speed, subdi, "speed", 0, ec, dsconv::Speed)) {
 			AddSpeedRestriction(sr);
 			subdi.PostDeserialisePropCheck(ec);
 		}
