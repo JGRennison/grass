@@ -48,7 +48,6 @@ struct template_def {
 
 class world_deserialisation {
 	world &w;
-	std::map<std::string, template_def> template_map;
 	std::forward_list<rapidjson::Document> parsed_inputs;
 	generictrack *previoustrackpiece;
 	unsigned int current_content_index;
@@ -85,9 +84,7 @@ class world_deserialisation {
 	void LoadGame(const deserialiser_input &di, error_collection &ec, WSLOADGAME_FLAGS flags = WSLOADGAME_FLAGS::ZERO);
 	void DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &contentdi, error_collection &ec);
 	void DeserialiseObject(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &di, error_collection &ec);
-	void DeserialiseTemplate(const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTypeDefinition(const deserialiser_input &di, error_collection &ec);
-	void ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTractionType(const deserialiser_input &di, error_collection &ec);
 	template <typename T> T* MakeOrFindGenericTrack(const deserialiser_input &di, error_collection &ec, bool findonly);
 	template <typename T> T* DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp);

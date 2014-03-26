@@ -145,54 +145,6 @@ TEST_CASE( "deserialisation/error/flagnoncontradiction", "Test non-contradictory
 	REQUIRE(env.ec.GetErrorCount() == 0);
 }
 
-TEST_CASE( "deserialisation/template/basic", "Test basic templating" ) {
-	std::string track_test_str =
-	R"({ "content" : [ )"
-		R"({ "type" : "template", "name" : "T1", "content" : { "through" : { "allow" : "all" } } }, )"
-		R"({ "type" : "template", "name" : "T2", "content" : { "through" : { "deny" : "all" } } }, )"
-		R"({ "type" : "template", "name" : "T3", "content" : { "through_rev" : { "deny" : "shunt" } } }, )"
-		R"({ "type" : "routingmarker", "name" : "R1", "preparse" : "T1", "through" : { "deny" : "route" } }, )"
-		R"({ "type" : "routingmarker", "name" : "R2", "preparse" : ["T1", "T2"], "through" : { "allow" : "route" } }, )"
-		R"({ "type" : "routingmarker", "name" : "R3", "postparse" : ["T1", "T3"], "through" : { "deny" : "route" } } )"
-	"] }";
-	test_fixture_world env(track_test_str);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
-
-	auto checkrmrtflags = [&](const char *name, RPRT frontflags, RPRT backflags) {
-		INFO("Routing Marker check for: " << name);
-
-		routingmarker *rm = dynamic_cast<routingmarker *>(env.w->FindTrackByName(name));
-		REQUIRE(rm != 0);
-		CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == frontflags);
-		CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == backflags);
-	};
-
-	checkrmrtflags("R1", RPRT(0, route_class::All() & ~ route_class::Flag(route_class::RTC_ROUTE), 0), RPRT(0, route_class::All(), 0));
-	checkrmrtflags("R2", RPRT(0, route_class::Flag(route_class::RTC_ROUTE), 0), RPRT(0, route_class::All(), 0));
-	checkrmrtflags("R3", RPRT(0, route_class::All(), 0), RPRT(0, route_class::All() & ~ route_class::Flag(route_class::RTC_SHUNT), 0));
-}
-
-TEST_CASE( "deserialisation/template/nested", "Test nested templating" ) {
-	std::string track_test_str =
-	R"({ "content" : [ )"
-		R"({ "type" : "template", "name" : "T1", "content" : { "preparse" : "T2", "through" : { "allow" : "all" } } }, )"
-		R"({ "type" : "template", "name" : "T2", "content" : { "postparse" : "T3", "through_rev" : { "deny" : "all" }, "through" : { "deny" : "shunt" } } }, )"
-		R"({ "type" : "template", "name" : "T3", "content" : { "through_rev" : { "allow" : "all" } } }, )"
-		R"({ "type" : "routingmarker", "name" : "R1", "preparse" : "T1", "through_rev" : { "deny" : [ "overlap" ] } } )"
-	"] }";
-	test_fixture_world env(track_test_str);
-
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 0);
-
-	routingmarker *rm = dynamic_cast<routingmarker *>(env.w->FindTrackByName("R1"));
-	REQUIRE(rm != 0);
-	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(0, route_class::All(), 0));
-	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::RTC_OVERLAP), 0));
-}
-
 TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
@@ -209,30 +161,6 @@ TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 	REQUIRE(rm != 0);
 	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == RPRT());
 	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::RTC_OVERLAP), 0));
-}
-
-TEST_CASE( "deserialisation/error/template", "Test reference to non-existent template" ) {
-	std::string track_test_str =
-	R"({ "content" : [ )"
-		R"({ "type" : "routingmarker", "name" : "R1", "preparse" : "T1" } )"
-	"] }";
-	test_fixture_world env(track_test_str);
-
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 1);
-}
-
-TEST_CASE( "deserialisation/error/templaterecursion", "Test check for template recursion" ) {
-	std::string track_test_str =
-	R"({ "content" : [ )"
-		R"({ "type" : "template", "name" : "T1", "content" : { "preparse" : "T2" } }, )"
-		R"({ "type" : "template", "name" : "T2", "content" : { "preparse" : "T1" } }, )"
-		R"({ "type" : "routingmarker", "name" : "R1", "preparse" : "T1" } )"
-	"] }";
-	test_fixture_world env(track_test_str);
-
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
-	REQUIRE(env.ec.GetErrorCount() == 1);
 }
 
 TEST_CASE( "deserialisation/error/typedefrecursion", "Test check for typedef recursion" ) {

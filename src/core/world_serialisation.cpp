@@ -136,18 +136,6 @@ template <typename T> T* world_deserialisation::DeserialiseGenericTrack(const de
 	return target;
 }
 
-void world_deserialisation::DeserialiseTemplate(const deserialiser_input &di, error_collection &ec) {
-	const rapidjson::Value *contentval;
-	std::string name;
-	if(CheckTransJsonValue(name, di, "name", ec) && CheckTransRapidjsonValue<json_object>(contentval, di, "content", ec)) {
-		template_map[name].json = contentval;
-		di.PostDeserialisePropCheck(ec);
-	}
-	else {
-		ec.RegisterNewError<error_deserialisation>(di, "Invalid template definition");
-	}
-}
-
 void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &di, error_collection &ec) {
 	std::string newtype;
 	std::string basetype;
@@ -186,24 +174,6 @@ void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &
 	}
 	else {
 		ec.RegisterNewError<error_deserialisation>(di, "Invalid typedef definition");
-	}
-}
-
-void world_deserialisation::ExecuteTemplate(serialisable_obj &obj, std::string name, const deserialiser_input &di, error_collection &ec) {
-	auto templ = template_map.find(name);
-	if(templ != template_map.end() && templ->second.json) {
-		if(templ->second.beingexpanded) {    //recursive expansion detection
-			ec.RegisterNewError<error_deserialisation>(di, string_format("Template: \"%s\": Recursive expansion detected: Aborting.", name.c_str()));
-			return;
-		}
-		else {
-			templ->second.beingexpanded = true;    //recursive expansion detection
-			obj.DeserialiseObject(deserialiser_input(*(templ->second.json), "Template: " + name, di), ec);
-			templ->second.beingexpanded = false;
-		}
-	}
-	else {
-		ec.RegisterNewError<error_deserialisation>(di, string_format("Template: \"%s\" not found", name.c_str()));
 	}
 }
 
@@ -298,7 +268,6 @@ void world_deserialisation::InitObjectTypes() {
 	MakeGenericTrackTypeWrapper<startofline>();
 	MakeGenericTrackTypeWrapper<endofline>();
 	MakeGenericTrackTypeWrapper<routingmarker>();
-	content_object_types.RegisterType("template", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTemplate(di, ec); });
 	content_object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTypeDefinition(di, ec); });
 	content_object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTractionType(di, ec); });
 	wd_RegisterBothTypes(*this, "trackcircuit", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {

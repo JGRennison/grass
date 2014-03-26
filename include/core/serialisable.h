@@ -50,8 +50,6 @@ template <typename... Args> class deserialisation_type_factory {
 class serialisable_obj {
 	friend world_deserialisation;
 
-	void DeserialisePrePost(const char *name, const deserialiser_input &di, error_collection &ec);
-
 	public:
 	void DeserialiseObject(const deserialiser_input &di, error_collection &ec);
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) = 0;
