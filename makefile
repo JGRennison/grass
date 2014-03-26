@@ -6,6 +6,7 @@
 #list: set to true to enable listings
 #map: set to true to enable linker map
 #noexceptions: set to build without exceptions
+#gcov: set to true to buil with gcov support (disables optimisations) (this also uses lcov 1.11-pre1 (1.118) or later if available)
 #cross: set to true if building on Unix, but build target is Windows
 #V: set to true to show full command lines
 
@@ -67,6 +68,17 @@ DEBUGPOSTFIX:=_debug
 DIR_POSTFIX:=$(DIR_POSTFIX)$(DEBUGPOSTFIX)
 OUTNAME:=$(OUTNAME)$(DEBUGPOSTFIX)
 WXCFGFLAGS:=--debug=yes
+endif
+
+ifdef gcov
+CFLAGS += -O0 -fprofile-arcs -ftest-coverage
+AFLAGS += -fprofile-arcs -lgcov
+GCOVPOSTFIX:=_gcov
+DIR_POSTFIX:=$(DIR_POSTFIX)$(GCOVPOSTFIX)
+OUTNAME:=$(OUTNAME)$(GCOVPOSTFIX)
+TESTCOVDIR:=cov
+DIRS += $(TESTCOVDIR)
+GCOVTESTNAME = $(subst -,_,$(TESTOUTNAME))
 endif
 
 GCCMACHINE:=$(shell $(GCC) -dumpmachine)
@@ -184,10 +196,19 @@ else
 endif
 
 TEST_OBJS:=$(call LIST_OBJS,$(TEST_DIRS)) $(call LIST_RESOBJS,$(TEST_RES))
-$(FULLTESTOUTNAME): $(TEST_OBJS) | $(OUTDIR)
+$(FULLTESTOUTNAME): $(TEST_OBJS) | $(OUTDIR) $(TESTCOVDIR)
 	@echo '    Link       $(FULLTESTOUTNAME)'
 	$(call EXEC,$(GCC) $(TEST_OBJS) -o $(FULLTESTOUTNAME) $(LIBS) $(AFLAGS) $(AFLAGS_test) $(GFLAGS))
+	@echo '    Test       $(FULLTESTOUTNAME)'
+ifdef gcov
+	-$(call EXEC,lcov -q -d . -z)
+endif
 	$(call EXEC,$(EXECPREFIX)$(FULLTESTOUTNAME))
+ifdef gcov
+	-$(call EXEC,lcov --no-external -q -b . -d . -c -t $(GCOVTESTNAME) -o $(TESTCOVDIR)/$(TESTOUTNAME).test)
+	-$(call EXEC,lcov -q -r $(TESTCOVDIR)/$(TESTOUTNAME).test 'deps/**/*' -o $(TESTCOVDIR)/$(TESTOUTNAME).test)
+	-$(call EXEC,genhtml -q --num-spaces 4 --legend --demangle-cpp $(TESTCOVDIR)/$(TESTOUTNAME).test -o $(TESTCOVDIR)/$(TESTOUTNAME))
+endif
 
 MAKEDEPS = -MMD -MP -MT '$@ $(@:.o=.d)'
 
@@ -232,6 +253,10 @@ clean:
 	@echo '    Clean all'
 	$(call EXEC,rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.ii) $(ALL_OBJS:.o=.lst) $(ALL_OBJS:.o=.d) $(ALL_OBJS:.o=.s) $(FULLOUTNAME) $(FULLOUTNAME).tmp $(FULLTESTOUTNAME) $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.gch $(call GENERIC_OBJ_DIR,test)/pch/catch.hpp.d)
 	$(call EXEC,rm -f $(call LIST_RESOBJS,$(RES_DIRS)) $(subst .o,.d,$(call LIST_RESOBJS,$(RES_DIRS))))
+ifdef gcov
+	$(call EXEC,rm -f $(ALL_OBJS:.o=.gcno) $(ALL_OBJS:.o=.gcda))
+	$(call EXEC,rm -rf $(TESTCOVDIR))
+endif
 
 install:
 ifeq "$(PLATFORM)" "WIN"
