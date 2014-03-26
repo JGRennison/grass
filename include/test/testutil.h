@@ -23,6 +23,9 @@
 #define INC_TESTUTIL_ALREADY
 
 #include "test/catch.hpp"
+#include <memory>
+#include <string>
+#include <sstream>
 
 template <typename C> C* CheckPtr(C* in, const char *file, unsigned int line) {
 	if(!in) {
@@ -49,5 +52,21 @@ class info_rescoped_unique : public info_rescoped_generic {
 
 #define INFO_RESCOPED(container, msg) \
 	(container).AddMsg(new Catch::ScopedMessage(Catch::MessageBuilder( "INFO", CATCH_INTERNAL_LINEINFO, Catch::ResultWas::Info ) << msg));
+
+inline void CheckContains(const char *file, unsigned int line, std::string haystack, std::string needle) {
+	INFO("CheckContains: File: " << file << ", line: " << line);
+	INFO("Looking for: " << needle);
+	INFO("In: " << haystack);
+	CHECK(haystack.find(needle) != std::string::npos);
+}
+
+struct error_collection;
+inline void CheckContains(const char *file, unsigned int line, const error_collection &ec, std::string needle) {
+	std::stringstream s;
+	s << ec;
+	CheckContains(file, line, s.str(), needle);
+}
+
+#define CHECK_CONTAINS(e, n) CheckContains(__FILE__, __LINE__, e, n)
 
 #endif

@@ -90,9 +90,7 @@ TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialis
 		test_fixture_world env(json);
 		INFO("Error Collection: " << env.ec);
 		CHECK(env.ec.GetErrorCount() == 1);
-		std::stringstream s;
-		s << env.ec;
-		CHECK(s.str().find(errstr) != std::string::npos);
+		CHECK_CONTAINS(env.ec, errstr);
 	};
 
 	parsecheckerr(
@@ -124,9 +122,7 @@ TEST_CASE("/train/train/deserialisation/typeerror", "Check that trains cannot ap
 		env.ws->DeserialiseGameState(env.ec);
 		INFO("Error Collection: " << env.ec);
 		CHECK(env.ec.GetErrorCount() == 1);
-		std::stringstream s;
-		s << env.ec;
-		CHECK(s.str().find(errstr) != std::string::npos);
+		CHECK_CONTAINS(env.ec, errstr);
 	};
 
 	parsecheckerr(

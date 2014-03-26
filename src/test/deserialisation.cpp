@@ -285,9 +285,7 @@ TEST_CASE( "deserialisation/gamestateload/typeerror", "Check that content sectio
 		env_err.ws->DeserialiseGameState(env_err.ec);
 		INFO("Error Collection: " << env_err.ec);
 		CHECK(env_err.ec.GetErrorCount() == 1);
-		std::stringstream s;
-		s << env_err.ec;
-		CHECK(s.str().find("Unknown object type") != std::string::npos);
+		CHECK_CONTAINS(env_err.ec, "Unknown object type");
 	};
 	check_parse_err(R"({ "gamestate" : [ )"
 		R"({ "type" : "template" } )"
