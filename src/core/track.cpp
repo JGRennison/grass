@@ -202,6 +202,9 @@ void trackseg::TrainLeave(EDGETYPE direction, train *t) {
 	traincount--;
 	track_circuit *tc = GetTrackCircuit();
 	if(tc) tc->TrainLeave(t);
+	for(auto &it : ttcbs) {
+		it->TrainLeave(t);
+	}
 	const speedrestrictionset *speeds = GetSpeedRestrictions();
 	if(speeds) t->RemoveCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
 }
