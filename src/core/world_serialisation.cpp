@@ -144,7 +144,8 @@ void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &
 		CheckTransRapidjsonValueDef<json_object>(content, di, "content", ec);
 
 		auto func = [=](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
-			deserialiser_input typedefwrapperdi(di.type, "Typedef Wrapper: " + newtype + " base: " + basetype, di.json, di);
+			//This is effectively a re-named clone of di
+			deserialiser_input typedefwrapperdi(di.type, "Typedef Wrapper: " + newtype + ", base: " + basetype, di.json, di);
 
 			const deserialiser_input *checkparent = di.parent;
 			do {
@@ -154,20 +155,33 @@ void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &
 				}
 			} while((checkparent = checkparent->parent));
 
-			typedefwrapperdi.seenprops.swap(di.seenprops);
+			typedefwrapperdi.seenprops.swap(di.seenprops); //this is so that seen properties in di are propagated to the base handler
 			typedefwrapperdi.objpreparse = di.objpreparse;
 			typedefwrapperdi.objpostparse = di.objpostparse;
 
+			auto exec = [&](const deserialiser_input &typedef_di) {
+				if(! this->content_object_types.FindAndDeserialise(basetype, typedef_di, ec, wdp))  {
+					ec.RegisterNewError<error_deserialisation>(typedef_di, string_format("Typedef expansion: %s: Unknown base type: %s", newtype.c_str(), basetype.c_str()));
+				}
+			};
+
 			if(content) {
 				deserialiser_input typedefcontentdi(*content, "Typedef Content: " + newtype + " base: " + basetype, typedefwrapperdi);
-				deserialiser_input *targ = &typedefwrapperdi;
-				while(targ->objpreparse) targ = targ->objpreparse;
-				targ->objpreparse = &typedefcontentdi;
+				/* 1st typedefcontentdi: typedefwrapperdi.objpreparse
+				 * 2nd di preparse:  typedefwrapperdi.objpreparse.objpostparse
+				 * 3rd di: typedefwrapperdi
+				 */
+				typedefcontentdi.objpostparse = typedefwrapperdi.objpreparse;
+				typedefwrapperdi.objpreparse = &typedefcontentdi;
+
+				// Need to use typedefwrapperdi instead of typedefcontentdi as the base, as typedefwrapperdi has the name which is needed first.
+				exec(typedefwrapperdi);
 			}
-			if(! this->content_object_types.FindAndDeserialise(basetype, typedefwrapperdi, ec, wdp))  {
-				ec.RegisterNewError<error_deserialisation>(typedefwrapperdi, string_format("Typedef expansion: %s: Unknown base type: %s", newtype.c_str(), basetype.c_str()));
+			else {
+				exec(typedefwrapperdi);
 			}
-			typedefwrapperdi.seenprops.swap(di.seenprops);
+
+			typedefwrapperdi.seenprops.swap(di.seenprops); //this is so that seen properties in the base handler are propagated to di
 		};
 		content_object_types.RegisterType(newtype, func);
 		di.PostDeserialisePropCheck(ec);
