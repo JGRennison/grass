@@ -982,22 +982,39 @@ TEST_CASE( "signal/approachcontrol/tracktrigger", "Test approach control for tri
 	genericsignal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S2"));
 	routingpoint *b = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>("B"));
 
-	env.w->SubmitAction(action_reservepath(*(env.w), s2, b));
-	CHECK(env.w->GetLogText() == "");
+	auto test = [&](std::string tag) {
+		INFO(tag);
+
+		env.w->SubmitAction(action_reservepath(*(env.w), s2, b));
+		CHECK(env.w->GetLogText() == "");
+		env.w->GameStep(1);
+		CHECK(s2->GetAspect() == 0);
+
+		env.w->track_circuits.FindOrMakeByName("T2")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+		env.w->GameStep(1);
+
+		env.w->GameStep(100000);
+		env.w->GameStep(100000);
+		CHECK(s2->GetAspect() == 0);
+
+		env.w->track_triggers.FindOrMakeByName("TT1")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+		env.w->GameStep(1);
+		CHECK(s2->GetAspect() == 1);
+	};
+
+	test("Initial test");
+
+	env.w->track_circuits.FindOrMakeByName("T2")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	env.w->track_triggers.FindOrMakeByName("TT1")->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
 	env.w->GameStep(1);
-
-	CHECK(s2->GetAspect() == 0);
-
-	env.w->track_circuits.FindOrMakeByName("T2")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
-	env.w->GameStep(1);
-
-	env.w->GameStep(100000);
-	env.w->GameStep(100000);
-	CHECK(s2->GetAspect() == 0);
-
-	env.w->track_triggers.FindOrMakeByName("TT1")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
-	env.w->GameStep(1);
+	//Check that signal remins at aspect of 1 when trigger unset
 	CHECK(s2->GetAspect() == 1);
+
+	env.w->SubmitAction(action_unreservetrack(*(env.w), *s2));
+	env.w->GameStep(1);
+	CHECK(s2->GetAspect() == 0);
+
+	test("Test again after unsetting trigger");
 }
 
 
