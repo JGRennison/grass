@@ -29,6 +29,44 @@
 #include "core/signal.h"
 #include "core/world_serialisation.h"
 
+TEST_CASE( "deserialisation/error/invalid", "Test invalid JSON" ) {
+	auto test = [&](std::string testname, std::string json, std::initializer_list<std::string> checklist) {
+		INFO(testname);
+		test_fixture_world env(json);
+
+		//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+		REQUIRE(env.ec.GetErrorCount() == 1);
+		CHECK_CONTAINS(env.ec, "JSON Parsing error");
+		for(auto &it : checklist) {
+			CHECK_CONTAINS(env.ec, it);
+		}
+	};
+
+	test("simple test",
+			"{ \"content }", { "\"{ \"content }\"" });
+
+	test("check long lines work: start",
+			"{ \"foo\" : ], \"content\" : \"999999999999999999999999999999999999999999999999999999999999999"
+			"999999999999999999999999999999999999999999999999999999999999999\" }",
+			{ "\"{ \"foo\" : ]", "\"..." });
+
+	test("check long lines work: middle",
+			"{ \"content\" : \"99999999999999999999999999999999999999999999999999999999999999999999999999999"
+			"9999999999999999999999999999999999999999999999999\", foo, "
+			"\"data\" : \"99999999999999999999999999999999999999999999999999999999999999999999999999999"
+			"9999999999999999999999999999999999999999999999999\" }",
+			{ ", foo,", "\"...", "...\"" });
+
+	test("check long lines work: end",
+			"{ \"content\" : \"99999999999999999999999999999999999999999999999999999999999999999999999999999"
+			"9999999999999999999999999999999999999999999999999\", foo : true }",
+			{ " foo : true }\"" , "...\"" });
+
+	test("check multiple lines work",
+			"{ \"foo\" : true,\n\"bar\" : baz,\n\"baz\" : false }",
+			{ "line: 2", "\"\"bar\" : baz,\"" });
+}
+
 TEST_CASE( "deserialisation/error/notype", "Test missing object type" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "

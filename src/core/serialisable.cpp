@@ -57,15 +57,18 @@ error_jsonparse::error_jsonparse(const std::string &json, size_t erroroffset, co
 	bool trail_end = false;
 	size_t linelen = strboundedlen_utf8(json, linestart, lineend);
 	if(linelen > 77) {
-		if(strboundedlen_utf8(json, erroroffset, lineend) <= 36) {
+		if(strboundedlen_utf8(json, linestart, erroroffset) <= 37) {
+			//Trim end of string
+			trail_end = true;
+			lineend = stroffset_utf8(json, linestart, 71);
+		}
+		else if(strboundedlen_utf8(json, erroroffset, lineend) <= 36) {
+			//Trim start of string
 			trail_start = true;
 			linestart = stroffset_utf8(json, linestart, linelen - 71);
 		}
-		else if(strboundedlen_utf8(json, linestart, erroroffset) <= 37) {
-			trail_end = true;
-			lineend = stroffset_utf8(json, linestart, -(linelen - 71));
-		}
 		else {
+			//Trim both ends of string
 			lineend = stroffset_utf8(json, erroroffset, 36);
 			linestart = stroffset_utf8(json, erroroffset, -37);
 			trail_start = trail_end = true;

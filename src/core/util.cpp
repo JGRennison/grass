@@ -132,6 +132,7 @@ unsigned int GetMilliTime() {
 	return ms;
 }
 
+//linestart is inclusive limit, lineen is exclusive limit
 size_t GetLineNumberOfStringOffset(const std::string &input, size_t offset, size_t *linestart, size_t *lineend) {
 	size_t lineno = 1;
 	size_t i;
@@ -139,15 +140,15 @@ size_t GetLineNumberOfStringOffset(const std::string &input, size_t offset, size
 		if(input[i] == '\r') {
 			lineno++;
 			if(input[i+1] == '\n') i++;
-			if(linestart) *linestart = i+1;
+			if(linestart) *linestart = i + 1;
 		}
 		else if(input[i] == '\n') {
 			lineno++;
-			if(linestart) *linestart = i+1;
+			if(linestart) *linestart = i + 1;
 		}
 	}
 	if(lineend) {
-		*lineend = input.size()-1;
+		*lineend = input.size();
 		for(; i < input.size(); i++) {
 			if(input[i] == '\r' || input[i] == '\n') {
 				*lineend = i;
