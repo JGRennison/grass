@@ -252,7 +252,14 @@ void train::RefreshCoveredTrackSpeedLimits() {
 	assert(local_backtrack_pos == tail_pos);
 }
 
-void train::DropTrainIntoPosition(const track_location &position) {
+class error_droptrainintoposition : public error_obj {
+	public:
+	error_droptrainintoposition(const train *t, const track_location &position, const std::string &str = "") {
+		msg << "Failed to drop train: " << t->GetName() << " into position: (" << position << ") failed: " << str;
+	}
+};
+
+void train::DropTrainIntoPosition(const track_location &position, error_collection &ec) {
 	tail_relative_height = head_relative_height = 0;
 
 	head_pos = position;
@@ -266,13 +273,21 @@ void train::DropTrainIntoPosition(const track_location &position) {
 
 	track_location temp;
 	func(temp, tail_pos);    //include the first track piece
-	AdvanceDisplacement(total_length, tail_pos, &tail_relative_height, func);
+
+	flagwrapper<ADRESULTF> adresultflags;
+	unsigned int leftover = AdvanceDisplacement(total_length, tail_pos, &tail_relative_height, func, &adresultflags);
+
 	tail_pos.ReverseDirection();
+	if(leftover) {
+		ec.RegisterNewError<error_droptrainintoposition>(this, position,
+				string_format("Insufficient track to drop train: tail at: (%s), leftover: %umm",
+				stringify(tail_pos).c_str(), leftover));
+	}
 
 	la.Init(this, head_pos);
 }
 
-void train::UprootTrain() {
+void train::UprootTrain(error_collection &ec) {
 
 	auto func = [this](track_location &old_track, track_location &new_track) {
 		new_track.GetTrack()->TrainLeave(new_track.GetTrack()->GetReverseDirection(new_track.GetDirection()), this);

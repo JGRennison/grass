@@ -123,15 +123,16 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 
 	ValidateActiveTractionSet();
 
-	track_location newpos;
-	newpos.Deserialise("position", di, ec);
-	if(newpos.IsValid()) {
-		DropTrainIntoPosition(newpos);
-	}
-
 	//todo: timetables, headcode
 
 	CalculateTrainMotionProperties(1<<8);    // TODO: replace this with the proper value
+
+	track_location newpos;
+	newpos.Deserialise("position", di, ec);
+	if(newpos.IsValid()) {
+		//do this after calculating motion properties (ie. length))
+		DropTrainIntoPosition(newpos, ec);
+	}
 }
 
 void train::Serialise(serialiser_output &so, error_collection &ec) const {

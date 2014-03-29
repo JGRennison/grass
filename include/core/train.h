@@ -130,8 +130,8 @@ class train : public world_obj, protected train_dynamics, protected train_motion
 	void CalculateCoveredTrackSpeedLimit();
 	void ReverseDirection();
 	void RefreshCoveredTrackSpeedLimits();
-	void DropTrainIntoPosition(const track_location &position);
-	void UprootTrain();
+	void DropTrainIntoPosition(const track_location &position, error_collection &ec);
+	void UprootTrain(error_collection &ec);
 	inline const train_dynamics &GetTrainDynamics() const { return *this; }
 	inline const train_motion_state &GetTrainMotionState() const { return *this; }
 	inline unsigned int GetMaxVehSpeed() const { return veh_max_speed; }

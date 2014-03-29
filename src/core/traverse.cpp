@@ -23,19 +23,25 @@
 #include "core/traverse.h"
 #include "core/trackreservation.h"
 
-unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track) {
-	return AdvanceDisplacement(displacement, track, 0, [&](track_location &a, track_location &b) { });
+//returns displacement length that could not be fulfilled
+unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, flagwrapper<ADRESULTF> *adresultflags) {
+	return AdvanceDisplacement(displacement, track, 0, [&](track_location &a, track_location &b) { }, adresultflags);
 }
 
-unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/, std::function<void (track_location & /*old*/, track_location & /*new*/)> func) {
+//returns displacement length that could not be fulfilled
+unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/,
+		std::function<void (track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADRESULTF> *adresultflags) {
 
 	if(elevationdelta) *elevationdelta = 0;
 
-	if(!track.IsValid()) return displacement;
+	if(!track.IsValid()) {
+		if(adresultflags) *adresultflags |= ADRESULTF::TRACKINVALID;
+		return displacement;
+	}
 
 	while(displacement > 0) {
 		unsigned int length_on_piece = track.GetTrack()->GetRemainingLength(track.GetDirection(), track.GetOffset());
-		if(length_on_piece > displacement) {
+		if(length_on_piece >= displacement) {
 			track.GetOffset() = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), displacement);
 			if(elevationdelta) *elevationdelta += track.GetTrack()->GetPartialElevationDelta(track.GetDirection(), displacement);
 			break;
@@ -52,6 +58,7 @@ unsigned int AdvanceDisplacement(unsigned int displacement, track_location &trac
 			}
 			else {    //run out of valid track
 				track.GetOffset() = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), length_on_piece);
+				if(adresultflags) *adresultflags |= ADRESULTF::RANOUTOFTRACK;
 				return displacement;
 			}
 

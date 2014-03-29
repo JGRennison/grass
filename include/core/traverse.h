@@ -26,8 +26,17 @@
 #include <functional>
 #include <deque>
 
-unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track);
-unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/, std::function<void(track_location & /*old*/, track_location & /*new*/)> func);
+enum class ADRESULTF {
+	ZERO                    = 0,
+	RANOUTOFTRACK           = 1<<0,
+	TRACKINVALID            = 1<<1,
+};
+template<> struct enum_traits<ADRESULTF> { static constexpr bool flags = true; };
+
+//return displacement length that could not be fulfilled
+unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, flagwrapper<ADRESULTF> *adresultflags = nullptr);
+unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/,
+		std::function<void(track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADRESULTF> *adresultflags = nullptr);
 
 enum class TSEF {
 	ZERO                    = 0,

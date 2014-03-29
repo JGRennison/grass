@@ -24,7 +24,9 @@
 #include "test/world-test.h"
 #include "test/testutil.h"
 #include "core/train.h"
+#include "core/trackcircuit.h"
 #include "core/util.h"
+#include "core/points.h"
 #include <sstream>
 
 static void checkvc(world &w, const std::string &name, unsigned int length, unsigned int max_speed, unsigned int tractive_force, unsigned int tractive_power,
@@ -218,4 +220,168 @@ TEST_CASE("/train/train/deserialisation/dynamics", "Train deserialisation and dy
 		INFO("Test 7");
 		checktd(t.GetTrainDynamics(), 50000, 30000, 500000 * 2, 746000 * 2, 1000000 * 2, 1000, 200, 500, 24000);
 	});
+}
+
+static void check_position(const track_location &l, std::string trackname, EDGETYPE direction, unsigned int trackpos) {
+	REQUIRE(l.GetTrack() != nullptr);
+	CHECK(l.GetTrack()->GetName() == trackname);
+	CHECK(l.GetDirection() == direction);
+	CHECK(l.GetOffset() == trackpos);
+};
+
+static void check_train_position(const train *t, std::string head_trackname, EDGETYPE head_direction, unsigned int head_trackpos,
+		std::string tail_trackname, EDGETYPE tail_direction, unsigned int tail_trackpos) {
+	REQUIRE(t != nullptr);
+	INFO("Checking train: " << t->GetName());
+	{
+		INFO("Head");
+		check_position(t->GetTrainMotionState().head_pos, head_trackname, head_direction, head_trackpos);
+	}
+	{
+		INFO("Tail");
+		check_position(t->GetTrainMotionState().tail_pos, tail_trackname, tail_direction, tail_trackpos);
+	}
+};
+
+static void check_train_is_uprooted(const train *t) {
+	REQUIRE(t != nullptr);
+	INFO("Checking train: " << t->GetName());
+	CHECK(t->GetTrainMotionState().head_pos == track_location());
+	CHECK(t->GetTrainMotionState().tail_pos == track_location());
+};
+
+static void check_drop_train(train *t, const track_location &l) {
+	error_collection ec;
+	t->DropTrainIntoPosition(l, ec);
+	INFO("Error Collection: " << ec);
+	REQUIRE(ec.GetErrorCount() == 0);
+}
+
+static void check_drop_train_insufficient_track(train *t, const track_location &l) {
+	error_collection ec;
+	t->DropTrainIntoPosition(l, ec);
+	CHECK(ec.GetErrorCount() == 1);
+	CHECK_CONTAINS(ec, "Insufficient track to drop train");
+}
+
+static void check_uproot_train(train *t) {
+	error_collection ec;
+	t->UprootTrain(ec);
+	INFO("Error Collection: " << ec);
+	REQUIRE(ec.GetErrorCount() == 0);
+}
+
+TEST_CASE("/train/train/dropanduproot", "Drop train into position and train uprooting tests") {
+	std::string test_train_drop_into_position =
+	R"({ "content" : [ )"
+		R"({ "type" : "startofline", "name" : "A"}, )"
+		R"({ "type" : "trackseg", "name" : "T0", "length" : "50m", "trackcircuit" : "TC0", "tracktriggers" : "TT0" }, )"
+		R"({ "type" : "points", "name" : "P0", "connect" : { "to" : "C" } }, )"
+		R"({ "type" : "trackseg", "name" : "T1", "length" : "50m" }, )"
+		R"({ "type" : "routesignal", "name" : "S0", "shuntsignal" : true }, )"
+		R"({ "type" : "trackseg", "name" : "T3", "length" : "200m" }, )"
+		R"({ "type" : "endofline", "name" : "B" }, )"
+
+		R"({ "type" : "endofline", "name" : "C" }, )"
+
+		R"({ "type" : "tractiontype", "name" : "diesel", "alwaysavailable" : true }, )"
+		R"({ "type" : "tractiontype", "name" : "AC" }, )"
+		R"({ "type" : "vehicleclass", "name" : "VC1", "length" : "30m", "mass" : "15t", "tractiontypes" : [ "diesel" ] }, )"
+		R"({ "type" : "vehicleclass", "name" : "VC2", "length" : "30m", "mass" : "15t", "tractiontypes" : [ "AC" ] } )"
+	R"( ], )"
+	R"( "gamestate" : [ )"
+		"%s"
+	"] }";
+
+	auto make_test_tenv = [&](const std::string &trainstring) {
+		std::unique_ptr<test_fixture_world> env {
+			new test_fixture_world_init_checked(string_format(test_train_drop_into_position, trainstring.c_str()), true, true, true)
+		};
+		return std::move(env);
+	};
+
+	auto check_ttcbs = [&](const test_fixture_world &tenv, std::string logtag, bool occupied) {
+		INFO(logtag << ": checking TC0 and TT0: expect: " << (occupied ? "occupied" : "clear"));
+		CHECK(PTR_CHECK(tenv.w->FindTrackTrainBlockOrTrackCircuitByName("TC0"))->Occupied() == occupied);
+		CHECK(PTR_CHECK(tenv.w->FindTrackTrainBlockOrTrackCircuitByName("TT0"))->Occupied() == occupied);
+	};
+
+	{
+		INFO("1: Deserialisation drop");
+		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
+				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 2} ], )"
+				R"( "position" : { "piece" : "S0", "dir" : "front", "offset" : 0 } } )"
+		);
+		train *t = tenv->w->FindTrainByName("TR0");
+		REQUIRE(t != nullptr);
+		check_train_position(t, "S0", EDGE_FRONT, 0, "T0", EDGE_FRONT, 40000);
+		check_ttcbs(*tenv, "Pre-uproot", true);
+
+		check_uproot_train(t);
+		check_train_is_uprooted(t);
+		check_ttcbs(*tenv, "Post-uproot", false);
+	}
+	{
+		INFO("2: Direct drop");
+		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
+				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 2} ] } )"
+		);
+		check_ttcbs(*tenv, "Pre-drop", false);
+		train *t = tenv->w->FindTrainByName("TR0");
+		REQUIRE(t != nullptr);
+		check_train_is_uprooted(t);
+
+		check_drop_train(t, track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
+		check_train_position(t, "S0", EDGE_FRONT, 0, "T0", EDGE_FRONT, 40000);
+		check_ttcbs(*tenv, "Post-drop, pre-uproot", true);
+
+		check_uproot_train(t);
+		check_train_is_uprooted(t);
+		check_ttcbs(*tenv, "Post-uproot", false);
+	}
+	{
+		INFO("3: Direct drop: train too long error");
+		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
+				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 4} ] } )"
+		);
+		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
+		check_drop_train_insufficient_track(t, track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
+	}
+	{
+		INFO("4: Direct drop: non-zero offset, just short of TTCBs");
+		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
+				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] } )"
+		);
+		check_ttcbs(*tenv, "Pre-drop", false);
+		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
+		check_drop_train(t, track_location(tenv->w->FindTrackByName("T1"), EDGE_FRONT, 30000));
+		check_train_position(t, "T1", EDGE_FRONT, 30000, "T1", EDGE_FRONT, 0);
+		check_ttcbs(*tenv, "Post-drop", false);
+	}
+	{
+		INFO("5: Direct drop: non-zero offset, reverse, just short of end");
+		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
+				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] } )"
+		);
+		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
+		check_drop_train(t, track_location(tenv->w->FindTrackByName("T3"), EDGE_BACK, 170000));
+		check_train_position(t, "T3", EDGE_BACK, 170000, "T3", EDGE_BACK, 200000);
+	}
+	{
+		INFO("6: Direct drop: non-zero offset, reverse, just over end error");
+		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
+				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] } )"
+		);
+		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
+		check_drop_train_insufficient_track(t, track_location(tenv->w->FindTrackByName("T3"), EDGE_BACK, 170001));
+	}
+	{
+		INFO("7: Direct drop: over OOC points");
+		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
+				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 2} ] } )"
+		);
+		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
+		PTR_CHECK(tenv->w->FindTrackByNameCast<points>("P0"))->SetPointsFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
+		check_drop_train_insufficient_track(t, track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
+	}
 }
