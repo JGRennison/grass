@@ -24,6 +24,7 @@
 
 #include <ctime>
 #include <string>
+#include <sstream>
 #include <iterator>
 #include <vector>
 #include <utility>
@@ -90,5 +91,11 @@ template <typename C, typename UP> unsigned int container_unordered_remove_if(C 
 void SplitString(const char *in, size_t len, char delim, std::vector<std::pair<const char*, size_t>> &result);
 
 bool slurp_file(const std::string &filename, std::string &out, error_collection &ec);
+
+template <typename T> std::string stringify(const T &in) {
+	std::stringstream msg;
+	msg << in;
+	return msg.str();
+}
 
 #endif
