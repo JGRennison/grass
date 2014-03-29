@@ -74,6 +74,7 @@ class lookahead  : public serialisable_obj {
 	void Advance(unsigned int distance);
 	void CheckLookaheads(const train *t /* optional */, const track_location &pos, std::function<void(unsigned int distance, unsigned int speed)> f, std::function<void(LA_ERROR err, const track_target_ptr &piece)> errfunc);
 	void ScanAppend(const train *t /* optional */, const track_location &pos, unsigned int blocklimit, const route *rt);
+	void Clear();
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;

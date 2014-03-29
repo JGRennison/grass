@@ -264,6 +264,11 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 	}
 }
 
+void lookahead::Clear() {
+	l1_list.clear();
+	current_offset = 0;
+}
+
 void lookahead::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	l1_list.clear();
 	CheckTransJsonValueDef(current_offset, di, "current_offset", 0, ec);

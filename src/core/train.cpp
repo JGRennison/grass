@@ -284,6 +284,7 @@ void train::UprootTrain() {
 
 	tail_relative_height = head_relative_height = 0;
 	tail_pos = head_pos = track_location();
+	la.Clear();
 }
 
 tractionset train::GetAllTractionTypes() const {
