@@ -22,15 +22,16 @@
 #include "common.h"
 #include "core/traverse.h"
 #include "core/trackreservation.h"
+#include <limits>
 
 //returns displacement length that could not be fulfilled
-unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, flagwrapper<ADRESULTF> *adresultflags) {
-	return AdvanceDisplacement(displacement, track, 0, [&](track_location &a, track_location &b) { }, adresultflags);
+unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, flagwrapper<ADF> adflags, flagwrapper<ADRESULTF> *adresultflags) {
+	return AdvanceDisplacement(displacement, track, 0, [&](track_location &a, track_location &b) { }, adflags, adresultflags);
 }
 
 //returns displacement length that could not be fulfilled
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/,
-		std::function<void (track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADRESULTF> *adresultflags) {
+		std::function<void (track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADF> adflags, flagwrapper<ADRESULTF> *adresultflags) {
 
 	if(elevationdelta) *elevationdelta = 0;
 
@@ -41,6 +42,41 @@ unsigned int AdvanceDisplacement(unsigned int displacement, track_location &trac
 
 	while(displacement > 0) {
 		unsigned int length_on_piece = track.GetTrack()->GetRemainingLength(track.GetDirection(), track.GetOffset());
+
+		if(adflags & ADF::CHECKFORTRAINS) {
+			unsigned int start_offset = track.GetOffset();
+			unsigned int end_offset = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), std::min(displacement, length_on_piece));
+
+			unsigned int obstruction_offset = std::numeric_limits<unsigned int>::max();
+
+			std::vector<generictrack::train_occupation> tos;
+			track.GetTrack()->GetTrainOccupationState(tos);
+			for(auto &it : tos) {
+				if(it.start_offset < start_offset && it.end_offset > start_offset) {
+					//whoops, we're in the middle of a train
+					obstruction_offset = 0;
+					break;
+				}
+				if(end_offset > start_offset && it.start_offset >= start_offset) {
+					//going forwards, train in front
+					obstruction_offset = std::min(obstruction_offset, it.start_offset - start_offset);
+				}
+				else if(end_offset < start_offset && it.end_offset <= start_offset) {
+					//going backwards, train behind
+					obstruction_offset = std::min(obstruction_offset, start_offset - it.end_offset);
+				}
+			}
+
+			if(obstruction_offset < displacement) {
+				track.GetOffset() = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), obstruction_offset);
+				if(elevationdelta) *elevationdelta += track.GetTrack()->GetPartialElevationDelta(track.GetDirection(), obstruction_offset);
+				displacement -= obstruction_offset;
+
+				if(adresultflags) *adresultflags |= ADRESULTF::TRAININWAY;
+				return displacement;
+			}
+		}
+
 		if(length_on_piece >= displacement) {
 			track.GetOffset() = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), displacement);
 			if(elevationdelta) *elevationdelta += track.GetTrack()->GetPartialElevationDelta(track.GetDirection(), displacement);

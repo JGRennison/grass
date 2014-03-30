@@ -189,6 +189,7 @@ unsigned int generictrack::GetSightingDistance(EDGETYPE direction) const {
 
 void trackseg::TrainEnter(EDGETYPE direction, train *t) {
 	traincount++;
+	occupying_trains.push_back(t);
 	track_circuit *tc = GetTrackCircuit();
 	if(tc) tc->TrainEnter(t);
 	for(auto &it : ttcbs) {
@@ -200,6 +201,7 @@ void trackseg::TrainEnter(EDGETYPE direction, train *t) {
 
 void trackseg::TrainLeave(EDGETYPE direction, train *t) {
 	traincount--;
+	container_unordered_remove_if(occupying_trains, [&](const train * const it) { return it == t; });
 	track_circuit *tc = GetTrackCircuit();
 	if(tc) tc->TrainLeave(t);
 	for(auto &it : ttcbs) {
@@ -348,6 +350,41 @@ EDGETYPE trackseg::GetAvailableAutoConnectionDirection(bool forwardconnection) c
 
 void trackseg::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_BACK, next), edgelistitem(EDGE_FRONT, prev) });
+}
+
+void trackseg::GetTrainOccupationState(std::vector<generictrack::train_occupation> &train_os) {
+	train_os.clear();
+	if(traincount == 0) {
+		return;
+	}
+
+	for(train *t : occupying_trains) {
+		train_os.emplace_back();
+		train_occupation &to = train_os.back();
+
+		to.t = t;
+		to.start_offset = 0;
+		to.end_offset = length;
+
+		auto checkpos = [&](track_location l, bool reverse) {
+			if(l.GetTrack() != this) return;
+
+			if(reverse) l.ReverseDirection();
+
+			//l now points *outward* from the train
+
+			if(l.GetDirection() == EDGE_FRONT) {
+				//this is the inclusive upper bound
+				to.end_offset = l.GetOffset();
+			}
+			if(l.GetDirection() == EDGE_BACK) {
+				//this is the inclusive lower bound
+				to.start_offset = l.GetOffset();
+			}
+		};
+		checkpos(t->GetTrainMotionState().head_pos, false);
+		checkpos(t->GetTrainMotionState().tail_pos, true);
+	}
 }
 
 unsigned int genericzlentrack::GetStartOffset(EDGETYPE direction) const {

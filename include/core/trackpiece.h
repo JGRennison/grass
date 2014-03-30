@@ -33,6 +33,7 @@ class trackseg : public generictrack {
 	track_circuit *tc;
 	std::vector<track_train_counter_block *> ttcbs;
 	unsigned int traincount;
+	std::vector<train *> occupying_trains;
 	track_target_ptr next;
 	track_target_ptr prev;
 	track_reservation_state trs;
@@ -79,6 +80,9 @@ class trackseg : public generictrack {
 
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
+
+	public:
+	virtual void GetTrainOccupationState(std::vector<train_occupation> &train_os) override;
 };
 
 class crossover : public genericzlentrack {

@@ -26,17 +26,24 @@
 #include <functional>
 #include <deque>
 
+enum class ADF {
+	ZERO                    = 0,
+	CHECKFORTRAINS          = 1<<0,
+};
+template<> struct enum_traits<ADF> { static constexpr bool flags = true; };
+
 enum class ADRESULTF {
 	ZERO                    = 0,
 	RANOUTOFTRACK           = 1<<0,
 	TRACKINVALID            = 1<<1,
+	TRAININWAY              = 1<<2,
 };
 template<> struct enum_traits<ADRESULTF> { static constexpr bool flags = true; };
 
 //return displacement length that could not be fulfilled
-unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, flagwrapper<ADRESULTF> *adresultflags = nullptr);
+unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, flagwrapper<ADF> adflags = 0, flagwrapper<ADRESULTF> *adresultflags = nullptr);
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/,
-		std::function<void(track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADRESULTF> *adresultflags = nullptr);
+		std::function<void(track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADF> adflags = 0, flagwrapper<ADRESULTF> *adresultflags = nullptr);
 
 enum class TSEF {
 	ZERO                    = 0,

@@ -193,6 +193,15 @@ class generictrack : public world_obj {
 	inline bool HasBerth(EDGETYPE direction) { return HasBerth() && (GetBerth()->direction == EDGE_NULL || GetBerth()->direction == direction); }
 	inline trackberth *GetBerth() { return berth.get(); }
 
+	struct train_occupation {
+		train *t;
+		unsigned int start_offset; //inclusive
+		unsigned int end_offset;   //inclusive
+	};
+	virtual void GetTrainOccupationState(std::vector<train_occupation> &train_os) {
+		train_os.clear();
+	}
+
 	private:
 	static bool TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target);
 };

@@ -267,15 +267,16 @@ void train::DropTrainIntoPosition(const track_location &position, error_collecti
 
 	tail_pos.ReverseDirection();
 
+	//enter old_track instead of new_track, to avoid interfering with collision checks on new_track which happen immediately after this
 	auto func = [this](track_location &old_track, track_location &new_track) {
-		new_track.GetTrack()->TrainEnter(new_track.GetTrack()->GetReverseDirection(new_track.GetDirection()), this);
+		old_track.GetTrack()->TrainEnter(old_track.GetTrack()->GetReverseDirection(old_track.GetDirection()), this);
 	};
 
-	track_location temp;
-	func(temp, tail_pos);    //include the first track piece
-
 	flagwrapper<ADRESULTF> adresultflags;
-	unsigned int leftover = AdvanceDisplacement(total_length, tail_pos, &tail_relative_height, func, &adresultflags);
+	unsigned int leftover = AdvanceDisplacement(total_length, tail_pos, &tail_relative_height, func, ADF::CHECKFORTRAINS, &adresultflags);
+
+	track_location temp;
+	func(tail_pos, temp);    //include the last track piece
 
 	tail_pos.ReverseDirection();
 	if(leftover) {
