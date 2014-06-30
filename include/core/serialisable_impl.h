@@ -371,7 +371,7 @@ template <typename C, typename D> inline bool CheckTransJsonValueFlag(C &var, D 
 
 		if(conflictcheck) conflictcheck->RegisterFlags(set, flagmask, di, prop, ec);
 	}
-	else CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
+	else CheckJsonTypeAndReportError<bool>(di, prop, subval, ec);
 	return res;
 }
 
@@ -382,7 +382,7 @@ template <typename C, typename D> inline bool CheckTransJsonValueDefFlag(C &var,
 	bool flagval=res?static_cast<C>(GetType<bool>(subval)):def;
 	if(flagval) var = var | flagmask;
 	else var = var & ~flagmask;
-	if(!res) CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
+	if(!res) CheckJsonTypeAndReportError<bool>(di, prop, subval, ec);
 	return res;
 }
 
