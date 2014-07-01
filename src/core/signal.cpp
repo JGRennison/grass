@@ -390,28 +390,45 @@ void genericsignal::UpdateSignalState() {
 		}
 	}
 
-	if(set_route->routecommonflags & route::RCF::APCONTROL && aspect == 0) {
-		bool can_trigger = false;
+	if(set_route->routecommonflags & route::RCF::APCONTROL) {
+		bool do_ap_control = false;
 
-		auto test_ttcb = [&](track_train_counter_block *ttcb) {
-			if(ttcb && ttcb->Occupied() && ttcb->GetLastOccupationStateChangeTime() + set_route->approachcontrol_triggerdelay <= GetWorld().GetGameTime()) {
-				can_trigger = true;
+		if(set_route->routecommonflags & route::RCF::APCONTROL_IF_NOROUTE) {
+			// Approach control if route target has no route set
+			genericsignal *targ_sig = FastSignalCast(set_route->end.track, set_route->end.direction);
+			if(targ_sig) {
+				if(!targ_sig->GetCurrentForwardRoute()) do_ap_control = true; // This is a signal with no route set
 			}
-		};
-
-		if(set_route->approachcontrol_trigger) {
-			test_ttcb(set_route->approachcontrol_trigger);
+			else do_ap_control = true; // This is not a signal, treat it as a signal with no route set
 		}
-		else {
-			EnumerateCurrentBackwardsRoutes([&](const route *rt) {
-				if(rt->trackcircuits.empty()) return;
-				test_ttcb(rt->trackcircuits.back());
-			});
+		else if(aspect == 0) {
+			// Normal approach control, and signal is red
+			do_ap_control = true;
 		}
 
-		if(!can_trigger) {
-			clear_route_notrigger();
-			return;
+		if(do_ap_control) {
+			bool can_trigger = false;
+
+			auto test_ttcb = [&](track_train_counter_block *ttcb) {
+				if(ttcb && ttcb->Occupied() && ttcb->GetLastOccupationStateChangeTime() + set_route->approachcontrol_triggerdelay <= GetWorld().GetGameTime()) {
+					can_trigger = true;
+				}
+			};
+
+			if(set_route->approachcontrol_trigger) {
+				test_ttcb(set_route->approachcontrol_trigger);
+			}
+			else {
+				EnumerateCurrentBackwardsRoutes([&](const route *rt) {
+					if(rt->trackcircuits.empty()) return;
+					test_ttcb(rt->trackcircuits.back());
+				});
+			}
+
+			if(!can_trigger) {
+				clear_route_notrigger();
+				return;
+			}
 		}
 	}
 

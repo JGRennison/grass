@@ -142,6 +142,12 @@ void route_common::DeserialiseRouteCommon(const deserialiser_input &subdi, error
 			this->approachcontrol_trigger = ttcb;
 			this->routecommonflags |= route_restriction::RCF::APCONTROL_SET | route_restriction::RCF::APCONTROL;
 		});
+
+		// Approach control if no forward route
+		bool ap_control_if_route_res = CheckTransJsonValueFlag(routecommonflags, route_restriction::RCF::APCONTROL_IF_NOROUTE, subdi, "approachcontrolifnoforwardroute", ec);
+		if(ap_control_if_route_res) routecommonflags |= route_restriction::RCF::APCONTROL_IF_NOROUTE_SET;
+		// If user enabled it here, also enable approach control
+		if(ap_control_if_route_res && routecommonflags & route_restriction::RCF::APCONTROL_IF_NOROUTE) routecommonflags |= route_restriction::RCF::APCONTROL_SET | route_restriction::RCF::APCONTROL;
 	}
 	if(CheckTransJsonValueFlag(routecommonflags, route_restriction::RCF::TORR, subdi, "torr", ec)) routecommonflags |= route_restriction::RCF::TORR_SET;
 	if(CheckTransJsonValueFlag(routecommonflags, route_restriction::RCF::EXITSIGCONTROL, subdi, "exitsignalcontrol", ec)) routecommonflags |= route_restriction::RCF::EXITSIGCONTROL_SET;

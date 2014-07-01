@@ -40,6 +40,7 @@ void route_common::ApplyTo(route_common &target) const {
 	if(routecommonflags & RCF::ROUTECLEARDELAY_SET) target.routeclear_delay = routeclear_delay;
 	if(routecommonflags & RCF::ROUTESETDELAY_SET) target.routeset_delay = routeset_delay;
 	if(routecommonflags & RCF::ASPECTMASK_SET) target.aspect_mask = aspect_mask;
+	if(routecommonflags & RCF::APCONTROL_IF_NOROUTE_SET) SetOrClearBitsRef(target.routecommonflags, RCF::APCONTROL_IF_NOROUTE, routecommonflags & RCF::APCONTROL_IF_NOROUTE);
 	if(approachcontrol_trigger) target.approachcontrol_trigger = approachcontrol_trigger;
 	if(overlaptimeout_trigger) target.overlaptimeout_trigger = overlaptimeout_trigger;
 }

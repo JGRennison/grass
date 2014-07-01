@@ -965,6 +965,7 @@ TEST_CASE( "signal/approachcontrol/general", "Test basic approach control" ) {
 std::string approachcontrol_test_str_2 =
 R"({ "content" : [ )"
 	R"({ "type" : "typedef", "newtype" : "2aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 1, "routesignal" : true } }, )"
+
 	R"({ "type" : "startofline", "name" : "A" }, )"
 	R"({ "type" : "autosignal", "name" : "S1" }, )"
 	R"({ "type" : "routingmarker", "overlapend" : true }, )"
@@ -1017,6 +1018,75 @@ TEST_CASE( "signal/approachcontrol/tracktrigger", "Test approach control for tri
 	test("Test again after unsetting trigger");
 }
 
+std::string approachcontrol_test_str_3 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+	R"({ "type" : "typedef", "newtype" : "4aspectauto", "basetype" : "autosignal", "content" : { "maxaspect" : 3 } }, )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "4aspectauto", "name" : "S0" }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T0" }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T1" }, )"
+	R"({ "type" : "4aspectauto", "name" : "S1" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T2" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S2", "routeendrestrictions" : [ { "approachcontrolifnoforwardroute" : true } ] }, )"
+	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S2ovlp" }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true, "name" : "S2ovlpend" }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T3" }, )"
+	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "route" } } )"
+"] }";
+
+TEST_CASE( "signal/approachcontrol/onlyifnoforwardroute", "Test approach control only if no forward route mode" ) {
+	test_fixture_world_init_checked env(approachcontrol_test_str_3);
+
+	genericsignal *s1 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S1"));
+	genericsignal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S2"));
+	routingpoint *b = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>("B"));
+	track_circuit *t0 = env.w->track_circuits.FindOrMakeByName("T0");
+	track_circuit *t1 = env.w->track_circuits.FindOrMakeByName("T1");
+	track_circuit *t3 = env.w->track_circuits.FindOrMakeByName("T3");
+
+	auto test_aspects = [&](unsigned int s1aspect, unsigned int s2aspect, const std::string &test_name) {
+		INFO(test_name);
+		INFO(s2->GetCurrentForwardRoute());
+		CHECK(s1->GetAspect() == s1aspect);
+		CHECK(s2->GetAspect() == s2aspect);
+	};
+
+	env.w->GameStep(1);
+	test_aspects(0, 0, "Test 1"); // No route set from S2, approach control should be on
+
+	t1->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w->GameStep(1);
+	test_aspects(1, 0, "Test 2"); // Train has approached S1, approach control should clear S1
+
+	t1->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+
+	t3->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w->SubmitAction(action_reservepath(*(env.w), s2, b));
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() == "");
+	test_aspects(1, 0, "Test 3"); // S2 now has a route set, but it's occupied, S1 should clear
+
+	t3->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	env.w->GameStep(1);
+	test_aspects(2, 1, "Test 4"); // S2 now has a route set, and it's clear, S1 should clear to aspect 2
+
+	env.w->SubmitAction(action_unreservetrack(*(env.w), *s2));
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() == "");
+	test_aspects(0, 0, "Test 5"); // No route set from S2, approach control should be on, even though the aspect was non-zero before
+
+	t0->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	t3->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	env.w->SubmitAction(action_reservepath(*(env.w), s2, b));
+	env.w->GameStep(1);
+	CHECK(env.w->GetLogText() == "");
+	env.w->SubmitAction(action_unreservetrack(*(env.w), *s2));
+	env.w->GameStep(1);
+	test_aspects(0, 0, "Test 6"); // Repeat test 5, only this time occupy a TC in front of S1, and the route from S2, before unreserving from S2
+	CHECK((s2->GetSignalFlags() & GSF::APPROACHLOCKINGMODE) == GSF::ZERO); // Check that approach locking didn't get turned on
+}
 
 std::string callon_test_str_1 =
 R"({ "content" : [ )"

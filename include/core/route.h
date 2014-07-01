@@ -82,6 +82,8 @@ struct route_common {
 		ROUTECLEARDELAY_SET         = 1<<12,
 		ROUTESETDELAY_SET           = 1<<13,
 		ASPECTMASK_SET              = 1<<14,
+		APCONTROL_IF_NOROUTE        = 1<<15, // Conditional aspects: apply approach control if route target has no forward route set
+		APCONTROL_IF_NOROUTE_SET    = 1<<16, // "
 	};
 	RCF routecommonflags = RCF::ZERO;
 
