@@ -452,11 +452,14 @@ void genericsignal::UpdateSignalState() {
 	}
 
 	unsigned int aspect_mask;
+	const std::vector<route_common::conditional_aspect_mask> *cams;
 	if(GetSignalFlags() & GSF::REPEATER) {
 		aspect_mask = route_defaults.aspect_mask;
+		cams = &(route_defaults.conditional_aspect_masks);
 	}
 	else {
 		aspect_mask = set_route->aspect_mask;
+		cams = &(set_route->conditional_aspect_masks);
 	}
 
 	if(route_class::IsAspectLimitedToUnity(set_route->type)) aspect_mask &= 3; // This limits the aspect to no more than 1
@@ -489,6 +492,13 @@ void genericsignal::UpdateSignalState() {
 	};
 	check_aspect_mask(aspect, aspect_mask);
 	check_aspect_mask(reserved_aspect, aspect_mask);
+	for(auto &it : *cams) {
+		aspect_target->UpdateRoutingPoint();
+		if(aspect_in_mask(it.condition, aspect_target->GetAspect())) {
+			check_aspect_mask(aspect, it.aspect_mask);
+			check_aspect_mask(reserved_aspect, it.aspect_mask);
+		}
+	}
 
 	check_aspect_change();
 }

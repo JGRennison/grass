@@ -43,6 +43,7 @@ void route_common::ApplyTo(route_common &target) const {
 	if(routecommonflags & RCF::APCONTROL_IF_NOROUTE_SET) SetOrClearBitsRef(target.routecommonflags, RCF::APCONTROL_IF_NOROUTE, routecommonflags & RCF::APCONTROL_IF_NOROUTE);
 	if(approachcontrol_trigger) target.approachcontrol_trigger = approachcontrol_trigger;
 	if(overlaptimeout_trigger) target.overlaptimeout_trigger = overlaptimeout_trigger;
+	target.conditional_aspect_masks.insert(target.conditional_aspect_masks.end(), conditional_aspect_masks.begin(), conditional_aspect_masks.end());
 }
 
 //returns false on failure/partial completion

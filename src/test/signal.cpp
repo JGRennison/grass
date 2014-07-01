@@ -1531,8 +1531,8 @@ TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal a
 	multitest("routesetdelay", 500, 2001);
 }
 
-void SignalAspectTest(std::string allowed_aspects, aspect_mask_type expected_mask, const std::vector<unsigned int> &aspects, bool repeatermode) {
-	INFO("Allowed aspects: " << allowed_aspects << ", Repeater Mode: " << repeatermode);
+void SignalAspectTest(std::string allowed_aspects, aspect_mask_type expected_mask, const std::vector<unsigned int> &aspects, bool repeatermode, const std::string &conditional_aspects) {
+	INFO("Allowed aspects: " << allowed_aspects << ", Repeater Mode: " << repeatermode << ", Conditional aspects: " << conditional_aspects);
 
 	std::string targsigname = repeatermode ? "Srep" : "S0";
 
@@ -1544,6 +1544,9 @@ void SignalAspectTest(std::string allowed_aspects, aspect_mask_type expected_mas
 
 	std::string default_aspectstr = ", \"allowedaspects\" : \"0-31\"";
 	std::string param_aspectstr = ", \"allowedaspects\" : \"" + allowed_aspects + "\"";
+	if(!conditional_aspects.empty()) {
+		param_aspectstr += R"(, "conditionalallowedaspects" : [ )" + conditional_aspects + "]";
+	}
 
 	for(unsigned int i = 0; i < signals; i++) {
 		std::string aspectstr;
@@ -1606,7 +1609,7 @@ void SignalAspectTest(std::string allowed_aspects, aspect_mask_type expected_mas
 
 TEST_CASE("signal/aspect/discontinous", "Test discontinuous allowed signal aspects") {
 	auto test = [&](std::string allowed_aspects, aspect_mask_type expected_mask, const std::vector<unsigned int> &aspects, bool repeatermode) {
-		SignalAspectTest(allowed_aspects, expected_mask, aspects, repeatermode);
+		SignalAspectTest(allowed_aspects, expected_mask, aspects, repeatermode, "");
 	};
 
 	test("0-3", 0xF, std::vector<unsigned int> { 0, 1, 2, 3, 3 }, false);
@@ -1621,4 +1624,18 @@ TEST_CASE("signal/aspect/discontinous", "Test discontinuous allowed signal aspec
 	test("1,3,3-5", 0x3A, std::vector<unsigned int> { 1, 1, 3, 4, 5, 5 }, true);
 	test("1-3,2-4,6", 0x5E, std::vector<unsigned int> { 1, 2, 3, 4, 4, 6, 6 }, true);
 	test("1-31", 0xFFFFFFFE, std::vector<unsigned int> { 1, 2, 3, 4, 5, 6 }, true);
+}
+
+TEST_CASE("signal/aspect/conditional", "Test conditionally allowed signal aspects") {
+	auto test = [&](std::string allowed_aspects, aspect_mask_type expected_mask, const std::vector<unsigned int> &aspects, bool repeatermode, const std::string &conditional_aspects) {
+		SignalAspectTest(allowed_aspects, expected_mask, aspects, repeatermode, conditional_aspects);
+	};
+
+	test("1-3", 0xE, std::vector<unsigned int> { 0, 0, 0, 0, 3 }, false, R"( { "condition" : "0-2", "allowedaspects" : "0" } )");
+	test("1-3", 0xE, std::vector<unsigned int> { 0, 1, 0, 0, 3 }, false, R"( { "condition" : "1-2", "allowedaspects" : "0" } )");
+	test("1-4", 0x1E, std::vector<unsigned int> { 0, 1, 2, 2, 4 }, false, R"( { "condition" : "2", "allowedaspects" : "0-2" } )");
+	test("1-4", 0x1E, std::vector<unsigned int> { 0, 1, 1, 1, 3 }, false, R"( { "condition" : "1,2", "allowedaspects" : "0-1" }, { "condition" : "3", "allowedaspects" : "0-3" } )");
+	test("1-2", 0x6, std::vector<unsigned int> { 0, 1, 1, 1, 2 }, false, R"( { "condition" : "1,2", "allowedaspects" : "0-1" }, { "condition" : "3", "allowedaspects" : "0-3" } )");
+	test("1-3", 0xE, std::vector<unsigned int> { 1, 0, 0, 3, 3 }, true, R"( { "condition" : "1-2", "allowedaspects" : "0" } )");
+	test("1-3", 0xE, std::vector<unsigned int> { 1, 0, 3, 3, 0 }, true, R"( { "condition" : "1-4", "allowedaspects" : "3" }, { "condition" : "4", "allowedaspects" : "4" } )");
 }

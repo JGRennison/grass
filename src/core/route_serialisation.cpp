@@ -102,8 +102,25 @@ bool DeserialiseAspectProps(aspect_mask_type &aspect_mask, const deserialiser_in
 	return false;
 }
 
+void DeserialiseConditionalAspectProps(std::vector<route_common::conditional_aspect_mask> &cams, const deserialiser_input &di, error_collection &ec) {
+	CheckIterateJsonArrayOrType<json_object>(di, "conditionalallowedaspects", "conditionalallowedaspect", ec, [&](const deserialiser_input &innerdi, error_collection &ec) {
+		cams.emplace_back();
+
+		auto parse_aspect = [&](aspect_mask_type &aspect_mask, const char *prop, const std::string &name) {
+			std::string aspect_string;
+			if(CheckTransJsonValue(aspect_string, innerdi, prop, ec)) {
+				ParseAspectMaskString(aspect_mask, aspect_string, innerdi, ec, name);
+			}
+		};
+		parse_aspect(cams.back().condition, "condition", "aspect mask condition");
+		parse_aspect(cams.back().aspect_mask, "allowedaspects", "conditional allowed aspects");
+		innerdi.PostDeserialisePropCheck(ec);
+	});
+}
+
 void route_common::DeserialiseRouteCommon(const deserialiser_input &subdi, error_collection &ec, DeserialisationFlags flags) {
 	if(DeserialiseAspectProps(aspect_mask, subdi, ec)) routecommonflags |= route_restriction::RCF::ASPECTMASK_SET;
+	DeserialiseConditionalAspectProps(conditional_aspect_masks, subdi, ec);
 	if(flags & DeserialisationFlags::ASPECTMASK_ONLY) return;
 
 	//f's references must not go out of scope until after the layout init final fixups phase

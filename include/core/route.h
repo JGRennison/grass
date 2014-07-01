@@ -71,6 +71,12 @@ struct route_common {
 	unsigned int routeset_delay = 0;
 	aspect_mask_type aspect_mask = 3;
 
+	struct conditional_aspect_mask {
+		aspect_mask_type condition = 1;
+		aspect_mask_type aspect_mask = 1;
+	};
+	std::vector<conditional_aspect_mask> conditional_aspect_masks;
+
 	track_train_counter_block *approachcontrol_trigger = 0;
 	track_train_counter_block *overlaptimeout_trigger = 0;
 
