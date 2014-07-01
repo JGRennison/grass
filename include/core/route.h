@@ -42,6 +42,15 @@ typedef std::vector<track_circuit *> tc_list;
 typedef std::vector<genericsignal *> sig_list;
 typedef std::vector<route_recording_item> passable_test_list;
 
+
+typedef uint32_t aspect_mask_type; // This is a bitmask for aspects: 0 (LSB) to 31 (MSB)
+const unsigned int ASPECT_MAX = 31;
+
+inline bool aspect_in_mask(aspect_mask_type mask, unsigned int aspect) {
+	if(aspect > ASPECT_MAX) return false;
+	else return mask & (1 << aspect);
+}
+
 struct berth_record {
 	trackberth *berth = 0;
 	generictrack *ownertrack = 0;
@@ -60,7 +69,7 @@ struct route_common {
 	unsigned int routeprove_delay = 0;
 	unsigned int routeclear_delay = 0;
 	unsigned int routeset_delay = 0;
-	unsigned int aspect_mask = 1;
+	aspect_mask_type aspect_mask = 3;
 
 	track_train_counter_block *approachcontrol_trigger = 0;
 	track_train_counter_block *overlaptimeout_trigger = 0;

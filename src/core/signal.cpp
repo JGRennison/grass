@@ -452,22 +452,26 @@ void genericsignal::UpdateSignalState() {
 	}
 
 	unsigned int aspect_mask;
-	if(GetSignalFlags() & GSF::REPEATER) aspect_mask = route_defaults.aspect_mask;
-	else aspect_mask = set_route->aspect_mask;
-	unsigned int max_aspect = aspect_mask ? (sizeof(aspect_mask) * 8) - __builtin_clz(aspect_mask) : 0;
-
-	if(route_class::IsAspectLimitedToUnity(set_route->type)) reserved_aspect = aspect = std::min((unsigned int) 1, max_aspect);
-	else {
-		if(max_aspect <= 1) reserved_aspect = aspect = max_aspect;
-		else {
-			aspect_target->UpdateRoutingPoint();
-			if(route_class::IsAspectDirectlyPropagatable(set_route->type, aspect_target->GetAspectType())) {
-				aspect = std::min(max_aspect, aspect_target->GetAspect() + 1);
-				reserved_aspect = std::min(max_aspect, aspect_target->GetReservedAspect() + 1);
-			}
-			else reserved_aspect = aspect = 1;
-		}
+	if(GetSignalFlags() & GSF::REPEATER) {
+		aspect_mask = route_defaults.aspect_mask;
 	}
+	else {
+		aspect_mask = set_route->aspect_mask;
+	}
+
+	if(route_class::IsAspectLimitedToUnity(set_route->type)) aspect_mask &= 3; // This limits the aspect to no more than 1
+
+	if(aspect_mask & ~3) {
+		// Aspect allowed to go higher than 1, check what the route points to
+		aspect_target->UpdateRoutingPoint();
+		if(route_class::IsAspectDirectlyPropagatable(set_route->type, aspect_target->GetAspectType())) {
+			aspect = aspect_target->GetAspect() + 1;
+			reserved_aspect = aspect_target->GetReservedAspect() + 1;
+		}
+		else reserved_aspect = aspect = 1;
+	}
+	else reserved_aspect = aspect = 1;
+
 	SetAspectNextTarget(aspect_target);
 	SetAspectRouteTarget(aspect_route_target);
 	set_clear_time();
@@ -476,10 +480,16 @@ void genericsignal::UpdateSignalState() {
 	if(last_state_update - last_route_prove_time < set_route->routeprove_delay) aspect = 0;
 	if(last_state_update - last_route_clear_time < set_route->routeclear_delay) aspect = 0;
 	if(last_state_update - last_route_set_time < set_route->routeset_delay) aspect = 0;
-	while(aspect) {
-		if(aspect_mask & (1 << (aspect - 1))) break;     //aspect is in mask: OK
-		aspect--;                                        //aspect not in mask, try one lower
-	}
+
+	auto check_aspect_mask = [&](unsigned int &aspect, aspect_mask_type mask) {
+		while(aspect) {
+			if(aspect_in_mask(mask, aspect)) break;          //aspect is in mask: OK
+			aspect--;                                        //aspect not in mask, try one lower
+		}
+	};
+	check_aspect_mask(aspect, aspect_mask);
+	check_aspect_mask(reserved_aspect, aspect_mask);
+
 	check_aspect_change();
 }
 

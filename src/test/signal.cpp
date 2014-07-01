@@ -1531,87 +1531,94 @@ TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal a
 	multitest("routesetdelay", 500, 2001);
 }
 
-TEST_CASE( "signal/aspect/discontinous", "Test discontinuous allowed signal aspects") {
-	auto test = [&](std::string allowed_aspects, unsigned int expected_mask, const std::vector<unsigned int> &aspects, bool repeatermode) {
-		INFO("Allowed aspects: " << allowed_aspects << ", Repeater Mode: " << repeatermode);
+void SignalAspectTest(std::string allowed_aspects, aspect_mask_type expected_mask, const std::vector<unsigned int> &aspects, bool repeatermode) {
+	INFO("Allowed aspects: " << allowed_aspects << ", Repeater Mode: " << repeatermode);
 
-		std::string targsigname = repeatermode ? "Srep" : "S0";
+	std::string targsigname = repeatermode ? "Srep" : "S0";
 
-		unsigned int signals = aspects.size();
-		std::string content =
-			R"({ "content" : [ )"
-			R"({ "type" : "startofline", "name" : "A" }, )";
+	unsigned int signals = aspects.size();
+	std::string content =
+		R"({ "content" : [ )"
+		R"({ "type" : "startofline", "name" : "A" }, )";
 
-		for(unsigned int i = 0; i < signals; i++) {
-			std::string aspectstr;
-			std::string default_aspectstr = ", \"allowedaspects\" : \"1-32\"";
-			std::string param_aspectstr = ", \"allowedaspects\" : \"" + allowed_aspects + "\"";
-			if(i == 0) {
-				if(repeatermode) {
-					content += string_format(
-						R"({ "type" : "autosignal", "name" : "Spre", "routesignal" : true }, )"
-						R"({ "type" : "routingmarker", "end" : { "allow" : "overlap" } }, )"
-						R"({ "type" : "repeatersignal", "name" : "Srep", "routesignal" : true %s }, )"
-						, param_aspectstr.c_str()
-					);
-					aspectstr = default_aspectstr;
-				}
-				else aspectstr = param_aspectstr;
+
+	std::string default_aspectstr = ", \"allowedaspects\" : \"0-31\"";
+	std::string param_aspectstr = ", \"allowedaspects\" : \"" + allowed_aspects + "\"";
+
+	for(unsigned int i = 0; i < signals; i++) {
+		std::string aspectstr;
+		if(i == 0) {
+			if(repeatermode) {
+				content += string_format(
+					R"({ "type" : "autosignal", "name" : "Spre", "routesignal" : true }, )"
+					R"({ "type" : "routingmarker", "end" : { "allow" : "overlap" } }, )"
+					R"({ "type" : "repeatersignal", "name" : "Srep", "routesignal" : true %s }, )"
+					, param_aspectstr.c_str()
+				);
+				aspectstr = default_aspectstr;
 			}
-			else aspectstr = default_aspectstr;
-
-			content += string_format(
-				R"({ "type" : "autosignal", "name" : "S%d", "routesignal" : true %s }, )"
-				R"({ "type" : "routingmarker", "end" : { "allow" : "overlap" } }, )"
-				R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "T%d" }, )"
-				, i
-				, aspectstr.c_str()
-				, i
-			);
+			else aspectstr = param_aspectstr;
 		}
-		content +=
-			R"({ "type" : "endofline", "name" : "B",  "end" : { "allow" : [ "overlap", "route" ] } } )"
-			"] }";
+		else aspectstr = default_aspectstr;
 
-		test_fixture_world_init_checked env(content);
-		CHECK(env.w->GetLogText() == "");
-		genericsignal *targsig = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>(targsigname));
+		content += string_format(
+			R"({ "type" : "autosignal", "name" : "S%d", "routesignal" : true %s }, )"
+			R"({ "type" : "routingmarker", "end" : { "allow" : "overlap" } }, )"
+			R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "T%d" }, )"
+			, i
+			, aspectstr.c_str()
+			, i
+		);
+	}
+	content +=
+		R"({ "type" : "endofline", "name" : "B",  "end" : { "allow" : [ "overlap", "route" ] } } )"
+		"] }";
+
+	test_fixture_world_init_checked env(content);
+	CHECK(env.w->GetLogText() == "");
+	genericsignal *targsig = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>(targsigname));
+	env.w->GameStep(1);
+
+	const route *rt = targsig->GetCurrentForwardRoute();
+	REQUIRE(rt != 0);
+	if(repeatermode) {
+		//Signal Spre "owns" the route, it has the default aspect mask value of 3, the route should have the same value
+		CHECK(rt->aspect_mask == 3);
+
+		//Repeater signals don't have routes of their own, the route defaults value is used for aspect masking instead
+		CHECK(targsig->GetRouteDefaults().aspect_mask == expected_mask);
+	}
+	else {
+		//Normal signals use the route's aspect mask
+		CHECK(rt->aspect_mask == expected_mask);
+	}
+
+	unsigned int currentaspect = aspects.size();
+	while(currentaspect--) {    //count down from aspects.size()-1 to 0
+		unsigned int expectedaspect = aspects[currentaspect];
+		INFO("Current Aspect: " << currentaspect << ", Expected Aspect: " << expectedaspect);
+		track_circuit *t = env.w->track_circuits.FindOrMakeByName(string_format("T%d", currentaspect));
+		t->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 		env.w->GameStep(1);
+		CHECK(targsig->GetAspect() == expectedaspect);
+	}
+};
 
-		const route *rt = targsig->GetCurrentForwardRoute();
-		REQUIRE(rt != 0);
-		if(repeatermode) {
-			//Signal Spre "owns" the route, it has the default aspect mask value of 1, the route should have the same value
-			CHECK(rt->aspect_mask == 1);
-
-			//Repeater signals don't have routes of their own, the route defaults value is used for aspect masking instead
-			CHECK(targsig->GetRouteDefaults().aspect_mask == expected_mask);
-		}
-		else {
-			//Normal signals use the route's aspect mask
-			CHECK(rt->aspect_mask == expected_mask);
-		}
-
-		unsigned int currentaspect = aspects.size();
-		while(currentaspect--) {    //count down from aspects.size()-1 to 0
-			unsigned int expectedaspect = aspects[currentaspect];
-			INFO("Current Aspect: " << currentaspect << ", Expected Aspect: " << expectedaspect);
-			track_circuit *t = env.w->track_circuits.FindOrMakeByName(string_format("T%d", currentaspect));
-			t->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
-			env.w->GameStep(1);
-			CHECK(targsig->GetAspect() == expectedaspect);
-		}
+TEST_CASE("signal/aspect/discontinous", "Test discontinuous allowed signal aspects") {
+	auto test = [&](std::string allowed_aspects, aspect_mask_type expected_mask, const std::vector<unsigned int> &aspects, bool repeatermode) {
+		SignalAspectTest(allowed_aspects, expected_mask, aspects, repeatermode);
 	};
 
-	test("1-3", 0x7, std::vector<unsigned int> { 0, 1, 2, 3, 3 }, false);
-	test("3-2", 0x6, std::vector<unsigned int> { 0, 0, 2, 3, 3 }, false);
-	test("1,3,3-5", 0x1D, std::vector<unsigned int> { 0, 1, 1, 3, 4, 5 }, false);
-	test("1-3,2-4,6", 0x2F, std::vector<unsigned int> { 0, 1, 2, 3, 4, 4, 6 }, false);
-	test("1-32", 0xFFFFFFFF, std::vector<unsigned int> { 0, 1, 2, 3, 4, 5 }, false);
+	test("0-3", 0xF, std::vector<unsigned int> { 0, 1, 2, 3, 3 }, false);
+	test("1-3", 0xE, std::vector<unsigned int> { 0, 1, 2, 3, 3 }, false);
+	test("3-2", 0xC, std::vector<unsigned int> { 0, 0, 2, 3, 3 }, false);
+	test("1,3,3-5", 0x3A, std::vector<unsigned int> { 0, 1, 1, 3, 4, 5 }, false);
+	test("1-3,2-4,6", 0x5E, std::vector<unsigned int> { 0, 1, 2, 3, 4, 4, 6 }, false);
+	test("1-31", 0xFFFFFFFE, std::vector<unsigned int> { 0, 1, 2, 3, 4, 5 }, false);
 
-	test("1-3", 0x7, std::vector<unsigned int> { 1, 2, 3, 3, 3 }, true);
-	test("3-2", 0x6, std::vector<unsigned int> { 0, 2, 3, 3, 3 }, true);
-	test("1,3,3-5", 0x1D, std::vector<unsigned int> { 1, 1, 3, 4, 5, 5 }, true);
-	test("1-3,2-4,6", 0x2F, std::vector<unsigned int> { 1, 2, 3, 4, 4, 6, 6 }, true);
-	test("1-32", 0xFFFFFFFF, std::vector<unsigned int> { 1, 2, 3, 4, 5, 6 }, true);
+	test("1-3", 0xE, std::vector<unsigned int> { 1, 2, 3, 3, 3 }, true);
+	test("3-2", 0xC, std::vector<unsigned int> { 0, 2, 3, 3, 3 }, true);
+	test("1,3,3-5", 0x3A, std::vector<unsigned int> { 1, 1, 3, 4, 5, 5 }, true);
+	test("1-3,2-4,6", 0x5E, std::vector<unsigned int> { 1, 2, 3, 4, 4, 6, 6 }, true);
+	test("1-31", 0xFFFFFFFE, std::vector<unsigned int> { 1, 2, 3, 4, 5, 6 }, true);
 }

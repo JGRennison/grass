@@ -27,70 +27,76 @@
 #include "core/util.h"
 #include "core/deserialisation_scalarconv.h"
 
-//returns true if value set
-bool DeserialiseAspectProps(unsigned int &aspect_mask, const deserialiser_input &di, error_collection &ec) {
-	auto too_large = [&](unsigned int value) {
-		ec.RegisterNewError<error_deserialisation>(di, string_format("Maximum signal aspect cannot exceed 32. %d given.", value));
+void ParseAspectMaskString(aspect_mask_type &aspect_mask, const std::string &aspect_string, const deserialiser_input &di,
+		error_collection &ec, const std::string &value_name) {
+
+	auto invalid_format = [&](const char *str, size_t len) {
+		ec.RegisterNewError<error_deserialisation>(di,
+				string_format("Invalid format for %s: '%s'", value_name.c_str(), std::string(str, len).c_str()));
+	};
+	auto getnumber = [&](const char *str, size_t len) -> unsigned int {
+		unsigned int num = 0;
+		bool error = false;
+		for(size_t i = 0; i < len; i++) {
+			char c = str[i];
+			if(c >= '0' && c <= '9') num = (num * 10) + c - '0';
+			else {
+				error = true;
+				break;
+			}
+			if(num > ASPECT_MAX) {
+				error = true;
+				break;
+			}
+		}
+		if(error) ec.RegisterNewError<error_deserialisation>(di,
+				string_format("Invalid numeric format %s: '%s' is not an integer between 0 and %u",
+						value_name.c_str(), std::string(str, len).c_str(), ASPECT_MAX));
+		return num;
 	};
 
+	aspect_mask = 0;
+	std::vector<std::pair<const char*, size_t>> splitresult;
+	std::vector<std::pair<const char*, size_t>> innersplitresult;
+	SplitString(aspect_string.c_str(), aspect_string.size(), ',', splitresult);
+	for(auto &it : splitresult) {
+		const char *str = it.first;
+		size_t len = it.second;
+		SplitString(str, len, '-', innersplitresult);
+		if(innersplitresult.size() > 2) {
+			invalid_format(str, len);
+		}
+		else {
+			unsigned int vallow;
+			unsigned int valhigh;
+
+			vallow = getnumber(innersplitresult[0].first, innersplitresult[0].second);
+			if(innersplitresult.size() == 2) {
+				valhigh = getnumber(innersplitresult[1].first, innersplitresult[1].second);
+				if(vallow > valhigh) std::swap(vallow, valhigh);
+			}
+			else valhigh = vallow;
+
+			unsigned int highmask = (valhigh == 31) ? 0xFFFFFFFF : ((1 << (valhigh + 1)) - 1);
+			unsigned int lowmask = (vallow == 31) ? 0x7FFFFFFF : (((1 << (vallow + 1)) - 1) >> 1);
+			aspect_mask |= highmask ^ lowmask;
+		}
+	}
+}
+
+//returns true if value set
+bool DeserialiseAspectProps(aspect_mask_type &aspect_mask, const deserialiser_input &di, error_collection &ec) {
 	unsigned int max_aspect;
 	std::string aspect_string;
 	if(CheckTransJsonValue(max_aspect, di, "maxaspect", ec)) {
-		if(max_aspect > 32) too_large(max_aspect);
-		else aspect_mask = (1 << max_aspect) - 1;
+		if(max_aspect > ASPECT_MAX) {
+			ec.RegisterNewError<error_deserialisation>(di, string_format("Maximum signal aspect cannot exceed %u. %u given.", ASPECT_MAX, max_aspect));
+		}
+		else aspect_mask = (max_aspect == 31) ? 0xFFFFFFFF : (1 << (max_aspect + 1)) - 1;
 		return true;
 	}
 	else if(CheckTransJsonValue(aspect_string, di, "allowedaspects", ec)) {
-		auto invalid_format = [&](const char *str, size_t len) {
-			ec.RegisterNewError<error_deserialisation>(di, string_format("Invalid format for allowed aspects: '%s'", std::string(str, len).c_str()));
-		};
-		auto getnumber = [&](const char *str, size_t len) -> unsigned int {
-			unsigned int num = 0;
-			bool error = false;
-			for(size_t i = 0; i < len; i++) {
-				char c = str[i];
-				if(c >= '0' && c <= '9') num = (num * 10) + c - '0';
-				else {
-					error = true;
-					break;
-				}
-				if(num > 32) {
-					error = true;
-					break;
-				}
-			}
-			if(num == 0) error = true;
-			if(error) ec.RegisterNewError<error_deserialisation>(di, string_format("Invalid numeric format for allowed aspects: '%s' is not an integer between 1 and 32", std::string(str, len).c_str()));
-			return num;
-		};
-
-		aspect_mask = 0;
-		std::vector<std::pair<const char*, size_t>> splitresult;
-		std::vector<std::pair<const char*, size_t>> innersplitresult;
-		SplitString(aspect_string.c_str(), aspect_string.size(), ',', splitresult);
-		for(auto &it : splitresult) {
-			const char *str = it.first;
-			size_t len = it.second;
-			SplitString(str, len, '-', innersplitresult);
-			if(innersplitresult.size() > 2) {
-				invalid_format(str, len);
-			}
-			else {
-				unsigned int vallow;
-				unsigned int valhigh;
-
-				vallow= getnumber(innersplitresult[0].first, innersplitresult[0].second);
-				if(innersplitresult.size() == 2) {
-					valhigh= getnumber(innersplitresult[1].first, innersplitresult[1].second);
-					if(vallow > valhigh) std::swap(vallow, valhigh);
-				}
-				else valhigh = vallow;
-
-				unsigned int highmask = (valhigh == 32) ? 0xFFFFFFFF : ((1 << valhigh) - 1);
-				unsigned int lowmask = (vallow == 32) ? 0x7FFFFFFF : (((1 << vallow) - 1) >> 1);
-				aspect_mask |= highmask ^ lowmask;
-			}
-		}
+		ParseAspectMaskString(aspect_mask, aspect_string, di, ec, "allowed aspects");
 		return true;
 	}
 	return false;
