@@ -67,6 +67,20 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 	auto argerror = [&](const wxChar* err) {
 		wxLogError(wxT("Command line processing error: %s, arg: %s"), err, args.OptionText());
 	};
+
+	std::function<bool()> game_action;
+
+	auto set_game_action = [&](std::function<bool()> func) -> bool {
+		if(game_action) {
+			argerror(wxT("More than one new game/load game specified"));
+			return false;
+		}
+		else {
+			game_action = std::move(func);
+			return true;
+		}
+	};
+
 	while (args.Next()) {
 		if (args.LastError() != SO_SUCCESS) {
 			argerror(cmdlineargerrorstr(args.LastError()));
@@ -74,16 +88,22 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 		}
 		switch(args.OptionId()) {
 			case OPT_NEWGAME: {
-				return LoadGame(args.OptionArg(), wxT(""));
+				wxString str1 = args.OptionArg();
+				if(!set_game_action([str1, this]() { return LoadGame(str1, wxT("")); })) return false;
+				break;
 			}
 			case OPT_LOAD: {
 				if(args.m_nNextOption + 1 > args.m_nLastArg) {
 					argerror(cmdlineargerrorstr(SO_ARG_MISSING));
 					return false;
 				}
-				return LoadGame(args.OptionArg(), args.m_argv[args.m_nNextOption++]);
+				wxString str1 = args.OptionArg();
+				wxString str2 = args.m_argv[args.m_nNextOption++];
+				if(!set_game_action([str1, str2, this]() { return LoadGame(str1, str2); })) return false;
+				break;
 			}
 		}
 	}
-	return true;
+	if(game_action) return game_action();
+	else return false;
 }
