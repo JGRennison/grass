@@ -2,7 +2,9 @@
 
 #ARCH: value for the switch: -march=
 #GCC: path to g++
-#debug: set to true to for a debug build
+#debug: set to true for a debug build
+#gprof: set to true for a gprof build
+#san: set to address, thread, leak, undefined, etc. for a -fsanitize= enabled build
 #list: set to true to enable listings
 #map: set to true to enable linker map
 #noexceptions: set to build without exceptions
@@ -79,6 +81,26 @@ OUTNAME:=$(OUTNAME)$(GCOVPOSTFIX)
 TESTCOVDIR:=cov
 DIRS += $(TESTCOVDIR)
 GCOVTESTNAME = $(subst -,_,$(TESTOUTNAME))
+endif
+
+ifdef gprof
+CFLAGS += -pg
+AFLAGS += -pg
+GPROFPOSTFIX:=_gprof
+DIR_POSTFIX:=$(DIR_POSTFIX)$(GPROFPOSTFIX)
+OUTNAME:=$(OUTNAME)$(GPROFPOSTFIX)
+endif
+
+ifdef san
+ifeq ($(san), thread)
+CFLAGS += -fPIE -pie
+AFLAGS += -fPIE -pie
+endif
+CFLAGS += -g -fsanitize=$(san) -fno-omit-frame-pointer
+AFLAGS += -g -fsanitize=$(san)
+SANPOSTFIX:=_san_$(san)
+DIR_POSTFIX:=$(DIR_POSTFIX)$(SANPOSTFIX)
+OUTNAME:=$(OUTNAME)$(SANPOSTFIX)
 endif
 
 GCCMACHINE:=$(shell $(GCC) -dumpmachine)
