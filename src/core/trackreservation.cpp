@@ -100,28 +100,6 @@ GTF track_reservation_state::GetGTReservationFlags(EDGETYPE checkdirection) cons
 	return outputflags;
 }
 
-unsigned int track_reservation_state::ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask) const {
-	unsigned int counter = 0;
-	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & checkmask) {
-			func(it->reserved_route, it->direction, it->index, it->rr_flags);
-			counter++;
-		}
-	}
-	return counter;
-}
-
-unsigned int track_reservation_state::ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask) const {
-	unsigned int counter = 0;
-	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & checkmask && it->direction == direction) {
-			func(it->reserved_route, it->direction, it->index, it->rr_flags);
-			counter++;
-		}
-	}
-	return counter;
-}
-
 void track_reservation_state::ReservationTypeCount(reservationcountset &rcs) const {
 	for(auto &it : itrss) {
 		if(it.rr_flags & RRF::RESERVE) {
