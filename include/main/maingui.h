@@ -28,10 +28,12 @@ namespace maingui {
 
 	class grviewpanel;
 	class grviewwin;
+	class trainwin;
 
 	struct grviewwinlist {
 		std::vector<grviewpanel *> viewpanels;
 		std::vector<grviewwin *> toplevelpanels;
+		std::vector<trainwin *> trainwins;
 	};
 
 };

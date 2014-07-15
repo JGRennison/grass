@@ -23,6 +23,7 @@
 #include "main/wxcommon.h"
 #include "main/SimpleOpt.h"
 #include "main/main.h"
+#include "main/trainwin.h"
 #include <wx/string.h>
 #include <wx/log.h>
 
@@ -31,6 +32,7 @@ typedef CSimpleOptTempl<wxChar> CSO;
 enum {
 	OPT_NEWGAME,
 	OPT_LOAD,
+	OPT_TRAINLIST,
 };
 
 CSO::SOption g_rgOptions[] =
@@ -39,6 +41,7 @@ CSO::SOption g_rgOptions[] =
 	{ OPT_NEWGAME,  wxT("--new-game"),   SO_REQ_SHRT  },
 	{ OPT_LOAD,     wxT("-l"),           SO_REQ_SHRT  },
 	{ OPT_LOAD,     wxT("--load-game"),  SO_REQ_SHRT  },
+	{ OPT_TRAINLIST,wxT("--train-list"), SO_NONE      },
 
 	SO_END_OF_OPTIONS
 };
@@ -69,6 +72,7 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 	};
 
 	std::function<bool()> game_action;
+	bool trainlist = false;
 
 	auto set_game_action = [&](std::function<bool()> func) -> bool {
 		if(game_action) {
@@ -102,8 +106,19 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 				if(!set_game_action([str1, str2, this]() { return LoadGame(str1, str2); })) return false;
 				break;
 			}
+			case OPT_TRAINLIST: {
+				trainlist = true;
+				break;
+			}
 		}
 	}
-	if(game_action) return game_action();
+	if(game_action) {
+		bool ok = game_action();
+		if(ok && trainlist) {
+			maingui::trainwin *trainlist = new maingui::trainwin(w, panelset, maingui::GetTrainwinColumnSet());
+			trainlist->Show(true);
+		}
+		return ok;
+	}
 	else return false;
 }
