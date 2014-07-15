@@ -88,6 +88,12 @@ template <typename C, typename UP> unsigned int container_unordered_remove_if(C 
 	return removecount;
 }
 
+template <typename C, typename V> unsigned int container_unordered_remove(C &container, const V &value) {
+	return container_unordered_remove_if(container, [&](const V &current) {
+		return current == value;
+	});
+}
+
 void SplitString(const char *in, size_t len, char delim, std::vector<std::pair<const char*, size_t>> &result);
 
 bool slurp_file(const std::string &filename, std::string &out, error_collection &ec);

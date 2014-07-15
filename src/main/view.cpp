@@ -21,6 +21,7 @@
 
 #include "main/view.h"
 #include "layout/layout.h"
+#include "core/util.h"
 #include <wx/event.h>
 #include <wx/dcclient.h>
 #include <wx/region.h>
@@ -90,11 +91,11 @@ maingui::grviewwin::grviewwin(std::shared_ptr<guilayout::world_layout> layout_, 
 	: wxFrame(0, wxID_ANY, wxT("GRASS")), winlist(std::move(winlist_)) {
 	panel = new grviewpanel(this, std::move(layout_), std::move(eng_));
 	panel->InitLayout();
-	winlist->viewpanels.emplace_front(panel);
-	winlist->toplevelpanels.emplace_front(this);
+	winlist->viewpanels.emplace_back(panel);
+	winlist->toplevelpanels.emplace_back(this);
 }
 
 maingui::grviewwin::~grviewwin() {
-	winlist->viewpanels.remove(panel);
-	winlist->toplevelpanels.remove(this);
+	container_unordered_remove(winlist->viewpanels, panel);
+	container_unordered_remove(winlist->toplevelpanels, this);
 }

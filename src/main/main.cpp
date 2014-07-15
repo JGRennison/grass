@@ -25,6 +25,7 @@
 #include "main/main.h"
 #include "main/wxutil.h"
 #include "main/view.h"
+#include "main/maingui.h"
 #include "core/world_serialisation.h"
 #include "core/world.h"
 #include "draw/wx/drawengine_wx.h"

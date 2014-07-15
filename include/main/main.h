@@ -19,13 +19,13 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
+#ifndef INC_MAIN_MAIN_ALREADY
+#define INC_MAIN_MAIN_ALREADY
+
 #include <wx/app.h>
 #include <wx/timer.h>
 #include <memory>
 #include <forward_list>
-
-#ifndef INC_MAIN_MAIN_ALREADY
-#define INC_MAIN_MAIN_ALREADY
 
 class error_collection;
 class world;

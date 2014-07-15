@@ -24,14 +24,13 @@
 
 #include "layout/layout.h"
 #include "draw/wx/drawengine_wx.h"
+#include "main/maingui.h"
 #include <memory>
 #include <wx/scrolwin.h>
 #include <wx/frame.h>
 #include <set>
 
 namespace maingui {
-
-	class grviewwinlist;
 
 	class grviewpanel : public wxScrolledWindow {
 		std::shared_ptr<guilayout::world_layout> layout;
@@ -57,9 +56,5 @@ namespace maingui {
 		~grviewwin();
 	};
 
-	struct grviewwinlist {
-		std::forward_list<grviewpanel *> viewpanels;
-		std::forward_list<grviewwin *> toplevelpanels;
-	};
 };
 #endif
