@@ -272,8 +272,13 @@ void genericsignal::UpdateSignalState() {
 	last_state_update = GetWorld().GetGameTime();
 
 	unsigned int previous_aspect = aspect;
+	routingpoint *previous_aspect_target = GetAspectNextTarget();
+	routingpoint *previous_aspect_route_target = GetAspectRouteTarget();
+
 	auto check_aspect_change = [&]() {
-		if(aspect != previous_aspect) {
+		if(aspect != previous_aspect ||
+				previous_aspect_target != GetAspectNextTarget() ||
+				previous_aspect_route_target != GetAspectRouteTarget()) {
 			MarkUpdated();
 		}
 	};
