@@ -16,25 +16,13 @@
 //  2014 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#ifndef INC_MAIN_MAINGUI_ALREADY
-#define INC_MAIN_MAINGUI_ALREADY
+#ifndef INC_TEXTCMD_ALREADY
+#define INC_TEXTCMD_ALREADY
 
-#include <vector>
+#include <string>
 
-namespace maingui {
+class world;
 
-	class grviewpanel;
-	class grviewwin;
-	class trainwin;
-	class cmdinputwin;
-
-	struct grviewwinlist {
-		std::vector<grviewpanel *> viewpanels;
-		std::vector<grviewwin *> toplevelpanels;
-		std::vector<trainwin *> trainwins;
-		std::vector<cmdinputwin *> cmdinputwins;
-	};
-
-};
+bool ExecuteTextCommand(const std::string &cmd, world &w);
 
 #endif

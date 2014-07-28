@@ -31,6 +31,7 @@ struct message_formatter {
 	public:
 	std::string FormatMessage(const std::string &input) const;
 	void RegisterVariable(const std::string &name, mf_lambda func);
+	void RegisterVariableString(const std::string &name, const std::string &value);
 
 	private:
 	std::string ExpandVariable(std::string::const_iterator &begin, std::string::const_iterator end) const;

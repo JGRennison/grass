@@ -49,6 +49,7 @@ defaultusermessagepool::defaultusermessagepool() {
 	RegisterNewText("track/reservation/overlap/noneavailable", "No overlap available");
 	RegisterNewText("track/reservation/conflict", "Conflicts with existing route");
 	RegisterNewText("track/reservation/notsignal", "Not a signal");
+	RegisterNewText("track/reservation/notroutingpoint", "Not a routing point");
 	RegisterNewText("track/reservation/noroute", "No route between selected signals");
 	RegisterNewText("track/reservation/routesetfromexitsignal", "Route set from exit signal");
 	RegisterNewText("track/reservation/routesettothissignal", "Route set to entry signal");
@@ -57,4 +58,6 @@ defaultusermessagepool::defaultusermessagepool() {
 	RegisterNewText("track/reservation/overlapcantswing/trainapproaching", "Can't swing overlap: train on approach");
 	RegisterNewText("track/reservation/overlapcantswing/notpermitted", "Can't swing overlap: not permitted");
 	RegisterNewText("generic/failurereason", "Failed");
+	RegisterNewText("generic/invalidcommand", "Invalid command: '$input'");
+	RegisterNewText("generic/cannotuse", "Cannot use '$item': $reason");
 }

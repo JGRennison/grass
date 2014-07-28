@@ -168,6 +168,22 @@ void SplitString(const char *in, size_t len, char delim, std::vector<std::pair<c
 	result.emplace_back(in + pos, len - pos);
 }
 
+// This function is modified from http://stackoverflow.com/a/9676623
+std::vector<std::string> TokenizeString(const std::string &str, const std::string &delimiters) {
+	std::vector<std::string> v;
+	size_t start = 0;
+	auto pos = str.find_first_of(delimiters, start);
+	while(pos != std::string::npos) {
+		if(pos != start) // ignore empty tokens
+			v.emplace_back(str, start, pos - start);
+		start = pos + 1;
+		pos = str.find_first_of(delimiters, start);
+	}
+	if(start < str.length()) // ignore trailing delimiter
+		v.emplace_back(str, start, str.length() - start); // add what's left of the string
+	return v;
+}
+
 bool slurp_file(const std::string &filename, std::string &out, error_collection &ec) {
 	out.clear();
 	std::ifstream ifs(filename, std::ios_base::binary);

@@ -92,6 +92,7 @@ template <typename C, typename V> unsigned int container_unordered_remove(C &con
 }
 
 void SplitString(const char *in, size_t len, char delim, std::vector<std::pair<const char*, size_t>> &result);
+std::vector<std::string> TokenizeString(const std::string &str, const std::string &delimiters);
 
 bool slurp_file(const std::string &filename, std::string &out, error_collection &ec);
 

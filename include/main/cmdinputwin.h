@@ -16,25 +16,37 @@
 //  2014 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#ifndef INC_MAIN_MAINGUI_ALREADY
-#define INC_MAIN_MAINGUI_ALREADY
+#ifndef INC_MAIN_CMDINPUTWIN_ALREADY
+#define INC_MAIN_CMDINPUTWIN_ALREADY
 
+#include <memory>
 #include <vector>
+#include <wx/grid.h>
+#include <wx/frame.h>
+#include <wx/textctrl.h>
+
+class world;
+class train;
 
 namespace maingui {
 
-	class grviewpanel;
-	class grviewwin;
-	class trainwin;
-	class cmdinputwin;
+	class grviewwinlist;
 
-	struct grviewwinlist {
-		std::vector<grviewpanel *> viewpanels;
-		std::vector<grviewwin *> toplevelpanels;
-		std::vector<trainwin *> trainwins;
-		std::vector<cmdinputwin *> cmdinputwins;
+	class cmdinputwin : public wxFrame {
+		std::shared_ptr<world> w;
+		std::shared_ptr<grviewwinlist> winlist;
+
+		wxTextCtrl *input = nullptr;
+
+		public:
+		cmdinputwin(std::shared_ptr<world> w_, std::shared_ptr<grviewwinlist> winlist_);
+		~cmdinputwin();
+		void InputEvent(wxCommandEvent &event);
+
+		virtual bool ShouldPreventAppExit() const override { return false; }
+
+		DECLARE_EVENT_TABLE()
 	};
-
 };
 
 #endif

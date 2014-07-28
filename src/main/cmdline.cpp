@@ -21,6 +21,7 @@
 #include "main/SimpleOpt.h"
 #include "main/main.h"
 #include "main/trainwin.h"
+#include "main/cmdinputwin.h"
 #include <wx/string.h>
 #include <wx/log.h>
 
@@ -30,15 +31,17 @@ enum {
 	OPT_NEWGAME,
 	OPT_LOAD,
 	OPT_TRAINLIST,
+	OPT_TEXTCMDINPUTWIN,
 };
 
 CSO::SOption g_rgOptions[] =
 {
-	{ OPT_NEWGAME,  wxT("-n"),           SO_REQ_SHRT  },
-	{ OPT_NEWGAME,  wxT("--new-game"),   SO_REQ_SHRT  },
-	{ OPT_LOAD,     wxT("-l"),           SO_REQ_SHRT  },
-	{ OPT_LOAD,     wxT("--load-game"),  SO_REQ_SHRT  },
-	{ OPT_TRAINLIST,wxT("--train-list"), SO_NONE      },
+	{ OPT_NEWGAME,           wxT("-n"),             SO_REQ_SHRT  },
+	{ OPT_NEWGAME,           wxT("--new-game"),     SO_REQ_SHRT  },
+	{ OPT_LOAD,              wxT("-l"),             SO_REQ_SHRT  },
+	{ OPT_LOAD,              wxT("--load-game"),    SO_REQ_SHRT  },
+	{ OPT_TRAINLIST,         wxT("--train-list"),   SO_NONE      },
+	{ OPT_TEXTCMDINPUTWIN,   wxT("--text-cmd-win"), SO_NONE      },
 
 	SO_END_OF_OPTIONS
 };
@@ -70,6 +73,7 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 
 	std::function<bool()> game_action;
 	bool trainlist = false;
+	bool textinput = false;
 
 	auto set_game_action = [&](std::function<bool()> func) -> bool {
 		if(game_action) {
@@ -107,6 +111,10 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 				trainlist = true;
 				break;
 			}
+			case OPT_TEXTCMDINPUTWIN: {
+				textinput = true;
+				break;
+			}
 		}
 	}
 	if(game_action) {
@@ -114,6 +122,10 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 		if(ok && trainlist) {
 			maingui::trainwin *trainlist = new maingui::trainwin(w, panelset, maingui::GetTrainwinColumnSet());
 			trainlist->Show(true);
+		}
+		if(ok && textinput) {
+			maingui::cmdinputwin *cmdwin = new maingui::cmdinputwin(w, panelset);
+			cmdwin->Show(true);
 		}
 		return ok;
 	}

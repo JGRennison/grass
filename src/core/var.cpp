@@ -45,6 +45,10 @@ void message_formatter::RegisterVariable(const std::string &name, mf_lambda func
 	registered_variables[name] = func;
 }
 
+void message_formatter::RegisterVariableString(const std::string &name, const std::string &value) {
+	registered_variables[name] = [value](std::string param) -> std::string { return value; };
+}
+
 std::string message_formatter::ExpandVariable(std::string::const_iterator &begin, std::string::const_iterator end) const {
 	std::string varname;
 	std::string param;

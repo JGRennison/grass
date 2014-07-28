@@ -58,6 +58,7 @@ typedef enum {
 	LOG_NULL,
 	LOG_DENIED,
 	LOG_MESSAGE,
+	LOG_FAILED,
 } LOGCATEGORY;
 
 class fixup_list {
