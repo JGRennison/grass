@@ -28,6 +28,7 @@ END_EVENT_TABLE()
 
 maingui::grviewpanel::grviewpanel(wxWindow *parent, std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_)
 		: wxScrolledWindow(parent), layout(layout_), eng(eng_) {
+	SetBackgroundColour(*wxBLACK);
 }
 
 void maingui::grviewpanel::OnDraw(wxDC& dc) {

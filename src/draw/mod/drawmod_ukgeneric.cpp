@@ -70,6 +70,38 @@ namespace draw {
 		const genericsignal *gs = FastSignalCast(gt);
 		if(gs) {
 			return [x, y, gs, obj](const draw_engine &eng, guilayout::world_layout &layout) {
+				//first draw stick
+				std::unique_ptr<draw::drawtextchar> drawstick(new draw::drawtextchar);
+				int next_x = x;
+				int next_y = y;
+
+				switch(obj->GetLayoutDirection()) {
+					using guilayout::LAYOUT_DIR;
+					case LAYOUT_DIR::UR: next_x++; drawstick->text = "\u250C"; break;
+					case LAYOUT_DIR::UL: next_x--; drawstick->text = "\u2510"; break;
+					case LAYOUT_DIR::DR: next_x++; drawstick->text = "\u2514"; break;
+					case LAYOUT_DIR::DL: next_x--; drawstick->text = "\u2518"; break;
+					case LAYOUT_DIR::RU: next_y++; drawstick->text = "\u2518"; break;
+					case LAYOUT_DIR::LU: next_y++; drawstick->text = "\u2514"; break;
+					case LAYOUT_DIR::RD: next_y--; drawstick->text = "\u2510"; break;
+					case LAYOUT_DIR::LD: next_y--; drawstick->text = "\u250C"; break;
+					default: drawstick.reset(); break;
+				}
+
+				if(drawstick) {
+					drawstick->backgroundcolour = 0;
+					drawstick->foregroundcolour = 0xAAAAAA;
+
+					if(!(gs->GetSignalFlags() & GSF::AUTOSIGNAL)) {
+						const route *rt = gs->GetCurrentForwardRoute();
+						if(rt) {
+							drawstick->foregroundcolour = 0xFFFFFF;
+						}
+					}
+
+					layout.SetTextChar(x, y, std::move(drawstick), obj);
+				}
+
 				//temporary drawing function
 				std::unique_ptr<draw::drawtextchar> drawtext(new draw::drawtextchar);
 				std::shared_ptr<guilayout::pos_sprite_desc_opts> options;
@@ -102,7 +134,7 @@ namespace draw {
 					drawtext->text = "S";
 					drawtext->foregroundcolour = 0xFFFFFF;
 				}
-				layout.SetTextChar(x, y, std::move(drawtext), obj, 0, std::move(options));
+				layout.SetTextChar(next_x, next_y, std::move(drawtext), obj, 0, std::move(options));
 			};
 		}
 

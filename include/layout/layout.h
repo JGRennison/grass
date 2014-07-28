@@ -29,6 +29,7 @@
 #include <functional>
 #include <limits>
 #include <set>
+#include <array>
 #include <forward_list>
 #include "common.h"
 #include "core/edgetype.h"
@@ -85,6 +86,14 @@ namespace guilayout {
 		}
 		return LAYOUT_DIR::NULLDIR;
 	}
+
+	struct layout_dir_mapping {
+		LAYOUT_DIR dir;
+		LAYOUT_DIR altstep;
+		LAYOUT_DIR step1;
+		LAYOUT_DIR step2;
+	};
+	extern std::array<layout_dir_mapping, 4> layout_table;
 
 	//This reduces the input set by half
 	//In that if two directions are reverse, they will fold to the same value

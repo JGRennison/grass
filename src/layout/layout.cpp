@@ -56,6 +56,13 @@ namespace guilayout {
 		}
 		return false;
 	}
+
+	std::array<layout_dir_mapping, 4> layout_table { {
+		{ LAYOUT_DIR::UR, LAYOUT_DIR::RU, LAYOUT_DIR::U, LAYOUT_DIR::R },
+		{ LAYOUT_DIR::UL, LAYOUT_DIR::LU, LAYOUT_DIR::U, LAYOUT_DIR::L },
+		{ LAYOUT_DIR::DR, LAYOUT_DIR::RD, LAYOUT_DIR::D, LAYOUT_DIR::R },
+		{ LAYOUT_DIR::DL, LAYOUT_DIR::LD, LAYOUT_DIR::D, LAYOUT_DIR::L },
+	} };
 };
 
 template<typename C>
@@ -107,7 +114,7 @@ void guilayout::layouttrack_obj::Deserialise(const deserialiser_input &di, error
 	guilayout::layout_obj::Deserialise(di, ec);
 	if(CheckTransJsonValue(length, di, "length", ec)) setmembers |= LTOSM_LENGTH;
 	if(CheckTransJsonValue(layoutdirection, di, "direction", ec)) setmembers |= LTOSM_LAYOUTDIR;
-	if(CheckTransJsonValue(layoutdirection, di, "tracktype", ec)) setmembers |= LTOSM_TRACKTYPE;
+	if(CheckTransJsonValue(track_type, di, "tracktype", ec)) setmembers |= LTOSM_TRACKTYPE;
 }
 
 void guilayout::layoutberth_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -183,19 +190,6 @@ guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int star
 	LAYOUT_DIR step2 = ld;
 	LAYOUT_DIR stepend1 = ld;
 	LAYOUT_DIR stepend2 = ld;
-
-	struct layout_dir_mapping {
-		LAYOUT_DIR dir;
-		LAYOUT_DIR altstep;
-		LAYOUT_DIR step1;
-		LAYOUT_DIR step2;
-	};
-	std::array<layout_dir_mapping, 4> layout_table { {
-		{ LAYOUT_DIR::UR, LAYOUT_DIR::RU, LAYOUT_DIR::U, LAYOUT_DIR::R },
-		{ LAYOUT_DIR::UL, LAYOUT_DIR::LU, LAYOUT_DIR::U, LAYOUT_DIR::L },
-		{ LAYOUT_DIR::DR, LAYOUT_DIR::RD, LAYOUT_DIR::D, LAYOUT_DIR::R },
-		{ LAYOUT_DIR::DL, LAYOUT_DIR::LD, LAYOUT_DIR::D, LAYOUT_DIR::L },
-	} };
 
 	for(auto &it : layout_table) {
 		if(it.dir == ld) {
