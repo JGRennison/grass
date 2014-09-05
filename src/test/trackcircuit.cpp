@@ -24,8 +24,33 @@
 #include "core/trackcircuit.h"
 #include "core/train.h"
 #include "core/signal.h"
+#include "core/trackpiece.h"
 #include "core/track_ops.h"
 #include "core/util.h"
+
+TEST_CASE( "track_circuit/deserialisation", "Test basic deserialisation of track circuit name" ) {
+	std::string track_test_str =
+	R"({ "content" : [ )"
+		R"({ "type" : "startofline", "name" : "A"}, )"
+		R"({ "type" : "trackseg", "name" : "TS1", "trackcircuit" : "T1" }, )"
+		R"({ "type" : "routingmarker", "name" : "RM1", "trackcircuit" : "T1" }, )"
+		R"({ "type" : "trackseg", "name" : "TS2", "trackcircuit" : "T2" }, )"
+		R"({ "type" : "routingmarker", "name" : "RM2" }, )"
+		R"({ "type" : "endofline", "name" : "B" } )"
+	"] }";
+	test_fixture_world_init_checked env(track_test_str);
+
+	trackseg *ts1 = PTR_CHECK(env.w->FindTrackByNameCast<trackseg>("TS1"));
+	trackseg *ts2 = PTR_CHECK(env.w->FindTrackByNameCast<trackseg>("TS2"));
+	routingmarker *rm1 = PTR_CHECK(env.w->FindTrackByNameCast<routingmarker>("RM1"));
+	routingmarker *rm2 = PTR_CHECK(env.w->FindTrackByNameCast<routingmarker>("RM2"));
+
+	CHECK(PTR_CHECK(ts1->GetTrackCircuit())->GetName() == "T1");
+	CHECK(PTR_CHECK(ts2->GetTrackCircuit())->GetName() == "T2");
+	CHECK(PTR_CHECK(rm1->GetTrackCircuit())->GetName() == "T1");
+	CHECK(rm2->GetTrackCircuit() == nullptr);
+	CHECK(rm1->GetTrackCircuit() == ts1->GetTrackCircuit());
+}
 
 std::string tcdereservation_test_str_1 =
 R"({ "content" : [ )"
@@ -34,7 +59,7 @@ R"({ "content" : [ )"
 	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S1", "routerestrictions" : [{ "torr" : true }] }, )"
 	R"({ "type" : "trackseg", "name" : "TS2", "length" : 20000, "trackcircuit" : "T2" }, )"
-	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "routingmarker", "overlapend" : true, "trackcircuit" : "T2" }, )"
 	R"({ "type" : "trackseg", "name" : "TS3", "length" : 30000, "trackcircuit" : "T3" }, )"
 	R"({ "type" : "routingmarker" }, )"
 	R"({ "type" : "trackseg", "name" : "TS4", "length" : 30000, "trackcircuit" : "T4" }, )"
@@ -198,7 +223,7 @@ R"({ "content" : [ )"
 	R"({ "type" : "trackseg", "name" : "TS5", "length" : 20000, "trackcircuit" : "T5" }, )"
 	R"({ "type" : "routingmarker", "overlapend" : true }, )"
 	R"({ "type" : "trackseg", "name" : "TS6", "length" : 20000, "trackcircuit" : "T6", "berth" : true }, )"
-	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "route" } }, )"
+	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "route" }, "trackcircuit" : "T6" }, )"
 
 	R"({ "type" : "trackseg", "name" : "TS7", "length" : 30000, "connect" : { "to" : "P1" }, "berth" : true }, )"
 	R"({ "type" : "endofline", "name" : "C", "end" : { "allow" : [ "route", "overlap" ] } } )"

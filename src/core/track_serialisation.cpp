@@ -169,6 +169,12 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 			});
 		}
 	}
+
+	std::string tracksegname;
+	if(CheckTransJsonValue(tracksegname, di, "trackcircuit", ec)) {
+		tc = GetWorld().track_circuits.FindOrMakeByName(tracksegname);
+		tc->RegisterTrack(this);
+	}
 }
 
 void generictrack::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -187,12 +193,6 @@ void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
 	CheckTransJsonSubArray(speed_limits, di, "speedlimits", "speedlimits", ec);
 	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec);
-
-	std::string tracksegname;
-	if(CheckTransJsonValue(tracksegname, di, "trackcircuit", ec)) {
-		tc = GetWorld().track_circuits.FindOrMakeByName(tracksegname);
-		tc->RegisterTrack(this);
-	}
 
 	CheckIterateJsonArrayOrType<std::string>(di, "tracktriggers", "tracktrigger", ec, [&](const deserialiser_input &sdi, error_collection &ec) {
 		track_train_counter_block *ttcb = GetWorld().track_triggers.FindOrMakeByName(GetType<std::string>(sdi.json));

@@ -23,20 +23,19 @@
 #include "core/trackreservation.h"
 
 class trackseg : public generictrack {
-	unsigned int length;
-	int elevationdelta;
+	unsigned int length = 0;
+	int elevationdelta = 0;
 	speedrestrictionset speed_limits;
 	tractionset tractiontypes;
-	track_circuit *tc;
 	std::vector<track_train_counter_block *> ttcbs;
-	unsigned int traincount;
+	unsigned int traincount = 0;
 	std::vector<train *> occupying_trains;
 	track_target_ptr next;
 	track_target_ptr prev;
 	track_reservation_state trs;
 
 	public:
-	trackseg(world &w_) : generictrack(w_), length(0), elevationdelta(0), tc(0), traincount(0) { }
+	trackseg(world &w_) : generictrack(w_) { }
 	void TrainEnter(EDGETYPE direction, train *t) override;
 	void TrainLeave(EDGETYPE direction, train *t) override;
 	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
@@ -47,7 +46,6 @@ class trackseg : public generictrack {
 	virtual const tractionset *GetTractionTypes() const override;
 	virtual unsigned int GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const override;
 	virtual unsigned int GetRemainingLength(EDGETYPE direction, unsigned int currentoffset) const override;
-	virtual track_circuit *GetTrackCircuit() const override;
 	virtual const std::vector<track_train_counter_block *> *GetOtherTrackTriggers() const override;
 	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
@@ -60,11 +58,6 @@ class trackseg : public generictrack {
 	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 
 	virtual std::string GetTypeName() const { return "Track Segment"; }
-
-	virtual trackseg & SetLength(unsigned int length);
-	virtual trackseg & AddSpeedRestriction(speed_restriction sr);
-	virtual trackseg & SetElevationDelta(unsigned int elevationdelta);
-	virtual trackseg & SetTrackCircuit(track_circuit *tc);
 
 	static std::string GetTypeSerialisationNameStatic() { return "trackseg"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
@@ -80,6 +73,10 @@ class trackseg : public generictrack {
 
 	public:
 	virtual void GetTrainOccupationState(std::vector<train_occupation> &train_os) override;
+
+	// For use of test code **only**
+	virtual trackseg & SetLength(unsigned int length) override;
+	virtual trackseg & SetElevationDelta(unsigned int elevationdelta) override;
 };
 
 class crossover : public genericzlentrack {

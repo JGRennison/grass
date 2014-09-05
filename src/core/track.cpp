@@ -44,28 +44,18 @@ unsigned int speedrestrictionset::GetTrainTrackSpeedLimit(const train *t /* opti
 	else return GetTrackSpeedLimitByClass("", UINT_MAX);
 }
 
-track_circuit *generictrack::GetTrackCircuit() const {
-	return 0;
-}
-
 const speedrestrictionset *generictrack::GetSpeedRestrictions() const {
-	return 0;
+	return nullptr;
 }
 
 const tractionset *generictrack::GetTractionTypes() const {
-	return 0;
+	return nullptr;
 }
 
 generictrack & generictrack::SetLength(unsigned int length) {
 	return *this;
 }
-generictrack & generictrack::AddSpeedRestriction(speed_restriction sr) {
-	return *this;
-}
 generictrack & generictrack::SetElevationDelta(unsigned int elevationdelta) {
-	return *this;
-}
-generictrack & generictrack::SetTrackCircuit(track_circuit *tc) {
 	return *this;
 }
 
@@ -184,11 +174,20 @@ unsigned int generictrack::GetSightingDistance(EDGETYPE direction) const {
 	return 0;
 }
 
-void trackseg::TrainEnter(EDGETYPE direction, train *t) {
-	traincount++;
-	occupying_trains.push_back(t);
+void generictrack::TrainEnter(EDGETYPE direction, train *t) {
 	track_circuit *tc = GetTrackCircuit();
 	if(tc) tc->TrainEnter(t);
+}
+
+void generictrack::TrainLeave(EDGETYPE direction, train *t) {
+	track_circuit *tc = GetTrackCircuit();
+	if(tc) tc->TrainLeave(t);
+}
+
+void trackseg::TrainEnter(EDGETYPE direction, train *t) {
+	generictrack::TrainEnter(direction, t);
+	traincount++;
+	occupying_trains.push_back(t);
 	for(auto &it : ttcbs) {
 		it->TrainEnter(t);
 	}
@@ -197,10 +196,9 @@ void trackseg::TrainEnter(EDGETYPE direction, train *t) {
 }
 
 void trackseg::TrainLeave(EDGETYPE direction, train *t) {
+	generictrack::TrainLeave(direction, t);
 	traincount--;
 	container_unordered_remove_if(occupying_trains, [&](const train * const it) { return it == t; });
-	track_circuit *tc = GetTrackCircuit();
-	if(tc) tc->TrainLeave(t);
 	for(auto &it : ttcbs) {
 		it->TrainLeave(t);
 	}
@@ -293,10 +291,6 @@ unsigned int trackseg::GetRemainingLength(EDGETYPE direction, unsigned int curre
 	}
 }
 
-track_circuit *trackseg::GetTrackCircuit() const {
-	return tc;
-}
-
 const std::vector<track_train_counter_block *> *trackseg::GetOtherTrackTriggers() const {
 	return &ttcbs;
 }
@@ -321,16 +315,9 @@ trackseg & trackseg::SetLength(unsigned int length) {
 	this->length = length;
 	return *this;
 }
-trackseg & trackseg::AddSpeedRestriction(speed_restriction sr) {
-	this->speed_limits.AddSpeedRestriction(sr);
-	return *this;
-}
+
 trackseg & trackseg::SetElevationDelta(unsigned int elevationdelta) {
 	this->elevationdelta = elevationdelta;
-	return *this;
-}
-trackseg & trackseg::SetTrackCircuit(track_circuit *tc) {
-	this->tc = tc;
 	return *this;
 }
 

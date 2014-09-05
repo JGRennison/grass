@@ -215,9 +215,6 @@ genericsignal::~genericsignal() {
 	GetWorld().UnregisterTickUpdate(this);
 }
 
-void genericsignal::TrainEnter(EDGETYPE direction, train *t) { }
-void genericsignal::TrainLeave(EDGETYPE direction, train *t) { }
-
 GSF genericsignal::GetSignalFlags() const {
 	return sflags;
 }

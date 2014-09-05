@@ -193,8 +193,6 @@ class genericsignal : public trackroutingpoint {
 	public:
 	genericsignal(world &w_);
 	virtual ~genericsignal();
-	virtual void TrainEnter(EDGETYPE direction, train *t) override;
-	virtual void TrainLeave(EDGETYPE direction, train *t) override;
 
 	virtual std::string GetTypeName() const override { return "Generic Signal"; }
 

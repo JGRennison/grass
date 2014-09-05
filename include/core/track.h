@@ -73,8 +73,9 @@ struct trackberth {
 };
 
 class generictrack : public world_obj {
-	generictrack *prevtrack = 0;
-	generictrack *nexttrack = 0;
+	generictrack *prevtrack = nullptr;
+	generictrack *nexttrack = nullptr;
+	track_circuit *tc = nullptr;
 	bool have_inited = false;
 
 	enum class GTPRIVF {
@@ -105,10 +106,9 @@ class generictrack : public world_obj {
 	virtual unsigned int GetLength(EDGETYPE direction) const = 0;
 	virtual int GetElevationDelta(EDGETYPE direction) const = 0;
 	virtual int GetPartialElevationDelta(EDGETYPE direction, unsigned int displacement) const;
-	virtual track_circuit *GetTrackCircuit() const;
 	virtual const std::vector<track_train_counter_block *> *GetOtherTrackTriggers() const { return 0; }
-	virtual void TrainEnter(EDGETYPE direction, train *t) = 0;
-	virtual void TrainLeave(EDGETYPE direction, train *t) = 0;
+	virtual void TrainEnter(EDGETYPE direction, train *t);
+	virtual void TrainLeave(EDGETYPE direction, train *t);
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const = 0;
 
 	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const = 0;
@@ -118,7 +118,8 @@ class generictrack : public world_obj {
 	virtual unsigned int GetCurrentNominalConnectionIndex(EDGETYPE direction) const { return 0; }
 	unsigned int GetSightingDistance(EDGETYPE direction) const;
 
-	inline track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) {  return const_cast<track_target_ptr &>(const_cast<const generictrack*>(this)->GetEdgeConnectingPiece(edgeid)); }
+	inline track_circuit *GetTrackCircuit() const { return tc; }
+	inline track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) { return const_cast<track_target_ptr &>(const_cast<const generictrack*>(this)->GetEdgeConnectingPiece(edgeid)); }
 
 	bool FullConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec);
 
@@ -140,11 +141,6 @@ class generictrack : public world_obj {
 	virtual std::string GetTypeName() const { return "Generic Track"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "track"; }
 	virtual std::string GetTypeSerialisationClassName() const override { return GetTypeSerialisationClassNameStatic(); }
-
-	virtual generictrack & SetLength(unsigned int length);
-	virtual generictrack & AddSpeedRestriction(speed_restriction sr);
-	virtual generictrack & SetElevationDelta(unsigned int elevationdelta);
-	virtual generictrack & SetTrackCircuit(track_circuit *tc);
 
 	virtual bool PostLayoutInit(error_collection &ec);    //return false to discontinue initing piece
 	inline bool IsPostLayoutInitDone() const { return have_inited; }
@@ -201,6 +197,12 @@ class generictrack : public world_obj {
 
 	private:
 	static bool TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target);
+
+
+	public:
+	// For use of test code **only**
+	virtual generictrack & SetLength(unsigned int length);
+	virtual generictrack & SetElevationDelta(unsigned int elevationdelta);
 };
 template<> struct enum_traits< generictrack::GTPRIVF > { static constexpr bool flags = true; };
 
@@ -212,7 +214,7 @@ template <typename T> struct vartrack_target_ptr {
 		direction = track->GetReverseDirection(direction);
 	}
 	inline void Reset() {
-		track = 0;
+		track = nullptr;
 		direction = EDGE_NULL;
 	}
 	vartrack_target_ptr() { Reset(); }
