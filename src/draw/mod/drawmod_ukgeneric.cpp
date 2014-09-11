@@ -151,19 +151,18 @@ namespace draw {
 			guilayout::LayoutOffsetDirection(x, y, obj->GetLayoutDirection(), obj->GetLength(), [&](int sx, int sy, guilayout::LAYOUT_DIR sdir) {
 				draw::sprite_ref base_sprite = SID_trackseg | layoutdir_to_spriteid(guilayout::FoldLayoutDirection(sdir));
 				if(ts->GetTrackCircuit()) base_sprite |= SID_has_tc;
-				reservationcountset rcs;
-				ts->ReservationTypeCount(rcs);
-				if(rcs.routeset > rcs.routesetauto) base_sprite |= SID_reserved;
 				points->push_back({sx, sy, sdir, base_sprite});
 			});
 
 			return [points, ts, obj](const draw_engine &eng, guilayout::world_layout &layout) {
+				draw::sprite_ref extras = 0;
+				track_circuit *tc = ts->GetTrackCircuit();
+				if(tc && tc->Occupied()) extras |= SID_tc_occ;
+				reservationcountset rcs;
+				ts->ReservationTypeCount(rcs);
+				if(rcs.routeset > rcs.routesetauto) extras |= SID_reserved;
 				for(auto &it : *points) {
-					//temporary drawing function
-					draw::sprite_ref spid = it.base_sprite;
-					track_circuit *tc = ts->GetTrackCircuit();
-					if(tc && tc->Occupied()) spid |= SID_tc_occ;
-					layout.SetSprite(it.x, it.y, spid, obj, 0);
+					layout.SetSprite(it.x, it.y, it.base_sprite | extras, obj, 0);
 				}
 			};
 		}
