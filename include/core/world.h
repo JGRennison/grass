@@ -23,11 +23,11 @@
 #include <deque>
 #include <forward_list>
 #include <set>
+#include "util/flags.h"
 #include "core/tractiontype.h"
 #include "core/serialisable.h"
 #include "core/future.h"
 #include "core/edgetype.h"
-#include "core/flags.h"
 
 class world_deserialisation;
 class world_serialisation;

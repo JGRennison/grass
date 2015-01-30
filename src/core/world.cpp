@@ -17,13 +17,13 @@
 //==========================================================================
 
 #include "common.h"
+#include "util/error.h"
+#include "util/util.h"
 #include "core/world.h"
-#include "core/error.h"
 #include "core/track.h"
 #include "core/track_ops.h"
 #include "core/trackcircuit.h"
 #include "core/action.h"
-#include "core/util.h"
 #include "core/textpool.h"
 #include "core/signal.h"
 #include "core/train.h"

@@ -18,12 +18,12 @@
 
 #include "common.h"
 #include "layout/layout.h"
+#include "util/utf8.h"
 #include "core/world_serialisation.h"
 #include "core/signal.h"
 #include "core/points.h"
 #include "core/serialisable_impl.h"
 #include "draw/drawmodule.h"
-#include "utf8.h"
 
 namespace guilayout {
 

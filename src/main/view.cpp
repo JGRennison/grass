@@ -18,7 +18,7 @@
 
 #include "main/view.h"
 #include "layout/layout.h"
-#include "core/util.h"
+#include "util/util.h"
 #include <wx/event.h>
 #include <wx/dcclient.h>
 #include <wx/region.h>

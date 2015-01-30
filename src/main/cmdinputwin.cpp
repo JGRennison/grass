@@ -23,7 +23,7 @@
 #include "main/trainwin.h"
 #include "main/maingui.h"
 #include "textcmd/textcmd.h"
-#include "core/util.h"
+#include "util/util.h"
 
 #include <wx/sizer.h>
 

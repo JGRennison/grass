@@ -19,7 +19,7 @@
 #ifndef INC_SERIALISABLE_ALREADY
 #define INC_SERIALISABLE_ALREADY
 
-#include "core/error.h"
+#include "util/error.h"
 #include <map>
 
 struct deserialiser_input;

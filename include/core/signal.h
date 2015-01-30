@@ -21,9 +21,9 @@
 
 #include <vector>
 
+#include "util/flags.h"
 #include "core/track.h"
 #include "core/trackreservation.h"
-#include "core/flags.h"
 #include "core/routetypes.h"
 #include "core/tractiontype.h"
 #include "core/route.h"

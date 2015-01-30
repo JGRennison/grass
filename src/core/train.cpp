@@ -17,7 +17,7 @@
 //==========================================================================
 
 #include "common.h"
-#include "core/util.h"
+#include "util/util.h"
 #include "core/param.h"
 #include "core/track.h"
 #include "core/train.h"

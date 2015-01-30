@@ -20,7 +20,7 @@
 #define INC_DRAWMODULE_ALREADY
 
 #include <memory>
-#include "core/error.h"
+#include "util/error.h"
 #include "draw/drawtypes.h"
 
 namespace guilayout {

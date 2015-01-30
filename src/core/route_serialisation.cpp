@@ -17,11 +17,11 @@
 //==========================================================================
 
 #include "common.h"
+#include "util/error.h"
+#include "util/util.h"
 #include "core/serialisable_impl.h"
 #include "core/route.h"
 #include "core/routetypes_serialisation.h"
-#include "core/error.h"
-#include "core/util.h"
 #include "core/deserialisation_scalarconv.h"
 
 void ParseAspectMaskString(aspect_mask_type &aspect_mask, const std::string &aspect_string, const deserialiser_input &di,

@@ -20,9 +20,9 @@
 #include "test/deserialisation-test.h"
 #include "test/world-test.h"
 #include "test/testutil.h"
+#include "util/util.h"
 #include "core/train.h"
 #include "core/trackcircuit.h"
-#include "core/util.h"
 #include "core/points.h"
 #include <sstream>
 

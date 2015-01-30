@@ -26,11 +26,11 @@
 #include <vector>
 #include <limits.h>
 
-#include "core/flags.h"
+#include "util/error.h"
+#include "util/flags.h"
 #include "core/edgetype.h"
 #include "core/world_obj.h"
 #include "core/tractiontype.h"
-#include "core/error.h"
 
 class train;
 class generictrack;

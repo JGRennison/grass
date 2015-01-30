@@ -21,8 +21,8 @@
 
 #include <string>
 #include <vector>
+#include "util/flags.h"
 #include "core/world_obj.h"
-#include "core/flags.h"
 #include "core/world.h"
 
 class train;

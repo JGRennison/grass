@@ -17,11 +17,11 @@
 //==========================================================================
 
 #include "common.h"
+#include "util/error.h"
+#include "util/util.h"
 #include "core/track.h"
 #include "core/points.h"
-#include "core/error.h"
 #include "core/track_ops.h"
-#include "core/util.h"
 #include "core/param.h"
 
 #include <cassert>

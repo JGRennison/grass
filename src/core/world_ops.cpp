@@ -17,9 +17,9 @@
 //==========================================================================
 
 #include "common.h"
+#include "util/util.h"
 #include "core/world_ops.h"
 #include "core/world_obj.h"
-#include "core/util.h"
 #include "core/serialisable_impl.h"
 #include "core/textpool.h"
 

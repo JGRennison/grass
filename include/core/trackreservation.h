@@ -22,10 +22,10 @@
 #include <string>
 #include <functional>
 #include <vector>
-#include "core/flags.h"
+#include "util/error.h"
+#include "util/flags.h"
 #include "core/edgetype.h"
 #include "core/serialisable.h"
-#include "core/error.h"
 
 class route;
 

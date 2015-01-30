@@ -22,10 +22,10 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include "util/flags.h"
+#include "util/util.h"
 #include "core/future.h"
 #include "core/serialisable.h"
-#include "core/util.h"
-#include "core/flags.h"
 
 class world;
 

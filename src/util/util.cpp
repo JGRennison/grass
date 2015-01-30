@@ -17,8 +17,8 @@
 //==========================================================================
 
 #include "common.h"
-#include "core/util.h"
-#include "core/error.h"
+#include "util/error.h"
+#include "util/util.h"
 #include <cstring>
 #include <cstdarg>
 #include <cstdio>

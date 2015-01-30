@@ -23,9 +23,9 @@
 #include <string>
 #include <deque>
 
+#include "util/flags.h"
 #include "core/world.h"
 #include "core/serialisable.h"
-#include "core/flags.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"

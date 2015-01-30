@@ -17,9 +17,9 @@
 //==========================================================================
 
 #include "common.h"
+#include "util/error.h"
+#include "util/utf8.h"
 #include "core/serialisable_impl.h"
-#include "core/error.h"
-#include "utf8.h"
 #include <algorithm>
 
 error_deserialisation::error_deserialisation(const deserialiser_input &di, const std::string &str) {

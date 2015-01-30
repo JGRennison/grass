@@ -22,7 +22,7 @@
 #include "test/catch.hpp"
 #include "test/world-test.h"
 #include "test/testutil.h"
-#include "core/error.h"
+#include "util/error.h"
 #include "core/world.h"
 #include "core/world_serialisation.h"
 

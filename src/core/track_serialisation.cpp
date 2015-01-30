@@ -17,12 +17,12 @@
 //==========================================================================
 
 #include "common.h"
+#include "util/error.h"
 #include "core/track.h"
 #include "core/trackpiece.h"
 #include "core/points.h"
 #include "core/signal.h"
 #include "core/serialisable_impl.h"
-#include "core/error.h"
 #include "core/world.h"
 #include "core/deserialisation_scalarconv.h"
 #include "core/trackcircuit.h"

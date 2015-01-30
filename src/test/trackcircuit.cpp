@@ -20,13 +20,13 @@
 #include "test/deserialisation-test.h"
 #include "test/world-test.h"
 #include "test/testutil.h"
+#include "util/util.h"
 #include "core/world_serialisation.h"
 #include "core/trackcircuit.h"
 #include "core/train.h"
 #include "core/signal.h"
 #include "core/trackpiece.h"
 #include "core/track_ops.h"
-#include "core/util.h"
 
 TEST_CASE( "track_circuit/deserialisation", "Test basic deserialisation of track circuit name" ) {
 	std::string track_test_str =

@@ -17,7 +17,7 @@
 //==========================================================================
 
 #include "common.h"
-#include "core/util.h"
+#include "util/util.h"
 #include "core/world.h"
 #include "core/train.h"
 #include "main/wxcommon.h"

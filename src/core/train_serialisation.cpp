@@ -17,9 +17,9 @@
 //==========================================================================
 
 #include "common.h"
+#include "util/error.h"
 #include "core/train.h"
 #include "core/serialisable_impl.h"
-#include "core/error.h"
 #include "core/deserialisation_scalarconv.h"
 
 void vehicle_class::Deserialise(const deserialiser_input &di, error_collection &ec) {

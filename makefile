@@ -21,9 +21,9 @@
 #Note that to build on or for Windows, the include/lib search paths will need to be edited below and/or
 #a number of libs/includes will need to be placed/built in a corresponding location where gcc can find them.
 
-SRC_DIRS := main core test layout textcmd draw/wx draw/mod
-MAIN_DIRS := main core layout textcmd draw/wx draw/mod
-TEST_DIRS := test core
+SRC_DIRS := main core util test layout textcmd draw/wx draw/mod
+MAIN_DIRS := main core util layout textcmd draw/wx draw/mod
+TEST_DIRS := test core util
 RES_DIRS := draw/res
 MAIN_RES := draw/res
 

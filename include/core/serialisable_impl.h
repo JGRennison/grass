@@ -25,10 +25,10 @@
 #include <cinttypes>
 #include <functional>
 #include <memory>
-#include "core/flags.h"
+#include "util/error.h"
+#include "util/flags.h"
+#include "util/util.h"
 #include "core/serialisable.h"
-#include "core/error.h"
-#include "core/util.h"
 #include "core/world_serialisation.h"
 #include "core/edgetype.h"
 

@@ -32,8 +32,8 @@
 #include <array>
 #include <forward_list>
 #include "common.h"
+#include "util/error.h"
 #include "core/edgetype.h"
-#include "core/error.h"
 #include "draw/drawtypes.h"
 
 class world_deserialisation;

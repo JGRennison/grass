@@ -17,10 +17,10 @@
 //==========================================================================
 
 #include "common.h"
+#include "util/error.h"
 #include "core/track.h"
 #include "core/trackpiece.h"
 #include "core/train.h"
-#include "core/error.h"
 #include "core/trackcircuit.h"
 
 #include <cassert>

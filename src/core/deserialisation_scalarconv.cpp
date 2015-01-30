@@ -17,8 +17,8 @@
 //==========================================================================
 
 #include "common.h"
+#include "util/error.h"
 #include "core/deserialisation_scalarconv.h"
-#include "core/error.h"
 
 #include <cctype>
 #include <vector>

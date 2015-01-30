@@ -20,12 +20,12 @@
 #include "test/deserialisation-test.h"
 #include "test/world-test.h"
 #include "test/testutil.h"
+#include "util/util.h"
 #include "core/track.h"
 #include "core/signal.h"
 #include "core/traverse.h"
 #include "core/trackcircuit.h"
 #include "core/track_ops.h"
-#include "core/util.h"
 
 std::string track_test_str_1 =
 R"({ "content" : [ )"

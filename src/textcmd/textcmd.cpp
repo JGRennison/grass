@@ -18,7 +18,7 @@
 
 #include "common.h"
 #include "textcmd/textcmd.h"
-#include "core/util.h"
+#include "util/util.h"
 #include "core/world.h"
 #include "core/var.h"
 #include "core/textpool.h"

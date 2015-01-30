@@ -17,10 +17,10 @@
 //==========================================================================
 
 #include "common.h"
+#include "util/error.h"
+#include "util/util.h"
 #include "core/world.h"
 #include "core/serialisable_impl.h"
-#include "core/error.h"
-#include "core/util.h"
 #include "core/world_serialisation.h"
 #include "core/track.h"
 #include "core/trackpiece.h"
