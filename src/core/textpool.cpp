@@ -57,6 +57,7 @@ defaultusermessagepool::defaultusermessagepool() {
 	RegisterNewText("track/unreservation/autosignal", "Automatic signal");
 	RegisterNewText("track/reservation/overlapcantswing/trainapproaching", "Can't swing overlap: train on approach");
 	RegisterNewText("track/reservation/overlapcantswing/notpermitted", "Can't swing overlap: not permitted");
+	RegisterNewText("track/notpoints", "Not points");
 	RegisterNewText("generic/failurereason", "Failed");
 	RegisterNewText("generic/invalidcommand", "Invalid command: '$input'");
 	RegisterNewText("generic/cannotuse", "Cannot use '$item': $reason");

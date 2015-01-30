@@ -79,5 +79,28 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 		return true;
 	}
 
+	auto points_cmd = [&](bool reverse) -> bool {
+		if(tokens.size() < 2 || tokens.size() > 3)
+			return input_err();
+		genericpoints *p = w.FindTrackByNameCast<genericpoints>(tokens[1]);
+		if(!p) {
+			return cannot_use_err(tokens[1], "track/notpoints");
+		}
+		unsigned int index = 0;
+		if(tokens.size() > 2) {
+			if(!ownstrtonum(index, tokens[2].c_str(), tokens[2].size()))
+				return input_err();
+		}
+		w.SubmitAction(action_pointsaction(w, *p, index, reverse));
+		return true;
+	};
+
+	if(tokens[0] == "normalise_points") {
+		return points_cmd(false);
+	}
+	if(tokens[0] == "reverse_points") {
+		return points_cmd(true);
+	}
+
 	return input_err();
 }
