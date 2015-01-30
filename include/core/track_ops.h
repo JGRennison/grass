@@ -78,7 +78,9 @@ class action_pointsaction : public action {
 
 	public:
 	action_pointsaction(world &w_) : action(w_), target(0) { }
-	action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, genericpoints::PTF bits_, genericpoints::PTF mask_, APAF aflags_ = APAF::ZERO) : action(w_), target(&targ), index(index_), bits(bits_), mask(mask_), aflags(aflags_) { }
+	action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, genericpoints::PTF bits_, genericpoints::PTF mask_, APAF aflags_ = APAF::ZERO)
+			: action(w_), target(&targ), index(index_), bits(bits_), mask(mask_), aflags(aflags_) { }
+	action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, bool reverse);
 	static std::string GetTypeSerialisationNameStatic() { return "action_pointsaction"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;

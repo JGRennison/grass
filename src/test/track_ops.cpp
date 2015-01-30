@@ -63,6 +63,24 @@ TEST_CASE( "track/ops/points/movement", "Test basic points movement future" ) {
 		env.w->GameStep(4900);
 		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
 		REQUIRE(env.w->GetLogText() == "Points P1 not movable: Locked\n");
+
+		env.w->ResetLogText();
+
+		auto test_norm_rev_action = [&](bool reverse, genericpoints::PTF expected) {
+			RoundTrip();
+			env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, reverse));
+			env.w->GameStep(5000);
+			REQUIRE(p1->GetPointsFlags(0) == expected);
+			REQUIRE(env.w->GetLogText().empty());
+		};
+
+		test_norm_rev_action(true, genericpoints::PTF::REV | genericpoints::PTF::LOCKED);
+		test_norm_rev_action(false, genericpoints::PTF::REV);
+		test_norm_rev_action(false, genericpoints::PTF::ZERO);
+		test_norm_rev_action(false, genericpoints::PTF::ZERO | genericpoints::PTF::LOCKED);
+		test_norm_rev_action(false, genericpoints::PTF::ZERO | genericpoints::PTF::LOCKED);
+		test_norm_rev_action(true, genericpoints::PTF::ZERO);
+		test_norm_rev_action(true, genericpoints::PTF::REV);
 	};
 
 	SECTION("No serialisation round-trip") {

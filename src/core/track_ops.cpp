@@ -50,6 +50,29 @@ void future_pointsaction::Serialise(serialiser_output &so, error_collection &ec)
 	SerialiseValueJson(mask, so, "mask");
 }
 
+// Generate flag change for a nominal normalise and reverse operation
+action_pointsaction::action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, bool reverse)
+		: action(w_), target(&targ), index(index_) {
+	genericpoints::PTF pflags = target->GetPointsFlags(index);
+	if(static_cast<bool>(pflags & genericpoints::PTF::REV) != reverse) {
+		if(pflags & genericpoints::PTF::LOCKED) {
+			// unlock
+			bits = genericpoints::PTF::ZERO;
+			mask = genericpoints::PTF::LOCKED;
+		}
+		else {
+			// Change position
+			bits = SetOrClearBits<genericpoints::PTF>(genericpoints::PTF::ZERO, genericpoints::PTF::REV, reverse);
+			mask = genericpoints::PTF::REV;
+		}
+	}
+	else {
+		// Set locked state
+		bits = genericpoints::PTF::LOCKED;
+		mask = genericpoints::PTF::LOCKED;
+	}
+}
+
 void action_pointsaction::ExecuteAction() const {
 	if(!target) return;
 
