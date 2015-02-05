@@ -117,7 +117,11 @@ namespace draw {
 					}
 				}
 				else if(route_class::IsRoute(gs->GetAspectType())) {
-					if(gs->GetAspect() == 1) {
+					if(!is_higher_aspect_in_mask(gs->GetRouteDefaults().aspect_mask, gs->GetAspect())) {
+						drawtext->text = "G";
+						drawtext->foregroundcolour = 0x00FF00;
+					}
+					else if(gs->GetAspect() == 1) {
 						drawtext->text = "Y";
 						drawtext->foregroundcolour = 0xFFFF00;
 					}
@@ -125,9 +129,9 @@ namespace draw {
 						drawtext->text = "D";
 						drawtext->foregroundcolour = 0xFFFF00;
 					}
-					else if(gs->GetAspect() == 3) {
-						drawtext->text = "G";
-						drawtext->foregroundcolour = 0x00FF00;
+					else {
+						drawtext->text = "?";
+						drawtext->foregroundcolour = 0xFF7F7F;
 					}
 				}
 				else if(route_class::IsShunt(gs->GetAspectType())) {

@@ -48,6 +48,11 @@ inline bool aspect_in_mask(aspect_mask_type mask, unsigned int aspect) {
 	else return mask & (1 << aspect);
 }
 
+inline bool is_higher_aspect_in_mask(aspect_mask_type mask, unsigned int aspect) {
+	if(aspect >= ASPECT_MAX) return false;
+	else return mask & ((~1) << aspect);
+}
+
 struct berth_record {
 	trackberth *berth = 0;
 	generictrack *ownertrack = 0;
