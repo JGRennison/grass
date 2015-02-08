@@ -467,7 +467,7 @@ R"({ "content" : [ )"
 	R"({ "type" : "4aspectroute", "name" : "S4", "approachlockingtimeout" : 1000, "routerestrictions" : [ { "approachlockingtimeout" : 120000, "targets" : "S5" } ] }, )"
 	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S4ovlp" }, )"
 	R"({ "type" : "routingmarker", "overlapend" : true }, )"
-	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T5" }, )"
+	R"({ "type" : "trackseg", "length" : 30000, "trackcircuit" : "T5", "name" : "TS5" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S5", "approachlockingtimeout" : [ { "routeclass" : "shunt", "timeout" : 1000 }, { "routeclass" : "route", "timeout" : 60000 } ] }, )"
 	R"({ "type" : "trackseg", "length" : 20000, "trackcircuit" : "S5ovlp" }, )"
 	R"({ "type" : "routingmarker", "overlapend" : true }, )"
@@ -483,6 +483,7 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	test_fixture_world_init_checked env(approachlocking_test_str_1);
 
 	autosig_test_class_1 tenv(*(env.w));
+	generictrack *t5 = PTR_CHECK(env.w->FindTrackByName("TS5"));
 
 	env.w->SubmitAction(action_reservepath(*(env.w), tenv.s1, tenv.s2));
 	env.w->SubmitAction(action_reservepath(*(env.w), tenv.s2, tenv.s3));
@@ -502,6 +503,14 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 		if(sig) {
 			CHECK(approachlocking == ((bool) (sig->GetSignalFlags() & GSF::APPROACHLOCKINGMODE)));
 		}
+	};
+
+	auto check_track_reserved = [&](generictrack *ts, bool should_be_reserved) {
+		INFO("Reservation check for: " << ts->GetName() << ", at time: " << env.w->GetGameTime());
+		reservationcountset rcs;
+		ts->ReservationTypeCount(rcs);
+		bool is_reserved = rcs.routeset > 0;
+		CHECK(is_reserved == should_be_reserved);
 	};
 
 	checksignal2(tenv.a, 0, 0, route_class::RTC_NULL, 0, false);
@@ -529,6 +538,8 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	routecheck(tenv.s4, tenv.s3, tenv.s5, 120000);
 	routecheck(tenv.s5, tenv.s4, tenv.s6, 60000);
 	routecheck(tenv.s6, tenv.s5, tenv.b, 45000);
+
+	check_track_reserved(t5, true);
 
 	env.w->track_circuits.FindOrMakeByName("T3")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 	env.w->track_circuits.FindOrMakeByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
@@ -561,6 +572,7 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	checksignal2(tenv.s4, 0, 2, route_class::RTC_ROUTE, tenv.s5, true);
 	checksignal2(tenv.s5, 0, 1, route_class::RTC_ROUTE, tenv.s6, true);
 	checksignal2(tenv.s6, 1, 1, route_class::RTC_SHUNT, tenv.b, false);
+	check_track_reserved(t5, true);
 
 	env.w->SubmitAction(action_unreservetrack(*(env.w), *tenv.s6));
 	env.w->GameStep(1);
@@ -640,6 +652,7 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	checksignal2(tenv.s4, 0, 1, route_class::RTC_ROUTE, tenv.s5, true);    //TODO: would 2 be better than 1?
 	checksignal2(tenv.s5, 0, 0, route_class::RTC_NULL, 0, false);
 	checksignal2(tenv.s6, 0, 0, route_class::RTC_NULL, 0, false);
+	check_track_reserved(t5, true);
 
 	env.w->GameStep(1000);
 	env.w->GameStep(1);
@@ -650,6 +663,7 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	checksignal2(tenv.s4, 0, 0, route_class::RTC_NULL, 0, false);
 	checksignal2(tenv.s5, 0, 0, route_class::RTC_NULL, 0, false);
 	checksignal2(tenv.s6, 0, 0, route_class::RTC_NULL, 0, false);
+	check_track_reserved(t5, false);
 }
 
 std::string overlaptimeout_test_str_1 =
