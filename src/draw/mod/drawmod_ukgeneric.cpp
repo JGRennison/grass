@@ -31,6 +31,10 @@
 IMG_EXTERN(track_v_png, track_v)
 IMG_EXTERN(track_h_png, track_h)
 IMG_EXTERN(track_d_png, track_d)
+IMG_EXTERN(sigpost_png, sigpost)
+IMG_EXTERN(sigpost_bar_png, sigpost_bar)
+IMG_EXTERN(circle_png, circle)
+IMG_EXTERN(shunt_png, shunt)
 
 #define BERTHLEVEL 10
 #define UNKNOWNLEVEL 20
@@ -41,6 +45,10 @@ namespace {
 	enum sprite_ids {
 		SID_typemask        = 0xFF,
 		SID_trackseg        = 1,
+		SID_signalroute     = 8,
+		SID_signalshunt     = 9,
+		SID_signalpost      = 16,
+		SID_signalpostbar   = 17,
 
 		SID_dirmask         = 0xF00,
 		SID_dirshift        = 8,
@@ -50,6 +58,17 @@ namespace {
 		SID_has_tc          = 0x2000,
 		SID_tc_occ          = 0x4000,
 		SID_reserved        = 0x8000,
+
+		SID_signal_red      = 0x2000,
+		SID_signal_yellow   = 0x4000,
+		SID_signal_green    = 0x8000,
+		SID_signal_blank    = 0x10000,
+		SID_signal_unknown  = 0x20000,
+
+		SID_shunt_red       = 0x2000,
+		SID_shunt_white     = 0x4000,
+		SID_shunt_grey      = 0x8000,
+		SID_shunt_blank     = 0x10000,
 	};
 
 	guilayout::LAYOUT_DIR spriteid_to_layoutdir(draw::sprite_ref sid) {
@@ -61,7 +80,6 @@ namespace {
 }
 
 namespace draw {
-
 	draw_func_type draw_module_ukgeneric::GetDrawTrack(const std::shared_ptr<guilayout::layouttrack_obj> &obj, error_collection &ec) {
 		int x, y;
 		std::tie(x, y) = obj->GetPosition();
@@ -69,76 +87,135 @@ namespace draw {
 		const generictrack *gt = obj->GetTrack();
 		const genericsignal *gs = FastSignalCast(gt);
 		if(gs) {
-			return [x, y, gs, obj](const draw_engine &eng, guilayout::world_layout &layout) {
-				//first draw stick
-				std::unique_ptr<draw::drawtextchar> drawstick(new draw::drawtextchar);
+			enum {
+				SDF_STEP_RIGHT        = 1<<0,
+				SDF_HAVE_SHUNT        = 1<<1,
+				SDF_HAVE_ROUTE        = 1<<2,
+				SDF_CAN_DISPLAY_DY    = 1<<3,
+			};
+			unsigned int sigflags = 0;
+
+			switch(obj->GetLayoutDirection()) {
+				using guilayout::LAYOUT_DIR;
+				case LAYOUT_DIR::UR:
+				case LAYOUT_DIR::DR:
+					sigflags |= SDF_STEP_RIGHT;
+					break;
+				case LAYOUT_DIR::UL:
+				case LAYOUT_DIR::DL:
+					sigflags &= ~SDF_STEP_RIGHT;
+					break;
+				default: {
+					// Bad signal direction
+					return [x, y, obj](const draw_engine &eng, guilayout::world_layout &layout) {
+						std::unique_ptr<draw::drawtextchar> drawstickfailed(new draw::drawtextchar);
+						drawstickfailed->text = "?";
+						drawstickfailed->foregroundcolour = 0x7F7FFF;
+						drawstickfailed->backgroundcolour = 0;
+						layout.SetTextChar(x, y, std::move(drawstickfailed), obj);
+					};
+				}
+			}
+
+			route_class::set route_types = gs->GetAvailableRouteTypes(EDGE_FRONT).start;
+			if(route_types & route_class::AllRoutes())
+				sigflags |= SDF_HAVE_ROUTE;
+			if(route_types & route_class::AllShunts())
+				sigflags |= SDF_HAVE_SHUNT;
+
+			draw::sprite_ref stick_sprite = layoutdir_to_spriteid(guilayout::FoldLayoutDirection(obj->GetLayoutDirection()));
+			if(gs->GetSignalFlags() & GSF::AUTOSIGNAL)
+				stick_sprite |= SID_signalpostbar;
+			else
+				stick_sprite |= SID_signalpost;
+
+			if(is_higher_aspect_in_mask(gs->GetRouteDefaults().aspect_mask, 2))
+				sigflags |= SDF_CAN_DISPLAY_DY;
+
+			return [x, y, gs, obj, stick_sprite, sigflags](const draw_engine &eng, guilayout::world_layout &layout) {
 				int next_x = x;
 				int next_y = y;
+				int step_x = (sigflags & SDF_STEP_RIGHT) ? +1 : -1;
 
-				switch(obj->GetLayoutDirection()) {
-					using guilayout::LAYOUT_DIR;
-					case LAYOUT_DIR::UR: next_x++; drawstick->text = "\u250C"; break;
-					case LAYOUT_DIR::UL: next_x--; drawstick->text = "\u2510"; break;
-					case LAYOUT_DIR::DR: next_x++; drawstick->text = "\u2514"; break;
-					case LAYOUT_DIR::DL: next_x--; drawstick->text = "\u2518"; break;
-					case LAYOUT_DIR::RU: next_y++; drawstick->text = "\u2518"; break;
-					case LAYOUT_DIR::LU: next_y++; drawstick->text = "\u2514"; break;
-					case LAYOUT_DIR::RD: next_y--; drawstick->text = "\u2510"; break;
-					case LAYOUT_DIR::LD: next_y--; drawstick->text = "\u250C"; break;
-					default: drawstick.reset(); break;
-				}
-
-				if(drawstick) {
-					drawstick->backgroundcolour = 0;
-					drawstick->foregroundcolour = 0xAAAAAA;
-
-					if(!(gs->GetSignalFlags() & GSF::AUTOSIGNAL)) {
-						const route *rt = gs->GetCurrentForwardRoute();
-						if(rt) {
-							drawstick->foregroundcolour = 0xFFFFFF;
-						}
+				//first draw stick
+				draw::sprite_ref stick_sprite_extras = 0;
+				if((stick_sprite & SID_typemask) == SID_signalpost) {
+					if(gs->GetCurrentForwardRoute()) {
+						stick_sprite_extras |= SID_reserved;
 					}
-
-					layout.SetTextChar(x, y, std::move(drawstick), obj);
 				}
+				layout.SetSprite(x, y, stick_sprite | stick_sprite_extras, obj, 0);
 
-				//temporary drawing function
-				std::unique_ptr<draw::drawtextchar> drawtext(new draw::drawtextchar);
+
+				//draw head(s)
 				std::shared_ptr<guilayout::pos_sprite_desc_opts> options;
-				drawtext->backgroundcolour = 0;
-				if(gs->GetAspect() == 0) {
-					drawtext->text = "R";
-					drawtext->foregroundcolour = 0xFF0000;
-					if(gs->GetSignalFlags() & GSF::APPROACHLOCKINGMODE) {
-						unsigned int timebin = layout.GetWorld().GetGameTime() / APPROACHLOCKING_FLASHINTERVAL;
-						if(timebin & 1) drawtext->text = "";
-						if(!options) options = std::make_shared<guilayout::pos_sprite_desc_opts>();
-						options->refresh_interval_ms = APPROACHLOCKING_FLASHINTERVAL;
-					}
+				bool draw_blank = false;
+				if(gs->GetSignalFlags() & GSF::APPROACHLOCKINGMODE) {
+					unsigned int timebin = layout.GetWorld().GetGameTime() / APPROACHLOCKING_FLASHINTERVAL;
+					if(timebin & 1)
+						draw_blank = true;
+					if(!options)
+						options = std::make_shared<guilayout::pos_sprite_desc_opts>();
+					options->refresh_interval_ms = APPROACHLOCKING_FLASHINTERVAL;
 				}
-				else if(route_class::IsRoute(gs->GetAspectType())) {
-					if(!is_higher_aspect_in_mask(gs->GetRouteDefaults().aspect_mask, gs->GetAspect())) {
-						drawtext->text = "G";
-						drawtext->foregroundcolour = 0x00FF00;
+
+				auto draw_route_head = [&](draw::sprite_ref extras) {
+					next_x += step_x;
+					if(draw_blank)
+						extras = SID_signal_blank;
+					layout.SetSprite(next_x, next_y, SID_signalroute | extras, obj, 0, options);
+				};
+
+				auto draw_single_route_head = [&](draw::sprite_ref extras) {
+					draw_route_head(extras);
+					if(sigflags & SDF_CAN_DISPLAY_DY)
+						draw_route_head(SID_signal_blank);
+				};
+
+				auto draw_shunt_head = [&](draw::sprite_ref extras) {
+					next_x += step_x;
+
+					// Don't set options for grey shunt
+					std::shared_ptr<guilayout::pos_sprite_desc_opts> shunt_options;
+					if(!(extras & SID_shunt_grey)) {
+						shunt_options = options;
+						if(draw_blank)
+							extras = SID_shunt_blank;
 					}
-					else if(gs->GetAspect() == 1) {
-						drawtext->text = "Y";
-						drawtext->foregroundcolour = 0xFFFF00;
+
+					layout.SetSprite(next_x, next_y, SID_signalshunt | layoutdir_to_spriteid(obj->GetLayoutDirection()) | extras, obj, 0, std::move(shunt_options));
+				};
+
+				if(sigflags & SDF_HAVE_SHUNT) {
+					if(gs->GetAspect() > 0 && route_class::IsShunt(gs->GetAspectType())) {
+						draw_shunt_head(SID_shunt_white);
 					}
-					else if(gs->GetAspect() == 2) {
-						drawtext->text = "D";
-						drawtext->foregroundcolour = 0xFFFF00;
+					else if(sigflags & SDF_HAVE_ROUTE) {
+						draw_shunt_head(SID_shunt_grey);
 					}
 					else {
-						drawtext->text = "?";
-						drawtext->foregroundcolour = 0xFF7F7F;
+						draw_shunt_head(SID_shunt_red);
 					}
 				}
-				else if(route_class::IsShunt(gs->GetAspectType())) {
-					drawtext->text = "S";
-					drawtext->foregroundcolour = 0xFFFFFF;
+
+				if(sigflags & SDF_HAVE_ROUTE) {
+					if(gs->GetAspect() == 0) {
+						draw_single_route_head(SID_signal_red);
+					}
+					else if(!is_higher_aspect_in_mask(gs->GetRouteDefaults().aspect_mask, gs->GetAspect())) {
+						draw_single_route_head(SID_signal_green);
+					}
+					else if(gs->GetAspect() == 1) {
+						draw_single_route_head(SID_signal_yellow);
+					}
+					else if(gs->GetAspect() == 2) {
+						draw_route_head(SID_signal_yellow);
+						draw_route_head(SID_signal_yellow);
+					}
+					else {
+						draw_single_route_head(SID_signal_unknown);
+					}
 				}
-				layout.SetTextChar(next_x, next_y, std::move(drawtext), obj, 0, std::move(options));
 			};
 		}
 
@@ -223,14 +300,9 @@ namespace draw {
 			return (sr & ~SID_dirmask) | layoutdir_to_spriteid(newdir);
 		};
 
-		enum {
-			DIRF_H         = 1<<0,
-		};
-
-		//this converts a folded direction into either U, UR or:
-		// if DIRF_H is set: R
-		//returns true if handled
-		auto dirrelative1 = [&](LAYOUT_DIR dir, unsigned int flags) -> bool {
+		// This converts a folded direction into either U, UR or R.
+		// Returns true if handled
+		auto dirrelative1 = [&](LAYOUT_DIR dir) -> bool {
 			switch(dir) {
 				case LAYOUT_DIR::U:
 					return false;
@@ -241,10 +313,7 @@ namespace draw {
 					sp.Mirror(false);
 					return true;
 				case LAYOUT_DIR::R:
-					if(flags & DIRF_H) return false;
-					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::U));
-					sp.Rotate90(true);
-					return true;
+					return false;
 				case LAYOUT_DIR::RD:
 					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::UR));
 					sp.Mirror(true);
@@ -264,7 +333,8 @@ namespace draw {
 		if(sr & SID_raw_img) {
 			switch(type) {
 				case SID_trackseg:
-					if(dirrelative1(dir, DIRF_H)) return;
+					if(dirrelative1(dir))
+						return;
 					if(dir == LAYOUT_DIR::U) {
 						sp.LoadFromFileDataFallback("track_v.png", GetImageData_track_v());
 						return;
@@ -278,6 +348,37 @@ namespace draw {
 						return;
 					}
 					break;
+
+				case SID_signalpost:
+					if(dirrelative1(dir))
+						return;
+					if(dir == LAYOUT_DIR::UR) {
+						sp.LoadFromFileDataFallback("sigpost.png", GetImageData_sigpost());
+						return;
+					}
+					break;
+
+				case SID_signalpostbar:
+					if(dirrelative1(dir))
+						return;
+					if(dir == LAYOUT_DIR::UR) {
+						sp.LoadFromFileDataFallback("sigpost_bar.png", GetImageData_sigpost_bar());
+						return;
+					}
+					break;
+
+				case SID_signalroute:
+					sp.LoadFromFileDataFallback("circle.png", GetImageData_circle());
+					return;
+
+				case SID_signalshunt:
+					if(dirrelative1(dir))
+						return;
+					if(dir == LAYOUT_DIR::UR) {
+						sp.LoadFromFileDataFallback("shunt.png", GetImageData_shunt());
+						return;
+					}
+					return;
 
 				default:
 					break;
@@ -293,6 +394,42 @@ namespace draw {
 					if((sr & SID_reserved) && !(sr & SID_tc_occ)) {
 						sp.ReplaceColour(0xAAAAAA, 0xFFFFFF);
 					}
+					return;
+
+				case SID_signalpost:
+				case SID_signalpostbar:
+					sp.LoadFromSprite((sr & (SID_typemask | SID_dirmask)) | SID_raw_img);
+					if(!(sr & SID_reserved))
+						sp.ReplaceColour(0xFFFFFF, 0xAAAAAA);
+					return;
+
+				case SID_signalroute:
+					sp.LoadFromSprite(SID_signalroute | SID_raw_img);
+					if(sr & SID_signal_red)
+						sp.ReplaceColour(0xFFFFFF, 0xFF0000);
+					else if(sr & SID_signal_yellow)
+						sp.ReplaceColour(0xFFFFFF, 0xFFFF00);
+					else if(sr & SID_signal_green)
+						sp.ReplaceColour(0xFFFFFF, 0x00FF00);
+					else if(sr & SID_signal_blank)
+						sp.ReplaceColour(0xFFFFFF, 0x000000);
+					else
+						sp.ReplaceColour(0xFFFFFF, 0x7F7FFF);
+					return;
+
+				case SID_signalshunt:
+					sp.LoadFromSprite((sr & (SID_typemask | SID_dirmask)) | SID_raw_img);
+					if(sr & SID_shunt_red)
+						sp.ReplaceColour(0xFFFFFF, 0xFF0000);
+					else if(sr & SID_shunt_white) {
+						// do nothing
+					}
+					else if(sr & SID_shunt_grey)
+						sp.ReplaceColour(0xFFFFFF, 0xAAAAAA);
+					else if(sr & SID_signal_blank)
+						sp.ReplaceColour(0xFFFFFF, 0x000000);
+					else
+						sp.ReplaceColour(0xFFFFFF, 0x7F7FFF);
 					return;
 
 				default:

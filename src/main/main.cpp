@@ -75,7 +75,7 @@ bool grassapp::LoadGame(const wxString &base, const wxString &save) {
 
 std::pair<int, int> grassapp::GetSpriteSizes() const {
 	//place-holder values
-	return std::make_pair(10, 20);
+	return std::make_pair(8, 16);
 }
 
 std::shared_ptr<draw::draw_module> grassapp::GetCurrentDrawModule() {
