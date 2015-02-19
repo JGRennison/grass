@@ -103,7 +103,7 @@ void deserialiser_input::PostDeserialisePropCheck(error_collection &ec) const {
 }
 
 deserialiser_input *deserialiser_input::Clone() const {
-	deserialiser_input *out = new deserialiser_input(type, reference_name, json, w, ws, parent);
+	deserialiser_input *out = new deserialiser_input(json, type, reference_name, w, ws, parent);
 	out->seenprops = seenprops;
 	out->objpreparse = objpreparse;
 	out->objpostparse = objpostparse;

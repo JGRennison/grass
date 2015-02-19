@@ -187,7 +187,7 @@ void stdsignal::Deserialise(const deserialiser_input &di, error_collection &ec) 
 		}
 		else if(sddi.json.IsArray()) {
 			for(rapidjson::SizeType i = 0; i < sddi.json.Size(); i++) {
-				acfunc(deserialiser_input(sddi.json[i], MkArrayRefName(i), sddi));
+				acfunc(deserialiser_input(sddi.json[i], "", MkArrayRefName(i), sddi));
 			}
 		}
 		else acfunc(sddi);

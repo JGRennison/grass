@@ -70,7 +70,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 		}
 		else if(sddi.json.IsArray()) {
 			for(rapidjson::SizeType i = 0; i < sddi.json.Size(); i++) {
-				sightingfunc(deserialiser_input(sddi.json[i], MkArrayRefName(i), sddi));
+				sightingfunc(deserialiser_input(sddi.json[i], "", MkArrayRefName(i), sddi));
 			}
 		}
 		else sightingfunc(sddi);
@@ -134,7 +134,7 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 
 		if(subdi.json.IsArray()) {
 			for(rapidjson::SizeType i = 0; i < subdi.json.Size(); i++) {
-				connfunc(deserialiser_input(subdi.json[i], MkArrayRefName(i), subdi));
+				connfunc(deserialiser_input(subdi.json[i], "", MkArrayRefName(i), subdi));
 			}
 		}
 		else connfunc(subdi);

@@ -37,7 +37,7 @@ void world_deserialisation::ParseInputString(const std::string &input, error_col
 	if (dc.Parse<0>(input.c_str()).HasParseError()) {
 		ec.RegisterNewError<error_jsonparse>(input, dc.GetErrorOffset(), dc.GetParseError());
 	}
-	else LoadGame(deserialiser_input("", "[root]", dc, &w, this, 0), ec, flags);
+	else LoadGame(deserialiser_input(dc, "", "[root]", &w, this, nullptr), ec, flags);
 }
 
 void world_deserialisation::LoadGame(const deserialiser_input &di, error_collection &ec, world_deserialisation::WSLOADGAME_FLAGS flags) {
@@ -69,7 +69,7 @@ void world_deserialisation::DeserialiseGameState(error_collection &ec) {
 void world_deserialisation::DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &contentdi, error_collection &ec) {
 	if(contentdi.json.IsArray()) {
 		for(rapidjson::SizeType i = 0; i < contentdi.json.Size(); i++) {
-			deserialiser_input subdi("", MkArrayRefName(i), contentdi.json[i], &w, this, &contentdi);
+			deserialiser_input subdi(contentdi.json[i], "", MkArrayRefName(i), &w, this, &contentdi);
 			if(subdi.json.IsObject()) {
 				subdi.seenprops.reserve(subdi.json.GetMemberCount());
 
@@ -142,7 +142,7 @@ void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &
 
 		auto func = [=](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 			//This is effectively a re-named clone of di
-			deserialiser_input typedefwrapperdi(di.type, "Typedef Wrapper: " + newtype + ", base: " + basetype, di.json, di);
+			deserialiser_input typedefwrapperdi(di.json, di.type, "Typedef Wrapper: " + newtype + ", base: " + basetype, di);
 
 			const deserialiser_input *checkparent = di.parent;
 			do {
@@ -163,7 +163,7 @@ void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &
 			};
 
 			if(content) {
-				deserialiser_input typedefcontentdi(*content, "Typedef Content: " + newtype + " base: " + basetype, typedefwrapperdi);
+				deserialiser_input typedefcontentdi(*content, di.type, "Typedef Content: " + newtype + " base: " + basetype, typedefwrapperdi);
 				/* 1st typedefcontentdi: typedefwrapperdi.objpreparse
 				 * 2nd di preparse:  typedefwrapperdi.objpreparse.objpostparse
 				 * 3rd di: typedefwrapperdi

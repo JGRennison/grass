@@ -172,7 +172,7 @@ void route_common::DeserialiseRouteCommon(const deserialiser_input &subdi, error
 	if(CheckTransJsonValueFlag(routecommonflags, route_restriction::RCF::TORR, subdi, "torr", ec)) routecommonflags |= route_restriction::RCF::TORR_SET;
 	if(CheckTransJsonValueFlag(routecommonflags, route_restriction::RCF::EXITSIGCONTROL, subdi, "exitsignalcontrol", ec)) routecommonflags |= route_restriction::RCF::EXITSIGCONTROL_SET;
 
-	deserialiser_input odi(subdi.json["overlap"], "overlap", subdi);
+	deserialiser_input odi(subdi.json["overlap"], "overlap", "overlap", subdi);
 	if(!odi.json.IsNull()) {
 		subdi.RegisterProp("overlap");
 

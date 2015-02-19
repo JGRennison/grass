@@ -345,7 +345,7 @@ TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserial
 			env.ec.RegisterNewError<error_jsonparse>(json, dc.GetErrorOffset(), dc.GetParseError());
 			FAIL("JSON parsing error: \n" << env.ec);
 		}
-		deserialiser_input di("lookahead", "lookahead", dc, env.w.get());
+		deserialiser_input di(dc, "lookahead", "lookahead", env.w.get());
 		l.Deserialise(di, env.ec);
 		di.PostDeserialisePropCheck(env.ec);
 		if(env.ec.GetErrorCount()) { FAIL("JSON deserialisation error: \n" << env.ec); }
