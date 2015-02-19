@@ -136,7 +136,7 @@ void routingpoint::SetAspectRouteTarget(routingpoint *target) {
 	aspect_route_target = target;
 }
 
-const track_target_ptr& trackroutingpoint::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+generictrack::edge_track_target trackroutingpoint::GetEdgeConnectingPiece(EDGETYPE edgeid) {
 	switch(edgeid) {
 		case EDGE_FRONT:
 			return prev;
@@ -148,7 +148,7 @@ const track_target_ptr& trackroutingpoint::GetEdgeConnectingPiece(EDGETYPE edgei
 	}
 }
 
-const track_target_ptr & trackroutingpoint::GetConnectingPiece(EDGETYPE direction) const {
+generictrack::edge_track_target trackroutingpoint::GetConnectingPiece(EDGETYPE direction) {
 	switch(direction) {
 		case EDGE_FRONT:
 			return next;
@@ -186,7 +186,7 @@ unsigned int trackroutingpoint::GetMaxConnectingPieces(EDGETYPE direction) const
 	return 1;
 }
 
-const track_target_ptr & trackroutingpoint::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
+generictrack::edge_track_target trackroutingpoint::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
 	return GetConnectingPiece(direction);
 }
 
@@ -269,8 +269,8 @@ void genericsignal::UpdateSignalState() {
 	last_state_update = GetWorld().GetGameTime();
 
 	unsigned int previous_aspect = aspect;
-	routingpoint *previous_aspect_target = GetAspectNextTarget();
-	routingpoint *previous_aspect_route_target = GetAspectRouteTarget();
+	const routingpoint *previous_aspect_target = GetAspectNextTarget();
+	const routingpoint *previous_aspect_route_target = GetAspectRouteTarget();
 
 	auto check_aspect_change = [&]() {
 		if(aspect != previous_aspect ||
@@ -617,7 +617,7 @@ ASPECT_FLAGS genericsignal::GetAspectFlags() const {
 	return (sflags & GSF::NONASPECTEDREPEATER) ? ASPECT_FLAGS::MAXNOTBINDING : ASPECT_FLAGS::ZERO;
 }
 
-trackberth *genericsignal::GetPriorBerth(EDGETYPE direction, routingpoint::GPBF flags) const {
+trackberth *genericsignal::GetPriorBerth(EDGETYPE direction, routingpoint::GPBF flags) {
 	if(direction != EDGE_FRONT) return 0;
 	trackberth *berth = 0;
 	EnumerateCurrentBackwardsRoutes([&](const route *rt) {
@@ -885,7 +885,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 	return continue_initing;
 }
 
-const track_target_ptr& startofline::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+generictrack::edge_track_target startofline::GetEdgeConnectingPiece(EDGETYPE edgeid) {
 	switch(edgeid) {
 		case EDGE_FRONT:
 			return connection;
@@ -895,7 +895,7 @@ const track_target_ptr& startofline::GetEdgeConnectingPiece(EDGETYPE edgeid) con
 	}
 }
 
-const track_target_ptr & startofline::GetConnectingPiece(EDGETYPE direction) const {
+generictrack::edge_track_target startofline::GetConnectingPiece(EDGETYPE direction) {
 	switch(direction) {
 		case EDGE_FRONT:
 			return empty_track_target;
@@ -923,7 +923,7 @@ unsigned int startofline::GetMaxConnectingPieces(EDGETYPE direction) const {
 	return 1;
 }
 
-const track_target_ptr & startofline::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
+generictrack::edge_track_target startofline::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
 	return GetConnectingPiece(direction);
 }
 

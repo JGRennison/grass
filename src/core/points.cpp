@@ -62,7 +62,7 @@ genericpoints::PTF genericpoints::SetPointsFlagsMasked(unsigned int points_index
 	return pflags;
 }
 
-const track_target_ptr & points::GetConnectingPiece(EDGETYPE direction) const {
+generictrack::edge_track_target points::GetConnectingPiece(EDGETYPE direction) {
 	if(IsOOC(0)) return empty_track_target;
 
 	bool pointsrev = pflags & PTF::REV;
@@ -94,7 +94,7 @@ unsigned int points::GetMaxConnectingPieces(EDGETYPE direction) const {
 	}
 }
 
-const track_target_ptr & points::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
+generictrack::edge_track_target points::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
 	switch(direction) {
 		case EDGE_PTS_FACE:
 			return index == 1 ? reverse : normal;
@@ -131,7 +131,7 @@ EDGETYPE points::GetReverseDirection(EDGETYPE direction) const {
 	}
 }
 
-const track_target_ptr& points::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+generictrack::edge_track_target points::GetEdgeConnectingPiece(EDGETYPE edgeid) {
 	switch(edgeid) {
 		case EDGE_PTS_FACE:
 			return prev;
@@ -229,7 +229,7 @@ void points::InitSightingDistances() {
 	sighting_distances.emplace_back(EDGE_PTS_REVERSE, SIGHTING_DISTANCE_POINTS);
 }
 
-const track_target_ptr & catchpoints::GetConnectingPiece(EDGETYPE direction) const {
+generictrack::edge_track_target catchpoints::GetConnectingPiece(EDGETYPE direction) {
 	if(IsOOC(0)) return empty_track_target;
 	if(pflags & PTF::REV) return empty_track_target;
 
@@ -256,7 +256,7 @@ unsigned int catchpoints::GetMaxConnectingPieces(EDGETYPE direction) const {
 	}
 }
 
-const track_target_ptr & catchpoints::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
+generictrack::edge_track_target catchpoints::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
 	switch(direction) {
 		case EDGE_FRONT:
 			return next;
@@ -283,7 +283,7 @@ EDGETYPE catchpoints::GetReverseDirection(EDGETYPE direction) const {
 	}
 }
 
-const track_target_ptr& catchpoints::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+generictrack::edge_track_target catchpoints::GetEdgeConnectingPiece(EDGETYPE edgeid) {
 	switch(edgeid) {
 		case EDGE_FRONT:
 			return prev;
@@ -343,7 +343,7 @@ void catchpoints::InitSightingDistances() {
 	sighting_distances.emplace_back(EDGE_FRONT, SIGHTING_DISTANCE_POINTS);
 }
 
-const track_target_ptr & springpoints::GetConnectingPiece(EDGETYPE direction) const {
+generictrack::edge_track_target springpoints::GetConnectingPiece(EDGETYPE direction) {
 	switch(direction) {
 		case EDGE_PTS_FACE:
 			return sendreverse ? reverse : normal;
@@ -375,7 +375,7 @@ EDGETYPE springpoints::GetReverseDirection(EDGETYPE direction) const {
 	}
 }
 
-const track_target_ptr& springpoints::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+generictrack::edge_track_target springpoints::GetEdgeConnectingPiece(EDGETYPE edgeid) {
 	switch(edgeid) {
 		case EDGE_PTS_FACE:
 			return prev;
@@ -418,7 +418,7 @@ void springpoints::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
 	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_PTS_FACE, prev), edgelistitem(EDGE_PTS_NORMAL, normal), edgelistitem(EDGE_PTS_REVERSE, reverse) });
 }
 
-const track_target_ptr & doubleslip::GetConnectingPiece(EDGETYPE direction) const {
+generictrack::edge_track_target doubleslip::GetConnectingPiece(EDGETYPE direction) {
 	EDGETYPE exitdirection = GetReverseDirection(direction);
 
 	if(exitdirection != EDGE_NULL) return GetInputPieceOrEmpty(exitdirection);
@@ -441,7 +441,7 @@ unsigned int doubleslip::GetMaxConnectingPieces(EDGETYPE direction) const {
 	}
 }
 
-const track_target_ptr & doubleslip::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
+generictrack::edge_track_target doubleslip::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
 	genericpoints::PTF pf = GetCurrentPointFlags(direction);
 	bool isrev = (pf & PTF::FIXED) ? static_cast<bool>(pf & PTF::REV) : index != 0;
 
@@ -469,8 +469,8 @@ EDGETYPE doubleslip::GetReverseDirection(EDGETYPE direction) const {
 	else return EDGE_NULL;
 }
 
-const track_target_ptr& doubleslip::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
-	const track_target_ptr *ttp = GetInputPiece(edgeid);
+generictrack::edge_track_target doubleslip::GetEdgeConnectingPiece(EDGETYPE edgeid) {
+	track_target_ptr *ttp = GetInputPiece(edgeid);
 	if(ttp) return *ttp;
 	else {
 		assert(false);

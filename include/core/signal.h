@@ -88,9 +88,9 @@ class routingpoint : public genericzlentrack {
 
 	inline unsigned int GetAspect() const { return aspect; }
 	inline unsigned int GetReservedAspect() const { return reserved_aspect; }   //this includes approach locking aspects
-	inline routingpoint *GetAspectNextTarget() const { return aspect_target; }
-	inline routingpoint *GetAspectRouteTarget() const { return aspect_route_target; }
-	inline routingpoint *GetAspectBackwardsDependency() const { return aspect_backwards_dependency; }
+	inline const routingpoint *GetAspectNextTarget() const { return aspect_target; }
+	inline const routingpoint *GetAspectRouteTarget() const { return aspect_route_target; }
+	inline const routingpoint *GetAspectBackwardsDependency() const { return aspect_backwards_dependency; }
 	inline route_class::ID GetAspectType() const { return aspect_type; }
 	virtual ASPECT_FLAGS GetAspectFlags() const { return ASPECT_FLAGS::ZERO; }
 	virtual void UpdateRoutingPoint() { }
@@ -107,7 +107,10 @@ class routingpoint : public genericzlentrack {
 		ZERO            = 0,
 		GETNONEMPTY     = 1<<0,
 	};
-	virtual trackberth *GetPriorBerth(EDGETYPE direction, GPBF flags) const { return 0; }
+	virtual trackberth *GetPriorBerth(EDGETYPE direction, GPBF flags) { return nullptr; }
+	inline const trackberth *GetPriorBerth(EDGETYPE direction, GPBF flags) const {
+		return const_cast<routingpoint*>(this)->GetPriorBerth(direction, flags);
+	}
 
 	struct gmr_routeitem {
 		const route *rt;
@@ -142,10 +145,10 @@ class trackroutingpoint : public routingpoint {
 	public:
 	trackroutingpoint(world &w_) : routingpoint(w_) { }
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
-	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	virtual const edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
+	virtual const edge_track_target GetConnectingPiece(EDGETYPE direction) override;
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
-	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
+	virtual const edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
 	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
@@ -206,7 +209,7 @@ class genericsignal : public trackroutingpoint {
 	virtual const route *GetCurrentForwardOverlap() const;                                          //this will only return the overlap, not the "real" route
 	virtual void EnumerateCurrentBackwardsRoutes(std::function<void (const route *)> func) const;   //this will return all routes which currently terminate here
 	virtual bool RepeaterAspectMeaningfulForRouteType(route_class::ID type) const;
-	virtual trackberth *GetPriorBerth(EDGETYPE direction, GPBF flags) const override;
+	virtual trackberth *GetPriorBerth(EDGETYPE direction, GPBF flags) override;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
@@ -300,10 +303,10 @@ class startofline : public routingpoint {
 	public:
 	startofline(world &w_) : routingpoint(w_) { availableroutetypes.end |= route_class::AllNonOverlaps(); }
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
-	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	virtual const edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
+	virtual const edge_track_target GetConnectingPiece(EDGETYPE direction) override;
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
-	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
+	virtual const edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
 	virtual GTF GetFlags(EDGETYPE direction) const override;

@@ -237,7 +237,7 @@ namespace draw {
 
 			return [points, ts, obj](const draw_engine &eng, guilayout::world_layout &layout) {
 				draw::sprite_ref extras = 0;
-				track_circuit *tc = ts->GetTrackCircuit();
+				const track_circuit *tc = ts->GetTrackCircuit();
 				if(tc && tc->Occupied()) extras |= SID_tc_occ;
 				reservationcountset rcs;
 				ts->ReservationTypeCount(rcs);

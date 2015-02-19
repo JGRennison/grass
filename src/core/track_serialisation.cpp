@@ -500,7 +500,7 @@ template<> void track_target_ptr::Serialise(const std::string &name, serialiser_
 	if(!name.empty()) so.json_out.EndObject();
 }
 
-void track_location::Deserialise(const std::string &name, const deserialiser_input &di, error_collection &ec) {
+template<> void track_location::Deserialise(const std::string &name, const deserialiser_input &di, error_collection &ec) {
 	auto parse = [&](const deserialiser_input &edi, error_collection &ec) {
 		trackpiece.Deserialise("", edi, ec);
 		CheckTransJsonValueDef(offset, edi, "offset", 0, ec);
@@ -514,7 +514,7 @@ void track_location::Deserialise(const std::string &name, const deserialiser_inp
 	}
 }
 
-void track_location::Serialise(const std::string &name, serialiser_output &so, error_collection &ec) const {
+template<> void track_location::Serialise(const std::string &name, serialiser_output &so, error_collection &ec) const {
 	if(!name.empty()) {
 		so.json_out.String(name);
 		so.json_out.StartObject();

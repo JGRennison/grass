@@ -109,11 +109,11 @@ class points : public genericpoints {
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
 
-	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	virtual const edge_track_target GetConnectingPiece(EDGETYPE direction) override;
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
+	virtual const edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
-	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
+	virtual const edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override;
 	virtual unsigned int GetCurrentNominalConnectionIndex(EDGETYPE direction) const override;
 
 	virtual std::string GetTypeName() const override { return "Points"; }
@@ -154,11 +154,11 @@ class catchpoints : public genericpoints {
 	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
 
-	const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	const edge_track_target GetConnectingPiece(EDGETYPE direction) override;
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
+	virtual const edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
-	const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
+	const edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override;
 
 	virtual std::string GetTypeName() const override { return "Catch Points"; }
 
@@ -189,15 +189,15 @@ class springpoints : public genericzlentrack {
 	virtual void TrainEnter(EDGETYPE direction, train *t) override { }
 	virtual void TrainLeave(EDGETYPE direction, train *t) override { }
 
-	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	virtual const edge_track_target GetConnectingPiece(EDGETYPE direction) override;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual GTF GetFlags(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
 
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
+	virtual const edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
-	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override { return GetConnectingPiece(direction); }
+	virtual const edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override { return GetConnectingPiece(direction); }
 
 	virtual std::string GetTypeName() const override { return "Spring Points"; }
 
@@ -303,10 +303,9 @@ class doubleslip : public genericpoints {
 
 	public:
 	inline track_target_ptr *GetInputPiece(EDGETYPE direction) { return const_cast<track_target_ptr *>(GetInputPieceIntl(direction)); }
-	inline const track_target_ptr *GetInputPiece(EDGETYPE direction) const { return GetInputPieceIntl(direction); }
 
-	inline const track_target_ptr &GetInputPieceOrEmpty(EDGETYPE direction) const {
-		const track_target_ptr *piece = GetInputPiece(direction);
+	inline generictrack::edge_track_target GetInputPieceOrEmpty(EDGETYPE direction) {
+		track_target_ptr *piece = GetInputPiece(direction);
 		if(piece) return *piece;
 		else return empty_track_target;
 	}
@@ -314,14 +313,14 @@ class doubleslip : public genericpoints {
 	public:
 	doubleslip(world &w_) : genericpoints(w_), dsflags(DSF::ZERO) { InitSightingDistances(); }
 
-	virtual const track_target_ptr & GetConnectingPiece(EDGETYPE direction) const override;
+	virtual const edge_track_target GetConnectingPiece(EDGETYPE direction) override;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_DS_FL; }
 
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual const track_target_ptr & GetEdgeConnectingPiece(EDGETYPE edgeid) const override;
+	virtual const edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
-	virtual const track_target_ptr & GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const override;
+	virtual const edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override;
 	virtual unsigned int GetCurrentNominalConnectionIndex(EDGETYPE direction) const override;
 	virtual std::string GetTypeName() const  override{ return "Double Slip Points"; }
 

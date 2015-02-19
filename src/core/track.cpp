@@ -27,8 +27,8 @@
 #include <cstring>
 #include <initializer_list>
 
-const track_location empty_track_location;
-const track_target_ptr empty_track_target;
+track_location empty_track_location;
+track_target_ptr empty_track_target;
 
 unsigned int speedrestrictionset::GetTrackSpeedLimitByClass(const std::string &speedclass, unsigned int default_max) const {
 	for(auto it = speeds.begin(); it != speeds.end(); ++it) {
@@ -206,7 +206,7 @@ void trackseg::TrainLeave(EDGETYPE direction, train *t) {
 	if(speeds) t->RemoveCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
 }
 
-const track_target_ptr& trackseg::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+generictrack::edge_track_target trackseg::GetEdgeConnectingPiece(EDGETYPE edgeid) {
 	switch(edgeid) {
 		case EDGE_FRONT:
 			return prev;
@@ -218,7 +218,7 @@ const track_target_ptr& trackseg::GetEdgeConnectingPiece(EDGETYPE edgeid) const 
 	}
 }
 
-const track_target_ptr & trackseg::GetConnectingPiece(EDGETYPE direction) const {
+generictrack::edge_track_target trackseg::GetConnectingPiece(EDGETYPE direction) {
 	switch(direction) {
 		case EDGE_FRONT:
 			return next;
@@ -233,7 +233,8 @@ const track_target_ptr & trackseg::GetConnectingPiece(EDGETYPE direction) const 
 unsigned int trackseg::GetMaxConnectingPieces(EDGETYPE direction) const {
 	return 1;
 }
-const track_target_ptr & trackseg::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) const {
+
+generictrack::edge_track_target trackseg::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
 	return GetConnectingPiece(direction);
 }
 
@@ -393,7 +394,7 @@ unsigned int genericzlentrack::GetLength(EDGETYPE direction) const {
 	return 0;
 }
 
-const track_target_ptr & crossover::GetConnectingPiece(EDGETYPE direction) const {
+generictrack::edge_track_target crossover::GetConnectingPiece(EDGETYPE direction) {
 	switch(direction) {
 		case EDGE_X_LEFT:
 			return left;
@@ -429,7 +430,7 @@ EDGETYPE crossover::GetReverseDirection(EDGETYPE direction) const {
 	}
 }
 
-const track_target_ptr& crossover::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+generictrack::edge_track_target crossover::GetEdgeConnectingPiece(EDGETYPE edgeid) {
 	switch(edgeid) {
 		case EDGE_X_LEFT:
 			return left;
