@@ -76,13 +76,18 @@ static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int
 void track_train_counter_block::TrainEnter(train *t) {
 	bool prevoccupied = Occupied();
 	traincount++;
-	for(auto it = occupying_trains.begin(); it != occupying_trains.end(); ++it) {
-		if(it->t == t) {
-			it->count++;
+
+	bool added = false;
+	for(auto &it : occupying_trains) {
+		if(it.t == t) {
+			it.count++;
+			added = true;
 			break;
 		}
 	}
-	occupying_trains.emplace_back(t, 1);
+	if(!added)
+		occupying_trains.emplace_back(t, 1);
+
 	if(prevoccupied != Occupied()) {
 		last_change = GetWorld().GetGameTime();
 		OccupationStateChangeTrigger();
