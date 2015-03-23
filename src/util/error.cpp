@@ -33,8 +33,8 @@ unsigned int error_collection::GetErrorCount() const {
 
 void error_collection::StreamOut(std::ostream& os) const {
 	os << "Errors: " << errors.size() << "\n";
-	for(auto it=errors.begin(); it!=errors.end(); ++it) {
-		const error_obj& obj = **it;
+	for(auto &it : errors) {
+		const error_obj& obj = *it;
 		os << obj;
 	}
 }
@@ -45,7 +45,7 @@ void error_obj::StreamOut(std::ostream& os) const {
 
 error_obj::error_obj() {
 	millitimestamp = GetMilliTime();
-	timestamp = time(0);
+	timestamp = time(nullptr);
 	msg << gr_strftime(string_format("[%%F %%T.%03d %%z] Error: ", millitimestamp), localtime(&timestamp), timestamp, true);
 }
 

@@ -41,11 +41,13 @@ struct test_fixture_world {
 			: w(new world_test), ws(new world_deserialisation(*w)) { }
 
 	public:
-	test_fixture_world(std::string input) : test_fixture_world() {
+	test_fixture_world(std::string input)
+			: test_fixture_world() {
 		ws->ParseInputString(input, ec);
 		orig_input = std::move(input);
 	}
-	test_fixture_world(std::string input, std::string input_gamestate) : test_fixture_world() {
+	test_fixture_world(std::string input, std::string input_gamestate)
+			: test_fixture_world() {
 		ws->ParseInputString(input, ec, world_deserialisation::WSLOADGAME_FLAGS::NOGAMESTATE);
 		ws->ParseInputString(input_gamestate, ec, world_deserialisation::WSLOADGAME_FLAGS::NOCONTENT);
 		orig_input = std::move(input);
@@ -55,9 +57,12 @@ struct test_fixture_world {
 
 struct test_fixture_world_init_checked : public test_fixture_world {
 	void Init(bool pli, bool gs, bool li) {
-		if(li) w->LayoutInit(ec);
-		if(pli) w->PostLayoutInit(ec);
-		if(gs) ws->DeserialiseGameState(ec);
+		if(li)
+			w->LayoutInit(ec);
+		if(pli)
+			w->PostLayoutInit(ec);
+		if(gs)
+			ws->DeserialiseGameState(ec);
 
 		if(ec.GetErrorCount()) {
 			FAIL("Error Collection: " << ec);
@@ -65,7 +70,8 @@ struct test_fixture_world_init_checked : public test_fixture_world {
 	}
 
 	//! Loads everything from one string, also combined with a call to Init
-	test_fixture_world_init_checked(std::string input, bool pli = true, bool gs = false, bool li = true) : test_fixture_world(input) {
+	test_fixture_world_init_checked(std::string input, bool pli = true, bool gs = false, bool li = true)
+			: test_fixture_world(input) {
 		Init(pli, gs, li);
 	}
 
@@ -87,9 +93,10 @@ inline std::string SerialiseGameState(const test_fixture_world &tfw) {
 
 //! This clones a test_fixture_world using a gamestate serialisation round-trip, and the original content json
 //! This uses the same layout/post layout init settings as the original
-inline test_fixture_world_init_checked RoundTripCloneTestFixtureWorld(const test_fixture_world &tfw, info_rescoped_generic *msgtarg = 0) {
+inline test_fixture_world_init_checked RoundTripCloneTestFixtureWorld(const test_fixture_world &tfw, info_rescoped_generic *msgtarg = nullptr) {
 	info_rescoped_unique msgtarg_local;
-	if(!msgtarg) msgtarg = &msgtarg_local;
+	if(!msgtarg)
+		msgtarg = &msgtarg_local;
 	auto wflags = tfw.w->GetWFlags();
 
 	std::string gamestate = SerialiseGameState(tfw);

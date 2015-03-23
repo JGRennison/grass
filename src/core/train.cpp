@@ -40,7 +40,8 @@ inline int CalcGravityForce(unsigned int total_mass, int elevationdecrease, unsi
 }
 
 inline int CalcDrag(unsigned int drag_const, unsigned int drag_v, unsigned int drag_v_2, unsigned int v) {
-	return drag_const + (((uint64_t) v) * ((uint64_t) drag_v)) / ((uint64_t) 1000) + (((uint64_t) v) * ((uint64_t) v) * ((uint64_t) drag_v_2)) / ((uint64_t) 1000000);
+	return drag_const + (((uint64_t) v) * ((uint64_t) drag_v)) / ((uint64_t) 1000)
+			+ (((uint64_t) v) * ((uint64_t) v) * ((uint64_t) drag_v_2)) / ((uint64_t) 1000000);
 }
 
 // returns true if need for speed control
@@ -58,7 +59,8 @@ bool CheckCalculateProjectedBrakingSpeed(unsigned int brake_deceleration, unsign
 	// v^2 = u^2 + 2as
 	// (2000 * (m/(s^2) << 8) * mm) >> 8 --> 2000 * m/(s^2) * mm --> 2 * mm/(s^2) * mm --> 2 * (mm/s)^2
 	uint64_t vsq = ((((uint64_t) 2000) * ((uint64_t) brake_deceleration) * ((uint64_t) target_distance)) >> 8);
-	if(target_speed) vsq += (((uint64_t) target_speed) * ((uint64_t) target_speed));
+	if(target_speed)
+		vsq += (((uint64_t) target_speed) * ((uint64_t) target_speed));
 
 	displacement_limit = UINT_MAX;
 
@@ -69,7 +71,8 @@ bool CheckCalculateProjectedBrakingSpeed(unsigned int brake_deceleration, unsign
 		brake_speed = brake_threshold_speed;    // Below the brake threshold speed, assume stopping distance is zero
 		if(target_speed == 0) {
 			displacement_limit = target_distance;
-			if(target_distance == 0) brake_speed = 0;
+			if(target_distance == 0)
+				brake_speed = 0;
 		}
 		return true;
 	}
@@ -80,7 +83,8 @@ bool CheckCalculateProjectedBrakingSpeed(unsigned int brake_deceleration, unsign
 }
 
 void train::TrainTimeStep(unsigned int ms) {
-	if(!train_segments.empty()) TrainMoveStep(ms);
+	if(!train_segments.empty())
+		TrainMoveStep(ms);
 }
 
 void train::TrainMoveStep(unsigned int ms) {
@@ -90,7 +94,8 @@ void train::TrainMoveStep(unsigned int ms) {
 	int current_max_tractive_force = total_tractive_force;
 	if(current_speed) {    //don't do this check if stationary, divide by zero issue...
 		int speed_limited_tractive_force = 1000 * total_tractive_power / current_speed; // 1000 * W / (mm/s) -> N
-		if(speed_limited_tractive_force < current_max_tractive_force) current_max_tractive_force = speed_limited_tractive_force;
+		if(speed_limited_tractive_force < current_max_tractive_force)
+			current_max_tractive_force = speed_limited_tractive_force;
 	}
 
 	int current_max_braking_force = total_braking_force;
@@ -115,8 +120,10 @@ void train::TrainMoveStep(unsigned int ms) {
 		unsigned int brake_speed;
 		unsigned int local_displacement_limit;
 		if(CheckCalculateProjectedBrakingSpeed(-min_acceleration, speed, target_speed, CREEP_SPEED, distance, brake_speed, local_displacement_limit)) {
-			if((int) brake_speed < target_speed) target_speed = brake_speed;
-			if(displacement_limit > local_displacement_limit) displacement_limit = local_displacement_limit;
+			if((int) brake_speed < target_speed)
+				target_speed = brake_speed;
+			if(displacement_limit > local_displacement_limit)
+				displacement_limit = local_displacement_limit;
 		}
 	};
 
@@ -157,12 +164,17 @@ void train::TrainMoveStep(unsigned int ms) {
 	current_speed = std::max(std::min(max_new_speed, target_speed), min_new_speed);
 
 	unsigned int displacement = (ms * (current_speed + prev_speed)) / 2000;
-	if(displacement > displacement_limit) displacement = displacement_limit;
+	if(displacement > displacement_limit)
+		displacement = displacement_limit;
 
 	int head_elevationdelta, tail_elevationdelta;
 
-	AdvanceDisplacement(displacement, head_pos, &head_elevationdelta, [this](track_location &old_track, track_location &new_track) { new_track.GetTrack()->TrainEnter(new_track.GetDirection(), this); });
-	AdvanceDisplacement(displacement, tail_pos, &tail_elevationdelta, [this](track_location &old_track, track_location &new_track) { old_track.GetTrack()->TrainLeave(old_track.GetDirection(), this); });
+	AdvanceDisplacement(displacement, head_pos, &head_elevationdelta, [this](track_location &old_track, track_location &new_track) {
+		new_track.GetTrack()->TrainEnter(new_track.GetDirection(), this);
+	});
+	AdvanceDisplacement(displacement, tail_pos, &tail_elevationdelta, [this](track_location &old_track, track_location &new_track) {
+		old_track.GetTrack()->TrainLeave(old_track.GetDirection(), this);
+	});
 	head_relative_height += head_elevationdelta;
 	tail_relative_height += tail_elevationdelta;
 	la.Advance(displacement);
@@ -199,7 +211,8 @@ void train::CalculateTrainMotionProperties(unsigned int weatherfactor_shl8) {
 			total_tractive_power += it->vehtype->tractive_power * it->veh_multiplier;
 		}
 
-		if(it == train_segments.begin() || veh_max_speed > it->vehtype->max_speed) veh_max_speed = it->vehtype->max_speed;
+		if(it == train_segments.begin() || veh_max_speed > it->vehtype->max_speed)
+			veh_max_speed = it->vehtype->max_speed;
 
 	}
 	total_drag_v2 += train_segments.front().vehtype->face_drag_v2;
@@ -207,10 +220,11 @@ void train::CalculateTrainMotionProperties(unsigned int weatherfactor_shl8) {
 }
 
 void train::AddCoveredTrackSpeedLimit(unsigned int speed) {
-	if(speed >= veh_max_speed) return;
-	for(auto it = covered_track_speed_limits.begin(); it != covered_track_speed_limits.end(); ++it) {
-		if(it->speed == speed) {
-			it->count++;
+	if(speed >= veh_max_speed)
+		return;
+	for(auto &it : covered_track_speed_limits) {
+		if(it.speed == speed) {
+			it.count++;
 			return;
 		}
 	}
@@ -218,7 +232,8 @@ void train::AddCoveredTrackSpeedLimit(unsigned int speed) {
 	CalculateCoveredTrackSpeedLimit();
 }
 void train::RemoveCoveredTrackSpeedLimit(unsigned int speed) {
-	if(speed >= veh_max_speed) return;
+	if(speed >= veh_max_speed)
+		return;
 	auto prev_it = covered_track_speed_limits.before_begin();
 	auto it = prev_it;
 	++it;
@@ -237,7 +252,8 @@ void train::RemoveCoveredTrackSpeedLimit(unsigned int speed) {
 void train::CalculateCoveredTrackSpeedLimit() {
 	current_max_speed = veh_max_speed;
 	for(auto it = covered_track_speed_limits.begin(); it != covered_track_speed_limits.begin(); ++it) {
-		if(it->speed < current_max_speed) current_max_speed = it->speed;
+		if(it->speed < current_max_speed)
+			current_max_speed = it->speed;
 	}
 }
 
@@ -267,7 +283,8 @@ void train::RefreshCoveredTrackSpeedLimits() {
 
 	auto func = [this](track_location &old_track, track_location &new_track) {
 		const speedrestrictionset *speeds = new_track.GetTrack()->GetSpeedRestrictions();
-		if(speeds) this->AddCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(this));
+		if(speeds)
+			this->AddCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(this));
 	};
 
 	track_location temp;
@@ -358,5 +375,7 @@ void train_unit::CalculateSegmentMass() {
 		unsigned int unit_mass = (stflags & STF::FULL) ? vehtype->fullmass : vehtype->emptymass;
 		segment_total_mass = unit_mass * veh_multiplier;
 	}
-	else segment_total_mass = 0;
+	else {
+		segment_total_mass = 0;
+	}
 }

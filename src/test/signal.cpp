@@ -71,87 +71,93 @@ TEST_CASE( "signal/deserialisation/general", "Test basic signal and routing dese
 	const route_class::set overlapset = route_class::Flag(route_class::RTC_OVERLAP);
 
 	startofline *a = dynamic_cast<startofline *>(env.w->FindTrackByName("A"));
-	REQUIRE(a != 0);
+	REQUIRE(a != nullptr);
 	CHECK(a->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(0, 0, route_class::AllNonOverlaps()));
 	CHECK(a->GetAvailableRouteTypes(EDGE_BACK) == RPRT());
 	CHECK(a->GetSetRouteTypes(EDGE_FRONT) == RPRT());
 	CHECK(a->GetSetRouteTypes(EDGE_BACK) == RPRT());
 
 	routesignal *s1 = dynamic_cast<routesignal *>(env.w->FindTrackByName("S1"));
-	REQUIRE(s1 != 0);
+	REQUIRE(s1 != nullptr);
 	CHECK(s1->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(shuntset | routeset | route_class::AllOverlaps(), 0, shuntset | routeset));
 	CHECK(s1->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::AllNonOverlaps(), 0));
 	CHECK(s1->GetSetRouteTypes(EDGE_FRONT) == RPRT());
 	CHECK(s1->GetSetRouteTypes(EDGE_BACK) == RPRT());
 
 	routingmarker *rm = dynamic_cast<routingmarker *>(env.w->FindTrackByName("#4"));
-	REQUIRE(rm != 0);
+	REQUIRE(rm != nullptr);
 	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(0, route_class::All(), overlapset));
 	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All(), 0));
 	CHECK(rm->GetSetRouteTypes(EDGE_FRONT) == RPRT());
 	CHECK(rm->GetSetRouteTypes(EDGE_BACK) == RPRT());
 
 	routesignal *s3 = dynamic_cast<routesignal *>(env.w->FindTrackByName("S3"));
-	REQUIRE(s3 != 0);
+	REQUIRE(s3 != nullptr);
 	CHECK(s3->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(shuntset | route_class::AllOverlaps(), 0, shuntset));
 	CHECK(s3->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::AllNonOverlaps(), 0));
 	CHECK(s3->GetSetRouteTypes(EDGE_FRONT) == RPRT());
 	CHECK(s3->GetSetRouteTypes(EDGE_BACK) == RPRT());
 
 	routingmarker *rm2 = dynamic_cast<routingmarker *>(env.w->FindTrackByName("#13"));
-	REQUIRE(rm2 != 0);
+	REQUIRE(rm2 != nullptr);
 	CHECK(rm2->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(0, route_class::All(), overlapset));
 	CHECK(rm2->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All() & ~routeset, 0));
 	CHECK(rm2->GetSetRouteTypes(EDGE_FRONT) == RPRT());
 	CHECK(rm2->GetSetRouteTypes(EDGE_BACK) == RPRT());
 
 	routesignal *s2 = dynamic_cast<routesignal *>(env.w->FindTrackByName("S2"));
-	REQUIRE(s2 != 0);
+	REQUIRE(s2 != nullptr);
 	CHECK(s2->GetRouteRestrictions().GetRestrictionCount() == 1);
 }
 
 TEST_CASE( "signal/routing/general", "Test basic signal and routing connectivity and route creation" ) {
 	test_fixture_world env(track_test_str_1);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if(env.ec.GetErrorCount()) {
+		WARN("Error Collection: " << env.ec);
+	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	env.w->LayoutInit(env.ec);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if(env.ec.GetErrorCount()) {
+		WARN("Error Collection: " << env.ec);
+	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	env.w->PostLayoutInit(env.ec);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if(env.ec.GetErrorCount()) {
+		WARN("Error Collection: " << env.ec);
+	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	routesignal *s1 = dynamic_cast<routesignal *>(env.w->FindTrackByName("S1"));
-	REQUIRE(s1 != 0);
+	REQUIRE(s1 != nullptr);
 	routesignal *s2 = dynamic_cast<routesignal *>(env.w->FindTrackByName("S2"));
-	REQUIRE(s2 != 0);
+	REQUIRE(s2 != nullptr);
 	routesignal *s3 = dynamic_cast<routesignal *>(env.w->FindTrackByName("S3"));
-	REQUIRE(s3 != 0);
+	REQUIRE(s3 != nullptr);
 	routesignal *s4 = dynamic_cast<routesignal *>(env.w->FindTrackByName("S4"));
-	REQUIRE(s4 != 0);
+	REQUIRE(s4 != nullptr);
 	autosignal *s5 = dynamic_cast<autosignal *>(env.w->FindTrackByName("S5"));
-	REQUIRE(s5 != 0);
+	REQUIRE(s5 != nullptr);
 	routesignal *s6 = dynamic_cast<routesignal *>(env.w->FindTrackByName("S6"));
-	REQUIRE(s6 != 0);
+	REQUIRE(s6 != nullptr);
 
 	startofline *a = dynamic_cast<startofline *>(env.w->FindTrackByName("A"));
-	REQUIRE(a != 0);
+	REQUIRE(a != nullptr);
 	startofline *b = dynamic_cast<startofline *>(env.w->FindTrackByName("B"));
-	REQUIRE(b != 0);
+	REQUIRE(b != nullptr);
 	startofline *c = dynamic_cast<startofline *>(env.w->FindTrackByName("C"));
-	REQUIRE(c != 0);
+	REQUIRE(c != nullptr);
 	startofline *d = dynamic_cast<startofline *>(env.w->FindTrackByName("D"));
-	REQUIRE(d != 0);
+	REQUIRE(d != nullptr);
 	startofline *e = dynamic_cast<startofline *>(env.w->FindTrackByName("E"));
-	REQUIRE(e != 0);
+	REQUIRE(e != nullptr);
 
 	auto s5check = [&](unsigned int index, route_class::ID type) {
-		REQUIRE(s5->GetRouteByIndex(index) != 0);
+		REQUIRE(s5->GetRouteByIndex(index) != nullptr);
 		CHECK(s5->GetRouteByIndex(index)->type == type);
 		CHECK(s5->GetRouteByIndex(index)->end == vartrack_target_ptr<routingpoint>(s4, EDGE_FRONT));
 		CHECK(s5->GetRouteByIndex(index)->pieces.size() == 1);
@@ -211,7 +217,8 @@ TEST_CASE( "signal/routing/general", "Test basic signal and routing connectivity
 
 		unsigned int overlapcount = 0;
 		auto callback = [&](const route *r) {
-			if(route_class::IsOverlap(r->type)) overlapcount++;
+			if(route_class::IsOverlap(r->type))
+				overlapcount++;
 		};
 		s->EnumerateRoutes(callback);
 		CHECK(overlapcount == 1);
@@ -258,7 +265,7 @@ R"({ "content" : [ )"
 
 std::function<void(routingpoint *, unsigned int, route_class::ID, routingpoint *, routingpoint *)> makechecksignal(world &w) {
 	return [&w](routingpoint *signal, unsigned int aspect, route_class::ID aspect_type, routingpoint *aspect_target, routingpoint *aspect_route_target) {
-		REQUIRE(signal != 0);
+		REQUIRE(signal != nullptr);
 		INFO("Signal check for: " << signal->GetName() << ", at time: " << w.GetGameTime());
 
 		CHECK(signal->GetAspect() == aspect);
@@ -431,7 +438,7 @@ TEST_CASE( "signal/routesignal/reserveaction", "Test basic routesignal reservati
 
 	routecount = tenv.s6->GetMatchingRoutes(out, tenv.b, route_class::All());
 	REQUIRE(routecount == 1);
-	REQUIRE(out[0].rt != 0);
+	REQUIRE(out[0].rt != nullptr);
 	env.w->SubmitAction(action_reservetrack(*(env.w), *(out[0].rt)));
 
 	env.w->GameStep(1);
@@ -599,7 +606,7 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 
 	//timing
 
-	tenv.s6->EnumerateFutures([&](const future &f){
+	tenv.s6->EnumerateFutures([&](const future &f) {
 		CHECK(f.GetTriggerTime() > 45000);
 		CHECK(f.GetTriggerTime() < 45100);
 		CHECK(f.GetTypeSerialisationName() == "future_action_wrapper");
@@ -713,7 +720,7 @@ TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
 	auto overlapparamcheck = [&](genericsignal *s, world_time timeout) {
 		INFO("Overlap parameter check for signal: " << s->GetName());
 		const route *ovlp = s->GetCurrentForwardOverlap();
-		REQUIRE(ovlp != 0);
+		REQUIRE(ovlp != nullptr);
 		CHECK(ovlp->overlap_timeout == timeout);
 	};
 	overlapparamcheck(tenv.s4, 90000);
@@ -737,10 +744,10 @@ TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
 		INFO("Overlap check for signal: " << s->GetName() << ", at time: " << env.w->GetGameTime());
 		const route *ovlp = s->GetCurrentForwardOverlap();
 		if(exists) {
-			CHECK(ovlp != 0);
+			CHECK(ovlp != nullptr);
 		}
 		else {
-			CHECK(ovlp == 0);
+			CHECK(ovlp == nullptr);
 		}
 	};
 
@@ -829,17 +836,17 @@ TEST_CASE( "signal/overlap/tracktrigger/timeout", "Test overlap timeouts for tri
 
 	env.w->GameStep(100000);
 	env.w->GameStep(100000);
-	CHECK(s2->GetCurrentForwardOverlap() != 0);
+	CHECK(s2->GetCurrentForwardOverlap() != nullptr);
 
 	env.w->track_triggers.FindOrMakeByName("TT1")->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 	env.w->GameStep(1);
 	CHECK((s2->GetSignalFlags() & GSF::OVERLAPTIMEOUTSTARTED) == GSF::OVERLAPTIMEOUTSTARTED);
 
 	env.w->GameStep(89998);
-	CHECK(s2->GetCurrentForwardOverlap() != 0);
+	CHECK(s2->GetCurrentForwardOverlap() != nullptr);
 	env.w->GameStep(4);
 	env.w->GameStep(4);
-	CHECK(s2->GetCurrentForwardOverlap() == 0);
+	CHECK(s2->GetCurrentForwardOverlap() == nullptr);
 }
 
 TEST_CASE( "signal/deserialisation/flagchecks", "Test signal/route flags contradiction detection and sanity checks" ) {
@@ -1173,7 +1180,7 @@ TEST_CASE( "signal/callon/general", "Test call-on routes" ) {
 	env.w->GameStep(1);
 
 	CHECK(env.w->GetLogText() == "");
-	REQUIRE(s2->GetCurrentForwardRoute() != 0);
+	REQUIRE(s2->GetCurrentForwardRoute() != nullptr);
 	CHECK(s2->GetCurrentForwardRoute()->type == route_class::RTC_CALLON);
 
 	checkaspects(1, route_class::RTC_ROUTE, 0, route_class::RTC_NULL, 0, route_class::RTC_NULL);
@@ -1235,7 +1242,7 @@ TEST_CASE( "signal/overlap/nooverlapflag", "Test signal no overlap flag" ) {
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
 
-	CHECK(s2->GetCurrentForwardOverlap() == 0);
+	CHECK(s2->GetCurrentForwardOverlap() == nullptr);
 }
 
 TEST_CASE( "signal/overlap/missingoverlap", "Test that a missing overlap triggers an error" ) {
@@ -1571,9 +1578,13 @@ void SignalAspectTest(std::string allowed_aspects, aspect_mask_type expected_mas
 				);
 				aspectstr = default_aspectstr;
 			}
-			else aspectstr = param_aspectstr;
+			else {
+				aspectstr = param_aspectstr;
+			}
 		}
-		else aspectstr = default_aspectstr;
+		else {
+			aspectstr = default_aspectstr;
+		}
 
 		content += string_format(
 			R"({ "type" : "autosignal", "name" : "S%d", "routesignal" : true %s }, )"

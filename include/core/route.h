@@ -44,19 +44,23 @@ typedef uint32_t aspect_mask_type; // This is a bitmask for aspects: 0 (LSB) to 
 const unsigned int ASPECT_MAX = 31;
 
 inline bool aspect_in_mask(aspect_mask_type mask, unsigned int aspect) {
-	if(aspect > ASPECT_MAX) return false;
-	else return mask & (1 << aspect);
+	if(aspect > ASPECT_MAX)
+		return false;
+	else
+		return mask & (1 << aspect);
 }
 
 inline bool is_higher_aspect_in_mask(aspect_mask_type mask, unsigned int aspect) {
-	if(aspect >= ASPECT_MAX) return false;
-	else return mask & ((~1) << aspect);
+	if(aspect >= ASPECT_MAX)
+		return false;
+	else
+		return mask & ((~1) << aspect);
 }
 
 struct berth_record {
-	trackberth *berth = 0;
-	generictrack *ownertrack = 0;
-	berth_record(trackberth *b, generictrack *o = 0) : berth(b), ownertrack(o) {}
+	trackberth *berth = nullptr;
+	generictrack *ownertrack = nullptr;
+	berth_record(trackberth *b, generictrack *o = nullptr) : berth(b), ownertrack(o) {}
 };
 typedef std::vector<berth_record> berth_list;
 
@@ -79,8 +83,8 @@ struct route_common {
 	};
 	std::vector<conditional_aspect_mask> conditional_aspect_masks;
 
-	track_train_counter_block *approachcontrol_trigger = 0;
-	track_train_counter_block *overlaptimeout_trigger = 0;
+	track_train_counter_block *approachcontrol_trigger = nullptr;
+	track_train_counter_block *overlaptimeout_trigger = nullptr;
 
 	enum class RCF {
 		ZERO                        = 0,
@@ -153,13 +157,13 @@ struct route  : public route_common {
 	berth_list berths;
 	route_class::ID type;
 
-	routingpoint *parent = 0;
+	routingpoint *parent = nullptr;
 	unsigned int index  = 0;
 
 	route() : type(route_class::RTC_NULL) { }
 	void FillLists();
 	bool TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const;
-	bool RouteReservation(RRF reserve_flags, std::string *failreasonkey = 0) const;
+	bool RouteReservation(RRF reserve_flags, std::string *failreasonkey = nullptr) const;
 	bool PartialRouteReservationWithActions(RRF reserve_flags, std::string *failreasonkey, RRF action_reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const;
 	void RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const;
 	bool IsRouteSubSet(const route *subset) const;

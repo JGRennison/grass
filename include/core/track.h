@@ -134,13 +134,14 @@ class generictrack : public world_obj {
 
 	protected:
 	//return true if reservation OK
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) = 0;
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) = 0;
 	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) { }
 
 	public:
-	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) {
+	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) {
 		bool result = ReservationV(direction, index, rr_flags, resroute, failreasonkey);
-		if(result) MarkUpdated();
+		if(result)
+			MarkUpdated();
 		return result;
 	}
 	void ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {

@@ -49,7 +49,9 @@ namespace route_class {
 			DeserialiseGroup(s, subdi, ec, conflictcheck);
 			subdi.PostDeserialisePropCheck(ec);
 		}
-		else CheckJsonTypeAndReportError<json_object>(di, prop, subval, ec, false);
+		else {
+			CheckJsonTypeAndReportError<json_object>(di, prop, subval, ec, false);
+		}
 	}
 
 	void DeserialiseGroup(set &s, const deserialiser_input &di, error_collection &ec, flag_conflict_checker<set> &conflictcheck) {
@@ -81,7 +83,9 @@ namespace route_class {
 			value = Deserialise(subdi, ec);
 			return true;
 		}
-		else if(!subdi.json.IsNull()) ec.RegisterNewError<error_deserialisation>(di, "Invalid route class set definition");
+		else if(!subdi.json.IsNull()) {
+			ec.RegisterNewError<error_deserialisation>(di, "Invalid route class set definition");
+		}
 		return false;
 	};
 
@@ -90,19 +94,29 @@ namespace route_class {
 
 		auto processitem = [&](rapidjson::SizeType index, const rapidjson::Value &item) {
 			if(item.IsString()) {
-				if(strcmp(item.GetString(), "all") == 0) current |= route_class::All();
-				else if(strcmp(item.GetString(), "alloverlaps") == 0) current |= route_class::AllOverlaps();
-				else if(strcmp(item.GetString(), "allnonoverlaps") == 0) current |= route_class::AllNonOverlaps();
-				else if(strcmp(item.GetString(), "allroutes") == 0) current |= route_class::AllRoutes();
-				else if(strcmp(item.GetString(), "allshunts") == 0) current |= route_class::AllShunts();
-				else if(strcmp(item.GetString(), "allneedingoverlaps") == 0) current |= route_class::AllNeedingOverlap();
+				if(strcmp(item.GetString(), "all") == 0)
+					current |= route_class::All();
+				else if(strcmp(item.GetString(), "alloverlaps") == 0)
+					current |= route_class::AllOverlaps();
+				else if(strcmp(item.GetString(), "allnonoverlaps") == 0)
+					current |= route_class::AllNonOverlaps();
+				else if(strcmp(item.GetString(), "allroutes") == 0)
+					current |= route_class::AllRoutes();
+				else if(strcmp(item.GetString(), "allshunts") == 0)
+					current |= route_class::AllShunts();
+				else if(strcmp(item.GetString(), "allneedingoverlaps") == 0)
+					current |= route_class::AllNeedingOverlap();
 				else {
 					auto res = DeserialiseName(item.GetString());
-					if(res.first) current |= Flag(res.second);
-					else ec.RegisterNewError<error_deserialisation>(di, "Invalid route class set definition: Invalid route type: " + std::string(item.GetString()));
+					if(res.first)
+						current |= Flag(res.second);
+					else
+						ec.RegisterNewError<error_deserialisation>(di, "Invalid route class set definition: Invalid route type: " + std::string(item.GetString()));
 				}
 			}
-			else CheckJsonTypeAndReportError<std::string>(di, MkArrayRefName(index).c_str(), item, ec, true);
+			else {
+				CheckJsonTypeAndReportError<std::string>(di, MkArrayRefName(index).c_str(), item, ec, true);
+			}
 		};
 
 		if(di.json.IsArray()) {
@@ -111,7 +125,9 @@ namespace route_class {
 				processitem(i, item);
 			}
 		}
-		else processitem(0, di.json);
+		else {
+			processitem(0, di.json);
+		}
 
 		return current;
 	}
@@ -136,7 +152,8 @@ namespace route_class {
 			route_class::set bit = found_types & (found_types ^ (found_types - 1));
 			route_class::ID type = static_cast<route_class::ID>(__builtin_ffs(bit) - 1);
 			found_types ^= bit;
-			if(!first) os << ", ";
+			if(!first)
+				os << ", ";
 			os << GetRouteTypeName(type);
 			first = false;
 		}

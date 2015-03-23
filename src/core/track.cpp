@@ -33,15 +33,18 @@ track_target_ptr empty_track_target;
 unsigned int speedrestrictionset::GetTrackSpeedLimitByClass(const std::string &speedclass, unsigned int default_max) const {
 	for(auto it = speeds.begin(); it != speeds.end(); ++it) {
 		if(it->speedclass.empty() || it->speedclass == speedclass) {
-			if(it->speed < default_max) default_max = it->speed;
+			if(it->speed < default_max)
+				default_max = it->speed;
 		}
 	}
 	return default_max;
 }
 
 unsigned int speedrestrictionset::GetTrainTrackSpeedLimit(const train *t /* optional */) const {
-	if(t) return GetTrackSpeedLimitByClass(t->GetVehSpeedClass(), t->GetMaxVehSpeed());
-	else return GetTrackSpeedLimitByClass("", UINT_MAX);
+	if(t)
+		return GetTrackSpeedLimitByClass(t->GetVehSpeedClass(), t->GetMaxVehSpeed());
+	else
+		return GetTrackSpeedLimitByClass("", UINT_MAX);
 }
 
 const speedrestrictionset *generictrack::GetSpeedRestrictions() const {
@@ -64,7 +67,7 @@ int generictrack::GetPartialElevationDelta(EDGETYPE direction, unsigned int disp
 	if(elevationdelta) {
 		return (((int64_t) elevationdelta) * ((int64_t) displacement)) / ((int64_t) GetLength(direction));
 	}
-	else return 0;
+	return 0;
 }
 
 bool generictrack::TryConnectPiece(track_target_ptr &piece_var, const track_target_ptr &new_target) {
@@ -78,7 +81,8 @@ bool generictrack::TryConnectPiece(track_target_ptr &piece_var, const track_targ
 }
 
 bool generictrack::FullConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec) {
-	if(HalfConnect(this_entrance_direction, target_entrance) && target_entrance.track->HalfConnect(target_entrance.direction, track_target_ptr(this, this_entrance_direction))) {
+	if(HalfConnect(this_entrance_direction, target_entrance) && target_entrance.track->HalfConnect(target_entrance.direction,
+			track_target_ptr(this, this_entrance_direction))) {
 		return true;
 	}
 	else {
@@ -88,7 +92,8 @@ bool generictrack::FullConnect(EDGETYPE this_entrance_direction, const track_tar
 }
 
 bool generictrack::HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
-	if(!IsEdgeValid(this_entrance_direction)) return false;
+	if(!IsEdgeValid(this_entrance_direction))
+		return false;
 	return TryConnectPiece(GetEdgeConnectingPiece(this_entrance_direction), target_entrance);
 }
 
@@ -104,7 +109,8 @@ bool generictrack::AutoConnections(error_collection &ec) {
 		EDGETYPE prevedge = prevtrack->GetAvailableAutoConnectionDirection(!(prevtrack->gt_privflags & GTPRIVF::REVERSEAUTOCONN));
 		EDGETYPE thisedge = GetAvailableAutoConnectionDirection(gt_privflags & GTPRIVF::REVERSEAUTOCONN);
 		if(prevedge != EDGE_NULL && thisedge != EDGE_NULL) {
-			if(!FullConnect(thisedge, track_target_ptr(prevtrack, prevedge), ec)) return false;
+			if(!FullConnect(thisedge, track_target_ptr(prevtrack, prevedge), ec))
+				return false;
 		}
 	}
 	return true;
@@ -115,9 +121,9 @@ bool generictrack::CheckUnconnectedEdges(error_collection &ec) {
 
 	std::vector<edgelistitem> edgelist;
 	GetListOfEdges(edgelist);
-	for(auto it = edgelist.begin(); it != edgelist.end(); ++it) {
-		if(! it->target->IsValid()) {
-			ec.RegisterNewError<error_track_unconnected>(track_target_ptr(this, it->edge));
+	for(auto &it : edgelist) {
+		if(!it.target->IsValid()) {
+			ec.RegisterNewError<error_track_unconnected>(track_target_ptr(this, it.edge));
 			result = false;
 		}
 	}
@@ -126,27 +132,30 @@ bool generictrack::CheckUnconnectedEdges(error_collection &ec) {
 }
 
 bool generictrack::PostLayoutInit(error_collection &ec) {
-	if(have_inited) return false;
+	if(have_inited)
+		return false;
 	have_inited = true;
 	return true;
 }
 
-unsigned int generictrack::ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask) {
+unsigned int generictrack::ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func,
+		RRF checkmask) {
 	unsigned int counter = 0;
 	std::vector<track_reservation_state *> trslist;
 	GetTRSList(trslist);
-	for(auto it = trslist.begin(); it != trslist.end(); ++it) {
-		counter += (*it)->ReservationEnumeration(func, checkmask);
+	for(auto &it : trslist) {
+		counter += it->ReservationEnumeration(func, checkmask);
 	}
 	return counter;
 }
 
-unsigned int generictrack::ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask) {
+unsigned int generictrack::ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction,
+		unsigned int index, RRF rr_flags)> func, RRF checkmask) {
 	unsigned int counter = 0;
 	std::vector<track_reservation_state *> trslist;
 	GetTRSList(trslist);
-	for(auto it = trslist.begin(); it != trslist.end(); ++it) {
-		counter += (*it)->ReservationEnumerationInDirection(direction, func, checkmask);
+	for(auto &it : trslist) {
+		counter += it->ReservationEnumerationInDirection(direction, func, checkmask);
 	}
 	return counter;
 }
@@ -168,20 +177,23 @@ void generictrack::ReservationTypeCountInDirection(reservationcountset &rcs, EDG
 }
 
 unsigned int generictrack::GetSightingDistance(EDGETYPE direction) const {
-	for(auto it : sighting_distances) {
-		if(it.first == direction) return it.second;
+	for(auto &it : sighting_distances) {
+		if(it.first == direction)
+			return it.second;
 	}
 	return 0;
 }
 
 void generictrack::TrainEnter(EDGETYPE direction, train *t) {
 	track_circuit *tc = GetTrackCircuit();
-	if(tc) tc->TrainEnter(t);
+	if(tc)
+		tc->TrainEnter(t);
 }
 
 void generictrack::TrainLeave(EDGETYPE direction, train *t) {
 	track_circuit *tc = GetTrackCircuit();
-	if(tc) tc->TrainLeave(t);
+	if(tc)
+		tc->TrainLeave(t);
 }
 
 void trackseg::TrainEnter(EDGETYPE direction, train *t) {
@@ -192,7 +204,8 @@ void trackseg::TrainEnter(EDGETYPE direction, train *t) {
 		it->TrainEnter(t);
 	}
 	const speedrestrictionset *speeds = GetSpeedRestrictions();
-	if(speeds) t->AddCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
+	if(speeds)
+		t->AddCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
 }
 
 void trackseg::TrainLeave(EDGETYPE direction, train *t) {
@@ -203,7 +216,8 @@ void trackseg::TrainLeave(EDGETYPE direction, train *t) {
 		it->TrainLeave(t);
 	}
 	const speedrestrictionset *speeds = GetSpeedRestrictions();
-	if(speeds) t->RemoveCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
+	if(speeds)
+		t->RemoveCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(t));
 }
 
 generictrack::edge_track_target trackseg::GetEdgeConnectingPiece(EDGETYPE edgeid) {
@@ -323,13 +337,16 @@ trackseg & trackseg::SetElevationDelta(unsigned int elevationdelta) {
 }
 
 bool trackseg::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
-	if(rr_flags & RRF::STOP_ON_OCCUPIED_TC && GetTrackCircuit() && GetTrackCircuit()->Occupied()) return false;
+	if(rr_flags & RRF::STOP_ON_OCCUPIED_TC && GetTrackCircuit() && GetTrackCircuit()->Occupied())
+		return false;
 	return trs.Reservation(direction, index, rr_flags, resroute);
 }
 
 EDGETYPE trackseg::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
-	if(forwardconnection && !next.IsValid()) return EDGE_BACK;
-	if(!forwardconnection && !prev.IsValid()) return EDGE_FRONT;
+	if(forwardconnection && !next.IsValid())
+		return EDGE_BACK;
+	if(!forwardconnection && !prev.IsValid())
+		return EDGE_FRONT;
 	return EDGE_NULL;
 }
 
@@ -352,9 +369,11 @@ void trackseg::GetTrainOccupationState(std::vector<generictrack::train_occupatio
 		to.end_offset = length;
 
 		auto checkpos = [&](track_location l, bool reverse) {
-			if(l.GetTrack() != this) return;
+			if(l.GetTrack() != this)
+				return;
 
-			if(reverse) l.ReverseDirection();
+			if(reverse)
+				l.ReverseDirection();
 
 			//l now points *outward* from the train
 
@@ -381,12 +400,12 @@ int genericzlentrack::GetElevationDelta(EDGETYPE direction) const {
 }
 
 unsigned int genericzlentrack::GetNewOffset(EDGETYPE direction, unsigned int currentoffset, unsigned int step) const {
-	if(currentoffset > 0) assert(false);
+	assert(currentoffset == 0);
 	return 0;
 }
 
 unsigned int genericzlentrack::GetRemainingLength(EDGETYPE direction, unsigned int currentoffset) const {
-	if(currentoffset > 0) assert(false);
+	assert(currentoffset == 0);
 	return 0;
 }
 
@@ -467,12 +486,15 @@ bool crossover::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flag
 }
 
 void crossover::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
-	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_X_LEFT, left), edgelistitem(EDGE_X_RIGHT, right), edgelistitem(EDGE_FRONT, front), edgelistitem(EDGE_BACK, back) });
+	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_X_LEFT, left), edgelistitem(EDGE_X_RIGHT, right),
+			edgelistitem(EDGE_FRONT, front), edgelistitem(EDGE_BACK, back) });
 }
 
 EDGETYPE crossover::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
-	if(forwardconnection && !back.IsValid()) return EDGE_BACK;
-	if(!forwardconnection && !front.IsValid()) return EDGE_FRONT;
+	if(forwardconnection && !back.IsValid())
+		return EDGE_BACK;
+	if(!forwardconnection && !front.IsValid())
+		return EDGE_FRONT;
 	return EDGE_NULL;
 }
 
@@ -489,8 +511,10 @@ error_trackconnection_notfound::error_trackconnection_notfound(const track_targe
 }
 
 std::ostream& operator<<(std::ostream& os, const generictrack* obj) {
-	if(obj) os << obj->GetFriendlyName();
-	else os << "Null generictrack*";
+	if(obj)
+		os << obj->GetFriendlyName();
+	else
+		os << "Null generictrack*";
 	return os;
 }
 
@@ -500,14 +524,18 @@ std::ostream& operator<<(std::ostream& os, const generictrack& obj) {
 }
 
 std::ostream& StreamOutTrackPtr(std::ostream& os, const track_target_ptr& obj) {
-	if(obj.IsValid()) os << "Track Target: " << obj.track->GetFriendlyName() << ", " << obj.direction;
-	else os << "Invalid Track Target";
+	if(obj.IsValid())
+		os << "Track Target: " << obj.track->GetFriendlyName() << ", " << obj.direction;
+	else
+		os << "Invalid Track Target";
 	return os;
 }
 
 std::ostream& operator<<(std::ostream& os, const track_location& obj) {
-	if(obj.IsValid()) os << "Track Location: " << obj.GetTrack()->GetFriendlyName() << ", " << obj.GetDirection() << ", " << obj.GetOffset() << "mm";
-	else os << "Invalid Track Location";
+	if(obj.IsValid())
+		os << "Track Location: " << obj.GetTrack()->GetFriendlyName() << ", " << obj.GetDirection() << ", " << obj.GetOffset() << "mm";
+	else
+		os << "Invalid Track Location";
 	return os;
 }
 
@@ -534,18 +562,18 @@ const direction_name dirnames[] = {
 
 std::ostream& operator<<(std::ostream& os, const EDGETYPE& obj) {
 	const direction_name &dirname = dirnames[obj];
-	if(dirname.dir != obj) assert(false);
+	assert(dirname.dir == obj);
 	os << dirname.friendlyname;
 	return os;
 }
 const char * SerialiseDirectionName(const EDGETYPE& obj) {
 	const direction_name &dirname = dirnames[obj];
-	if(dirname.dir != obj) assert(false);
+	assert(dirname.dir == obj);
 	return dirname.serialname.c_str();
 }
 
 bool DeserialiseDirectionName(EDGETYPE& obj, const char *dirname) {
-	for(unsigned int i = 0; i < sizeof(dirnames)/sizeof(direction_name); i++) {
+	for(unsigned int i = 0; i < sizeof(dirnames) / sizeof(direction_name); i++) {
 		if(strcmp(dirname, dirnames[i].serialname.c_str()) == 0) {
 			obj = dirnames[i].dir;
 			return true;

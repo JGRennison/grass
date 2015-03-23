@@ -25,9 +25,11 @@
 
 bool tractionset::CanTrainPass(const train *t) const {
 	const tractionset &ts = t->GetActiveTractionTypes();
-	for(auto it = ts.tractions.begin(); it != ts.tractions.end(); ++it) {
-		if((*it)->alwaysavailable) return true;
-		if(HasTraction(*it)) return true;
+	for(auto &it : ts.tractions) {
+		if(it->alwaysavailable)
+			return true;
+		if(HasTraction(it))
+			return true;
 	}
 	return false;
 }
@@ -38,7 +40,8 @@ bool tractionset::HasTraction(const traction_type *tt) const {
 
 bool tractionset::IsIntersecting(const tractionset &ts) const {
 	for(auto &it : tractions) {
-		if(ts.HasTraction(it)) return true;
+		if(ts.HasTraction(it))
+			return true;
 	}
 	return false;
 }
@@ -67,7 +70,9 @@ void tractionset::Deserialise(const deserialiser_input &di, error_collection &ec
 			if(tt) {
 				if(!HasTraction(tt)) tractions.push_back(tt);
 			}
-			else ec.RegisterNewError<error_deserialisation>(di, string_format("No such traction type: \"%s\"", cur.GetString()));
+			else {
+				ec.RegisterNewError<error_deserialisation>(di, string_format("No such traction type: \"%s\"", cur.GetString()));
+			}
 		}
 		else {
 			ec.RegisterNewError<error_deserialisation>(di, "Invalid traction set definition");
@@ -90,7 +95,8 @@ std::string tractionset::DumpString() const {
 	std::sort(strs.begin(), strs.end());
 	std::string out;
 	for(auto &it : strs) {
-		if(!out.empty()) out += ",";
+		if(!out.empty())
+			out += ",";
 		out += it;
 	}
 	return out;

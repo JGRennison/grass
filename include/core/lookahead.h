@@ -67,9 +67,10 @@ class lookahead  : public serialisable_obj {
 		TRACTION_UNSUITABLE,
 	};
 
-	void Init(const train *t /* optional */, const track_location &pos, const route *rt = 0);
+	void Init(const train *t /* optional */, const track_location &pos, const route *rt = nullptr);
 	void Advance(unsigned int distance);
-	void CheckLookaheads(const train *t /* optional */, const track_location &pos, std::function<void(unsigned int distance, unsigned int speed)> f, std::function<void(LA_ERROR err, const track_target_ptr &piece)> errfunc);
+	void CheckLookaheads(const train *t /* optional */, const track_location &pos, std::function<void(unsigned int distance, unsigned int speed)> f,
+			std::function<void(LA_ERROR err, const track_target_ptr &piece)> errfunc);
 	void ScanAppend(const train *t /* optional */, const track_location &pos, unsigned int blocklimit, const route *rt);
 	void Clear();
 

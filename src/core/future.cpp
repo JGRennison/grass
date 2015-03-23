@@ -55,7 +55,8 @@ void future_set::RemoveFuture(future &f) {
 		++it;
 		//this is so that *current can be erased without invalidating *it
 
-		if(current->second.get() == &f) futures.erase(current);
+		if(current->second.get() == &f)
+			futures.erase(current);
 	}
 }
 
@@ -68,9 +69,9 @@ void future_set::ExecuteUpTo(world_time ft) {
 	futures.erase(futures.begin(), past_end);
 
 	//do it this way as futures could themselves insert items into the future set
-	for(auto it = current_execs.begin(); it != current_execs.end(); ++it) {
-		(*it)->Execute();
-		(*it)->GetTarget().DeregisterFuture(it->get());
+	for(auto &it : current_execs) {
+		it->Execute();
+		it->GetTarget().DeregisterFuture(it.get());
 	}
 }
 
@@ -79,7 +80,7 @@ void futurable_obj::RegisterFuture(future *f) {
 }
 
 void futurable_obj::DeregisterFuture(future *f) {
-	own_futures.remove_if([&](const future *upf){ return upf == f; });
+	own_futures.remove_if([&](const future *upf) { return upf == f; });
 }
 
 void futurable_obj::ClearFutures() {
@@ -106,7 +107,8 @@ bool futurable_obj::HaveFutures() const {
 	return !own_futures.empty();
 }
 
-void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di, error_collection &ec, const future_deserialisation_type_factory &dtf, future_container &fc) {
+void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di, error_collection &ec,
+		const future_deserialisation_type_factory &dtf, future_container &fc) {
 	deserialiser_input futuresdi(di.json["futures"], "futures", "futures", di);
 	if(futuresdi.json.IsArray()) {
 		di.RegisterProp("futures");
@@ -117,7 +119,8 @@ void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di
 
 				future_id_type fid;
 				world_time ftime;
-				if(CheckTransJsonValue(fid, subdi, "fid", ec, true) && CheckTransJsonValue(ftime, subdi, "ftime", ec, true) && CheckTransJsonValue(subdi.type, subdi, "ftype", ec, true)) {
+				if(CheckTransJsonValue(fid, subdi, "fid", ec, true) && CheckTransJsonValue(ftime, subdi, "ftime", ec, true)
+						&& CheckTransJsonValue(subdi.type, subdi, "ftype", ec, true)) {
 					if(!dtf.FindAndDeserialise(subdi.type, subdi, ec, fc, *this, ftime, fid)) {
 						ec.RegisterNewError<error_deserialisation>(subdi, string_format("Futures: Unknown future type: %s", subdi.type.c_str()));
 					}

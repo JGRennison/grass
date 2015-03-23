@@ -32,26 +32,32 @@ enum {
 
 static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int flags = 0) {
 	auto it = rt->berths.begin();
-	if(it == rt->berths.end()) return;    //no berths here
+	if(it == rt->berths.end())
+		return;    //no berths here
 
 	if(flags & BPFF_SOFT) {    //don't insert berth value if any berths are already occupied, insert into last berth
 		for(; it != rt->berths.end(); ++it) {
-			if(!(*it).berth->contents.empty()) return;
+			if(!(*it).berth->contents.empty())
+				return;
 		}
 		rt->berths.back().berth->contents = newvalue;
 		if(rt->berths.back().ownertrack) rt->berths.back().ownertrack->MarkUpdated();
 	}
 	else {
 		std::function<void(decltype(it) &)> advance = [&](decltype(it) &start) {
-			if((*start).berth->contents.empty()) return;
+			if((*start).berth->contents.empty())
+				return;
 			auto next = std::next(start);
-			if(next == rt->berths.end()) return;
+			if(next == rt->berths.end())
+				return;
 			advance(next);
 			if((*next).berth->contents.empty()) {
 				(*next).berth->contents = std::move((*start).berth->contents);
 				(*start).berth->contents.clear();
-				if((*next).ownertrack) (*next).ownertrack->MarkUpdated();
-				if((*start).ownertrack) (*start).ownertrack->MarkUpdated();
+				if((*next).ownertrack)
+					(*next).ownertrack->MarkUpdated();
+				if((*start).ownertrack)
+					(*start).ownertrack->MarkUpdated();
 			}
 
 		};
@@ -61,7 +67,8 @@ static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int
 			if((*it).berth->contents.empty()) {
 				if(next == rt->berths.end() || !(*next).berth->contents.empty()) {
 					(*it).berth->contents = newvalue;
-					if((*it).ownertrack) (*it).ownertrack->MarkUpdated();
+					if((*it).ownertrack)
+						(*it).ownertrack->MarkUpdated();
 					return;
 				}
 			}
@@ -69,7 +76,8 @@ static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int
 
 		//berths all full, overwrite first
 		rt->berths.front().berth->contents = newvalue;
-		if(rt->berths.front().ownertrack) rt->berths.front().ownertrack->MarkUpdated();
+		if(rt->berths.front().ownertrack)
+			rt->berths.front().ownertrack->MarkUpdated();
 	}
 }
 
@@ -145,14 +153,17 @@ track_train_counter_block::TCF track_train_counter_block::SetTCFlagsMasked(TCF b
 }
 
 void CheckUnreserveTrackCircuit(track_circuit *tc) {
-	std::function<bool(generictrack *, generictrack *, const route *)> backtrack = [&](generictrack *bt_piece, generictrack *next_piece, const route *reserved_route) -> bool {
-		if(!bt_piece) return true;
+	std::function<bool(generictrack *, generictrack *, const route *)> backtrack =
+			[&](generictrack *bt_piece, generictrack *next_piece, const route *reserved_route) -> bool {
+		if(!bt_piece)
+			return true;
 		const track_circuit *bt_tc = bt_piece->GetTrackCircuit();
 		if(bt_tc && bt_tc != tc) {
 			//hit different TC, unreserve if route not reserved here
 			bool found = false;
 			bt_piece->ReservationEnumeration([&](const route *chk_reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-				if(reserved_route == chk_reserved_route) found = true;
+				if(reserved_route == chk_reserved_route)
+					found = true;
 			}, RRF::RESERVE);
 			return !found;
 		}
@@ -173,7 +184,9 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 							unresidex = index;
 							unresrrflags = RRF::STARTPIECE | RRF::UNRESERVE;
 						}
-						else success = false;
+						else {
+							success = false;
+						}
 					}
 					else {
 						bool prevres = backtrack(bt_piece->GetEdgeConnectingPiece(direction).track, bt_piece, chk_reserved_route);
@@ -183,7 +196,9 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 							unresidex = index;
 							unresrrflags = RRF::UNRESERVE;
 						}
-						else success = false;
+						else {
+							success = false;
+						}
 					}
 				}
 			}, RRF::RESERVE);
@@ -195,9 +210,12 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 	};
 
 	std::function<bool(generictrack *, const route *)> forwardtrack = [&](generictrack *ft_piece, const route *reserved_route) -> bool {
-		if(!ft_piece) return true;
+		if(!ft_piece)
+			return true;
 		const track_circuit *bt_tc = ft_piece->GetTrackCircuit();
-		if(bt_tc && bt_tc->Occupied()) return true;
+		if(bt_tc && bt_tc->Occupied()) {
+			return true;
+		}
 		else {
 			bool success = false;
 			bool unreserve = false;
@@ -236,7 +254,8 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 	for(auto piece : pieces) {
 		std::vector<std::function<void()> > fixups;
 		piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
-			if(!route_class::IsValid(reserved_route->type) || route_class::IsOverlap(reserved_route->type)) return;
+			if(!route_class::IsValid(reserved_route->type) || route_class::IsOverlap(reserved_route->type))
+				return;
 			if(backtrack(piece->GetEdgeConnectingPiece(r_direction).track, piece, reserved_route)) {
 				fixups.emplace_back([=]() {
 					piece->Reservation(r_direction, r_index, RRF::UNRESERVE, reserved_route);
@@ -244,7 +263,9 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 				forwardtrack(piece->GetConnectingPieceByIndex(r_direction, r_index).track, reserved_route);
 			}
 		}, RRF::RESERVE);
-		for(auto &fixup : fixups) fixup();
+		for(auto &fixup : fixups) {
+			fixup();
+		}
 	}
 }
 
@@ -268,10 +289,11 @@ void track_circuit::OccupationStateChangeTrigger() {
 void track_circuit::OccupationTrigger() {
 	//check berth stepping
 	std::vector<const route *> routes;
-	const route *found = 0;
+	const route *found = nullptr;
 	GetSetRoutes(routes);
 	for(const route *rt : routes) {
-		if(route_class::IsOverlap(rt->type)) continue;    // we don't want overlaps
+		if(route_class::IsOverlap(rt->type))
+			continue;    // we don't want overlaps
 		if(!rt->trackcircuits.empty() && rt->trackcircuits[0] == this) {
 			found = rt;
 			break;
@@ -280,7 +302,9 @@ void track_circuit::OccupationTrigger() {
 	if(found) {
 		//look backwards
 		trackberth *prev = found->start.track->GetPriorBerth(found->start.direction, routingpoint::GPBF::GETNONEMPTY);
-		if(!prev) BerthPushFront(found, "????", BPFF_SOFT);
+		if(!prev) {
+			BerthPushFront(found, "????", BPFF_SOFT);
+		}
 		else {
 			BerthPushFront(found, std::move(prev->contents));
 			prev->contents.clear();

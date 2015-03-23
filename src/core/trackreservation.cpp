@@ -25,21 +25,24 @@
 
 bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, RRF in_rr_flags, const route *resroute, std::string* failreasonkey) {
 	if(in_rr_flags & (RRF::RESERVE | RRF::TRYRESERVE | RRF::PROVISIONAL_RESERVE)) {
-		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-			if(it->rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {    //track already reserved
-				if(in_rr_flags & RRF::IGNORE_OWN_OVERLAP && it->reserved_route && it->reserved_route->start == resroute->start && route_class::IsOverlap(it->reserved_route->type)) {
+		for(auto &it : itrss) {
+			if(it.rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {    //track already reserved
+				if(in_rr_flags & RRF::IGNORE_OWN_OVERLAP && it.reserved_route && it.reserved_route->start == resroute->start
+						&& route_class::IsOverlap(it.reserved_route->type)) {
 					//do nothing, own overlap is being ignored
 				}
-				else if(it->direction != in_dir || it->index != in_index) {
-					if(failreasonkey) *failreasonkey = "track/reservation/conflict";
+				else if(it.direction != in_dir || it.index != in_index) {
+					if(failreasonkey)
+						*failreasonkey = "track/reservation/conflict";
 					return false;    //reserved piece doesn't match
 				}
 			}
-			if(it->rr_flags & RRF::PROVISIONAL_RESERVE && in_rr_flags & RRF::RESERVE) {
-				if(it->reserved_route == resroute && (in_rr_flags & RRF::SAVEMASK & ~RRF::RESERVE) == (it->rr_flags & RRF::SAVEMASK & ~RRF::PROVISIONAL_RESERVE)) {
+			if(it.rr_flags & RRF::PROVISIONAL_RESERVE && in_rr_flags & RRF::RESERVE) {
+				if(it.reserved_route == resroute && (in_rr_flags & RRF::SAVEMASK & ~RRF::RESERVE)
+						== (it.rr_flags & RRF::SAVEMASK & ~RRF::PROVISIONAL_RESERVE)) {
 					//we are now properly reserving what we already preliminarily reserved, reuse inner_track_reservation_state
-					it->rr_flags |= RRF::RESERVE;
-					it->rr_flags &= ~RRF::PROVISIONAL_RESERVE;
+					it.rr_flags |= RRF::RESERVE;
+					it.rr_flags &= ~RRF::PROVISIONAL_RESERVE;
 					return true;
 				}
 			}
@@ -58,7 +61,8 @@ bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index
 	else if(in_rr_flags & (RRF::UNRESERVE | RRF::TRYUNRESERVE)) {
 		for(auto it = itrss.begin(); it != itrss.end(); ++it) {
 			if(it->rr_flags & RRF::RESERVE && it->direction == in_dir && it->index == in_index && it->reserved_route == resroute) {
-				if(in_rr_flags & RRF::UNRESERVE) itrss.erase(it);
+				if(in_rr_flags & RRF::UNRESERVE)
+					itrss.erase(it);
 				return true;
 			}
 		}
@@ -67,23 +71,25 @@ bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index
 }
 
 bool track_reservation_state::IsReserved() const {
-	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF::RESERVE) return true;
+	for(auto &it : itrss) {
+		if(it.rr_flags & RRF::RESERVE)
+			return true;
 	}
 	return false;
 }
 
 unsigned int track_reservation_state::GetReservationCount() const {
 	unsigned int count = 0;
-	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF::RESERVE) count++;
+	for(auto &it : itrss) {
+		if(it.rr_flags & RRF::RESERVE)
+			count++;
 	}
 	return count;
 }
 
 bool track_reservation_state::IsReservedInDirection(EDGETYPE direction) const {
-	for(auto it = itrss.begin(); it != itrss.end(); ++it) {
-		if(it->rr_flags & RRF::RESERVE && it->direction == direction) return true;
+	for(auto &it : itrss) {
+		if(it.rr_flags & RRF::RESERVE && it.direction == direction) return true;
 	}
 	return false;
 }
@@ -92,7 +98,8 @@ GTF track_reservation_state::GetGTReservationFlags(EDGETYPE checkdirection) cons
 	GTF outputflags = GTF::ZERO;
 	if(IsReserved()) {
 		outputflags |= GTF::ROUTESET;
-		if(IsReservedInDirection(checkdirection)) outputflags |= GTF::ROUTETHISDIR;
+		if(IsReservedInDirection(checkdirection))
+			outputflags |= GTF::ROUTETHISDIR;
 	}
 	return outputflags;
 }
@@ -101,7 +108,8 @@ void track_reservation_state::ReservationTypeCount(reservationcountset &rcs) con
 	for(auto &it : itrss) {
 		if(it.rr_flags & RRF::RESERVE) {
 			rcs.routeset++;
-			if(it.rr_flags & RRF::AUTOROUTE) rcs.routesetauto++;
+			if(it.rr_flags & RRF::AUTOROUTE)
+				rcs.routesetauto++;
 		}
 	}
 }
@@ -110,7 +118,8 @@ void track_reservation_state::ReservationTypeCountInDirection(reservationcountse
 	for(auto &it : itrss) {
 		if(it.rr_flags & RRF::RESERVE && it.direction == direction) {
 			rcs.routeset++;
-			if(it.rr_flags & RRF::AUTOROUTE) rcs.routesetauto++;
+			if(it.rr_flags & RRF::AUTOROUTE)
+				rcs.routesetauto++;
 		}
 	}
 }

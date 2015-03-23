@@ -59,7 +59,7 @@ namespace draw {
 
 		public:
 		draw_engine(std::shared_ptr<draw_module> dmod_, unsigned int sw, unsigned int sh, std::shared_ptr<draw_options> dopt_)
-			: dmod(dmod_), spritewidth(sw), spriteheight(sh), dopt(dopt_) { }
+				: dmod(dmod_), spritewidth(sw), spriteheight(sh), dopt(dopt_) { }
 		virtual std::string GetName() const = 0;
 		unsigned int GetSpriteWidth() const { return spritewidth; }
 		unsigned int GetSpriteHeight() const { return spriteheight; }

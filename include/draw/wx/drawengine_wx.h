@@ -45,7 +45,7 @@ namespace draw {
 		void CheckType(GST type);
 
 		wx_sprite_obj()
-			: this_sr(0), eng(0) { }
+			: this_sr(0), eng(nullptr) { }
 
 		public:
 		wx_sprite_obj(wx_draw_engine *eng_, sprite_ref this_sr_)

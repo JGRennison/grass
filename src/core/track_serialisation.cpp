@@ -31,7 +31,8 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 	world_obj::Deserialise(di, ec);
 
 	CheckIterateJsonArrayOrType<json_object>(di, "layout", "layout", ec, [&](const deserialiser_input &di, error_collection &ec) {
-		if(di.ws) di.ws->gui_layout_generictrack(this, di, ec);
+		if(di.ws)
+			di.ws->gui_layout_generictrack(this, di, ec);
 	});
 
 	deserialiser_input sddi(di.json["sighting"], "sighting", "sighting", di);
@@ -73,7 +74,9 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 				sightingfunc(deserialiser_input(sddi.json[i], "", MkArrayRefName(i), sddi));
 			}
 		}
-		else sightingfunc(sddi);
+		else {
+			sightingfunc(sddi);
+		}
 	}
 
 	deserialiser_input subdi(di.json["connect"], "trackconnection", "connect", di);
@@ -91,14 +94,18 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 				ok = CheckTransJsonValue(target_name, funcdi, "to", ec);
 
 				if(ok) {
-					if(have_directions) di.w->ConnectTrack(this, this_entrance_direction, target_name, target_entrance_direction, ec);
+					if(have_directions) {
+						di.w->ConnectTrack(this, this_entrance_direction, target_name, target_entrance_direction, ec);
+					}
 					else {
 						world *w = di.w;
 						auto resolveconnection = [w, this, this_entrance_direction, target_entrance_direction, target_name](error_collection &ec) mutable {
 							auto checkconnection = [&](generictrack *gt, EDGETYPE &dir) {
-								if(dir != EDGE_NULL) return;
+								if(dir != EDGE_NULL)
+									return;
 								if(!gt) {
-									ec.RegisterNewError<generic_error_obj>(string_format("Partial track connection declaration: no such piece: %s", target_name.c_str()));
+									ec.RegisterNewError<generic_error_obj>(
+										string_format("Partial track connection declaration: no such piece: %s", target_name.c_str()));
 									return;
 								}
 
@@ -106,15 +113,19 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 								gt->GetListOfEdges(edges);
 								EDGETYPE lastfound;
 								unsigned int freeedgecount = 0;
-								for(auto it = edges.begin(); it != edges.end(); ++it) {
-									if(! it->target->IsValid()) {
-										lastfound = it->edge;
+								for(auto &it : edges) {
+									if(! it.target->IsValid()) {
+										lastfound = it.edge;
 										freeedgecount++;
 									}
 								}
-								if(freeedgecount == 1) dir = lastfound;
+								if(freeedgecount == 1) {
+									dir = lastfound;
+								}
 								else {
-									ec.RegisterNewError<generic_error_obj>(string_format("Ambiguous partial track connection declaration: piece: %s, has: %d unconnected edges", gt->GetName().c_str(), freeedgecount));
+									ec.RegisterNewError<generic_error_obj>(
+											string_format("Ambiguous partial track connection declaration: piece: %s, has: %d unconnected edges",
+												gt->GetName().c_str(), freeedgecount));
 								}
 							};
 							checkconnection(this, this_entrance_direction);
@@ -137,7 +148,9 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 				connfunc(deserialiser_input(subdi.json[i], "", MkArrayRefName(i), subdi));
 			}
 		}
-		else connfunc(subdi);
+		else {
+			connfunc(subdi);
+		}
 	}
 
 	CheckTransJsonValueFlag(gt_privflags, GTPRIVF::REVERSEAUTOCONN, di, "reverseautoconnection", ec);
@@ -149,23 +162,31 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 
 			bool berthval = false;
 			EDGETYPE berthedge = EDGE_NULL;
-			if(bdi.json.IsBool()) berthval = bdi.json.GetBool();
+			if(bdi.json.IsBool()) {
+				berthval = bdi.json.GetBool();
+			}
 			else if(IsType<EDGETYPE>(bdi.json)) {
 				berthval = true;
 				berthedge = GetType<EDGETYPE>(bdi.json);
 			}
-			else ec.RegisterNewError<error_deserialisation>(bdi, "Invalid track berth definition");
+			else {
+				ec.RegisterNewError<error_deserialisation>(bdi, "Invalid track berth definition");
+			}
 
 			if(berthval) {
-				if(!berth) berth.reset(new trackberth);
+				if(!berth)
+					berth.reset(new trackberth);
 				berth->direction = berthedge;
 			}
-			else berth.reset();
+			else {
+				berth.reset();
+			}
 		}
 		if(berth) {
 			CheckTransJsonValue(berth->contents, di, "berthstr", ec);
 			CheckIterateJsonArrayOrType<json_object>(di, "berthlayout", "layout", ec, [&](const deserialiser_input &di, error_collection &ec) {
-				if(di.ws) di.ws->gui_layout_trackberth(berth.get(), this, di, ec);
+				if(di.ws)
+					di.ws->gui_layout_trackberth(berth.get(), this, di, ec);
 			});
 		}
 	}
@@ -288,7 +309,8 @@ class pointsflagssubobj : public serialisable_obj {
 	pointsflagssubobj(genericpoints::PTF pf) : pflags(0), inpflags(pf) { }
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) {
-		if(pflags) DeserialisePointFlags(*pflags, di, ec);
+		if(pflags)
+			DeserialisePointFlags(*pflags, di, ec);
 	}
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const {
 		SerialisePointFlags(inpflags, so, ec);
@@ -362,7 +384,8 @@ void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deseria
 			routingpoint *rp = FastRoutingpointCast(di.w->FindTrackByName(targname));
 			if(rp) {
 				output = rp->GetRouteByIndex(index);
-				if(!output) routeindexresolutionerror(ec, targname, index);
+				if(!output)
+					routeindexresolutionerror(ec, targname, index);
 				return;
 			}
 			else if(after_layout_init_resolve) {
@@ -371,13 +394,18 @@ void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deseria
 					routingpoint *rp = FastRoutingpointCast(w->FindTrackByName(targname));
 					if(rp) {
 						output = rp->GetRouteByIndex(index);
-						if(!output) routeindexresolutionerror(ec, targname, index);
+						if(!output)
+							routeindexresolutionerror(ec, targname, index);
 					}
-					else routetargetresolutionerror(ec, targname);
+					else {
+						routetargetresolutionerror(ec, targname);
+					}
 				};
 				di.w->layout_init_final_fixups.AddFixup(resolveroutetarget);
 			}
-			else routetargetresolutionerror(ec, targname);
+			else {
+				routetargetresolutionerror(ec, targname);
+			}
 		}
 	}
 	output = 0;
@@ -413,11 +441,14 @@ void DeserialisePointsCoupling(const deserialiser_input &di, error_collection &e
 			deserialiser_input itemdi(subdi.json[i], "pointscoupling", MkArrayRefName(i), subdi);
 			std::string name;
 			EDGETYPE direction;
-			if(itemdi.json.IsObject() && CheckTransJsonValueDef(name, itemdi, "name", "", ec) && CheckTransJsonValueDef(direction, itemdi, "edge", EDGE_NULL, ec)) {
+			if(itemdi.json.IsObject() && CheckTransJsonValueDef(name, itemdi, "name", "", ec)
+					&& CheckTransJsonValueDef(direction, itemdi, "edge", EDGE_NULL, ec)) {
 				params->emplace_back(name, direction);
 				itemdi.PostDeserialisePropCheck(ec);
 			}
-			else ok = false;
+			else {
+				ok = false;
+			}
 		}
 		if(ok) {
 			world *w = di.w;
@@ -457,7 +488,9 @@ void DeserialisePointsCoupling(const deserialiser_input &di, error_collection &e
 			});
 		}
 	}
-	else ok = false;
+	else {
+		ok = false;
+	}
 
 
 	if(!ok) {
@@ -497,7 +530,9 @@ template<> void track_target_ptr::Serialise(const std::string &name, serialiser_
 		SerialiseValueJson(track->GetName(), so, "piece");
 		SerialiseValueJson(direction, so, "dir");
 	}
-	if(!name.empty()) so.json_out.EndObject();
+	if(!name.empty()) {
+		so.json_out.EndObject();
+	}
 }
 
 template<> void track_location::Deserialise(const std::string &name, const deserialiser_input &di, error_collection &ec) {
@@ -523,5 +558,7 @@ template<> void track_location::Serialise(const std::string &name, serialiser_ou
 		trackpiece.Serialise("", so, ec);
 		SerialiseValueJson(offset, so, "offset");
 	}
-	if(!name.empty()) so.json_out.EndObject();
+	if(!name.empty()) {
+		so.json_out.EndObject();
+	}
 }

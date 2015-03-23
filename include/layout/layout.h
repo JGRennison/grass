@@ -120,7 +120,9 @@ namespace guilayout {
 		public:
 		virtual ~layout_obj() { }
 		std::pair<unsigned int, unsigned int> GetDimensions() const;
-		inline std::pair<int, int> GetPosition() const { return std::make_pair(x, y); }
+		inline std::pair<int, int> GetPosition() const {
+			return std::make_pair(x, y);
+		}
 		virtual std::string GetFriendlyName() const = 0;
 		virtual void Process(world_layout &wl, error_collection &ec) = 0;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
@@ -152,8 +154,8 @@ namespace guilayout {
 
 	class layoutberth_obj : public layout_obj {
 		protected:
-		const generictrack *gt = 0;
-		const trackberth *b = 0;
+		const generictrack *gt = nullptr;
+		const trackberth *b = nullptr;
 		int length = 4;
 
 		enum {
@@ -196,7 +198,8 @@ namespace guilayout {
 		LAYOUT_DIR nextdir;
 	};
 
-	layoutoffsetdirectionresult LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length, std::function<void(int, int, LAYOUT_DIR)> stepfunc = std::function<void(int, int, LAYOUT_DIR)>());
+	layoutoffsetdirectionresult LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length,
+			std::function<void(int, int, LAYOUT_DIR)> stepfunc = std::function<void(int, int, LAYOUT_DIR)>());
 
 	struct pos_sprite_desc_opts {
 		unsigned int refresh_interval_ms = 0;

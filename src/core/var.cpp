@@ -24,13 +24,16 @@ std::string message_formatter::FormatMessage(const std::string &input) const {
 	for(auto it = input.begin(); it != input.end();) {
 		if(*it == '\\') {
 			++it;
-			if(it != input.end()) output.push_back(*it);
-			else break;
+			if(it != input.end())
+				output.push_back(*it);
+			else
+				break;
 			++it;
 		}
 		else if(*it == '$') {
 			++it;
-			if(it == input.end()) break;
+			if(it == input.end())
+				break;
 			output.append(ExpandVariable(it, input.end()));
 		}
 		else {
@@ -53,8 +56,10 @@ std::string message_formatter::ExpandVariable(std::string::const_iterator &begin
 	std::string varname;
 	std::string param;
 	for(; begin != end; ++begin) {
-		if(IsVarChar(*begin)) varname.push_back(*begin);
-		else break;
+		if(IsVarChar(*begin))
+			varname.push_back(*begin);
+		else
+			break;
 	}
 
 	if(varname.empty()) return "";
@@ -63,14 +68,18 @@ std::string message_formatter::ExpandVariable(std::string::const_iterator &begin
 		for(++begin; begin != end; ++begin) {
 			if(*begin == '\\') {
 				++begin;
-				if(begin != end) param.push_back(*begin);
-				else break;
+				if(begin != end)
+					param.push_back(*begin);
+				else
+					break;
 			}
 			else if(*begin == ')') {
 				++begin;
 				break;
 			}
-			else param.push_back(*begin);
+			else {
+				param.push_back(*begin);
+			}
 		}
 	}
 
@@ -78,5 +87,7 @@ std::string message_formatter::ExpandVariable(std::string::const_iterator &begin
 	if(targetvar != registered_variables.end()) {
 		return targetvar->second(param);
 	}
-	else return "[No Such Variable]";
+	else {
+		return "[No Such Variable]";
+	}
 }

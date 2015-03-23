@@ -166,9 +166,12 @@ class overlap_ops_test_class_1 {
 		const route *ovlp = signal->GetCurrentForwardOverlap();
 		if(overlapend) {
 			CHECK(ovlp != 0);
-			if(ovlp) CHECK(ovlp->end.track == overlapend);
+			if(ovlp)
+				CHECK(ovlp->end.track == overlapend);
 		}
-		else CHECK(ovlp == 0);
+		else {
+			CHECK(ovlp == 0);
+		}
 	}
 };
 

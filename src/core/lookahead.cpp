@@ -26,7 +26,7 @@
 
 void lookahead::Init(const train *t /* optional */, const track_location &pos, const route *rt) {
 	l1_list.clear();
-	current_offset = ((uint64_t) 1)<<32;
+	current_offset = ((uint64_t) 1) << 32;
 	ScanAppend(t, pos, 1, rt);
 }
 
@@ -43,18 +43,22 @@ void lookahead::Advance(unsigned int distance) {
 					it->l2_list.pop_front();
 					jt = it->l2_list.begin();
 				}
-				else ++jt;
+				else {
+					++jt;
+				}
 			}
 			++it;
 		}
 	}
 }
 
-void lookahead::CheckLookaheads(const train *t /* optional */, const track_location &pos, std::function<void(unsigned int distance, unsigned int speed)> f, std::function<void(LA_ERROR err, const track_target_ptr &piece)> errfunc) {
+void lookahead::CheckLookaheads(const train *t /* optional */, const track_location &pos,
+		std::function<void(unsigned int distance, unsigned int speed)> f, std::function<void(LA_ERROR err, const track_target_ptr &piece)> errfunc) {
 	unsigned int last_distance = UINT_MAX;
 	unsigned int last_speed = UINT_MAX;
 	auto sendresponse = [&](unsigned int distance, unsigned int speed) {
-		if(speed == UINT_MAX) return;
+		if(speed == UINT_MAX)
+			return;
 		if(distance < last_distance || speed < last_speed) {
 			f(distance, speed);
 			last_distance = distance;
@@ -71,9 +75,12 @@ void lookahead::CheckLookaheads(const train *t /* optional */, const track_locat
 				}
 			}
 			else if(current_offset < jt->start_offset) {
-				if(current_offset < jt->sighting_offset && jt->flags & lookaheaditem::LAI_FLAGS::HALT_UNLESS_VISIBLE) sendresponse(jt->start_offset - current_offset, 0);
+				if(current_offset < jt->sighting_offset && jt->flags & lookaheaditem::LAI_FLAGS::HALT_UNLESS_VISIBLE) {
+					sendresponse(jt->start_offset - current_offset, 0);
+				}
 				else if(jt->flags & lookaheaditem::LAI_FLAGS::NOT_ALWAYS_PASSABLE && current_offset >= jt->sighting_offset) {
-					if(jt->flags & lookaheaditem::LAI_FLAGS::ALLOW_DIFFERENT_CONNECTION_INDEX && jt->connection_index != jt->piece.track->GetCurrentNominalConnectionIndex(jt->piece.direction)) {
+					if(jt->flags & lookaheaditem::LAI_FLAGS::ALLOW_DIFFERENT_CONNECTION_INDEX &&
+							jt->connection_index != jt->piece.track->GetCurrentNominalConnectionIndex(jt->piece.direction)) {
 						//points have moved, rescan
 						Init(t, pos, 0);
 						CheckLookaheads(t, pos, f, errfunc);
@@ -91,7 +98,9 @@ void lookahead::CheckLookaheads(const train *t /* optional */, const track_locat
 						sendresponse(jt->start_offset - current_offset, 0);
 					}
 				}
-				else sendresponse(jt->start_offset - current_offset, jt->speed);
+				else {
+					sendresponse(jt->start_offset - current_offset, jt->speed);
+				}
 			}
 		}
 		if(current_offset > it->offset) {
@@ -114,37 +123,45 @@ void lookahead::CheckLookaheads(const train *t /* optional */, const track_locat
 				reinit = true;
 			}
 			if(reinit) {
-				while(std::next(it) != l1_list.end()) l1_list.pop_back();
-				const route *rt = 0;
+				while(std::next(it) != l1_list.end())
+					l1_list.pop_back();
+				const route *rt = nullptr;
 				genericsignal *gs = FastSignalCast(l1_list.back().gs.track, l1_list.back().gs.direction);
-				if(gs) rt = gs->GetCurrentForwardRoute();
+				if(gs)
+					rt = gs->GetCurrentForwardRoute();
 				ScanAppend(t, track_location(l1_list.back().gs), aspect, rt);
 			}
 			else if(aspect > it->last_aspect) {
 				//need to extend lookahead
 				for(auto jt = std::next(it); jt != l1_list.end(); ++jt) {
-					if(jt->gs.IsValid()) jt->last_aspect = jt->gs.track->GetAspect();
+					if(jt->gs.IsValid())
+						jt->last_aspect = jt->gs.track->GetAspect();
 				}
-				const route *rt = 0;
+				const route *rt = nullptr;
 				genericsignal *gs = FastSignalCast(l1_list.back().gs.track, l1_list.back().gs.direction);
-				if(gs) rt = gs->GetCurrentForwardRoute();
+				if(gs)
+					rt = gs->GetCurrentForwardRoute();
 				ScanAppend(t, track_location(l1_list.back().gs), aspect - it->last_aspect, rt);
 				it->last_aspect = aspect;
 			}
 			if(aspect == 0) {
 				unsigned int distance = it->offset - current_offset;
 				sendresponse(distance, 0);
-				if(distance == 0) errfunc(LA_ERROR::WAITING_AT_RED_SIG, it->gs);
+				if(distance == 0)
+					errfunc(LA_ERROR::WAITING_AT_RED_SIG, it->gs);
 			}
 		}
-		else if(it->gs.IsValid() && it->last_aspect == 0) sendresponse(it->offset - current_offset, 0);
+		else if(it->gs.IsValid() && it->last_aspect == 0)
+			sendresponse(it->offset - current_offset, 0);
 	}
 }
 
 void lookahead::ScanAppend(const train *t /* optional */, const track_location &pos, unsigned int blocklimit, const route *rt) {
 	uint64_t offset;
-	if(! l1_list.empty()) offset = l1_list.back().offset;
-	else offset = current_offset;
+	if(! l1_list.empty())
+		offset = l1_list.back().offset;
+	else
+		offset = current_offset;
 
 	l1_list.emplace_back();
 	lookaheadroutingpoint *l = &l1_list.back();
@@ -175,9 +192,12 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 		}
 
 		const speedrestrictionset *srs = piece.track->GetSpeedRestrictions();
-		if(srs) l2.speed = srs->GetTrainTrackSpeedLimit(t);
-		else l2.speed = UINT_MAX;
-		if(! piece.track->IsTrackAlwaysPassable()) l2.flags |= lookaheaditem::LAI_FLAGS::NOT_ALWAYS_PASSABLE;
+		if(srs)
+			l2.speed = srs->GetTrainTrackSpeedLimit(t);
+		else
+			l2.speed = UINT_MAX;
+		if(!piece.track->IsTrackAlwaysPassable())
+			l2.flags |= lookaheaditem::LAI_FLAGS::NOT_ALWAYS_PASSABLE;
 	};
 	if(rt) {
 		if(t && !rt->IsRouteTractionSuitable(t)) {
@@ -208,15 +228,20 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 					l1_list.emplace_back();
 					l = &l1_list.back();
 				}
-				else return;
+				else {
+					return;
+				}
 			}
-			else newpiece(it->location, it->connection_index);
+			else {
+				newpiece(it->location, it->connection_index);
+			}
 		}
 		newsignal(rt->end);
 		if(blocklimit) {
-			const route *next_rt = 0;
+			const route *next_rt = nullptr;
 			genericsignal *gs = FastSignalCast(rt->end.track, rt->end.direction);
-			if(gs) next_rt = gs->GetCurrentForwardRoute();
+			if(gs)
+				next_rt = gs->GetCurrentForwardRoute();
 			ScanAppend(t, track_location(rt->end), blocklimit, next_rt);
 		}
 	}
@@ -239,18 +264,25 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 					break;
 				}
 			}
-			else newpiece(current, 0);
+			else {
+				newpiece(current, 0);
+			}
 
 			track_target_ptr next = current.track->GetConnectingPiece(current.direction);
-			if(next.IsValid()) current = next;
+			if(next.IsValid()) {
+				current = next;
+			}
 			else {
 				routingpoint *rp = FastRoutingpointCast(current.track, current.direction);
-				if(rp) newsignal(vartrack_target_ptr<routingpoint>(rp, current.direction));
+				if(rp)
+					newsignal(vartrack_target_ptr<routingpoint>(rp, current.direction));
 				break;
 			}
 		}
 		if(!l->gs.IsValid()) {
-			if(l->l2_list.empty()) l1_list.pop_back();
+			if(l->l2_list.empty()) {
+				l1_list.pop_back();
+			}
 			else {
 				l->offset = l->l2_list.back().end_offset;    //dummy signal
 				l->gs.Reset();

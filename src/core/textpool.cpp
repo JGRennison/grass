@@ -29,8 +29,10 @@ void textpool::RegisterNewText(const std::string &key, const std::string &text) 
 
 std::string textpool::GetTextByName(const std::string &key) const {
 	auto text = textmap.find(key);
-	if(text != textmap.end()) return text->second;
-	else return textmap.at("textpool/keynotfound") + key;
+	if(text != textmap.end())
+		return text->second;
+	else
+		return textmap.at("textpool/keynotfound") + key;
 }
 
 void textpool::Deserialise(const deserialiser_input &di, error_collection &ec) {

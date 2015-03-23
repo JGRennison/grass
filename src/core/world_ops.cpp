@@ -62,7 +62,8 @@ void future_genericusermessage_reason::PrepareVariables(message_formatter &mf, w
 	mf.RegisterVariable("reason", [&](const std::string &in) { return w.GetUserMessageTextpool().GetTextByName(this->reasonkey); });
 
 	world_obj *gt = dynamic_cast<world_obj*>(&GetTarget());
-	if(gt) mf.RegisterVariable("target", [=](const std::string &in) { return gt->GetName(); });
+	if(gt)
+		mf.RegisterVariable("target", [=](const std::string &in) { return gt->GetName(); });
 }
 
 void future_genericusermessage_reason::Deserialise(const deserialiser_input &di, error_collection &ec) {

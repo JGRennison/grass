@@ -52,7 +52,7 @@ class track_reservation_state;
 class inner_track_reservation_state {
 	friend track_reservation_state;
 
-	const route *reserved_route = 0;
+	const route *reserved_route = nullptr;
 	EDGETYPE direction = EDGE_NULL;
 	unsigned int index = 0;
 	RRF rr_flags = RRF::ZERO;
@@ -77,7 +77,7 @@ class track_reservation_state : public serialisable_obj {
 	std::vector<inner_track_reservation_state> itrss;
 
 	public:
-	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0);
+	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr);
 	GTF GetGTReservationFlags(EDGETYPE direction) const;
 	bool IsReserved() const;
 	unsigned int GetReservationCount() const;

@@ -40,24 +40,31 @@ namespace dsconv {
 		unsigned int pointshift = 0;
 		auto it = in.cbegin();
 		for(; it != in.cend(); ++it) {
-			if(!isblank(*it)) break;
+			if(!isblank(*it))
+				break;
 		}
 		for(; it != in.cend(); ++it) {
 			if(*it >= '0' && *it <= '9') {
 				uint64_t newvalue = (value * 10) + (*it - '0');
-				if(newvalue < value) overflow = true;
+				if(newvalue < value)
+					overflow = true;
 				value = newvalue;
 				seennum = true;
-				if(seenpoint) pointshift++;
+				if(seenpoint)
+					pointshift++;
 			}
-			else if (*it == '.' && !seenpoint) {
+			else if(*it == '.' && !seenpoint) {
 				seenpoint = true;
 			}
-			else break;
+			else {
+				break;
+			}
 		}
-		if(!seennum) return false;
+		if(!seennum)
+			return false;
 		for(; it != in.cend(); ++it) {
-			if(!isblank(*it)) break;
+			if(!isblank(*it))
+				break;
 		}
 		std::string postfix(it, in.cend());
 		if(!postfix.empty()) {
@@ -65,7 +72,8 @@ namespace dsconv {
 			for(auto pf : postfixes) {
 				if(pf.postfix == postfix) {
 					uint64_t newvalue = value * ((uint64_t) pf.multiplier);
-					if(newvalue / ((uint64_t) pf.multiplier) != value) overflow = true;    //inefficient overflow check
+					if(newvalue / ((uint64_t) pf.multiplier) != value)
+						overflow = true;    //inefficient overflow check
 					value = newvalue >> pf.postshift;
 					found = true;
 				}
@@ -77,7 +85,8 @@ namespace dsconv {
 		}
 		if(pointshift) {
 			uint64_t pshift = 10;
-			for(unsigned int i = 1; i < pointshift; i++) pshift *= 10;
+			for(unsigned int i = 1; i < pointshift; i++)
+				pshift *= 10;
 			value /= pshift;
 		}
 
@@ -85,7 +94,8 @@ namespace dsconv {
 			ec.RegisterNewError<generic_error_obj>("Integer wrap-around detected for input: " + in + ", of type: " + type + ", use a smaller value/less significant figures");
 			return false;
 		}
-		if(ok) out = value;
+		if(ok)
+			out = value;
 		return ok;
 	}
 

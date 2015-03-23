@@ -70,9 +70,9 @@ inline bool operator==(const RPRT &l, const RPRT &r) {
 std::ostream& operator<<(std::ostream& os, const RPRT& obj);
 
 class routingpoint : public genericzlentrack {
-	routingpoint *aspect_target = 0;
-	routingpoint *aspect_route_target = 0;
-	routingpoint *aspect_backwards_dependency = 0;
+	routingpoint *aspect_target = nullptr;
+	routingpoint *aspect_route_target = nullptr;
+	routingpoint *aspect_backwards_dependency = nullptr;
 
 	route_restriction_set endrestrictions;
 
@@ -116,7 +116,8 @@ class routingpoint : public genericzlentrack {
 		const route *rt;
 		int score;
 	};
-	unsigned int GetMatchingRoutes(std::vector<gmr_routeitem> &routes, const routingpoint *end, route_class::set rc_mask = route_class::AllNonOverlaps(), GMRF gmr_flags = GMRF::ZERO, RRF extraflags = RRF::ZERO, const via_list &vias = via_list()) const;
+	unsigned int GetMatchingRoutes(std::vector<gmr_routeitem> &routes, const routingpoint *end, route_class::set rc_mask = route_class::AllNonOverlaps(),
+			GMRF gmr_flags = GMRF::ZERO, RRF extraflags = RRF::ZERO, const via_list &vias = via_list()) const;
 
 	const route_restriction_set &GetRouteEndRestrictions() const { return endrestrictions; }
 
@@ -221,7 +222,7 @@ class genericsignal : public trackroutingpoint {
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override;
 
 	inline unsigned int GetOverlapMinAspectDistance() const { return overlapswingminaspectdistance; }
-	bool IsOverlapSwingPermitted(std::string *failreasonkey = 0) const;
+	bool IsOverlapSwingPermitted(std::string *failreasonkey = nullptr) const;
 	inline route_class::set GetAvailableOverlapTypes() const { return available_overlaps; }
 
 	virtual ASPECT_FLAGS GetAspectFlags() const override;
@@ -231,8 +232,9 @@ class genericsignal : public trackroutingpoint {
 	void BackwardsReservedTrackScan(std::function<bool(const genericsignal*)> checksignal, std::function<bool(const track_target_ptr&)> checkpiece) const;
 
 	protected:
-	bool PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions, std::function<route*(route_class::ID type, const track_target_ptr &piece)> mkblankroute);
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) override;
+	bool PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions,
+			std::function<route*(route_class::ID type, const track_target_ptr &piece)> mkblankroute);
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) override;
 };
 
 class stdsignal : public genericsignal {
@@ -248,7 +250,13 @@ class autosignal : public stdsignal {
 	route overlap_route;
 
 	public:
-	autosignal(world &w_) : stdsignal(w_) { availableroutetypes_forward.start |= route_class::Flag(route_class::RTC_ROUTE); availableroutetypes_forward.end |= route_class::AllNonOverlaps(); sflags |= GSF::AUTOSIGNAL; }
+	autosignal(world &w_)
+			: stdsignal(w_) {
+		availableroutetypes_forward.start |= route_class::Flag(route_class::RTC_ROUTE);
+		availableroutetypes_forward.end |= route_class::AllNonOverlaps();
+		sflags |= GSF::AUTOSIGNAL;
+	}
+
 	bool PostLayoutInit(error_collection &ec) override;
 	virtual std::string GetTypeName() const override { return "Automatic Signal"; }
 
@@ -291,7 +299,7 @@ class repeatersignal : public genericsignal {
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
-	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
+	virtual route *GetRouteByIndex(unsigned int index) override { return nullptr; }
 };
 
 class startofline : public routingpoint {
@@ -319,7 +327,7 @@ class startofline : public routingpoint {
 	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override;
 
-	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
+	virtual route *GetRouteByIndex(unsigned int index) override { return nullptr; }
 
 	virtual std::string GetTypeName() const override { return "Start/End of Line"; }
 
@@ -357,7 +365,7 @@ class routingmarker : public trackroutingpoint {
 	virtual void TrainLeave(EDGETYPE direction, train *t) override { }
 	virtual GTF GetFlags(EDGETYPE direction) const override;
 
-	virtual route *GetRouteByIndex(unsigned int index) override { return 0; }
+	virtual route *GetRouteByIndex(unsigned int index) override { return nullptr; }
 
 	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
@@ -372,20 +380,24 @@ class routingmarker : public trackroutingpoint {
 };
 
 inline const genericsignal* FastSignalCast(const generictrack *gt, EDGETYPE direction) {
-	if(gt && gt->GetFlags(direction) & GTF::SIGNAL) return static_cast<const genericsignal*>(gt);
-	return 0;
+	if(gt && gt->GetFlags(direction) & GTF::SIGNAL)
+		return static_cast<const genericsignal*>(gt);
+	return nullptr;
 }
 inline const genericsignal* FastSignalCast(const generictrack *gt) {
-	if(gt) return FastSignalCast(gt, gt->GetDefaultValidDirecton());
-	else return 0;
+	if(gt)
+		return FastSignalCast(gt, gt->GetDefaultValidDirecton());
+	return nullptr;
 }
 inline const routingpoint* FastRoutingpointCast(const generictrack *gt, EDGETYPE direction) {
-	if(gt && gt->GetFlags(direction) & GTF::ROUTINGPOINT) return static_cast<const routingpoint*>(gt);
-	return 0;
+	if(gt && gt->GetFlags(direction) & GTF::ROUTINGPOINT)
+		return static_cast<const routingpoint*>(gt);
+	return nullptr;
 }
 inline const routingpoint* FastRoutingpointCast(const generictrack *gt) {
-	if(gt) return FastRoutingpointCast(gt, gt->GetDefaultValidDirecton());
-	else return 0;
+	if(gt)
+		return FastRoutingpointCast(gt, gt->GetDefaultValidDirecton());
+	return nullptr;
 }
 
 inline genericsignal* FastSignalCast(generictrack *gt, EDGETYPE direction) {

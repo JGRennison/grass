@@ -238,10 +238,12 @@ namespace draw {
 			return [points, ts, obj](const draw_engine &eng, guilayout::world_layout &layout) {
 				draw::sprite_ref extras = 0;
 				const track_circuit *tc = ts->GetTrackCircuit();
-				if(tc && tc->Occupied()) extras |= SID_tc_occ;
+				if(tc && tc->Occupied())
+					extras |= SID_tc_occ;
 				reservationcountset rcs;
 				ts->ReservationTypeCount(rcs);
-				if(rcs.routeset > rcs.routesetauto) extras |= SID_reserved;
+				if(rcs.routeset > rcs.routesetauto)
+					extras |= SID_reserved;
 				for(auto &it : *points) {
 					layout.SetSprite(it.x, it.y, it.base_sprite | extras, obj, 0);
 				}
@@ -388,12 +390,14 @@ namespace draw {
 			switch(type) {
 				case SID_trackseg:
 					sp.LoadFromSprite((sr & (SID_typemask | SID_dirmask)) | SID_raw_img);
-					if(sr & SID_has_tc) sp.ReplaceColour(0x0000FF, 0xFF0000);
-					else sp.ReplaceColour(0x0000FF, 0x000000);
-					if(!(sr & SID_tc_occ)) sp.ReplaceColour(0xFF0000, 0xAAAAAA);
-					if((sr & SID_reserved) && !(sr & SID_tc_occ)) {
+					if(sr & SID_has_tc)
+						sp.ReplaceColour(0x0000FF, 0xFF0000);
+					else
+						sp.ReplaceColour(0x0000FF, 0x000000);
+					if(!(sr & SID_tc_occ))
+						sp.ReplaceColour(0xFF0000, 0xAAAAAA);
+					if((sr & SID_reserved) && !(sr & SID_tc_occ))
 						sp.ReplaceColour(0xAAAAAA, 0xFFFFFF);
-					}
 					return;
 
 				case SID_signalpost:

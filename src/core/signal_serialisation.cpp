@@ -49,13 +49,19 @@ void routingpoint::Deserialise(const deserialiser_input &di, error_collection &e
 
 void routingpoint::Serialise(serialiser_output &so, error_collection &ec) const {
 	genericzlentrack::Serialise(so, ec);
-	if(aspect) SerialiseValueJson(aspect, so, "aspect");
-	if(reserved_aspect) SerialiseValueJson(reserved_aspect, so, "reserved_aspect");
-	if(aspect_type != route_class::RTC_NULL) SerialiseValueJson(aspect_type, so, "aspect_type");
+	if(aspect)
+		SerialiseValueJson(aspect, so, "aspect");
+	if(reserved_aspect)
+		SerialiseValueJson(reserved_aspect, so, "reserved_aspect");
+	if(aspect_type != route_class::RTC_NULL)
+		SerialiseValueJson(aspect_type, so, "aspect_type");
 
-	if(aspect_target) SerialiseValueJson(aspect_target->GetName(), so, "aspect_target");
-	if(aspect_route_target) SerialiseValueJson(aspect_route_target->GetName(), so, "aspect_route_target");
-	if(aspect_backwards_dependency) SerialiseValueJson(aspect_backwards_dependency->GetName(), so, "aspect_backwards_dependency");
+	if(aspect_target)
+		SerialiseValueJson(aspect_target->GetName(), so, "aspect_target");
+	if(aspect_route_target)
+		SerialiseValueJson(aspect_route_target->GetName(), so, "aspect_route_target");
+	if(aspect_backwards_dependency)
+		SerialiseValueJson(aspect_backwards_dependency->GetName(), so, "aspect_backwards_dependency");
 }
 
 class trackroutingpoint_deserialisation_extras : public trackroutingpoint_deserialisation_extras_base {
@@ -102,7 +108,8 @@ void genericsignal::Deserialise(const deserialiser_input &di, error_collection &
 
 	CheckTransJsonValueFlag(sflags, GSF::APPROACHLOCKINGMODE, di, "approachlockingmode", ec);
 	CheckTransJsonValueFlag(sflags, GSF::OVERLAPTIMEOUTSTARTED, di, "overlaptimeoutstarted", ec);
-	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) CheckTransJsonValue(overlap_timeout_start, di, "overlap_timeout_start", ec);
+	if(sflags & GSF::OVERLAPTIMEOUTSTARTED)
+		CheckTransJsonValue(overlap_timeout_start, di, "overlap_timeout_start", ec);
 	CheckTransJsonValue(last_route_prove_time, di, "lastrouteprovetime", ec);
 	CheckTransJsonValue(last_route_clear_time, di, "lastroutecleartime", ec);
 	CheckTransJsonValue(last_route_set_time, di, "lastroutesettime", ec);
@@ -113,14 +120,18 @@ void genericsignal::Serialise(serialiser_output &so, error_collection &ec) const
 
 	SerialiseSubObjJson(start_trs, so, "start_trs", ec);
 	SerialiseSubObjJson(end_trs, so, "end_trs", ec);
-	if(sflags & GSF::APPROACHLOCKINGMODE) SerialiseValueJson<bool>(true, so, "approachlockingmode");
+	if(sflags & GSF::APPROACHLOCKINGMODE)
+		SerialiseValueJson<bool>(true, so, "approachlockingmode");
 	if(sflags & GSF::OVERLAPTIMEOUTSTARTED) {
 		SerialiseValueJson(overlap_timeout_start, so, "overlap_timeout_start");
 		SerialiseValueJson<bool>(true, so, "approachlockingmode");
 	}
-	if(last_route_prove_time) SerialiseValueJson(last_route_prove_time, so, "lastrouteprovetime");
-	if(last_route_clear_time) SerialiseValueJson(last_route_clear_time, so, "lastroutecleartime");
-	if(last_route_set_time) SerialiseValueJson(last_route_set_time, so, "lastroutesettime");
+	if(last_route_prove_time)
+		SerialiseValueJson(last_route_prove_time, so, "lastrouteprovetime");
+	if(last_route_clear_time)
+		SerialiseValueJson(last_route_clear_time, so, "lastroutecleartime");
+	if(last_route_set_time)
+		SerialiseValueJson(last_route_set_time, so, "lastroutesettime");
 }
 
 void stdsignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -141,8 +152,10 @@ void stdsignal::Deserialise(const deserialiser_input &di, error_collection &ec) 
 		}
 	};
 	docompoundflag("shuntsignal", route_class::Flag(route_class::RTC_SHUNT), route_class::Flag(route_class::RTC_SHUNT));
-	docompoundflag("routesignal", route_class::Flag(route_class::RTC_ROUTE), route_class::Flag(route_class::RTC_SHUNT) | route_class::Flag(route_class::RTC_ROUTE));
-	docompoundflag("routeshuntsignal", route_class::Flag(route_class::RTC_SHUNT) | route_class::Flag(route_class::RTC_ROUTE), route_class::Flag(route_class::RTC_SHUNT) | route_class::Flag(route_class::RTC_ROUTE));
+	docompoundflag("routesignal", route_class::Flag(route_class::RTC_ROUTE), route_class::Flag(route_class::RTC_SHUNT) |
+			route_class::Flag(route_class::RTC_ROUTE));
+	docompoundflag("routeshuntsignal", route_class::Flag(route_class::RTC_SHUNT) | route_class::Flag(route_class::RTC_ROUTE),
+			route_class::Flag(route_class::RTC_SHUNT) | route_class::Flag(route_class::RTC_ROUTE));
 
 	CheckTransJsonValueFlag(sflags, GSF::OVERLAPSWINGABLE, di, "overlapswingable", ec);
 	CheckTransJsonValue(overlapswingminaspectdistance, di, "overlapswingminaspectdistance", ec);
@@ -190,7 +203,9 @@ void stdsignal::Deserialise(const deserialiser_input &di, error_collection &ec) 
 				acfunc(deserialiser_input(sddi.json[i], "", MkArrayRefName(i), sddi));
 			}
 		}
-		else acfunc(sddi);
+		else {
+			acfunc(sddi);
+		}
 	}
 	route_defaults.DeserialiseRouteCommon(di, ec, route_common::DeserialisationFlags::NO_APLOCK_TIMEOUT);
 }
@@ -258,8 +273,10 @@ void routingmarker::Deserialise(const deserialiser_input &di, error_collection &
 	flag_conflict_checker<route_class::set> conflictcheck_end_rev;
 	conflictcheck_end.Ban(route_class::AllNonOverlaps());
 	conflictcheck_end_rev.Ban(route_class::AllNonOverlaps());
-	if(di.json.HasMember("overlapend")) conflictcheck_end.RegisterFlagsMasked(availableroutetypes_forward.end, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
-	if(di.json.HasMember("overlapend_rev")) conflictcheck_end.RegisterFlagsMasked(availableroutetypes_reverse.end, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
+	if(di.json.HasMember("overlapend"))
+		conflictcheck_end.RegisterFlagsMasked(availableroutetypes_forward.end, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
+	if(di.json.HasMember("overlapend_rev"))
+		conflictcheck_end.RegisterFlagsMasked(availableroutetypes_reverse.end, route_class::Flag(route_class::ID::RTC_OVERLAP), di, "", ec);
 	route_class::DeserialiseGroupProp(availableroutetypes_forward.end, di, "end", ec, conflictcheck_end);
 	route_class::DeserialiseGroupProp(availableroutetypes_reverse.end, di, "end_rev", ec, conflictcheck_end_rev);
 }

@@ -246,12 +246,12 @@ TEST_CASE( "track/deserialisation/track", "Test basic track segment deserialisat
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	trackseg *t = dynamic_cast<trackseg *>(env.w->FindTrackByName("T1"));
-	REQUIRE(t != 0);
+	REQUIRE(t != nullptr);
 	REQUIRE(t->GetLength(EDGE_FRONT) == 50000);
 	REQUIRE(t->GetElevationDelta(EDGE_FRONT) == -1000);
 
 	const speedrestrictionset *sr = t->GetSpeedRestrictions();
-	REQUIRE(sr != 0);
+	REQUIRE(sr != nullptr);
 	REQUIRE(sr->GetTrackSpeedLimitByClass("foo", UINT_MAX) == 27778);
 	REQUIRE(sr->GetTrackSpeedLimitByClass("bar", UINT_MAX) == UINT_MAX);
 }
@@ -267,7 +267,7 @@ TEST_CASE( "track/deserialisation/points", "Test basic points deserialisation" )
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	points *p = dynamic_cast<points *>(env.w->FindTrackByName("P1"));
-	REQUIRE(p != 0);
+	REQUIRE(p != nullptr);
 	REQUIRE(p->GetPointsFlags(0) == (points::PTF::REV | points::PTF::REMINDER));
 }
 
@@ -283,7 +283,7 @@ TEST_CASE( "track/deserialisation/autoname", "Test deserialisation automatic nam
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	trackseg *p = dynamic_cast<trackseg *>(env.w->FindTrackByName("#1"));
-	REQUIRE(p != 0);
+	REQUIRE(p != nullptr);
 }
 
 std::string track_test_str_ds =
@@ -314,7 +314,7 @@ TEST_CASE( "track/deserialisation/doubleslip", "Test basic doubleslip deserialis
 		INFO("Double-slip check for: " << name);
 
 		doubleslip *ds = dynamic_cast<doubleslip *>(env.w->FindTrackByName(name));
-		REQUIRE(ds != 0);
+		REQUIRE(ds != nullptr);
 		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_FL) == pffl);
 		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_FR) == pffr);
 		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_BL) == pfbl);
@@ -358,7 +358,7 @@ TEST_CASE( "track/conn/doubleslip", "Test basic doubleslip connectivity" ) {
 		INFO("Double-slip check for: " << name);
 
 		doubleslip *ds = dynamic_cast<doubleslip *>(env.w->FindTrackByName(name));
-		REQUIRE(ds != 0);
+		REQUIRE(ds != nullptr);
 
 		REQUIRE(test_doubleslip::HalfConnect(ds, EDGE_DS_FL, track_target_ptr(fl, EDGE_FRONT)) == true);
 		REQUIRE(test_doubleslip::HalfConnect(ds, EDGE_DS_FR, track_target_ptr(fr, EDGE_FRONT)) == true);
@@ -374,7 +374,7 @@ TEST_CASE( "track/conn/doubleslip", "Test basic doubleslip connectivity" ) {
 		INFO("Double-slip check for: " << name);
 
 		doubleslip *ds = dynamic_cast<doubleslip *>(env.w->FindTrackByName(name));
-		REQUIRE(ds != 0);
+		REQUIRE(ds != nullptr);
 
 		ds->SetPointsFlagsMasked(test_doubleslip::GetCurrentPointIndex(ds, direction), rev ? genericpoints::PTF::REV : genericpoints::PTF::ZERO, genericpoints::PTF::REV);
 	};
@@ -419,13 +419,13 @@ TEST_CASE( "track/deserialisation/partialconnection", "Test partial track connec
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	points *p1 = dynamic_cast<points *>(env.w->FindTrackByName("P1"));
-	REQUIRE(p1 != 0);
+	REQUIRE(p1 != nullptr);
 	points *p2 = dynamic_cast<points *>(env.w->FindTrackByName("P2"));
-	REQUIRE(p2 != 0);
+	REQUIRE(p2 != nullptr);
 	trackseg *t2 = dynamic_cast<trackseg *>(env.w->FindTrackByName("T2"));
-	REQUIRE(t2 != 0);
+	REQUIRE(t2 != nullptr);
 	trackseg *t3 = dynamic_cast<trackseg *>(env.w->FindTrackByName("T3"));
-	REQUIRE(t3 != 0);
+	REQUIRE(t3 != nullptr);
 
 	REQUIRE(p1->GetEdgeConnectingPiece(EDGE_PTS_REVERSE) == track_target_ptr(t2, EDGE_FRONT));
 	REQUIRE(p2->GetEdgeConnectingPiece(EDGE_PTS_REVERSE) == track_target_ptr(t3, EDGE_FRONT));
@@ -502,7 +502,7 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 		INFO("Double-slip check for: " << name << ", at time: " << env.w->GetGameTime());
 
 		doubleslip *ds = dynamic_cast<doubleslip *>(env.w->FindTrackByName(name));
-		REQUIRE(ds != 0);
+		REQUIRE(ds != nullptr);
 		CHECK(ds->GetCurrentPointFlags(EDGE_DS_FL) == pffl);
 		CHECK(ds->GetCurrentPointFlags(EDGE_DS_FR) == pffr);
 		CHECK(ds->GetCurrentPointFlags(EDGE_DS_BL) == pfbl);
@@ -512,7 +512,7 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 		INFO("Points check for: " << name << ", at time: " << env.w->GetGameTime());
 
 		points *p = dynamic_cast<points *>(env.w->FindTrackByName(name));
-		REQUIRE(p != 0);
+		REQUIRE(p != nullptr);
 		CHECK(p->GetPointsFlags(0) == pflags);
 	};
 	checkp("P1", genericpoints::PTF::ZERO);
@@ -575,7 +575,7 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 	auto checkpoints = [&](const std::string &name, unsigned int norm_dist, unsigned int rev_dist, unsigned int face_dist) {
 		INFO("Points check for: " << name);
 		generictrack *p = env.w->FindTrackByName(name);
-		REQUIRE(p != 0);
+		REQUIRE(p != nullptr);
 		CHECK(p->GetSightingDistance(EDGE_PTS_NORMAL) == norm_dist);
 		CHECK(p->GetSightingDistance(EDGE_PTS_REVERSE) == rev_dist);
 		CHECK(p->GetSightingDistance(EDGE_PTS_FACE) == face_dist);
@@ -584,7 +584,7 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 	auto checksig = [&](const std::string &name, unsigned int dist) {
 		INFO("Signal check for: " << name);
 		generictrack *s = env.w->FindTrackByName(name);
-		REQUIRE(s != 0);
+		REQUIRE(s != nullptr);
 		CHECK(s->GetSightingDistance(EDGE_FRONT) == dist);
 		CHECK(s->GetSightingDistance(EDGE_BACK) == 0);
 	};

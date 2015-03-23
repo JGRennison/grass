@@ -59,48 +59,50 @@ std::string gr_strftime(const std::string &format, const struct tm *tm, time_t t
 		//this is adapted from retcon tpanel.cpp adapted from npipe var.cpp
 
 	std::string newfmt;
-	std::string &real_format=newfmt;
-	const char *ch=format.c_str();
-	const char *cur=ch;
+	std::string &real_format = newfmt;
+	const char *ch = format.c_str();
+	const char *cur = ch;
 	while(*ch) {
-		if(ch[0]=='%') {
+		if(ch[0] == '%') {
 			std::string insert;
-			if(ch[1]=='z') {
+			if(ch[1] == 'z') {
 				int hh;
 				int mm;
 				if(localtime) {
 					TIME_ZONE_INFORMATION info;
 					DWORD res = GetTimeZoneInformation(&info);
 					int bias = - info.Bias;
-					if(res==TIME_ZONE_ID_DAYLIGHT) bias-=info.DaylightBias;
+					if(res == TIME_ZONE_ID_DAYLIGHT)
+						bias -= info.DaylightBias;
 					hh = bias / 60;
-					if(bias<0) bias=-bias;
+					if(bias < 0)
+						bias = -bias;
 					mm = bias % 60;
 				}
 				else {
-					hh=mm=0;
+					hh = mm = 0;
 				}
-				insert=string_format("%+03d%02d", hh, mm);
+				insert = string_format("%+03d%02d", hh, mm);
 			}
-			else if(ch[1]=='F') {
-				insert="%Y-%m-%d";
+			else if(ch[1] == 'F') {
+				insert = "%Y-%m-%d";
 			}
-			else if(ch[1]=='R') {
-				insert="%H:%M";
+			else if(ch[1] == 'R') {
+				insert = "%H:%M";
 			}
-			else if(ch[1]=='T') {
-				insert="%H:%M:%S";
+			else if(ch[1] == 'T') {
+				insert = "%H:%M:%S";
 			}
-			else if(ch[1]=='s') {
-				insert=std::to_string(timestamp);
+			else if(ch[1] == 's') {
+				insert = std::to_string(timestamp);
 			}
 			else if(ch[1]) {
 				ch++;
 			}
 			if(insert.size()) {
-				real_format += std::string(cur, ch-cur);
+				real_format += std::string(cur, ch - cur);
 				real_format += insert;
-				cur=ch+2;
+				cur = ch + 2;
 			}
 		}
 		ch++;
@@ -120,11 +122,11 @@ unsigned int GetMilliTime() {
 	#ifdef _WIN32
 	SYSTEMTIME time;
 	GetSystemTime(&time);
-	ms=time.wMilliseconds;
+	ms = time.wMilliseconds;
 	#else
 	timeval time;
 	gettimeofday(&time, NULL);
-	ms=(time.tv_usec / 1000);
+	ms = (time.tv_usec / 1000);
 	#endif
 	return ms;
 }
@@ -136,12 +138,15 @@ size_t GetLineNumberOfStringOffset(const std::string &input, size_t offset, size
 	for(i = 0; i < input.size() && i <= offset; i++) {
 		if(input[i] == '\r') {
 			lineno++;
-			if(input[i+1] == '\n') i++;
-			if(linestart) *linestart = i + 1;
+			if(input[i+1] == '\n')
+				i++;
+			if(linestart)
+				*linestart = i + 1;
 		}
 		else if(input[i] == '\n') {
 			lineno++;
-			if(linestart) *linestart = i + 1;
+			if(linestart)
+				*linestart = i + 1;
 		}
 	}
 	if(lineend) {

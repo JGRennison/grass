@@ -84,7 +84,8 @@ std::shared_ptr<draw::draw_module> grassapp::GetCurrentDrawModule() {
 }
 
 std::shared_ptr<draw::draw_options> grassapp::GetDrawOptions() {
-	if(!opts) opts = std::make_shared<draw::draw_options>();
+	if(!opts)
+		opts = std::make_shared<draw::draw_options>();
 	return opts;
 }
 
@@ -103,7 +104,8 @@ grassapp::~grassapp() {
 }
 
 void grassapp::RunGameTimer() {
-	if(!timer) timer.reset(new gametimer(this));
+	if(!timer)
+		timer.reset(new gametimer(this));
 	if(ispaused || speedfactor == 0) {
 		timer->Stop();
 	}

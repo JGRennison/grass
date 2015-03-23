@@ -105,7 +105,9 @@ namespace draw {
 					wxImage simg = img.Scale(eng->GetSpriteWidth(), eng->GetSpriteHeight());
 					bmp = wxBitmap(simg);
 				}
-				else bmp = wxBitmap(img);
+				else {
+					bmp = wxBitmap(img);
+				}
 			}
 		}
 	}

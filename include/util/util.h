@@ -48,7 +48,7 @@ template <typename I> I fast_isqrt( I n ){
 std::string string_format(const std::string &fmt, ...);
 std::string gr_strftime(const std::string &format, const struct tm *tm, time_t timestamp, bool localtime);
 unsigned int GetMilliTime();
-size_t GetLineNumberOfStringOffset(const std::string &input, size_t offset, size_t *linestart = 0, size_t *lineend = 0);
+size_t GetLineNumberOfStringOffset(const std::string &input, size_t offset, size_t *linestart = nullptr, size_t *lineend = nullptr);
 
 // len can be negative to signal string is null-terminated
 // returns true if whole input string is valid
@@ -66,20 +66,26 @@ template <typename C, typename D> inline bool ownstrtonum(C &val, D *str, ssize_
 		else if(str[i] == 0) {
 			return len < 0;
 		}
-		else return false;
+		else {
+			return false;
+		}
 	}
 	return true;
 }
 
 template <typename I> I swap_single_bits(I in, I bit1, I bit2) {
 	bool rev = !(in & bit1) != !(in & bit2);
-	if(rev) return in ^ (bit1 | bit2);
-	else return in;
+	if(rev)
+		return in ^ (bit1 | bit2);
+	else
+		return in;
 }
 
 template <typename I> I SetOrClearBits(I in, I bits, bool set) {
-	if(set) return in | bits;
-	else in &= ~bits;
+	if(set)
+		return in | bits;
+	else
+		in &= ~bits;
 	return in;
 }
 
@@ -101,7 +107,9 @@ template <typename C, typename UP> unsigned int container_unordered_remove_if(C 
 				break;
 			}
 		}
-		else ++it;
+		else {
+			++it;
+		}
 	}
 	return removecount;
 }

@@ -39,7 +39,8 @@ void vehicle_class::Deserialise(const deserialiser_input &di, error_collection &
 	else {
 		CheckTransJsonValueDefProc(fullmass, di, "fullmass", 0, ec, dsconv::Mass);
 		CheckTransJsonValueDefProc(emptymass, di, "emptymass", 0, ec, dsconv::Mass);
-		if(fullmass < emptymass) ec.RegisterNewError<error_deserialisation>(di, "Vehicle class: full mass < empty mass");
+		if(fullmass < emptymass)
+			ec.RegisterNewError<error_deserialisation>(di, "Vehicle class: full mass < empty mass");
 	}
 	if(!length || !fullmass || !emptymass) {
 		ec.RegisterNewError<error_deserialisation>(di, "Vehicle class: length and mass must be non-zero");
@@ -63,7 +64,8 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	}
 
 	auto add_train_segment = [&](const std::string &vehtypename, unsigned int multiplier, bool reversed, bool full, bool calc_seg_mass, unsigned int seg_mass) {
-		if(multiplier == 0) return;
+		if(multiplier == 0)
+			return;
 		vehicle_class *vc = di.w->FindVehicleClassByName(vehtypename);
 		if(!vc) {
 			genericerror(di, "No such vehicle class: " + vehtypename);
@@ -72,10 +74,14 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 		train_segments.emplace_back();
 		train_unit &tu = train_segments.back();
 		tu.vehtype = vc;
-		if(reversed) tu.stflags |= train_unit::STF::REV;
-		if(full) tu.stflags |= train_unit::STF::FULL;
+		if(reversed)
+			tu.stflags |= train_unit::STF::REV;
+		if(full)
+			tu.stflags |= train_unit::STF::FULL;
 		tu.veh_multiplier = multiplier;
-		if(calc_seg_mass) tu.CalculateSegmentMass();
+		if(calc_seg_mass) {
+			tu.CalculateSegmentMass();
+		}
 		else {
 			if(seg_mass > vc->fullmass * multiplier || seg_mass < vc->emptymass * multiplier) {
 				genericerror(di, "Segment mass out of range");
@@ -107,7 +113,9 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 
 			tsdi.PostDeserialisePropCheck(ec);
 		}
-		else genericerror(tsdi, "Invalid type");
+		else {
+			genericerror(tsdi, "Invalid type");
+		}
 	};
 
 	CheckIterateJsonArrayOrValue(di, "vehicleclasses", "vehicleclass", ec, parse_train_segment_val);
@@ -122,7 +130,7 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 
 	//todo: timetables, headcode
 
-	CalculateTrainMotionProperties(1<<8);    // TODO: replace this with the proper value
+	CalculateTrainMotionProperties(1 << 8);    // TODO: replace this with the proper value
 
 	track_location newpos;
 	newpos.Deserialise("position", di, ec);

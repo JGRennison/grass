@@ -44,7 +44,8 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 	};
 
 	std::vector<std::string> tokens = TokenizeString(cmd, " \t\n\r");
-	if(tokens.size() < 1) return input_err();
+	if(tokens.size() < 1)
+		return input_err();
 
 	if(tokens[0] == "reserve") {
 		std::vector<routingpoint *> rps;
@@ -59,8 +60,10 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 				rps.emplace_back(rp);
 			}
 		}
-		if(!ok) return false;
-		if(rps.size() < 2) return input_err();
+		if(!ok)
+			return false;
+		if(rps.size() < 2)
+			return input_err();
 
 		action_reservepath act(w, rps.front(), rps.back());
 		act.SetVias(via_list(rps.begin() + 1, rps.end() - 1)); // Place all unused routing points in the via list
@@ -70,7 +73,8 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 	}
 
 	if(tokens[0] == "unreserve") {
-		if(tokens.size() != 2) return input_err();
+		if(tokens.size() != 2)
+			return input_err();
 		genericsignal *rp = w.FindTrackByNameCast<genericsignal>(tokens[1]);
 		if(!rp) {
 			return cannot_use_err(tokens[1], "track/reservation/notsignal");

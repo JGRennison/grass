@@ -78,7 +78,9 @@ class track_train_counter_block : public world_obj {
 };
 template<> struct enum_traits< track_train_counter_block::TCF > { static constexpr bool flags = true; };
 
-inline bool track_train_counter_block::Occupied() const { return traincount > 0 || tc_flags & TCF::FORCEOCCUPIED; }
+inline bool track_train_counter_block::Occupied() const {
+	return traincount > 0 || tc_flags & TCF::FORCEOCCUPIED;
+}
 
 class track_circuit : public track_train_counter_block {
 	public:

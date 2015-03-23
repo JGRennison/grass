@@ -30,7 +30,7 @@ class future_usermessage : public future {
 	world *w;
 
 	public:
-	future_usermessage(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id), w(0) {  };
+	future_usermessage(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id), w(nullptr) {  };
 	future_usermessage(futurable_obj &targ, world_time ft, world *w_) : future(targ, ft, w_->MakeNewFutureID()), w(w_) {  };
 
 	virtual void ExecuteAction() = 0;
@@ -60,7 +60,8 @@ class future_genericusermessage_reason : public future_genericusermessage {
 
 	public:
 	future_genericusermessage_reason(futurable_obj &targ, world_time ft, future_id_type id) : future_genericusermessage(targ, ft, id) { };
-	future_genericusermessage_reason(futurable_obj &targ, world_time ft, world *w_, const std::string &textkey_, const std::string &reasonkey_) : future_genericusermessage(targ, ft, w_, textkey_), reasonkey(reasonkey_) { };
+	future_genericusermessage_reason(futurable_obj &targ, world_time ft, world *w_, const std::string &textkey_, const std::string &reasonkey_)
+			: future_genericusermessage(targ, ft, w_, textkey_), reasonkey(reasonkey_) { };
 	static std::string GetTypeSerialisationNameStatic() { return "future_genericusermessage_reason"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void PrepareVariables(message_formatter &mf, world &w) override;

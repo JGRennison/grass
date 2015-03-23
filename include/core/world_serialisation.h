@@ -39,7 +39,7 @@ class generictrack;
 class trackberth;
 
 struct template_def {
-	const rapidjson::Value *json = 0;
+	const rapidjson::Value *json = nullptr;
 	bool beingexpanded = false;
 };
 
@@ -76,7 +76,12 @@ class world_deserialisation {
 	};
 
 	void InitObjectTypes();
-	world_deserialisation(world &w_) : w(w_), previoustrackpiece(0) { InitObjectTypes(); }
+
+	world_deserialisation(world &w_)
+			: w(w_), previoustrackpiece(nullptr) {
+		InitObjectTypes();
+	}
+
 	void ParseInputString(const std::string &input, error_collection &ec, WSLOADGAME_FLAGS flags = WSLOADGAME_FLAGS::ZERO);
 	void LoadGame(const deserialiser_input &di, error_collection &ec, WSLOADGAME_FLAGS flags = WSLOADGAME_FLAGS::ZERO);
 	void DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &contentdi, error_collection &ec);

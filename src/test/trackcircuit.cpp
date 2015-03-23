@@ -92,15 +92,17 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 		if(!piece) return false;
 		bool found = false;
 		piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
-			if(reserved_route == r) found = true;
+			if(reserved_route == r)
+				found = true;
 		}, RRF::RESERVE);
 		return found;
 	};
 
 	auto checkstate = [&](generictrack *start, generictrack *end, const route *rt) {
 		std::function<void(generictrack *piece)> checkpiece = [&](generictrack *piece) {
-			CHECK(piece != 0);
-			if(!piece) return;
+			CHECK(piece != nullptr);
+			if(!piece)
+				return;
 			bool found = false;
 			piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
 				if(reserved_route == rt) {
@@ -126,11 +128,12 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	};
 
 	auto checkunreserved = [&](const route *rt) {
-		REQUIRE(rt != 0);
+		REQUIRE(rt != nullptr);
 		auto checkpiece = [&](generictrack *piece) {
 			bool found = false;
 			piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
-				if(reserved_route == rt) found = true;
+				if(reserved_route == rt)
+					found = true;
 			}, RRF::RESERVE);
 			if(found) {
 				WARN("Piece unexpectedly reserved: " << piece->GetName());
@@ -138,7 +141,9 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 			CHECK(found == false);
 		};
 		checkpiece(rt->start.track);
-		for(auto &it : rt->pieces) checkpiece(it.location.track);
+		for(auto &it : rt->pieces) {
+			checkpiece(it.location.track);
+		}
 		checkpiece(rt->end.track);
 	};
 
@@ -148,8 +153,8 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 
 	const route *s1rt = s1->GetCurrentForwardRoute();
 	const route *s2rt = s2->GetCurrentForwardRoute();
-	CHECK(s1rt != 0);
-	CHECK(s2rt != 0);
+	CHECK(s1rt != nullptr);
+	CHECK(s2rt != nullptr);
 
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");

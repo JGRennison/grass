@@ -65,7 +65,10 @@ class trackseg : public generictrack {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override { outputlist.push_back(&trs); return 1; }
+	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override {
+		outputlist.push_back(&trs);
+		return 1;
+	}
 	virtual bool CanHaveBerth() const override { return true; }
 
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
@@ -109,7 +112,10 @@ class crossover : public genericzlentrack {
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
-	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override { outputlist.push_back(&trs); return 1; }
+	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override {
+		outputlist.push_back(&trs);
+		return 1;
+	}
 
 	protected:
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;

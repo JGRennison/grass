@@ -42,7 +42,12 @@
 class world;
 
 struct writestream {
-	writestream(std::string &str_, size_t reshint=512 ) : str(str_) { str.clear(); str.reserve(reshint); }
+	writestream(std::string &str_, size_t reshint = 512 )
+			: str(str_) {
+		str.clear();
+		str.reserve(reshint);
+	}
+
 	std::string &str;
 	inline void Put(char ch) { str.push_back(ch); }
 };
@@ -103,8 +108,8 @@ struct deserialiser_input {
 	world_deserialisation *ws;
 	const deserialiser_input *parent;
 	mutable std::vector<const char *> seenprops;
-	deserialiser_input *objpreparse = 0;
-	deserialiser_input *objpostparse = 0;
+	deserialiser_input *objpreparse = nullptr;
+	deserialiser_input *objpostparse = nullptr;
 
 	deserialiser_input(const rapidjson::Value &j, const std::string &t, const std::string &r, world *w_ = nullptr, world_deserialisation *ws_ = nullptr, const deserialiser_input *base = nullptr)
 			: type(t), reference_name(r), json(j), w(w_), ws(ws_), parent(base) { }
@@ -119,6 +124,7 @@ struct deserialiser_input {
 	class deserialiser_input_clone_with_ancestors {
 		std::vector< std::unique_ptr<deserialiser_input> > items;
 		deserialiser_input *top;
+
 		public:
 		deserialiser_input_clone_with_ancestors(deserialiser_input *top_, std::vector< std::unique_ptr<deserialiser_input> > &&items_) :
 			items(std::move(items_)), top(top_) { }
@@ -149,9 +155,11 @@ struct serialiser_output {
 
 	template <typename T> void OutputStatic(T func) {
 		if(flags & SOUTPUT_FLAGS::OUTPUT_STATIC) {
-			if(callbacks) callbacks->StartStaticOutput();
+			if(callbacks)
+				callbacks->StartStaticOutput();
 			func();
-			if(callbacks) callbacks->EndStaticOutput();
+			if(callbacks)
+				callbacks->EndStaticOutput();
 		}
 	}
 };
@@ -259,17 +267,21 @@ template <typename C> inline void CheckJsonTypeAndReportError(const deserialiser
 }
 
 template <typename C> inline bool CheckTransJsonValue(C &var, const deserialiser_input &di, const char *prop, error_collection &ec, bool mandatory=false) {
-	const rapidjson::Value &subval=di.json[prop];
-	if(!subval.IsNull()) di.RegisterProp(prop);
-	bool res=IsType<typename flagtyperemover<C>::type>(subval);
-	if(res) var=static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval));
-	else CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec, mandatory);
+	const rapidjson::Value &subval = di.json[prop];
+	if(!subval.IsNull())
+		di.RegisterProp(prop);
+	bool res = IsType<typename flagtyperemover<C>::type>(subval);
+	if(res)
+		var = static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval));
+	else
+		CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec, mandatory);
 	return res;
 }
 
 template <typename C, typename D> inline bool CheckTransJsonValueDef(C &var, const deserialiser_input &di, const char *prop, const D def, error_collection &ec) {
 	bool res = CheckTransJsonValue(var, di, prop, ec, false);
-	if(!res) var = def;
+	if(!res)
+		var = def;
 	return res;
 }
 
@@ -290,7 +302,7 @@ template <typename C, typename F> inline bool TransJsonValueProc(const rapidjson
 		return res;
 	}
 	else if(IsType<C>(subval)) {
-		var=GetType<C>(subval);
+		var = GetType<C>(subval);
 		return true;
 	}
 	else {
@@ -301,9 +313,11 @@ template <typename C, typename F> inline bool TransJsonValueProc(const rapidjson
 
 //! Where F is a functor with the signature bool(const std::string &, uint64_t &, error_collection &)
 template <typename C, typename F> inline bool CheckTransJsonValueProc(C &var, const deserialiser_input &di, const char *prop, error_collection &ec, F conv, bool mandatory=false) {
-	const rapidjson::Value &subval=di.json[prop];
-	if(!subval.IsNull()) di.RegisterProp(prop);
-	else return false;
+	const rapidjson::Value &subval = di.json[prop];
+	if(!subval.IsNull())
+		di.RegisterProp(prop);
+	else
+		return false;
 
 	return TransJsonValueProc(subval, var, di, prop, ec, conv, mandatory);
 }
@@ -311,7 +325,8 @@ template <typename C, typename F> inline bool CheckTransJsonValueProc(C &var, co
 //! Where F is a functor with the signature bool(const std::string &, uint64_t &, error_collection &)
 template <typename C, typename D, typename F> inline bool CheckTransJsonValueDefProc(C &var, const deserialiser_input &di, const char *prop, const D def, error_collection &ec, F conv) {
 	bool res = CheckTransJsonValueProc(var, di, prop, ec, conv, false);
-	if(!res) var = def;
+	if(!res)
+		var = def;
 	return res;
 }
 
@@ -328,14 +343,18 @@ template <typename C> class flag_conflict_checker {
 	flag_conflict_checker() : set_bits(static_cast<C>(0)), clear_bits(static_cast<C>(0)) { }
 
 	void RegisterFlags(bool set, C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec) {
-		if(set) set_bits |= flagmask;
-		else clear_bits |= flagmask;
+		if(set)
+			set_bits |= flagmask;
+		else
+			clear_bits |= flagmask;
 		CheckError(flagmask, di, prop, ec);
 	}
 
 	void RegisterAndProcessFlags(C &val, bool set, C flagmask, const deserialiser_input &di, const char *prop, error_collection &ec) {
-		if(set) val |= flagmask;
-		else val &= ~flagmask;
+		if(set)
+			val |= flagmask;
+		else
+			val &= ~flagmask;
 		RegisterFlags(set, flagmask, di, prop, ec);
 	}
 
@@ -358,48 +377,64 @@ template <typename C> class flag_conflict_checker {
 };
 
 template <typename C, typename D> inline bool CheckTransJsonValueFlag(C &var, D flagmask, const deserialiser_input &di, const char *prop, error_collection &ec, flag_conflict_checker<C> *conflictcheck = 0) {
-	const rapidjson::Value &subval=di.json[prop];
-	if(!subval.IsNull()) di.RegisterProp(prop);
-	bool res=IsType<bool>(subval);
+	const rapidjson::Value &subval = di.json[prop];
+	if(!subval.IsNull())
+		di.RegisterProp(prop);
+	bool res = IsType<bool>(subval);
 	if(res) {
 		bool set = GetType<bool>(subval);
-		if(set) var = var | flagmask;
-		else var = var & ~flagmask;
+		if(set)
+			var = var | flagmask;
+		else
+			var = var & ~flagmask;
 
-		if(conflictcheck) conflictcheck->RegisterFlags(set, flagmask, di, prop, ec);
+		if(conflictcheck)
+			conflictcheck->RegisterFlags(set, flagmask, di, prop, ec);
 	}
-	else CheckJsonTypeAndReportError<bool>(di, prop, subval, ec);
+	else {
+		CheckJsonTypeAndReportError<bool>(di, prop, subval, ec);
+	}
 	return res;
 }
 
 template <typename C, typename D> inline bool CheckTransJsonValueDefFlag(C &var, D flagmask, const deserialiser_input &di, const char *prop, bool def, error_collection &ec) {
-	const rapidjson::Value &subval=di.json[prop];
-	if(!subval.IsNull()) di.RegisterProp(prop);
-	bool res=IsType<bool>(subval);
-	bool flagval=res?static_cast<C>(GetType<bool>(subval)):def;
-	if(flagval) var = var | flagmask;
-	else var = var & ~flagmask;
-	if(!res) CheckJsonTypeAndReportError<bool>(di, prop, subval, ec);
+	const rapidjson::Value &subval = di.json[prop];
+	if(!subval.IsNull())
+		di.RegisterProp(prop);
+	bool res = IsType<bool>(subval);
+	bool flagval = res ? static_cast<C>(GetType<bool>(subval)) : def;
+	if(flagval)
+		var = var | flagmask;
+	else
+		var = var & ~flagmask;
+	if(!res)
+		CheckJsonTypeAndReportError<bool>(di, prop, subval, ec);
 	return res;
 }
 
 template <typename C, typename D> inline C CheckGetJsonValueDef(const deserialiser_input &di, const char *prop, const D def, error_collection &ec, bool *hadval = nullptr) {
-	const rapidjson::Value &subval=di.json[prop];
-	if(!subval.IsNull()) di.RegisterProp(prop);
-	bool res=IsType<typename flagtyperemover<C>::type>(subval);
-	if(hadval) *hadval=res;
-	if(!res) CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
-	return res?static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval)):def;
+	const rapidjson::Value &subval = di.json[prop];
+	if(!subval.IsNull())
+		di.RegisterProp(prop);
+	bool res = IsType<typename flagtyperemover<C>::type>(subval);
+	if(hadval)
+		*hadval = res;
+	if(!res)
+		CheckJsonTypeAndReportError<typename flagtyperemover<C>::type>(di, prop, subval, ec);
+	return res ? static_cast<C>(GetType<typename flagtyperemover<C>::type>(subval)) : def;
 }
 
 //! Where F is a functor with the signature void(const deserialiser_input &di, error_collection &ec)
 template <typename C, typename F> inline bool CheckTransJsonTypeFunc(const deserialiser_input &di, const char *prop, const std::string &type_name,
 		error_collection &ec, F func, bool mandatory = false) {
 	const rapidjson::Value &subval = di.json[prop];
-	if(!subval.IsNull()) di.RegisterProp(prop);
+	if(!subval.IsNull())
+		di.RegisterProp(prop);
 	bool res = IsType<C>(subval);
-	if(res) func(deserialiser_input(subval, type_name, prop, di), ec);
-	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec, mandatory);
+	if(res)
+		func(deserialiser_input(subval, type_name, prop, di), ec);
+	else
+		CheckJsonTypeAndReportError<C>(di, prop, subval, ec, mandatory);
 	return res;
 }
 
@@ -435,18 +470,23 @@ template <typename C> inline bool CheckFillTypeVectorFromJsonArrayOrType(const d
 	return CheckIterateJsonArrayOrType<C>(di, prop, "", ec, func);
 }
 
-template <typename C> inline bool CheckTransRapidjsonValue(const rapidjson::Value *&val, const deserialiser_input &di, const char *prop, error_collection &ec, bool mandatory=false) {
+template <typename C> inline bool CheckTransRapidjsonValue(const rapidjson::Value *&val, const deserialiser_input &di, const char *prop, error_collection &ec, bool mandatory = false) {
 	const rapidjson::Value &subval=di.json[prop];
-	if(!subval.IsNull()) di.RegisterProp(prop);
-	bool res=IsType<C>(subval);
-	if(res) val=&subval;
-	else CheckJsonTypeAndReportError<C>(di, prop, subval, ec, mandatory);
+	if(!subval.IsNull())
+		di.RegisterProp(prop);
+	bool res = IsType<C>(subval);
+	if(res)
+		val = &subval;
+	else
+		CheckJsonTypeAndReportError<C>(di, prop, subval, ec, mandatory);
 	return res;
 }
 
-template <typename C> inline bool CheckTransRapidjsonValueDef(const rapidjson::Value *&val, const deserialiser_input &di, const char *prop, error_collection &ec, const rapidjson::Value *def = 0) {
+template <typename C> inline bool CheckTransRapidjsonValueDef(const rapidjson::Value *&val, const deserialiser_input &di, const char *prop,
+		error_collection &ec, const rapidjson::Value *def = nullptr) {
 	bool res = CheckTransRapidjsonValue<C>(val, di, prop, ec);
-	if(!res) val = def;
+	if(!res)
+		val = def;
 	return res;
 }
 

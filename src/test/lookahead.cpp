@@ -111,38 +111,38 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	env.w->GameStep(1);
 
 	generictrack *ts1 = env.w->FindTrackByName("TS1");
-	REQUIRE(ts1 != 0);
+	REQUIRE(ts1 != nullptr);
 	generictrack *ts2 = env.w->FindTrackByName("TS2");
-	REQUIRE(ts2 != 0);
+	REQUIRE(ts2 != nullptr);
 	genericsignal *s1 = env.w->FindTrackByNameCast<genericsignal>("S1");
-	REQUIRE(s1 != 0);
+	REQUIRE(s1 != nullptr);
 	genericsignal *s2 = env.w->FindTrackByNameCast<genericsignal>("S2");
-	REQUIRE(s2 != 0);
+	REQUIRE(s2 != nullptr);
 	genericsignal *s3 = env.w->FindTrackByNameCast<genericsignal>("S3");
-	REQUIRE(s3 != 0);
+	REQUIRE(s3 != nullptr);
 	genericsignal *s4 = env.w->FindTrackByNameCast<genericsignal>("S4");
-	REQUIRE(s4 != 0);
+	REQUIRE(s4 != nullptr);
 	routingpoint *b = env.w->FindTrackByNameCast<routingpoint>("B");
-	REQUIRE(b != 0);
+	REQUIRE(b != nullptr);
 	routingpoint *c = env.w->FindTrackByNameCast<routingpoint>("C");
-	REQUIRE(c != 0);
+	REQUIRE(c != nullptr);
 	points *p1 = env.w->FindTrackByNameCast<points>("P1");
-	REQUIRE(p1 != 0);
+	REQUIRE(p1 != nullptr);
 
 	lookahead l;
 	std::map<unsigned int, unsigned int> map;
 	track_location pos(ts1, EDGE_FRONT, 100000);
 	const route *s1rt = s1->GetCurrentForwardRoute();
 	CHECK(s1->GetAspect() > 0);
-	CHECK(s1rt != 0);
-	l.Init(0, pos, s1rt);
-	CheckLookahead(0, l, pos, map);
+	CHECK(s1rt != nullptr);
+	l.Init(nullptr, pos, s1rt);
+	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 400000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
 	l.Advance(300000);
 	pos = track_location(ts1, EDGE_FRONT, 400000);
-	CheckLookahead(0, l, pos, map);
+	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 100000, 200);
 	CheckLookaheadResult(pos, map, 600000, 0);
 	FinaliseLookaheadCheck(pos, map);
@@ -151,7 +151,7 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	env.w->SubmitAction(action_reservepath(*(env.w), s3, c));
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
-	CheckLookahead(0, l, pos, map);
+	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 100000, 200);
 	CheckLookaheadResult(pos, map, 1500000, 0);
 	FinaliseLookaheadCheck(pos, map);
@@ -159,7 +159,7 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	CHECK(s3->GetCurrentForwardRoute() != 0);
 	env.w->SubmitAction(action_unreservetrackroute(*(env.w), *s3->GetCurrentForwardRoute()));
 	env.w->GameStep(1);
-	CheckLookahead(0, l, pos, map, lookahead::LA_ERROR::SIG_ASPECT_LESS_THAN_EXPECTED, track_target_ptr(s2, EDGE_FRONT));
+	CheckLookahead(nullptr, l, pos, map, lookahead::LA_ERROR::SIG_ASPECT_LESS_THAN_EXPECTED, track_target_ptr(s2, EDGE_FRONT));
 	CheckLookaheadResult(pos, map, 100000, 200);
 	CheckLookaheadResult(pos, map, 600000, 0);
 	FinaliseLookaheadCheck(pos, map);
@@ -169,7 +169,7 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 
 	l.Advance(500000);
 	pos = track_location(ts2, EDGE_FRONT, 400000);
-	CheckLookahead(0, l, pos, map);
+	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 0, 200);
 	CheckLookaheadResult(pos, map, 1000000, 0);
 	FinaliseLookaheadCheck(pos, map);
@@ -184,7 +184,7 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
 
-	CheckLookahead(0, l, pos, map, lookahead::LA_ERROR::SIG_TARGET_CHANGE, track_target_ptr(s3, EDGE_FRONT));
+	CheckLookahead(nullptr, l, pos, map, lookahead::LA_ERROR::SIG_TARGET_CHANGE, track_target_ptr(s3, EDGE_FRONT));
 	CheckLookaheadResult(pos, map, 0, 200);
 	CheckLookaheadResult(pos, map, 600000, 100);
 	CheckLookaheadResult(pos, map, 1100000, 0);
@@ -198,65 +198,65 @@ TEST_CASE( "lookahead/unrouted", "Test unrouted track lookahead" ) {
 	env.w->GameStep(1);
 
 	generictrack *ts3 = env.w->FindTrackByName("TS3");
-	REQUIRE(ts3 != 0);
+	REQUIRE(ts3 != nullptr);
 	generictrack *ts4 = env.w->FindTrackByName("TS4");
-	REQUIRE(ts4 != 0);
+	REQUIRE(ts4 != nullptr);
 	genericsignal *s3 = env.w->FindTrackByNameCast<genericsignal>("S3");
-	REQUIRE(s3 != 0);
+	REQUIRE(s3 != nullptr);
 	genericsignal *s4 = env.w->FindTrackByNameCast<genericsignal>("S4");
-	REQUIRE(s4 != 0);
+	REQUIRE(s4 != nullptr);
 	routingpoint *b = env.w->FindTrackByNameCast<routingpoint>("B");
-	REQUIRE(b != 0);
+	REQUIRE(b != nullptr);
 	points *p1 = env.w->FindTrackByNameCast<points>("P1");
-	REQUIRE(p1 != 0);
+	REQUIRE(p1 != nullptr);
 
 	lookahead l;
 	std::map<unsigned int, unsigned int> map;
 	track_location pos(ts3, EDGE_FRONT, 100000);
-	l.Init(0, pos, 0);
-	CheckLookahead(0, l, pos, map);
+	l.Init(nullptr, pos, 0);
+	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 400000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
 	l.Advance(350000);
 	pos = track_location(ts3, EDGE_FRONT, 450000);
-	CheckLookahead(0, l, pos, map);
+	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 50000, 100);
 	CheckLookaheadResult(pos, map, 550000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
 	p1->SetPointsFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
-	CheckLookahead(0, l, pos, map);
+	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 50000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
 	p1->SetPointsFlagsMasked(0, points::PTF::REV, points::PTF::OOC | points::PTF::REV);
-	CheckLookahead(0, l, pos, map);
+	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 450000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
 	p1->SetPointsFlagsMasked(0, points::PTF::ZERO, points::PTF::REV);
-	CheckLookahead(0, l, pos, map);
+	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 50000, 100);
 	CheckLookaheadResult(pos, map, 550000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
 	l.Advance(350000);
 	pos = track_location(ts4, EDGE_FRONT, 300000);
-	CheckLookahead(0, l, pos, map);
+	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 0, 100);
 	CheckLookaheadResult(pos, map, 200000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
 	l.Advance(200000);
 	pos = track_location(s4, EDGE_FRONT, 0);
-	CheckLookahead(0, l, pos, map, lookahead::LA_ERROR::WAITING_AT_RED_SIG, track_target_ptr(s4, EDGE_FRONT));
+	CheckLookahead(nullptr, l, pos, map, lookahead::LA_ERROR::WAITING_AT_RED_SIG, track_target_ptr(s4, EDGE_FRONT));
 	CheckLookaheadResult(pos, map, 0, 0);
 	FinaliseLookaheadCheck(pos, map);
 
 	env.w->SubmitAction(action_reservepath(*(env.w), s4, b));
 	env.w->GameStep(1);
-	CheckLookahead(0, l, pos, map);
+	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 0, 100);
 	CheckLookaheadResult(pos, map, 500000, 0);
 	FinaliseLookaheadCheck(pos, map);
@@ -267,29 +267,31 @@ TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 	test_fixture_world_init_checked env(lookahead_test_str_2, true, true);
 
 	generictrack *ts1 = env.w->FindTrackByName("TS1");
-	REQUIRE(ts1 != 0);
+	REQUIRE(ts1 != nullptr);
 	generictrack *s1 = env.w->FindTrackByName("S1");
-	REQUIRE(s1 != 0);
+	REQUIRE(s1 != nullptr);
 	traction_type *ac = env.w->GetTractionTypeByName("AC");
-	REQUIRE(ac != 0);
+	REQUIRE(ac != nullptr);
 	traction_type *diesel = env.w->GetTractionTypeByName("diesel");
-	REQUIRE(diesel != 0);
+	REQUIRE(diesel != nullptr);
 
 	env.w->GameStep(1);
 
-	train *t = 0;
+	train *t = nullptr;
 	unsigned int traincount = env.w->EnumerateTrains([&](train &t_) {
 		t = &t_;
 	});
 	REQUIRE(traincount == 1);
-	REQUIRE(t != 0);
+	REQUIRE(t != nullptr);
 
 	auto checklookahead = [&](const track_location &pos, bool iserror, unsigned int distance) {
 		lookahead l;
 		std::map<unsigned int, unsigned int> map;
 		l.Init(t, pos, 0);
-		if(iserror) CheckLookahead(t, l, pos, map, lookahead::LA_ERROR::TRACTION_UNSUITABLE, pos.GetTrackTargetPtr());
-		else CheckLookahead(t, l, pos, map);
+		if(iserror)
+			CheckLookahead(t, l, pos, map, lookahead::LA_ERROR::TRACTION_UNSUITABLE, pos.GetTrackTargetPtr());
+		else
+			CheckLookahead(t, l, pos, map);
 		CheckLookaheadResult(pos, map, distance, 0);
 		FinaliseLookaheadCheck(pos, map);
 	};
@@ -320,11 +322,11 @@ TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserial
 	env.w->GameStep(1);
 
 	routingpoint *a = env.w->FindTrackByNameCast<routingpoint>("A");
-	REQUIRE(a != 0);
+	REQUIRE(a != nullptr);
 	genericsignal *s3 = env.w->FindTrackByNameCast<genericsignal>("S3");
-	REQUIRE(s3 != 0);
+	REQUIRE(s3 != nullptr);
 	genericsignal *s4 = env.w->FindTrackByNameCast<genericsignal>("S4");
-	REQUIRE(s4 != 0);
+	REQUIRE(s4 != nullptr);
 	env.w->SubmitAction(action_reservepath(*(env.w), s3, s4));
 
 	env.w->GameStep(1);
@@ -355,7 +357,7 @@ TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserial
 		std::forward_list<std::pair<lookahead::LA_ERROR, const track_target_ptr &> > errors[2];
 
 		auto fill = [&](lookahead &l, unsigned int index) {
-			l.CheckLookaheads(0, pos, [&](unsigned int distance, unsigned int speed) {
+			l.CheckLookaheads(nullptr, pos, [&](unsigned int distance, unsigned int speed) {
 				distances[index].emplace_front(distance, speed);
 			}, [&](lookahead::LA_ERROR err, const track_target_ptr &piece){
 				errors[index].emplace_front(err, piece);
@@ -386,8 +388,8 @@ TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserial
 	track_location pos(a, EDGE_FRONT, 0);
 	lookahead l1;
 	lookahead l2;
-	l1.Init(0, pos, 0);
-	l2.Init(0, pos, 0);
+	l1.Init(nullptr, pos, 0);
+	l2.Init(nullptr, pos, 0);
 
 	auto advance = [&](unsigned int distance) {
 		l1.Advance(distance);
@@ -401,7 +403,8 @@ TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserial
 	while(true) {
 		INFO("State Test at offset: " << offset);
 		statetest(l1, l2, pos);
-		if(offset >= totaldistance) break;
+		if(offset >= totaldistance)
+			break;
 		advance(step);
 		offset += step;
 	}

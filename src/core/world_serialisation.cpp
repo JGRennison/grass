@@ -33,11 +33,13 @@
 
 void world_deserialisation::ParseInputString(const std::string &input, error_collection &ec, world_deserialisation::WSLOADGAME_FLAGS flags) {
 	parsed_inputs.emplace_front();
-	rapidjson::Document &dc =  parsed_inputs.front();
+	rapidjson::Document &dc = parsed_inputs.front();
 	if (dc.Parse<0>(input.c_str()).HasParseError()) {
 		ec.RegisterNewError<error_jsonparse>(input, dc.GetErrorOffset(), dc.GetParseError());
 	}
-	else LoadGame(deserialiser_input(dc, "", "[root]", &w, this, nullptr), ec, flags);
+	else {
+		LoadGame(deserialiser_input(dc, "", "[root]", &w, this, nullptr), ec, flags);
+	}
 }
 
 void world_deserialisation::LoadGame(const deserialiser_input &di, error_collection &ec, world_deserialisation::WSLOADGAME_FLAGS flags) {
@@ -66,7 +68,8 @@ void world_deserialisation::DeserialiseGameState(error_collection &ec) {
 	gamestate_init.Execute(ec);
 }
 
-void world_deserialisation::DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &contentdi, error_collection &ec) {
+void world_deserialisation::DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params,
+		const deserialiser_input &contentdi, error_collection &ec) {
 	if(contentdi.json.IsArray()) {
 		for(rapidjson::SizeType i = 0; i < contentdi.json.Size(); i++) {
 			deserialiser_input subdi(contentdi.json[i], "", MkArrayRefName(i), &w, this, &contentdi);
@@ -99,15 +102,16 @@ template <typename T> T* world_deserialisation::MakeOrFindGenericTrack(const des
 	std::string trackname;
 	bool isautoname = false;
 	if(!CheckTransJsonValue(trackname, di, "name", ec)) {
-		trackname=string_format("#%d", current_content_index);
+		trackname = string_format("#%d", current_content_index);
 		isautoname = true;
 	}
 
 	std::unique_ptr<generictrack> &ptr = w.all_pieces[trackname];
 	if(ptr) {
 		if(typeid(*ptr) != typeid(T)) {
-			ec.RegisterNewError<error_deserialisation>(di, string_format("LoadGame: Track type definition conflict: %s is not a %s", ptr->GetFriendlyName().c_str(), di.type.c_str()));
-			return 0;
+			ec.RegisterNewError<error_deserialisation>(di,
+					string_format("LoadGame: Track type definition conflict: %s is not a %s", ptr->GetFriendlyName().c_str(), di.type.c_str()));
+			return nullptr;
 		}
 	}
 	else if(!findonly) {
@@ -115,12 +119,13 @@ template <typename T> T* world_deserialisation::MakeOrFindGenericTrack(const des
 		ptr->SetName(trackname);
 		ptr->SetAutoName(isautoname);
 		ptr->SetPreviousTrackPiece(previoustrackpiece);
-		if(previoustrackpiece) previoustrackpiece->SetNextTrackPiece(ptr.get());
+		if(previoustrackpiece)
+			previoustrackpiece->SetNextTrackPiece(ptr.get());
 		previoustrackpiece = ptr.get();
 	}
 	else {
 		ec.RegisterNewError<error_deserialisation>(di, string_format("LoadGame: Cannot make a new track piece at this point: %s", trackname.c_str()));
-		return 0;
+		return nullptr;
 	}
 	return static_cast<T*>(ptr.get());
 }
@@ -147,7 +152,8 @@ void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &
 			const deserialiser_input *checkparent = di.parent;
 			do {
 				if(checkparent->reference_name == typedefwrapperdi.reference_name) {
-					ec.RegisterNewError<error_deserialisation>(di, string_format("Typedef: \"%s\": Base \"%s\": Recursive expansion detected: Aborting.", newtype.c_str(), basetype.c_str()));
+					ec.RegisterNewError<error_deserialisation>(di,
+							string_format("Typedef: \"%s\": Base \"%s\": Recursive expansion detected: Aborting.", newtype.c_str(), basetype.c_str()));
 					return;
 				}
 			} while((checkparent = checkparent->parent));
@@ -157,8 +163,9 @@ void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &
 			typedefwrapperdi.objpostparse = di.objpostparse;
 
 			auto exec = [&](const deserialiser_input &typedef_di) {
-				if(! this->content_object_types.FindAndDeserialise(basetype, typedef_di, ec, wdp))  {
-					ec.RegisterNewError<error_deserialisation>(typedef_di, string_format("Typedef expansion: %s: Unknown base type: %s", newtype.c_str(), basetype.c_str()));
+				if(!this->content_object_types.FindAndDeserialise(basetype, typedef_di, ec, wdp))  {
+					ec.RegisterNewError<error_deserialisation>(typedef_di,
+							string_format("Typedef expansion: %s: Unknown base type: %s", newtype.c_str(), basetype.c_str()));
 				}
 			};
 
@@ -234,14 +241,13 @@ void world_deserialisation::DeserialiseVehicleClass(const deserialiser_input &di
 void world_deserialisation::DeserialiseTrain(const deserialiser_input &di, error_collection &ec) {
 	if(di.w) {
 		std::string name;
-		train *t = 0;
+		train *t = nullptr;
 		if(CheckTransJsonValue(name, di, "name", ec)) {
 			t = di.w->FindTrainByName(name);
 			if(!t) {
 				t = di.w->CreateEmptyTrain();
 				t->SetName(name);
 			}
-
 		}
 		else {
 			t = di.w->CreateEmptyTrain();
@@ -279,18 +285,30 @@ void world_deserialisation::InitObjectTypes() {
 	MakeGenericTrackTypeWrapper<startofline>();
 	MakeGenericTrackTypeWrapper<endofline>();
 	MakeGenericTrackTypeWrapper<routingmarker>();
-	content_object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTypeDefinition(di, ec); });
-	content_object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTractionType(di, ec); });
+	content_object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+		DeserialiseTypeDefinition(di, ec);
+	});
+	content_object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+		DeserialiseTractionType(di, ec);
+	});
 	wd_RegisterBothTypes(*this, "trackcircuit", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseTrackTrainCounterBlockCommon<track_circuit>(di, ec, wdp, w.track_circuits);
 	});
 	wd_RegisterBothTypes(*this, "tracktraincounterblock", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseTrackTrainCounterBlockCommon<track_train_counter_block>(di, ec, wdp, w.track_triggers);
 	});
-	content_object_types.RegisterType("couplepoints", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialisePointsCoupling(di, ec); });
-	content_object_types.RegisterType("vehicleclass", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseVehicleClass(di, ec); });
-	gamestate_object_types.RegisterType("train", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { DeserialiseTrain(di, ec); });
-	wd_RegisterBothTypes(*this, "world", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) { w.DeserialiseObject(di, ec); });
+	content_object_types.RegisterType("couplepoints", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+		DeserialisePointsCoupling(di, ec);
+	});
+	content_object_types.RegisterType("vehicleclass", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+		DeserialiseVehicleClass(di, ec);
+	});
+	gamestate_object_types.RegisterType("train", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+		DeserialiseTrain(di, ec);
+	});
+	wd_RegisterBothTypes(*this, "world", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+		w.DeserialiseObject(di, ec);
+	});
 
 	gui_layout_generictrack = [](const generictrack *t, const deserialiser_input &di, error_collection &ec) { };
 	gui_layout_trackberth = [](const trackberth *b, const generictrack *t, const deserialiser_input &di, error_collection &ec) { };
@@ -300,7 +318,8 @@ void world_deserialisation::InitObjectTypes() {
 	});
 }
 
-void world_deserialisation::DeserialiseObject(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &di, error_collection &ec) {
+void world_deserialisation::DeserialiseObject(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params,
+		const deserialiser_input &di, error_collection &ec) {
 	if(!wdtf.FindAndDeserialise(di.type, di, ec, wdtf_params)) {
 		ec.RegisterNewError<error_deserialisation>(di, string_format("LoadGame: Unknown object type: %s", di.type.c_str()));
 	}
@@ -317,13 +336,16 @@ void world_deserialisation::LoadGameFromStrings(const std::string &base, const s
 		ParseInputString(base, ec, WSLOADGAME_FLAGS::NOCONTENT | WSLOADGAME_FLAGS::TRYREPLACEGAMESTATE);
 	}
 
-	if(ec.GetErrorCount()) return;
+	if(ec.GetErrorCount())
+		return;
 
 	w.LayoutInit(ec);
-	if(ec.GetErrorCount()) return;
+	if(ec.GetErrorCount())
+		return;
 
 	w.PostLayoutInit(ec);
-	if(ec.GetErrorCount()) return;
+	if(ec.GetErrorCount())
+		return;
 
 	DeserialiseGameState(ec);
 }
@@ -331,10 +353,13 @@ void world_deserialisation::LoadGameFromStrings(const std::string &base, const s
 void world_deserialisation::LoadGameFromFiles(const std::string &basefile, const std::string &savefile, error_collection &ec) {
 	std::string base, save;
 	bool result = true;
-	if(result && !basefile.empty()) result = slurp_file(basefile, base, ec);
-	if(result && !savefile.empty()) result = slurp_file(savefile, save, ec);
+	if(result && !basefile.empty())
+		result = slurp_file(basefile, base, ec);
+	if(result && !savefile.empty())
+		result = slurp_file(savefile, save, ec);
 
-	if(result) LoadGameFromStrings(base, save, ec);
+	if(result)
+		LoadGameFromStrings(base, save, ec);
 }
 
 std::string world_serialisation::SaveGameToString(error_collection &ec, flagwrapper<world_serialisation::WSSAVEGAME_FLAGS> ws_flags) {

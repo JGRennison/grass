@@ -94,7 +94,8 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 		switch(args.OptionId()) {
 			case OPT_NEWGAME: {
 				wxString str1 = args.OptionArg();
-				if(!set_game_action([str1, this]() { return LoadGame(str1, wxT("")); })) return false;
+				if(!set_game_action([str1, this]() { return LoadGame(str1, wxT("")); }))
+					return false;
 				break;
 			}
 			case OPT_LOAD: {
@@ -104,7 +105,8 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 				}
 				wxString str1 = args.OptionArg();
 				wxString str2 = args.m_argv[args.m_nNextOption++];
-				if(!set_game_action([str1, str2, this]() { return LoadGame(str1, str2); })) return false;
+				if(!set_game_action([str1, str2, this]() { return LoadGame(str1, str2); }))
+					return false;
 				break;
 			}
 			case OPT_TRAINLIST: {
@@ -129,5 +131,7 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 		}
 		return ok;
 	}
-	else return false;
+	else {
+		return false;
+	}
 }

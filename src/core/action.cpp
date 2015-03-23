@@ -44,7 +44,8 @@ void action::ActionRegisterFutureAction(futurable_obj &targ, world_time ft, std:
 }
 
 void future_action_wrapper::ExecuteAction() {
-	if(act) act->Execute();
+	if(act)
+		act->Execute();
 }
 
 void future_action_wrapper::Deserialise(const deserialiser_input &di, error_collection &ec) {

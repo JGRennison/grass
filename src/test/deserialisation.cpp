@@ -138,7 +138,9 @@ TEST_CASE( "deserialisation/error/flagnoncontradiction", "Test non-contradictory
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if(env.ec.GetErrorCount()) {
+		WARN("Error Collection: " << env.ec);
+	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
 }
 
@@ -151,11 +153,13 @@ TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if(env.ec.GetErrorCount()) {
+		WARN("Error Collection: " << env.ec);
+	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	routingmarker *rm = dynamic_cast<routingmarker *>(env.w->FindTrackByName("R1"));
-	REQUIRE(rm != 0);
+	REQUIRE(rm != nullptr);
 	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == RPRT());
 	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::RTC_OVERLAP), 0));
 }
@@ -206,7 +210,9 @@ TEST_CASE( "deserialisation/scalartypeconv/length", "Test scalar type conversion
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if(env.ec.GetErrorCount()) {
+		WARN("Error Collection: " << env.ec);
+	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	CHECK(PTR_CHECK(env.w->FindTrackByName("#0"))->GetLength(EDGE_FRONT) == 1000);
@@ -222,6 +228,7 @@ TEST_CASE( "deserialisation/scalartypeconv/errors", "Test scalar type conversion
 		//if(env_err.ec.GetErrorCount()) { WARN("Error Collection: " << env_err.ec); }
 		REQUIRE(env_err.ec.GetErrorCount() >= 1);
 	};
+
 	check_parse_err(R"({ "content" : [ )"
 		R"({ "type" : "trackseg", "length" : "1000 ergs" } )"
 	"] }");
@@ -250,6 +257,7 @@ TEST_CASE( "deserialisation/gamestateload/typeerror", "Check that content sectio
 		CHECK(env_err.ec.GetErrorCount() == 1);
 		CHECK_CONTAINS(env_err.ec, "Unknown object type");
 	};
+
 	check_parse_err(R"({ "gamestate" : [ )"
 		R"({ "type" : "template" } )"
 	"] }");

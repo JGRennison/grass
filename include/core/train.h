@@ -56,7 +56,7 @@ struct vehicle_class : public serialisable_obj {
  */
 
 struct train_unit {
-	vehicle_class *vehtype = 0;
+	vehicle_class *vehtype = nullptr;
 	unsigned int veh_multiplier = 0;
 	unsigned int segment_total_mass = 0;
 	enum class STF {

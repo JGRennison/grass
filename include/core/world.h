@@ -92,13 +92,15 @@ class track_train_counter_block_container {
 	C *FindByName(const std::string &name) {
 		auto it = all_items.find(name);
 		if(it != all_items.end()) {
-			if(it->second) return it->second.get();
+			if(it->second)
+				return it->second.get();
 		}
-		return 0;
+		return nullptr;
 	}
 	C *FindOrMakeByName(const std::string &name) {
 		std::unique_ptr<C> &tc = all_items[name];
-		if(! tc.get()) tc.reset(new C(w, name));
+		if(!tc.get())
+			tc.reset(new C(w, name));
 		return tc.get();
 	}
 	template <typename F> void Enumerate(F func) const {

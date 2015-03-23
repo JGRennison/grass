@@ -23,17 +23,19 @@
 
 //returns displacement length that could not be fulfilled
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, flagwrapper<ADF> adflags, flagwrapper<ADRESULTF> *adresultflags) {
-	return AdvanceDisplacement(displacement, track, 0, [&](track_location &a, track_location &b) { }, adflags, adresultflags);
+	return AdvanceDisplacement(displacement, track, nullptr, [&](track_location &a, track_location &b) { }, adflags, adresultflags);
 }
 
 //returns displacement length that could not be fulfilled
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/,
 		std::function<void (track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADF> adflags, flagwrapper<ADRESULTF> *adresultflags) {
 
-	if(elevationdelta) *elevationdelta = 0;
+	if(elevationdelta)
+		*elevationdelta = 0;
 
 	if(!track.IsValid()) {
-		if(adresultflags) *adresultflags |= ADRESULTF::TRACKINVALID;
+		if(adresultflags)
+			*adresultflags |= ADRESULTF::TRACKINVALID;
 		return displacement;
 	}
 
@@ -66,23 +68,27 @@ unsigned int AdvanceDisplacement(unsigned int displacement, track_location &trac
 
 			if(obstruction_offset < displacement) {
 				track.GetOffset() = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), obstruction_offset);
-				if(elevationdelta) *elevationdelta += track.GetTrack()->GetPartialElevationDelta(track.GetDirection(), obstruction_offset);
+				if(elevationdelta)
+					*elevationdelta += track.GetTrack()->GetPartialElevationDelta(track.GetDirection(), obstruction_offset);
 				displacement -= obstruction_offset;
 
-				if(adresultflags) *adresultflags |= ADRESULTF::TRAININWAY;
+				if(adresultflags)
+					*adresultflags |= ADRESULTF::TRAININWAY;
 				return displacement;
 			}
 		}
 
 		if(length_on_piece >= displacement) {
 			track.GetOffset() = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), displacement);
-			if(elevationdelta) *elevationdelta += track.GetTrack()->GetPartialElevationDelta(track.GetDirection(), displacement);
+			if(elevationdelta)
+				*elevationdelta += track.GetTrack()->GetPartialElevationDelta(track.GetDirection(), displacement);
 			break;
 		}
 		else {
 			displacement -= length_on_piece;
 
-			if(elevationdelta) *elevationdelta += track.GetTrack()->GetElevationDelta(track.GetDirection());
+			if(elevationdelta)
+				*elevationdelta += track.GetTrack()->GetElevationDelta(track.GetDirection());
 
 			track_location old_track = track;
 			const track_target_ptr &targ = old_track.GetTrack()->GetConnectingPiece(old_track.GetDirection());
@@ -91,11 +97,13 @@ unsigned int AdvanceDisplacement(unsigned int displacement, track_location &trac
 			}
 			else {    //run out of valid track
 				track.GetOffset() = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), length_on_piece);
-				if(adresultflags) *adresultflags |= ADRESULTF::RANOUTOFTRACK;
+				if(adresultflags)
+					*adresultflags |= ADRESULTF::RANOUTOFTRACK;
 				return displacement;
 			}
 
-			if(func) func(old_track, track);
+			if(func)
+				func(old_track, track);
 		}
 	}
 	return 0;
@@ -116,10 +124,13 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 				error_flags |= TSEF::JUNCTIONLIMITREACHED;
 				return;
 			}
-			else junction_max--;
+			else {
+				junction_max--;
+			}
 		}
 
-		if(step_func(route_pieces, start_track, grrs)) return;
+		if(step_func(route_pieces, start_track, grrs))
+			return;
 
 		unsigned int max_exit_pieces = start_track.track->GetMaxConnectingPieces(start_track.direction);
 		if(max_exit_pieces == 0) {
@@ -130,15 +141,17 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 		max_pieces--;
 
 		if(max_exit_pieces >= 2) {
-			for(unsigned int i=1; i < max_exit_pieces; i++) {
+			for(unsigned int i = 1; i < max_exit_pieces; i++) {
 				unsigned int route_pieces_size = route_pieces.size();
 				route_pieces.emplace_back(start_track, i);
-				generic_route_recording_state *temp_grrs = 0;
-				if(grrs) temp_grrs = grrs->Clone();
-				TrackScan(max_pieces, junction_max, start_track.track->GetConnectingPieceByIndex(start_track.direction, i), route_pieces, temp_grrs, error_flags, step_func);
-				if(temp_grrs) delete temp_grrs;
+				std::unique_ptr<generic_route_recording_state> temp_grrs;
+				if(grrs)
+					temp_grrs.reset(grrs->Clone());
+				TrackScan(max_pieces, junction_max, start_track.track->GetConnectingPieceByIndex(start_track.direction, i), route_pieces,
+						temp_grrs.get(), error_flags, step_func);
 				route_pieces.resize(route_pieces_size);
-				if(error_flags != TSEF::ZERO) return;
+				if(error_flags != TSEF::ZERO)
+					return;
 			}
 		}
 		route_pieces.emplace_back(start_track, 0);
@@ -158,6 +171,7 @@ std::string GetTrackScanErrorFlagsStr(TSEF error_flags) {
 	if(error_flags & TSEF::LENGTHLIMIT) {
 		str += "Maximum route length exceeded, ";
 	}
-	if(str.size()) str.resize(str.size()-2);
+	if(str.size())
+		str.resize(str.size() - 2);
 	return str;
 }

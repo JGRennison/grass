@@ -64,7 +64,7 @@ class genericpoints : public genericzlentrack {
 	};
 	virtual void GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<points_coupling> &output) { }
 	virtual void CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) { }
-	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) { return 0; }
+	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) { return nullptr; }
 
 	virtual std::string GetTypeName() const override { return "Generic Points"; }
 
@@ -136,7 +136,7 @@ class points : public genericpoints {
 	protected:
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) override;
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) override;
 	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 };
 
@@ -173,7 +173,7 @@ class catchpoints : public genericpoints {
 	protected:
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) override;
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) override;
 	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 };
 
@@ -261,8 +261,10 @@ class doubleslip : public genericpoints {
 
 	inline const PTF &GetCurrentPointFlagsIntl(EDGETYPE direction) const {
 		unsigned int index = GetPointsIndexByEdgeIntl(direction);
-		if(index < 4) return pflags[index];
-		else return fail_pflags;
+		if(index < 4)
+			return pflags[index];
+		else
+			return fail_pflags;
 	}
 
 	public:
@@ -340,7 +342,7 @@ class doubleslip : public genericpoints {
 	protected:
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const  override{ return EDGE_NULL; }
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = 0) override;
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) override;
 	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
 };
 
