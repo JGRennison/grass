@@ -26,6 +26,7 @@
 #include "util/flags.h"
 #include "core/tractiontype.h"
 #include "core/serialisable.h"
+#include "core/action.h"
 #include "core/future.h"
 #include "core/edgetype.h"
 
@@ -140,6 +141,7 @@ class world : public serialisable_futurable_obj {
 
 	public:
 	future_deserialisation_type_factory future_types;
+	action_deserialisation_type_factory action_types;
 	future_set futures;
 	fixup_list layout_init_final_fixups;
 	fixup_list post_layout_init_final_fixups;
@@ -163,7 +165,9 @@ class world : public serialisable_futurable_obj {
 	void InitFutureTypes();
 	world_time GetGameTime() const { return gametime; }
 	std::string FormatGameTime(world_time wt) const;
-	void SubmitAction(const action &request);
+	std::unique_ptr<action> DeserialiseAction(const deserialiser_input &di, error_collection &ec);
+	void DeserialiseAndSubmitAction(const deserialiser_input &di, error_collection &ec);
+	virtual void SubmitAction(const action &request);
 	void ExecuteIfActionScope(std::function<void()> func);
 	named_futurable_obj *FindFuturableByName(const std::string &name);
 	virtual std::string GetTypeSerialisationClassName() const override { return "world"; }

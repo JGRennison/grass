@@ -27,6 +27,7 @@
 #include "core/signal.h"
 #include "core/textpool.h"
 #include "core/trackcircuit.h"
+#include "core/routetypes_serialisation.h"
 
 
 void future_pointsaction::ExecuteAction() {
@@ -224,12 +225,23 @@ bool action_pointsaction::TrySwingOverlap(std::function<void()> &overlap_callbac
 }
 
 void action_pointsaction::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	action::Deserialise(di, ec);
+
+	std::string targetname;
+	if(CheckTransJsonValue(targetname, di, "target", ec))
+		target = w.FindTrackByNameCast<genericpoints>(targetname);
+
+	if(!target)
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid action_pointsaction definition");
+
 	CheckTransJsonValueDef(index, di, "index", 0, ec);
 	CheckTransJsonValueDef(bits, di, "bits", genericpoints::PTF::ZERO, ec);
 	CheckTransJsonValueDef(mask, di, "mask", genericpoints::PTF::ZERO, ec);
 }
 
 void action_pointsaction::Serialise(serialiser_output &so, error_collection &ec) const {
+	action::Serialise(so, ec);
+	SerialiseValueJson(target->GetSerialisationName(), so, "target");
 	SerialiseValueJson(index, so, "index");
 	SerialiseValueJson(bits, so, "bits");
 	SerialiseValueJson(mask, so, "mask");
@@ -476,6 +488,7 @@ void action_reservetrack_base::CancelApproachLocking(genericsignal *sig) const {
 }
 
 void action_reservetrack_routeop::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	action_reservetrack_base::Deserialise(di, ec);
 	DeserialiseRouteTargetByParentAndIndex(targetroute, di, ec, false);
 
 	if(!targetroute)
@@ -483,11 +496,13 @@ void action_reservetrack_routeop::Deserialise(const deserialiser_input &di, erro
 }
 
 void action_reservetrack_routeop::Serialise(serialiser_output &so, error_collection &ec) const {
+	action_reservetrack_base::Serialise(so, ec);
 	SerialiseValueJson(targetroute->parent->GetSerialisationName(), so, "routeparent");
 	SerialiseValueJson(targetroute->index, so, "routeindex");
 }
 
 void action_reservetrack_sigop::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	action_reservetrack_base::Deserialise(di, ec);
 	std::string targetname;
 	if(CheckTransJsonValue(targetname, di, "target", ec)) {
 		target = FastSignalCast(w.FindTrackByName(targetname));
@@ -498,6 +513,7 @@ void action_reservetrack_sigop::Deserialise(const deserialiser_input &di, error_
 }
 
 void action_reservetrack_sigop::Serialise(serialiser_output &so, error_collection &ec) const {
+	action_reservetrack_base::Serialise(so, ec);
 	SerialiseValueJson(target->GetSerialisationName(), so, "target");
 }
 
@@ -588,6 +604,7 @@ void action_reservepath::ExecuteAction() const {
 }
 
 void action_reservepath::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	action_reservetrack_base::Deserialise(di, ec);
 	std::string targetname;
 	if(CheckTransJsonValue(targetname, di, "start", ec)) {
 		start = FastRoutingpointCast(w.FindTrackByName(targetname));
@@ -597,6 +614,7 @@ void action_reservepath::Deserialise(const deserialiser_input &di, error_collect
 	}
 	CheckTransJsonValue(gmr_flags, di, "gmr_flags", ec);
 	CheckTransJsonValue(extraflags, di, "extraflags", ec);
+	route_class::DeserialiseProp("allowed_route_types", allowed_route_types, di, ec);
 
 	auto viaparser = [&](const deserialiser_input &di, error_collection &ec) {
 		routingpoint *rp = FastRoutingpointCast(w.FindTrackByName(GetType<std::string>(di.json)));
@@ -611,10 +629,12 @@ void action_reservepath::Deserialise(const deserialiser_input &di, error_collect
 }
 
 void action_reservepath::Serialise(serialiser_output &so, error_collection &ec) const {
+	action_reservetrack_base::Serialise(so, ec);
 	SerialiseValueJson(start->GetSerialisationName(), so, "start");
 	SerialiseValueJson(end->GetSerialisationName(), so, "end");
 	SerialiseValueJson(gmr_flags, so, "gmr_flags");
 	SerialiseValueJson(extraflags, so, "extraflags");
+	route_class::SerialiseProp("allowed_route_types", allowed_route_types, so);
 	if(vias.size()) {
 		so.json_out.String("vias");
 		so.json_out.StartArray();

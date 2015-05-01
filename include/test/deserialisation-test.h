@@ -104,6 +104,7 @@ inline test_fixture_world_init_checked RoundTripCloneTestFixtureWorld(const test
 	INFO_RESCOPED(*msgtarg, "gamestate:\n" + gamestate);
 	test_fixture_world_init_checked rt_tfw(tfw.orig_input, gamestate);
 	rt_tfw.Init(wflags & world::WFLAGS::DONE_POSTLAYOUTINIT, true, wflags & world::WFLAGS::DONE_LAYOUTINIT);
+	rt_tfw.w->round_trip_actions = tfw.w->round_trip_actions;
 
 	return std::move(rt_tfw);
 }

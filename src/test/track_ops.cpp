@@ -89,6 +89,7 @@ TEST_CASE( "track/ops/points/movement", "Test basic points movement future" ) {
 	}
 	SECTION("With serialisation round-trip") {
 		info_rescoped_unique roundtrip_msg;
+		env.w->round_trip_actions = true;
 		RoundTrip = [&]() {
 			env = RoundTripCloneTestFixtureWorld(env, &roundtrip_msg);
 			p1 = PTR_CHECK(env.w->FindTrackByNameCast<points>("P1"));
@@ -185,6 +186,7 @@ void OverlapOpsRoundTripMultiTest(overlap_ops_test_func test_func) {
 	}
 	SECTION("With serialisation round-trip") {
 		info_rescoped_unique roundtrip_msg;
+		env.w->round_trip_actions = true;
 		test_func(env, tenv, [&]() {
 			CHECK(env.w->GetLogText() == "");
 			env = RoundTripCloneTestFixtureWorld(env, &roundtrip_msg);

@@ -18,6 +18,12 @@
 
 #include "common.h"
 #include "core/action.h"
+#include "core/world.h"
+#include "core/serialisable_impl.h"
+#include "core/track_ops.h"
+
+action::action(world &w_)
+		: w(w_), action_time(w_.GetGameTime()) { }
 
 void action::Execute() const {
 	ExecuteAction();
@@ -41,6 +47,23 @@ void action::ActionCancelFuture(future &f) const {
 
 void action::ActionRegisterFutureAction(futurable_obj &targ, world_time ft, std::unique_ptr<action> &&a) const {
 	ActionRegisterLocalFuture(std::make_shared<future_action_wrapper>(targ, ft, w.MakeNewFutureID(), std::move(a)));
+}
+
+void action::Deserialise(const deserialiser_input &di, error_collection &ec) {
+
+}
+
+void action::Serialise(serialiser_output &so, error_collection &ec) const {
+	SerialiseValueJson(GetTypeSerialisationName(), so, "atype");
+}
+
+void action::RegisterAllActionTypes(action_deserialisation_type_factory &factory) {
+	MakeActionTypeWrapper<action_pointsaction>(factory);
+	MakeActionTypeWrapper<action_reservetrack>(factory);
+	MakeActionTypeWrapper<action_reservepath>(factory);
+	MakeActionTypeWrapper<action_unreservetrackroute>(factory);
+	MakeActionTypeWrapper<action_unreservetrack>(factory);
+	MakeActionTypeWrapper<action_approachlockingtimeout>(factory);
 }
 
 void future_action_wrapper::ExecuteAction() {

@@ -145,6 +145,17 @@ namespace route_class {
 		return std::make_pair(found, current);
 	}
 
+	void SerialiseProp(const char *prop, set value, serialiser_output &so) {
+		so.json_out.String(prop);
+		so.json_out.StartArray();
+		for(unsigned char i = 0; i < route_class::LAST_RTC; i++ ) {
+			if(Flag(static_cast<ID>(i)) & value) {
+				so.json_out.String(route_class::route_names[i].name);
+			}
+		}
+		so.json_out.EndArray();
+	}
+
 	std::ostream& StreamOutRouteClassSet(std::ostream& os, const set& obj) {
 		set found_types = obj;
 		bool first = true;

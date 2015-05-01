@@ -32,6 +32,7 @@
 
 world::world() : track_circuits(*this), track_triggers(*this) {
 	InitFutureTypes();
+	action::RegisterAllActionTypes(action_types);
 }
 
 world::~world() {
@@ -135,6 +136,30 @@ void world::InitFutureTypes() {
 	MakeFutureTypeWrapper<future_reservetrack_base>(future_types);
 	MakeFutureTypeWrapper<future_signalflags>(future_types);
 	MakeFutureTypeWrapper<future_action_wrapper>(future_types);
+}
+
+std::unique_ptr<action> world::DeserialiseAction(const deserialiser_input &di, error_collection &ec) {
+	std::unique_ptr<action> act;
+	deserialiser_input subdi(di.json, "", "[world::DeserialiseAction]", di);
+	if(subdi.json.IsObject()) {
+		subdi.seenprops.reserve(subdi.json.GetMemberCount());
+		if(CheckTransJsonValue(subdi.type, subdi, "atype", ec, true)) {
+			if(!action_types.FindAndDeserialise(subdi.type, subdi, ec, *this, act)) {
+				ec.RegisterNewError<error_deserialisation>(subdi, string_format("Unknown action type: %s", subdi.type.c_str()));
+			}
+		}
+		subdi.PostDeserialisePropCheck(ec);
+	}
+	else {
+		ec.RegisterNewError<error_deserialisation>(di, "Action: Expected object");
+	}
+	return std::move(act);
+}
+
+void world::DeserialiseAndSubmitAction(const deserialiser_input &di, error_collection &ec) {
+	std::unique_ptr<action> act = DeserialiseAction(di, ec);
+	if(act)
+		act->Execute();
 }
 
 void world::SubmitAction(const action &request) {

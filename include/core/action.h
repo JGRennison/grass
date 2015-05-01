@@ -16,11 +16,15 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "core/serialisable.h"
-#include "core/world.h"
-
 #ifndef INC_ACTION_ALREADY
 #define INC_ACTION_ALREADY
+
+#include "core/serialisable.h"
+#include "core/future.h"
+#include <memory>
+
+class action;
+class world;
 
 typedef deserialisation_type_factory<world &, std::unique_ptr<action> &> action_deserialisation_type_factory;
 
@@ -34,7 +38,7 @@ class action : public serialisable_obj {
 	public:
 	world_time action_time;
 
-	action(world &w_) : w(w_), action_time(w_.GetGameTime()) { }
+	action(world &w_);
 	virtual ~action() { }
 	void Execute() const;
 	void ActionSendReplyFuture(const std::shared_ptr<future> &f) const;
@@ -43,8 +47,10 @@ class action : public serialisable_obj {
 	void ActionCancelFuture(future &f) const;
 	void ActionRegisterFutureAction(futurable_obj &targ, world_time ft, std::unique_ptr<action> &&a) const;
 	virtual std::string GetTypeSerialisationName() const = 0;
-	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override = 0;
-	virtual void Serialise(serialiser_output &so, error_collection &ec) const override = 0;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+
+	static void RegisterAllActionTypes(action_deserialisation_type_factory &factory);
 };
 
 class future_action_wrapper : public future {

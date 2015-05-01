@@ -27,6 +27,8 @@ class world_test : public world {
 	LOGCATEGORY lastlc = LOG_NULL;
 
 	public:
+	bool round_trip_actions = false;
+
 	virtual void LogUserMessageLocal(LOGCATEGORY lc, const std::string &message) override {
 		lastlc = lc;
 		logtext << message << "\n";
@@ -35,6 +37,8 @@ class world_test : public world {
 	std::string GetLogText() const { return logtext.str(); }
 	LOGCATEGORY GetLastLogCategory() const { return lastlc; }
 	void ResetLogText() { logtext.str(""); }
+
+	virtual void SubmitAction(const action &request) override;
 };
 
 #endif

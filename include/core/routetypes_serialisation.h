@@ -36,6 +36,8 @@ namespace route_class {
 		DeserialiseGroupProp(s, di, prop, ec, conflictcheck);
 	}
 	std::pair<bool, ID> DeserialiseName(const std::string &name);
+
+	void SerialiseProp(const char *prop, set value, serialiser_output &so);
 }
 
 template <> inline bool IsType<route_class::ID>(const rapidjson::Value& val) {
