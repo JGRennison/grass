@@ -26,25 +26,33 @@
 #include "core/trackpiece.h"
 #include "core/trackcircuit.h"
 #include "core/trackreservation.h"
+#include "core/points.h"
 #include <tuple>
 
 IMG_EXTERN(track_v_png, track_v)
 IMG_EXTERN(track_h_png, track_h)
 IMG_EXTERN(track_d_png, track_d)
+IMG_EXTERN(track_dv_png, track_dv)
+IMG_EXTERN(track_dh_png, track_dh)
 IMG_EXTERN(sigpost_png, sigpost)
 IMG_EXTERN(sigpost_bar_png, sigpost_bar)
 IMG_EXTERN(circle_png, circle)
 IMG_EXTERN(shunt_png, shunt)
+IMG_EXTERN(blank_png, blank)
 
 #define BERTHLEVEL 10
 #define UNKNOWNLEVEL 20
 
 #define APPROACHLOCKING_FLASHINTERVAL 500
+#define POINTS_OOC_FLASHINTERVAL 500
+
+using guilayout::LAYOUT_DIR;
 
 namespace {
 	enum sprite_ids {
 		SID_typemask        = 0xFF,
 		SID_trackseg        = 1,
+		SID_pointsooc       = 2,
 		SID_signalroute     = 8,
 		SID_signalshunt     = 9,
 		SID_signalpost      = 16,
@@ -71,18 +79,113 @@ namespace {
 		SID_shunt_blank     = 0x10000,
 	};
 
-	guilayout::LAYOUT_DIR spriteid_to_layoutdir(draw::sprite_ref sid) {
-		return static_cast<guilayout::LAYOUT_DIR>((sid & SID_dirmask) >> SID_dirshift);
+	LAYOUT_DIR spriteid_to_layoutdir(draw::sprite_ref sid) {
+		return static_cast<LAYOUT_DIR>((sid & SID_dirmask) >> SID_dirshift);
 	}
-	draw::sprite_ref layoutdir_to_spriteid(guilayout::LAYOUT_DIR dir) {
-		return static_cast<std::underlying_type<guilayout::LAYOUT_DIR>::type>(dir) << SID_dirshift;
+	draw::sprite_ref layoutdir_to_spriteid(LAYOUT_DIR dir) {
+		return static_cast<std::underlying_type<LAYOUT_DIR>::type>(dir) << SID_dirshift;
 	}
 }
 
 namespace draw {
+	draw::sprite_ref track_sprite_extras(const generictrack *gt) {
+		draw::sprite_ref extras = 0;
+		const track_circuit *tc = gt->GetTrackCircuit();
+		if(tc && tc->Occupied())
+			extras |= SID_tc_occ;
+		reservationcountset rcs;
+		gt->ReservationTypeCount(rcs);
+		if(rcs.routeset > rcs.routesetauto)
+			extras |= SID_reserved;
+		return extras;
+	}
+
+	sprite_ref change_spriteid_layoutdir(LAYOUT_DIR newdir, sprite_ref sr) {
+		return (sr & ~SID_dirmask) | layoutdir_to_spriteid(newdir);
+	}
+
+	// This converts a folded direction into either U, UR or R.
+	// Returns true if handled
+	bool dir_relative_fold(LAYOUT_DIR dir, draw::sprite_obj &sp, draw::sprite_ref sr) {
+		switch(dir) {
+			case LAYOUT_DIR::U:
+				return false;
+			case LAYOUT_DIR::UR:
+				return false;
+			case LAYOUT_DIR::RU:
+				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::RD, sr));
+				sp.Mirror(MIRROR::VERT);
+				return true;
+			case LAYOUT_DIR::R:
+				return false;
+			case LAYOUT_DIR::RD:
+				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::UR, sr));
+				sp.Mirror(MIRROR::HORIZ);
+				return true;
+			case LAYOUT_DIR::DR:
+				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::UR, sr));
+				sp.Mirror(MIRROR::VERT);
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	// This converts a diagonal direction into either UR or LD,
+	// Non-diagonal directions are unchanged
+	// Returns true if handled
+	bool dir_relative_diag(LAYOUT_DIR dir, draw::sprite_obj &sp, draw::sprite_ref sr) {
+		switch(dir) {
+			// vertical in
+			case LAYOUT_DIR::UR:
+				return false;
+			case LAYOUT_DIR::UL:
+				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::UR, sr));
+				sp.Mirror(MIRROR::HORIZ);
+				return true;
+			case LAYOUT_DIR::DR:
+				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::UR, sr));
+				sp.Mirror(MIRROR::VERT);
+				return true;
+			case LAYOUT_DIR::DL:
+				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::UL, sr));
+				sp.Mirror(MIRROR::VERT);
+				return true;
+
+			// horizontal in
+			case LAYOUT_DIR::LD:
+				return false;
+			case LAYOUT_DIR::LU:
+				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::LD, sr));
+				sp.Mirror(MIRROR::VERT);
+				return true;
+			case LAYOUT_DIR::RD:
+				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::LD, sr));
+				sp.Mirror(MIRROR::HORIZ);
+				return true;
+			case LAYOUT_DIR::RU:
+				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::LU, sr));
+				sp.Mirror(MIRROR::HORIZ);
+				return true;
+
+			default:
+				return false;
+		}
+	}
+
 	draw_func_type draw_module_ukgeneric::GetDrawTrack(const std::shared_ptr<guilayout::layouttrack_obj> &obj, error_collection &ec) {
 		int x, y;
 		std::tie(x, y) = obj->GetPosition();
+
+		auto get_draw_error_func = [&](uint32_t foreground, uint32_t background) -> draw_func_type {
+			return [x, y, obj, foreground, background](const draw_engine &eng, guilayout::world_layout &layout) {
+				std::unique_ptr<draw::drawtextchar> drawtext(new draw::drawtextchar);
+				drawtext->foregroundcolour = foreground;
+				drawtext->backgroundcolour = background;
+				drawtext->text = "?";
+				layout.SetTextChar(x, y, std::move(drawtext), obj, UNKNOWNLEVEL);
+			};
+		};
 
 		const generictrack *gt = obj->GetTrack();
 		const genericsignal *gs = FastSignalCast(gt);
@@ -96,7 +199,6 @@ namespace draw {
 			unsigned int sigflags = 0;
 
 			switch(obj->GetLayoutDirection()) {
-				using guilayout::LAYOUT_DIR;
 				case LAYOUT_DIR::UR:
 				case LAYOUT_DIR::DR:
 					sigflags |= SDF_STEP_RIGHT;
@@ -107,13 +209,7 @@ namespace draw {
 					break;
 				default: {
 					// Bad signal direction
-					return [x, y, obj](const draw_engine &eng, guilayout::world_layout &layout) {
-						std::unique_ptr<draw::drawtextchar> drawstickfailed(new draw::drawtextchar);
-						drawstickfailed->text = "?";
-						drawstickfailed->foregroundcolour = 0x7F7FFF;
-						drawstickfailed->backgroundcolour = 0;
-						layout.SetTextChar(x, y, std::move(drawstickfailed), obj);
-					};
+					return get_draw_error_func(0x7F7FFF, 0);
 				}
 			}
 
@@ -224,40 +320,78 @@ namespace draw {
 			struct tracksegpointinfo {
 				int x;
 				int y;
-				guilayout::LAYOUT_DIR direction;
+				LAYOUT_DIR direction;
 				draw::sprite_ref base_sprite;
 			};
 			auto points = std::make_shared<std::vector<tracksegpointinfo> >();
 
-			guilayout::LayoutOffsetDirection(x, y, obj->GetLayoutDirection(), obj->GetLength(), [&](int sx, int sy, guilayout::LAYOUT_DIR sdir) {
+			guilayout::LayoutOffsetDirection(x, y, obj->GetLayoutDirection(), obj->GetLength(), [&](int sx, int sy, LAYOUT_DIR sdir) {
 				draw::sprite_ref base_sprite = SID_trackseg | layoutdir_to_spriteid(guilayout::FoldLayoutDirection(sdir));
 				if(ts->GetTrackCircuit()) base_sprite |= SID_has_tc;
 				points->push_back({sx, sy, sdir, base_sprite});
 			});
 
 			return [points, ts, obj](const draw_engine &eng, guilayout::world_layout &layout) {
-				draw::sprite_ref extras = 0;
-				const track_circuit *tc = ts->GetTrackCircuit();
-				if(tc && tc->Occupied())
-					extras |= SID_tc_occ;
-				reservationcountset rcs;
-				ts->ReservationTypeCount(rcs);
-				if(rcs.routeset > rcs.routesetauto)
-					extras |= SID_reserved;
+				draw::sprite_ref extras = track_sprite_extras(ts);
 				for(auto &it : *points) {
 					layout.SetSprite(it.x, it.y, it.base_sprite | extras, obj, 0);
 				}
 			};
 		}
 
+		const genericpoints *gp = dynamic_cast<const genericpoints *>(gt);
+		if(gp) {
+			const doubleslip *ds = dynamic_cast<const doubleslip *>(gp);
+			if(ds) {
+
+			}
+			else {
+				// All types of genericpoints except doubleslip can be dealt with together
+
+				auto layout_info = obj->GetPointsLayoutInfo();
+
+				if(!layout_info)
+					return get_draw_error_func(0x7FFF7F, 0);
+
+				draw::sprite_ref base = 0;
+				if(gp->GetTrackCircuit())
+					base |= SID_has_tc;
+
+				draw::sprite_ref base_sprite_normal = base | SID_trackseg |
+						layoutdir_to_spriteid(guilayout::FoldLayoutDirection(guilayout::EdgesToDirection(layout_info->facing, layout_info->normal)));
+				draw::sprite_ref base_sprite_reverse = base | SID_trackseg |
+						layoutdir_to_spriteid(guilayout::FoldLayoutDirection(guilayout::EdgesToDirection(layout_info->facing, layout_info->reverse)));
+
+				LAYOUT_DIR turn_dir = (layout_info->facing == ReverseLayoutDirection(layout_info->normal)) ? layout_info->reverse : layout_info->normal;
+				draw::sprite_ref base_sprite_ooc = base | SID_pointsooc |
+						layoutdir_to_spriteid(guilayout::EdgesToDirection(layout_info->facing, turn_dir));
+
+				return [x, y, base_sprite_normal, base_sprite_reverse, base_sprite_ooc, gp, obj](const draw_engine &eng, guilayout::world_layout &layout) {
+					draw::sprite_ref sprite = track_sprite_extras(gp);
+					genericpoints::PTF flags = gp->GetPointsFlags(0);
+
+					if(flags & genericpoints::PTF::OOC) {
+						sprite |= base_sprite_ooc;
+						unsigned int timebin = layout.GetWorld().GetGameTime() / POINTS_OOC_FLASHINTERVAL;
+						if(timebin & 1)
+							sprite = change_spriteid_layoutdir(LAYOUT_DIR::NULLDIR, sprite);
+						auto options = std::make_shared<guilayout::pos_sprite_desc_opts>();
+						options->refresh_interval_ms = APPROACHLOCKING_FLASHINTERVAL;
+						layout.SetSprite(x, y, sprite, obj, 0, options);
+						return;
+					}
+
+					if(flags & genericpoints::PTF::REV)
+						sprite |= base_sprite_reverse;
+					else
+						sprite |= base_sprite_normal;
+					layout.SetSprite(x, y, sprite, obj, 0);
+				};
+			}
+		}
+
 		//default:
-		return [x, y, obj](const draw_engine &eng, guilayout::world_layout &layout) {
-			std::unique_ptr<draw::drawtextchar> drawtext(new draw::drawtextchar);
-			drawtext->foregroundcolour = 0xFFFF00;
-			drawtext->backgroundcolour = 0x0000FF;
-			drawtext->text = "?";
-			layout.SetTextChar(x, y, std::move(drawtext), obj, UNKNOWNLEVEL);
-		};
+		return get_draw_error_func(0xFFFF00, 0x0000FF);
 	}
 
 	draw_func_type draw_module_ukgeneric::GetDrawBerth(const std::shared_ptr<guilayout::layoutberth_obj> &obj, error_collection &ec) {
@@ -295,47 +429,22 @@ namespace draw {
 		};
 	}
 
-	void draw_module_ukgeneric::BuildSprite(sprite_ref sr, sprite_obj &sp, const draw_options &dopt) {  // must be re-entrant
-		using guilayout::LAYOUT_DIR;
-
-		auto getdirchangespid = [&](LAYOUT_DIR newdir) -> sprite_ref {
-			return (sr & ~SID_dirmask) | layoutdir_to_spriteid(newdir);
-		};
-
-		// This converts a folded direction into either U, UR or R.
-		// Returns true if handled
-		auto dirrelative1 = [&](LAYOUT_DIR dir) -> bool {
-			switch(dir) {
-				case LAYOUT_DIR::U:
-					return false;
-				case LAYOUT_DIR::UR:
-					return false;
-				case LAYOUT_DIR::RU:
-					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::RD));
-					sp.Mirror(MIRROR::VERT);
-					return true;
-				case LAYOUT_DIR::R:
-					return false;
-				case LAYOUT_DIR::RD:
-					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::UR));
-					sp.Mirror(MIRROR::HORIZ);
-					return true;
-				case LAYOUT_DIR::DR:
-					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::UR));
-					sp.Mirror(MIRROR::VERT);
-					return true;
-				default:
-					return false;
-			}
-		};
-
+	void draw_module_ukgeneric::BuildSprite(draw::sprite_ref sr, draw::sprite_obj &sp, const draw_options &dopt) {  // must be re-entrant
 		unsigned int type = sr & SID_typemask;
 		LAYOUT_DIR dir = spriteid_to_layoutdir(sr);
+
+		auto dir_relative_fold = [&](LAYOUT_DIR dir) -> bool {
+			return draw::dir_relative_fold(dir, sp, sr);
+		};
+
+		auto dir_relative_diag = [&](LAYOUT_DIR dir) -> bool {
+			return draw::dir_relative_diag(dir, sp, sr);
+		};
 
 		if(sr & SID_raw_img) {
 			switch(type) {
 				case SID_trackseg:
-					if(dirrelative1(dir))
+					if(dir_relative_fold(dir))
 						return;
 					if(dir == LAYOUT_DIR::U) {
 						sp.LoadFromFileDataFallback("track_v.png", GetImageData_track_v());
@@ -351,8 +460,25 @@ namespace draw {
 					}
 					break;
 
+				case SID_pointsooc:
+					if(dir_relative_diag(dir))
+						return;
+					if(dir == LAYOUT_DIR::UR) {
+						sp.LoadFromFileDataFallback("track_dv.png", GetImageData_track_dv());
+						return;
+					}
+					if(dir == LAYOUT_DIR::LD) {
+						sp.LoadFromFileDataFallback("track_dh.png", GetImageData_track_dh());
+						return;
+					}
+					if(dir == LAYOUT_DIR::NULLDIR) {
+						sp.LoadFromFileDataFallback("blank.png", GetImageData_blank());
+						return;
+					}
+					break;
+
 				case SID_signalpost:
-					if(dirrelative1(dir))
+					if(dir_relative_fold(dir))
 						return;
 					if(dir == LAYOUT_DIR::UR) {
 						sp.LoadFromFileDataFallback("sigpost.png", GetImageData_sigpost());
@@ -361,7 +487,7 @@ namespace draw {
 					break;
 
 				case SID_signalpostbar:
-					if(dirrelative1(dir))
+					if(dir_relative_fold(dir))
 						return;
 					if(dir == LAYOUT_DIR::UR) {
 						sp.LoadFromFileDataFallback("sigpost_bar.png", GetImageData_sigpost_bar());
@@ -374,7 +500,7 @@ namespace draw {
 					return;
 
 				case SID_signalshunt:
-					if(dirrelative1(dir))
+					if(dir_relative_fold(dir))
 						return;
 					if(dir == LAYOUT_DIR::UR) {
 						sp.LoadFromFileDataFallback("shunt.png", GetImageData_shunt());
@@ -389,6 +515,7 @@ namespace draw {
 		else {
 			switch(type) {
 				case SID_trackseg:
+				case SID_pointsooc:
 					sp.LoadFromSprite((sr & (SID_typemask | SID_dirmask)) | SID_raw_img);
 					if(sr & SID_has_tc)
 						sp.ReplaceColour(0x0000FF, 0xFF0000);

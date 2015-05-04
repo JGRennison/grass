@@ -68,6 +68,16 @@ namespace guilayout {
 		UL,
 	};
 
+	inline bool IsEdgeLayoutDirection(LAYOUT_DIR dir) {
+		switch(dir) {
+			case LAYOUT_DIR::U:       return true;
+			case LAYOUT_DIR::R:       return true;
+			case LAYOUT_DIR::D:       return true;
+			case LAYOUT_DIR::L:       return true;
+			default:                  return false;
+		}
+	}
+
 	inline LAYOUT_DIR ReverseLayoutDirection(LAYOUT_DIR dir) {
 		switch(dir) {
 			case LAYOUT_DIR::NULLDIR: return LAYOUT_DIR::NULLDIR;
@@ -106,6 +116,8 @@ namespace guilayout {
 		}
 	}
 
+	LAYOUT_DIR EdgesToDirection(LAYOUT_DIR in, LAYOUT_DIR out);
+
 	class layout_obj : public std::enable_shared_from_this<layout_obj> {
 		protected:
 		int x = 0;
@@ -143,10 +155,21 @@ namespace guilayout {
 		};
 
 		public:
+		struct points_layout_info {
+			LAYOUT_DIR facing = LAYOUT_DIR::NULLDIR;
+			LAYOUT_DIR normal = LAYOUT_DIR::NULLDIR;
+			LAYOUT_DIR reverse = LAYOUT_DIR::NULLDIR;
+		};
+
+		protected:
+		std::unique_ptr<points_layout_info> points_layout;
+
+		public:
 		layouttrack_obj(const generictrack *gt_) : gt(gt_) { }
 		inline int GetLength() const { return length; }
 		inline const generictrack * GetTrack() const { return gt; }
 		inline LAYOUT_DIR GetLayoutDirection() const { return layoutdirection; }
+		inline const points_layout_info* GetPointsLayoutInfo() const { return points_layout.get(); }
 		virtual std::string GetFriendlyName() const override;
 		virtual void Process(world_layout &wl, error_collection &ec) override;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;

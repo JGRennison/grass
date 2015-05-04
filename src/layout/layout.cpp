@@ -63,6 +63,27 @@ namespace guilayout {
 		{ LAYOUT_DIR::DR, LAYOUT_DIR::RD, LAYOUT_DIR::D, LAYOUT_DIR::R },
 		{ LAYOUT_DIR::DL, LAYOUT_DIR::LD, LAYOUT_DIR::D, LAYOUT_DIR::L },
 	} };
+
+	LAYOUT_DIR EdgesToDirection(LAYOUT_DIR in, LAYOUT_DIR out) {
+		if(!IsEdgeLayoutDirection(in) || !IsEdgeLayoutDirection(out))
+			return LAYOUT_DIR::NULLDIR;
+
+		LAYOUT_DIR in_dir = ReverseLayoutDirection(in);
+
+		if(in_dir == out)
+			return in_dir;
+
+		for(auto &it : layout_table) {
+			if(it.step1 == in_dir && it.step2 == out) {
+				return it.dir;
+			}
+			else if(it.step2 == in_dir && it.step1 == out) {
+				return it.altstep;
+			}
+		}
+
+		return LAYOUT_DIR::NULLDIR;
+	}
 };
 
 template<typename C>
@@ -120,6 +141,33 @@ void guilayout::layouttrack_obj::Deserialise(const deserialiser_input &di, error
 		setmembers |= LTOSM_LAYOUTDIR;
 	if(CheckTransJsonValue(track_type, di, "tracktype", ec))
 		setmembers |= LTOSM_TRACKTYPE;
+
+	deserialiser_input pointsdi(di.json["pointslayout"], "pointslayout", "pointslayout", di);
+	if(pointsdi.json.IsObject()) {
+		points_layout.reset(new points_layout_info());
+		auto parse_dir = [&](LAYOUT_DIR &out, const char *name) {
+			CheckTransJsonValue(out, pointsdi, name, ec);
+			switch(out) {
+				case LAYOUT_DIR::U:
+				case LAYOUT_DIR::D:
+				case LAYOUT_DIR::L:
+				case LAYOUT_DIR::R:
+					// OK
+					break;
+				default:
+					ec.RegisterNewError<error_layout>(*this, string_format("points layout: direction for edge: '%s' is invalid", name));
+					break;
+			}
+		};
+		parse_dir(points_layout->facing, "facing");
+		parse_dir(points_layout->normal, "normal");
+		parse_dir(points_layout->reverse, "reverse");
+		if(points_layout->facing == points_layout->normal ||
+				points_layout->facing == points_layout->reverse ||
+				points_layout->normal == points_layout->reverse) {
+			ec.RegisterNewError<error_layout>(*this, "points layout: duplicate edges are not allowed");
+		}
+	}
 }
 
 void guilayout::layoutberth_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -155,8 +203,35 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 		return;
 	}
 
-	if(layoutdirection == LAYOUT_DIR::NULLDIR) {
-		ec.RegisterNewError<error_layout>(*this, "No layout direction given: direction cannot be otherwise inferred.");
+	bool expecting_layout_direction = true;
+	bool expecting_points_layout = false;
+
+	const genericpoints *gp = dynamic_cast<const genericpoints *>(gt);
+	if(gp) {
+		expecting_layout_direction = false;
+		const doubleslip *ds = dynamic_cast<const doubleslip *>(gp);
+		if(ds) {
+			// TODO
+		}
+		else {
+			expecting_points_layout = true;
+		}
+	}
+
+	if(expecting_layout_direction && layoutdirection == LAYOUT_DIR::NULLDIR) {
+		ec.RegisterNewError<error_layout>(*this, "No layout direction given.");
+		return;
+	}
+	if(!expecting_layout_direction && (setmembers & LTOSM_LAYOUTDIR)) {
+		ec.RegisterNewError<error_layout>(*this, "Unexpected layout direction.");
+		return;
+	}
+	if(expecting_points_layout && !points_layout) {
+		ec.RegisterNewError<error_layout>(*this, "No points layout given.");
+		return;
+	}
+	if(!expecting_points_layout && points_layout) {
+		ec.RegisterNewError<error_layout>(*this, "Unexpected points layout.");
 		return;
 	}
 
