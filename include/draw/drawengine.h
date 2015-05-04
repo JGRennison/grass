@@ -27,6 +27,11 @@ namespace draw {
 
 	class draw_module;
 
+	enum class MIRROR {
+		HORIZ,
+		VERT,
+	};
+
 	class sprite_obj {
 		public:
 		//return true on success
@@ -46,8 +51,7 @@ namespace draw {
 		virtual void FillColour(uint32_t rgb) = 0;
 		virtual void ReplaceColour(uint32_t rgb_src, uint32_t rgb_dest) = 0;
 		virtual void DrawTextChar(const std::string &text, uint32_t foregroundcolour, uint32_t backgroundcolour) = 0;
-		virtual void Mirror(bool horizontally) = 0;
-		virtual void Rotate90(bool clockwise) = 0;
+		virtual void Mirror(MIRROR mode) = 0;
 	};
 
 	class draw_engine {

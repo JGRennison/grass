@@ -56,8 +56,7 @@ namespace draw {
 		virtual void FillColour(uint32_t rgb) override;
 		virtual void ReplaceColour(uint32_t rgb_src, uint32_t rgb_dest) override;
 		virtual void DrawTextChar(const std::string &text, uint32_t foregroundcolour, uint32_t backgroundcolour) override;
-		virtual void Mirror(bool horizontally) override;
-		virtual void Rotate90(bool clockwise) override;
+		virtual void Mirror(MIRROR mode) override;
 		const wxBitmap &GetSpriteBitmap() {
 			CheckType(wx_sprite_obj::GST::BMP);
 			return bmp;

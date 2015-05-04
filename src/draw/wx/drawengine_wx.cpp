@@ -78,14 +78,9 @@ namespace draw {
 		img = bmp.ConvertToImage();
 	}
 
-	void wx_sprite_obj::Mirror(bool horizontally) {
+	void wx_sprite_obj::Mirror(MIRROR mode) {
 		bmp = wxBitmap();
-		img = img.Mirror(horizontally);
-	}
-
-	void wx_sprite_obj::Rotate90(bool clockwise) {
-		bmp = wxBitmap();
-		img = img.Rotate90(clockwise);
+		img = img.Mirror(mode == MIRROR::HORIZ);
 	}
 
 	void wx_sprite_obj::CheckType(GST type) {

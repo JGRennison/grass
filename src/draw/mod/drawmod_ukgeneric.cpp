@@ -312,17 +312,17 @@ namespace draw {
 					return false;
 				case LAYOUT_DIR::RU:
 					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::RD));
-					sp.Mirror(false);
+					sp.Mirror(MIRROR::VERT);
 					return true;
 				case LAYOUT_DIR::R:
 					return false;
 				case LAYOUT_DIR::RD:
 					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::UR));
-					sp.Mirror(true);
+					sp.Mirror(MIRROR::HORIZ);
 					return true;
 				case LAYOUT_DIR::DR:
 					sp.LoadFromSprite(getdirchangespid(LAYOUT_DIR::UR));
-					sp.Mirror(false);
+					sp.Mirror(MIRROR::VERT);
 					return true;
 				default:
 					return false;
