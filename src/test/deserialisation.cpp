@@ -173,7 +173,7 @@ TEST_CASE( "deserialisation/error/typedefrecursion", "Test check for typedef rec
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	CHECK_CONTAINS(env.ec, "Recursive expansion detected");
 	REQUIRE(env.ec.GetErrorCount() == 1);
 }
 

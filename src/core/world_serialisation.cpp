@@ -149,6 +149,8 @@ void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &
 			//This is effectively a re-named clone of di
 			deserialiser_input typedefwrapperdi(di.json, di.type, "Typedef Wrapper: " + newtype + ", base: " + basetype, di);
 
+			// This checks for duplicate type expansions up the di stack
+			// i.e. this will trigger when a cycle would otherwise be about to be formed
 			const deserialiser_input *checkparent = di.parent;
 			do {
 				if(checkparent->reference_name == typedefwrapperdi.reference_name) {
@@ -158,12 +160,15 @@ void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &
 				}
 			} while((checkparent = checkparent->parent));
 
-			typedefwrapperdi.seenprops.swap(di.seenprops); //this is so that seen properties in di are propagated to the base handler
+			// this is so that seen properties in di are propagated to the base handler
+			// typedefwrapperdi now contains seen properties which were in di
+			typedefwrapperdi.seenprops.swap(di.seenprops);
+
 			typedefwrapperdi.objpreparse = di.objpreparse;
 			typedefwrapperdi.objpostparse = di.objpostparse;
 
 			auto exec = [&](const deserialiser_input &typedef_di) {
-				if(!this->content_object_types.FindAndDeserialise(basetype, typedef_di, ec, wdp))  {
+				if(!this->content_object_types.FindAndDeserialise(basetype, typedef_di, ec, wdp)) {
 					ec.RegisterNewError<error_deserialisation>(typedef_di,
 							string_format("Typedef expansion: %s: Unknown base type: %s", newtype.c_str(), basetype.c_str()));
 				}
@@ -171,21 +176,47 @@ void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &
 
 			if(content) {
 				deserialiser_input typedefcontentdi(*content, di.type, "Typedef Content: " + newtype + " base: " + basetype, typedefwrapperdi);
-				/* 1st typedefcontentdi: typedefwrapperdi.objpreparse
-				 * 2nd di preparse:  typedefwrapperdi.objpreparse.objpostparse
-				 * 3rd di: typedefwrapperdi
+
+				/* pre/post tree structure of typedefwrapperdi before exec:
+				 *
+				 *                         typedefwrapperdi (parent: di)
+				 *                        /              \
+				 *      pre: NEW: typedefcontentdi         post: unchanged (optional)
+				 *         /            \
+				 * pre: none           post: OLD typedefwrapperdi->pre (optional)
 				 */
+				/* parsing order:
+				 * 1: typedefcontentdi [content] (content of type definition)
+				 * 2: typedefcontentdi->post [typedefwrapperdi->pre] (optional object being parsed pre)
+				 * 3: typedefwrapperdi [typedefwrapperdi] (object being parsed)
+				 * 4: typedefwrapperdi->post [typedefwrapperdi->post] (optional object being parsed post)
+				 */
+				 /* recursive case for object A -> derived type B -> derived type C -> base type D
+				  * at input to type C deserialiser:
+				  *                          A' (parent: A)
+				  *                         /
+				  *                        B
+				  * at input to type D deserialiser:
+				  *                          A'' (parent: A')
+				  *                         /
+				  *                        C
+				  *                         \
+				  *                          B
+				  */
 				typedefcontentdi.objpostparse = typedefwrapperdi.objpreparse;
 				typedefwrapperdi.objpreparse = &typedefcontentdi;
 
-				// Need to use typedefwrapperdi instead of typedefcontentdi as the base, as typedefwrapperdi has the name which is needed first.
+				// Need to use typedefwrapperdi instead of typedefcontentdi as the base,
+				// as typedefwrapperdi has the `name` field which is needed first.
 				exec(typedefwrapperdi);
 			}
 			else {
 				exec(typedefwrapperdi);
 			}
 
-			typedefwrapperdi.seenprops.swap(di.seenprops); //this is so that seen properties in the base handler are propagated to di
+			// this is so that seen properties in the base handler are propagated to di
+			// di now contains the original seen properties + properties seen in the base deserialisation
+			typedefwrapperdi.seenprops.swap(di.seenprops);
 		};
 		content_object_types.RegisterType(newtype, func);
 		di.PostDeserialisePropCheck(ec);
