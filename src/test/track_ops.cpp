@@ -98,6 +98,127 @@ TEST_CASE( "track/ops/points/movement", "Test basic points movement future" ) {
 	}
 }
 
+std::string catchpoints_ops_test_str_1 =
+R"({ "content" : [ )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "routesignal", "routesignal" : true, "name" : "S1" }, )"
+	R"({ "type" : "catchpoints", "name" : "P1" }, )"
+	R"({ "type" : "endofline", "name" : "B" } )"
+"] }";
+
+TEST_CASE( "track/ops/catchpoints", "Test catchpoints movement on reservation" ) {
+	test_fixture_world_init_checked env(catchpoints_ops_test_str_1);
+	catchpoints *p1;
+	routesignal *s1;
+	routingpoint *b;
+	auto setup = [&]() {
+		p1 = PTR_CHECK(env.w->FindTrackByNameCast<catchpoints>("P1"));
+		s1 = PTR_CHECK(env.w->FindTrackByNameCast<routesignal>("S1"));
+		b = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>("B"));
+	};
+	setup();
+
+	std::function<void()> RoundTrip;
+
+	auto expect_auto_reverse = [&](const std::string &subtest_name) {
+		INFO("Subtest: " + subtest_name);
+		RoundTrip();
+		REQUIRE(action_points_auto_normalise::HasFutures(p1, 0) == true);
+		env.w->GameStep(1950);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV));
+		env.w->GameStep(100);
+		env.w->GameStep(1); // additional step for points action future
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::ZERO | genericpoints::PTF::OOC));
+		env.w->GameStep(5000);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::ZERO));
+	};
+
+	auto test = [&]() {
+		env.w->SubmitAction(action_reservepath(*(env.w), s1, b));
+
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::ZERO));
+		env.w->GameStep(501);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV | genericpoints::PTF::OOC));
+		env.w->GameStep(4500);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV));
+
+		env.w->SubmitAction(action_unreservetrack(*(env.w), *s1));
+		expect_auto_reverse("Track unreserved");
+
+		CHECK(env.w->GetLogText() == "");
+
+		env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::LOCKED, genericpoints::PTF::LOCKED));
+		RoundTrip();
+		env.w->GameStep(1);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::ZERO | genericpoints::PTF::LOCKED));
+		env.w->SubmitAction(action_reservepath(*(env.w), s1, b));
+		env.w->GameStep(1);
+		REQUIRE(env.w->GetLogText() == "Cannot reserve route: Locked\n");
+
+		env.w->ResetLogText();
+
+		env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::ZERO, genericpoints::PTF::LOCKED));
+		RoundTrip();
+		env.w->GameStep(1);
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::ZERO));
+		env.w->SubmitAction(action_reservepath(*(env.w), s1, b));
+		RoundTrip();
+		env.w->GameStep(5001);
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV | genericpoints::PTF::ZERO));
+		env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::LOCKED, genericpoints::PTF::LOCKED));
+		RoundTrip();
+		env.w->GameStep(1);
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
+
+		env.w->SubmitAction(action_unreservetrack(*(env.w), *s1));
+		RoundTrip();
+		env.w->GameStep(10000);
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV | genericpoints::PTF::LOCKED));
+		env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, genericpoints::PTF::ZERO, genericpoints::PTF::LOCKED));
+		expect_auto_reverse("Track unlocked");
+
+		env.w->SubmitAction(action_reservepath(*(env.w), s1, b));
+		RoundTrip();
+		env.w->GameStep(10000);
+		env.w->SubmitAction(action_unreservetrack(*(env.w), *s1));
+		RoundTrip();
+		REQUIRE(action_points_auto_normalise::HasFutures(p1, 0) == true);
+		env.w->GameStep(1000);
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV));
+		env.w->SubmitAction(action_reservepath(*(env.w), s1, b));
+		RoundTrip();
+		REQUIRE(action_points_auto_normalise::HasFutures(p1, 0) == false);
+		env.w->GameStep(10000);
+		// Check that auto-normalisation is not too over-eager
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV));
+		env.w->SubmitAction(action_unreservetrack(*(env.w), *s1));
+		expect_auto_reverse("Track unreserved 2");
+
+		CHECK(env.w->GetLogText() == "");
+	};
+
+	SECTION("No serialisation round-trip") {
+		RoundTrip = []() { };
+		test();
+	}
+	SECTION("With serialisation round-trip") {
+		info_rescoped_unique roundtrip_msg;
+		env.w->round_trip_actions = true;
+		RoundTrip = [&]() {
+			env = RoundTripCloneTestFixtureWorld(env, &roundtrip_msg);
+			setup();
+		};
+		test();
+	}
+}
+
 std::string overlap_ops_test_str_1 =
 R"({ "content" : [ )"
 	R"({ "type" : "typedef", "newtype" : "4aspectauto", "basetype" : "autosignal", "content" : { "maxaspect" : 3 } }, )"

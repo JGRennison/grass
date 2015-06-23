@@ -38,6 +38,7 @@ class genericpoints : public genericzlentrack {
 		INVALID          = 1<<6,
 		FIXED            = 1<<7,
 		COUPLED          = 1<<8,
+		AUTO_NORMALISE   = 1<<9,
 		SERIALISABLE     = REV | OOC | LOCKED | REMINDER | FAILEDNORM | FAILEDREV,
 	};
 
@@ -66,14 +67,17 @@ class genericpoints : public genericzlentrack {
 	virtual void CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) { }
 	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) { return nullptr; }
 
+	// this is only called if PTF::AUTO_NORMALISE is set
+	virtual bool ShouldAutoNormalise(unsigned int index, PTF change_flags) const { return false; }
+
 	virtual std::string GetTypeName() const override { return "Generic Points"; }
 
-	inline bool IsFlagsOOC(PTF pflags) const;
+	static inline bool IsFlagsOOC(PTF pflags);
 	inline bool IsOOC(unsigned int points_index) const {
 		return IsFlagsOOC(GetPointsFlags(points_index));
 	}
 
-	inline bool IsFlagsImmovable(PTF pflags) const;
+	static inline bool IsFlagsImmovable(PTF pflags);
 	inline bool IsImmovable(unsigned int points_index) const {
 		return IsFlagsImmovable(GetPointsFlags(points_index));
 	}
@@ -83,13 +87,13 @@ class genericpoints : public genericzlentrack {
 };
 template<> struct enum_traits< genericpoints::PTF > { static constexpr bool flags = true; };
 
-inline bool genericpoints::IsFlagsOOC(PTF pflags) const {
+inline bool genericpoints::IsFlagsOOC(PTF pflags) {
 	if(pflags & PTF::OOC) return true;
 	if(pflags & PTF::REV && pflags & PTF::FAILEDREV) return true;
 	if(!(pflags & PTF::REV) && pflags & PTF::FAILEDNORM) return true;
 	return false;
 }
-inline bool genericpoints::IsFlagsImmovable(PTF pflags) const {
+inline bool genericpoints::IsFlagsImmovable(PTF pflags) {
 	if(pflags & (PTF::LOCKED | PTF::REMINDER)) return true;
 	return false;
 }
@@ -149,7 +153,7 @@ class catchpoints : public genericpoints {
 	void InitSightingDistances();
 
 	public:
-	catchpoints(world &w_) : genericpoints(w_), pflags(PTF::REV) { InitSightingDistances(); }
+	catchpoints(world &w_) : genericpoints(w_), pflags(PTF::AUTO_NORMALISE) { InitSightingDistances(); }
 
 	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
@@ -159,6 +163,8 @@ class catchpoints : public genericpoints {
 	virtual const edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	const edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override;
+
+	virtual bool ShouldAutoNormalise(unsigned int index, PTF change_flags) const override;
 
 	virtual std::string GetTypeName() const override { return "Catch Points"; }
 

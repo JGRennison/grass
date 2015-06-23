@@ -59,6 +59,7 @@ void action::Serialise(serialiser_output &so, error_collection &ec) const {
 
 void action::RegisterAllActionTypes(action_deserialisation_type_factory &factory) {
 	MakeActionTypeWrapper<action_pointsaction>(factory);
+	MakeActionTypeWrapper<action_points_auto_normalise>(factory);
 	MakeActionTypeWrapper<action_reservetrack>(factory);
 	MakeActionTypeWrapper<action_reservepath>(factory);
 	MakeActionTypeWrapper<action_unreservetrackroute>(factory);
@@ -72,9 +73,25 @@ void future_action_wrapper::ExecuteAction() {
 }
 
 void future_action_wrapper::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	//TODO: fill this in
+	future::Deserialise(di, ec);
+	world_obj *wo = dynamic_cast<world_obj *>(&GetTarget());
+	if(!wo) {
+		ec.RegisterNewError<error_deserialisation>(di, "future_action_wrapper: target is not a world_obj");
+		return;
+	}
+	deserialiser_input subdi(di.json["action"], "action", "action", di);
+	if(subdi.json.IsObject()) {
+		di.RegisterProp("action");
+		act = wo->GetWorld().DeserialiseAction(subdi, ec);
+	}
 }
 
 void future_action_wrapper::Serialise(serialiser_output &so, error_collection &ec) const {
-	//TODO: fill this in
+	future::Serialise(so, ec);
+	if(act) {
+		so.json_out.String("action");
+		so.json_out.StartObject();
+		act->Serialise(so, ec);
+		so.json_out.EndObject();
+	}
 }

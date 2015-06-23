@@ -123,6 +123,15 @@ void action_pointsaction::ExecuteAction() const {
 
 	if(overlap_callback)
 		overlap_callback();
+
+	if(old_pflags & genericpoints::PTF::AUTO_NORMALISE) {
+		if(!(aflags & APAF::NOPOINTSNORMALISE) && target->ShouldAutoNormalise(index, change_flags)) {
+			w.SubmitAction(action_points_auto_normalise(w, *target, index));
+		}
+		else {
+			action_points_auto_normalise::CancelFutures(target, index);
+		}
+	}
 }
 
 world_time action_pointsaction::GetPointsMovementCompletionTime() const {
@@ -237,6 +246,7 @@ void action_pointsaction::Deserialise(const deserialiser_input &di, error_collec
 	CheckTransJsonValueDef(index, di, "index", 0, ec);
 	CheckTransJsonValueDef(bits, di, "bits", genericpoints::PTF::ZERO, ec);
 	CheckTransJsonValueDef(mask, di, "mask", genericpoints::PTF::ZERO, ec);
+	CheckTransJsonValueDef(aflags, di, "aflags", APAF::ZERO, ec);
 }
 
 void action_pointsaction::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -245,6 +255,70 @@ void action_pointsaction::Serialise(serialiser_output &so, error_collection &ec)
 	SerialiseValueJson(index, so, "index");
 	SerialiseValueJson(bits, so, "bits");
 	SerialiseValueJson(mask, so, "mask");
+	SerialiseValueJson(aflags, so, "aflags");
+}
+
+void action_points_auto_normalise::ExecuteAction() const {
+	if(!target)
+		return;
+
+	if(HasFutures(target, index))
+		return;
+
+	ActionRegisterFutureAction(*target, GetNormalisationStartTime(),
+			std::unique_ptr<action>(new action_pointsaction(w, *target, index, genericpoints::PTF::ZERO, genericpoints::PTF::REV, action_pointsaction::APAF::ISPOINTSNORMALISE)));
+}
+
+void action_points_auto_normalise::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	action::Deserialise(di, ec);
+
+	std::string targetname;
+	if(CheckTransJsonValue(targetname, di, "target", ec))
+		target = w.FindTrackByNameCast<genericpoints>(targetname);
+
+	if(!target)
+		ec.RegisterNewError<error_deserialisation>(di, "Invalid action_points_auto_normalise definition");
+
+	CheckTransJsonValueDef(index, di, "index", 0, ec);
+}
+
+void action_points_auto_normalise::Serialise(serialiser_output &so, error_collection &ec) const {
+	action::Serialise(so, ec);
+	SerialiseValueJson(target->GetSerialisationName(), so, "target");
+	SerialiseValueJson(index, so, "index");
+}
+
+world_time action_points_auto_normalise::GetNormalisationStartTime() const {
+	return action_time + 2000;
+}
+
+bool action_points_auto_normalise::HandleFuturesGeneric(genericpoints *target, unsigned int index, bool cancel) {
+	bool found = false;
+	target->EnumerateFutures([&](future &f) {
+		future_action_wrapper *faw = dynamic_cast<future_action_wrapper *>(&f);
+		if(!faw)
+			return;
+		action_pointsaction *apan = dynamic_cast<action_pointsaction *>(faw->act.get());
+		if(!apan)
+			return;
+		if(!(apan->GetFlags() & action_pointsaction::APAF::ISPOINTSNORMALISE))
+			return;
+		if(apan->GetIndex() != index)
+			return;
+
+		found = true;
+		if(cancel)
+			apan->ActionCancelFuture(f);
+	});
+	return found;
+}
+
+void action_points_auto_normalise::CancelFutures(genericpoints *target, unsigned int index) {
+	HandleFuturesGeneric(target, index, true);
+}
+
+bool action_points_auto_normalise::HasFutures(genericpoints *target, unsigned int index) {
+	return HandleFuturesGeneric(target, index, false);
 }
 
 void future_routeoperation_base::Deserialise(const deserialiser_input &di, error_collection &ec) {

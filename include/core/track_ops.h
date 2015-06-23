@@ -62,6 +62,8 @@ class action_pointsaction : public action {
 		ZERO                     = 0,
 		IGNORERESERVATION        = 1<<0,
 		NOOVERLAPSWING           = 1<<1,
+		NOPOINTSNORMALISE        = 1<<2,
+		ISPOINTSNORMALISE        = 1<<3,
 	};
 
 	private:
@@ -87,6 +89,10 @@ class action_pointsaction : public action {
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 	inline APAF SetFlagsMasked(APAF flags, APAF mask);
+
+	genericpoints *GetTarget() const { return target; }
+	unsigned int GetIndex() const { return index; }
+	APAF GetFlags() const { return aflags; }
 };
 template<> struct enum_traits< action_pointsaction::APAF > { static constexpr bool flags = true; };
 
@@ -94,6 +100,31 @@ inline action_pointsaction::APAF action_pointsaction::SetFlagsMasked(action_poin
 	aflags = (aflags & (~mask)) | flags;
 	return aflags;
 }
+
+class action_points_auto_normalise : public action {
+	private:
+	genericpoints *target;
+	unsigned int index;
+
+	private:
+	world_time GetNormalisationStartTime() const;
+
+	public:
+	action_points_auto_normalise(world &w_) : action(w_), target(nullptr) { }
+	action_points_auto_normalise(world &w_, genericpoints &targ, unsigned int index_)
+			: action(w_), target(&targ), index(index_) { }
+	static std::string GetTypeSerialisationNameStatic() { return "action_points_auto_normalise"; }
+	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
+	virtual void ExecuteAction() const override;
+	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+
+	static void CancelFutures(genericpoints *target, unsigned int index);
+	static bool HasFutures(genericpoints *target, unsigned int index);
+
+	private:
+	static bool HandleFuturesGeneric(genericpoints *target, unsigned int index, bool cancel);
+};
 
 class action_reservetrack_base;
 

@@ -117,14 +117,14 @@ TEST_CASE( "track/conn/points", "Test basic points connectivity" ) {
 TEST_CASE( "track/conn/catchpoints", "Test basic catchpoints connectivity" ) {
 	test_fixture_track_3 env;
 
-	REQUIRE(env.cp1.GetPointsFlags(0) == catchpoints::PTF::REV);
+	REQUIRE(env.cp1.GetPointsFlags(0) == catchpoints::PTF::AUTO_NORMALISE);
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT) == track_target_ptr(&env.cp1, EDGE_FRONT));
 	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.cp1, EDGE_BACK));
 	//reverse
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr());
 	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
 	//normal
-	env.cp1.SetPointsFlagsMasked(0, genericpoints::PTF::ZERO, points::PTF::REV);
+	env.cp1.SetPointsFlagsMasked(0, genericpoints::PTF::REV, points::PTF::REV);
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr(&env.track4, EDGE_FRONT));
 	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track2, EDGE_BACK));
 	//OOC

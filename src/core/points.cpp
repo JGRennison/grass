@@ -245,7 +245,7 @@ void points::InitSightingDistances() {
 generictrack::edge_track_target catchpoints::GetConnectingPiece(EDGETYPE direction) {
 	if(IsOOC(0))
 		return empty_track_target;
-	if(pflags & PTF::REV)
+	if(!(pflags & PTF::REV))
 		return empty_track_target;
 
 	switch(direction) {
@@ -286,7 +286,7 @@ generictrack::edge_track_target catchpoints::GetConnectingPieceByIndex(EDGETYPE 
 EDGETYPE catchpoints::GetReverseDirection(EDGETYPE direction) const {
 	if(IsOOC(0))
 		return EDGE_NULL;
-	if(pflags & PTF::REV)
+	if(!(pflags & PTF::REV))
 		return EDGE_NULL;
 
 	switch(direction) {
@@ -330,7 +330,7 @@ const genericpoints::PTF &catchpoints::GetPointsFlagsRef(unsigned int points_ind
 
 bool catchpoints::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
 	genericpoints::PTF pflags = GetPointsFlags(0);
-	if(IsFlagsImmovable(pflags) && pflags & PTF::REV) {
+	if(IsFlagsImmovable(pflags) && !(pflags & PTF::REV)) {
 		GetReservationFailureReason(pflags, failreasonkey);
 		return false;
 	}
@@ -339,11 +339,23 @@ bool catchpoints::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_fl
 
 void catchpoints::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
 	if(rr_flags & RRF::RESERVE && trs.GetReservationCount() == 0) {
-		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::ZERO, PTF::REV, action_pointsaction::APAF::NOOVERLAPSWING));
+		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::REV, PTF::REV, action_pointsaction::APAF::NOOVERLAPSWING | action_pointsaction::APAF::NOPOINTSNORMALISE));
 	}
-	else if(rr_flags & RRF::UNRESERVE && trs.GetReservationCount() == 1) {
-		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::REV, PTF::REV, action_pointsaction::APAF::NOOVERLAPSWING));
+	else if(rr_flags & RRF::UNRESERVE && trs.GetReservationCount() == 1 && !IsFlagsImmovable(GetPointsFlags(0))) {
+		submitaction(action_points_auto_normalise(GetWorld(), *this, 0));
 	}
+}
+
+bool catchpoints::ShouldAutoNormalise(unsigned int index, PTF change_flags) const {
+	if(trs.GetReservationCount())
+		return false;
+
+	PTF new_flags = GetPointsFlags(0) ^ change_flags;
+	if(IsFlagsImmovable(new_flags))
+		return false;
+	if(new_flags & PTF::OOC)
+		return false;
+	return (new_flags & PTF::REV);
 }
 
 EDGETYPE catchpoints::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
