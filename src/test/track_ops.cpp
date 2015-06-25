@@ -87,6 +87,21 @@ TEST_CASE( "track/ops/points/movement", "Test basic points movement future" ) {
 	ExecTestFixtureWorldWithRoundTrip(env, setup, test);
 }
 
+void AutoNormaliseExpectReversalTest(test_fixture_world &env, std::function<genericpoints *()> RoundTrip) {
+	genericpoints *p = RoundTrip();
+	REQUIRE(action_points_auto_normalise::HasFutures(p, 0) == true);
+	env.w->GameStep(1950);
+	p = RoundTrip();
+	REQUIRE(p->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV));
+	env.w->GameStep(100);
+	env.w->GameStep(1); // additional step for points action future
+	p = RoundTrip();
+	REQUIRE(p->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::ZERO | genericpoints::PTF::OOC));
+	env.w->GameStep(5000);
+	p = RoundTrip();
+	REQUIRE(p->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::ZERO));
+}
+
 std::string catchpoints_ops_test_str_1 =
 R"({ "content" : [ )"
 	R"({ "type" : "startofline", "name" : "A" }, )"
@@ -109,18 +124,10 @@ TEST_CASE( "track/ops/catchpoints", "Test catchpoints movement on reservation" )
 	auto test = [&](std::function<void()> RoundTrip) {
 		auto expect_auto_reverse = [&](const std::string &subtest_name) {
 			INFO("Subtest: " + subtest_name);
-			RoundTrip();
-			REQUIRE(action_points_auto_normalise::HasFutures(p1, 0) == true);
-			env.w->GameStep(1950);
-			RoundTrip();
-			REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV));
-			env.w->GameStep(100);
-			env.w->GameStep(1); // additional step for points action future
-			RoundTrip();
-			REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::ZERO | genericpoints::PTF::OOC));
-			env.w->GameStep(5000);
-			RoundTrip();
-			REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::ZERO));
+			AutoNormaliseExpectReversalTest(env, [&]() -> genericpoints* {
+				RoundTrip();
+				return p1;
+			});
 		};
 
 		env.w->SubmitAction(action_reservepath(*(env.w), s1, b));
@@ -188,6 +195,89 @@ TEST_CASE( "track/ops/catchpoints", "Test catchpoints movement on reservation" )
 		expect_auto_reverse("Track unreserved 2");
 
 		CHECK(env.w->GetLogText() == "");
+	};
+
+	ExecTestFixtureWorldWithRoundTrip(env, setup, test);
+}
+
+std::string catchpoints_ops_test_str_2 =
+R"({ "content" : [ )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "routesignal", "routesignal" : true, "name" : "S1" }, )"
+	R"({ "type" : "catchpoints", "name" : "P1", "auto_normalise" : false }, )"
+	R"({ "type" : "endofline", "name" : "B" } )"
+"] }";
+
+TEST_CASE( "track/ops/catchpoints/no_auto_normalise", "Test catchpoints with auto_normalise off" ) {
+	test_fixture_world_init_checked env(catchpoints_ops_test_str_2);
+	catchpoints *p1;
+	routesignal *s1;
+	routingpoint *b;
+	auto setup = [&]() {
+		p1 = PTR_CHECK(env.w->FindTrackByNameCast<catchpoints>("P1"));
+		s1 = PTR_CHECK(env.w->FindTrackByNameCast<routesignal>("S1"));
+		b = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>("B"));
+	};
+
+	auto test = [&](std::function<void()> RoundTrip) {
+		env.w->SubmitAction(action_reservepath(*(env.w), s1, b));
+
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::ZERO));
+		env.w->GameStep(501);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV | genericpoints::PTF::OOC));
+		env.w->GameStep(4500);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV));
+
+		env.w->SubmitAction(action_unreservetrack(*(env.w), *s1));
+		env.w->GameStep(10000);
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::REV));
+		REQUIRE(action_points_auto_normalise::HasFutures(p1, 0) == false);
+		CHECK(env.w->GetLogText() == "");
+	};
+
+	ExecTestFixtureWorldWithRoundTrip(env, setup, test);
+}
+
+std::string points_move_ops_test_str_2 =
+R"({ "content" : [ )"
+	R"({ "type" : "startofline", "name" : "A" }, )"
+	R"({ "type" : "routesignal", "routesignal" : true, "name" : "S1" }, )"
+	R"({ "type" : "points", "name" : "P1", "auto_normalise" : true }, )"
+	R"({ "type" : "endofline", "name" : "B" }, )"
+	R"({ "type" : "endofline", "name" : "C", "connect" : { "to" : "P1" } } )"
+"] }";
+
+TEST_CASE( "track/ops/points/auto_normalise", "Test points with auto_normalise on" ) {
+	test_fixture_world_init_checked env(points_move_ops_test_str_2);
+	points *p1;
+	routesignal *s1;
+	routingpoint *c;
+	auto setup = [&]() {
+		p1 = PTR_CHECK(env.w->FindTrackByNameCast<points>("P1"));
+		s1 = PTR_CHECK(env.w->FindTrackByNameCast<routesignal>("S1"));
+		c = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>("C"));
+	};
+
+	auto test = [&](std::function<void()> RoundTrip) {
+		env.w->SubmitAction(action_reservepath(*(env.w), s1, c));
+
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::ZERO));
+		env.w->GameStep(501);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV | genericpoints::PTF::OOC));
+		env.w->GameStep(4500);
+		RoundTrip();
+		REQUIRE(p1->GetPointsFlags(0) == (genericpoints::PTF::AUTO_NORMALISE | genericpoints::PTF::REV));
+
+		env.w->SubmitAction(action_unreservetrack(*(env.w), *s1));
+		AutoNormaliseExpectReversalTest(env, [&]() -> genericpoints* {
+			RoundTrip();
+			return p1;
+		});
 	};
 
 	ExecTestFixtureWorldWithRoundTrip(env, setup, test);

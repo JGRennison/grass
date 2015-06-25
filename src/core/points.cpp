@@ -65,6 +65,26 @@ genericpoints::PTF genericpoints::SetPointsFlagsMasked(unsigned int points_index
 	return pflags;
 }
 
+bool genericpoints::ShouldAutoNormalise(unsigned int index, genericpoints::PTF change_flags) const {
+	if(trs.GetReservationCount())
+		return false;
+
+	PTF new_flags = GetPointsFlags(index) ^ change_flags;
+	if(IsFlagsImmovable(new_flags))
+		return false;
+	if(new_flags & PTF::OOC)
+		return false;
+	return (new_flags & PTF::REV);
+}
+
+void genericpoints::CommonReservationAction(unsigned int points_index, EDGETYPE direction, unsigned int index,
+		RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+	PTF pflags = GetPointsFlags(points_index);
+	if(pflags & PTF::AUTO_NORMALISE && rr_flags & RRF::UNRESERVE && trs.GetReservationCount() == 1 && !IsFlagsImmovable(pflags)) {
+		submitaction(action_points_auto_normalise(GetWorld(), *this, points_index));
+	}
+}
+
 generictrack::edge_track_target points::GetConnectingPiece(EDGETYPE direction) {
 	if(IsOOC(0))
 		return empty_track_target;
@@ -207,9 +227,11 @@ void points::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_
 		bool rev = pflags & PTF::REV;
 		bool newrev = IsPointsRoutingDirAndIndexRev(direction, index);
 		if(newrev != rev) {
-			submitaction(action_pointsaction(GetWorld(), *this, 0, newrev ? PTF::REV : PTF::ZERO, PTF::REV, action_pointsaction::APAF::NOOVERLAPSWING));
+			submitaction(action_pointsaction(GetWorld(), *this, 0, newrev ? PTF::REV : PTF::ZERO, PTF::REV,
+					action_pointsaction::APAF::NOOVERLAPSWING | action_pointsaction::APAF::NOPOINTSNORMALISE));
 		}
 	}
+	CommonReservationAction(0, direction, index, rr_flags, resroute, submitaction);
 }
 
 EDGETYPE points::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
@@ -339,23 +361,10 @@ bool catchpoints::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_fl
 
 void catchpoints::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
 	if(rr_flags & RRF::RESERVE && trs.GetReservationCount() == 0) {
-		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::REV, PTF::REV, action_pointsaction::APAF::NOOVERLAPSWING | action_pointsaction::APAF::NOPOINTSNORMALISE));
+		submitaction(action_pointsaction(GetWorld(), *this, 0, PTF::REV, PTF::REV,
+				action_pointsaction::APAF::NOOVERLAPSWING | action_pointsaction::APAF::NOPOINTSNORMALISE));
 	}
-	else if(rr_flags & RRF::UNRESERVE && trs.GetReservationCount() == 1 && !IsFlagsImmovable(GetPointsFlags(0))) {
-		submitaction(action_points_auto_normalise(GetWorld(), *this, 0));
-	}
-}
-
-bool catchpoints::ShouldAutoNormalise(unsigned int index, PTF change_flags) const {
-	if(trs.GetReservationCount())
-		return false;
-
-	PTF new_flags = GetPointsFlags(0) ^ change_flags;
-	if(IsFlagsImmovable(new_flags))
-		return false;
-	if(new_flags & PTF::OOC)
-		return false;
-	return (new_flags & PTF::REV);
+	CommonReservationAction(0, direction, index, rr_flags, resroute, submitaction);
 }
 
 EDGETYPE catchpoints::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
@@ -567,25 +576,27 @@ bool doubleslip::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_fla
 }
 
 void doubleslip::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+	unsigned int entranceindex = GetPointsIndexByEdge(direction);
+	PTF entrancepf = GetCurrentPointFlags(direction);
+	bool isentrancerev = (entrancepf & PTF::FIXED) ? static_cast<bool>(entrancepf & PTF::REV) : index != 0;
+
+	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
+	unsigned int exitindex = GetPointsIndexByEdge(exitdirection);
+	PTF exitpf = GetCurrentPointFlags(exitdirection);
+
 	if(rr_flags & RRF::RESERVE) {
-		unsigned int entranceindex = GetPointsIndexByEdge(direction);
-		PTF entrancepf = GetCurrentPointFlags(direction);
-		bool isentrancerev = (entrancepf & PTF::FIXED) ? static_cast<bool>(entrancepf & PTF::REV) : index != 0;
-
-		EDGETYPE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
-
-		unsigned int exitindex = GetPointsIndexByEdge(exitdirection);
-		PTF exitpf = GetCurrentPointFlags(exitdirection);
-
 		bool isexitrev = (GetConnectingPointDirection(exitdirection, true) == direction);
 
 		if(!(entrancepf & PTF::REV) != !(isentrancerev))
 			submitaction(action_pointsaction(GetWorld(), *this, entranceindex, isentrancerev ? PTF::REV : PTF::ZERO, PTF::REV,
-					action_pointsaction::APAF::NOOVERLAPSWING));
+					action_pointsaction::APAF::NOOVERLAPSWING | action_pointsaction::APAF::NOPOINTSNORMALISE));
 		if(!(exitpf & PTF::REV) != !(isexitrev))
 			submitaction(action_pointsaction(GetWorld(), *this, exitindex, isexitrev ? PTF::REV : PTF::ZERO, PTF::REV,
-					action_pointsaction::APAF::NOOVERLAPSWING));
+					action_pointsaction::APAF::NOOVERLAPSWING | action_pointsaction::APAF::NOPOINTSNORMALISE));
 	}
+
+	CommonReservationAction(entranceindex, direction, index, rr_flags, resroute, submitaction);
+	CommonReservationAction(exitindex, direction, index, rr_flags, resroute, submitaction);
 }
 
 void doubleslip::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {

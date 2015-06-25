@@ -236,6 +236,7 @@ void DeserialisePointFlags(genericpoints::PTF &pflags, const deserialiser_input 
 	CheckTransJsonValueFlag(pflags, genericpoints::PTF::REMINDER, di, "reminder", ec);
 	CheckTransJsonValueFlag(pflags, genericpoints::PTF::FAILEDNORM, di, "failednorm", ec);
 	CheckTransJsonValueFlag(pflags, genericpoints::PTF::FAILEDREV, di, "failedrev", ec);
+	CheckTransJsonValueFlag(pflags, genericpoints::PTF::AUTO_NORMALISE, di, "auto_normalise", ec);
 }
 
 void SerialisePointFlags(genericpoints::PTF pflags, serialiser_output &so, error_collection &ec) {
@@ -344,7 +345,7 @@ void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec)
 		genericpoints::PTF pf = GetCurrentPointFlags(direction);
 		pointsflagssubobj ps(&pf);
 		CheckTransJsonSubObj(ps, di, prop, "", ec);
-		SetPointsFlagsMasked(GetPointsIndexByEdge(direction), pf, genericpoints::PTF::SERIALISABLE);
+		SetPointsFlagsMasked(GetPointsIndexByEdge(direction), pf, genericpoints::PTF::ALL);
 	};
 	deserialisepointsflags(EDGE_DS_FL, "leftfrontpoints");
 	deserialisepointsflags(EDGE_DS_FR, "rightfrontpoints");

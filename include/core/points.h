@@ -40,6 +40,7 @@ class genericpoints : public genericzlentrack {
 		COUPLED          = 1<<8,
 		AUTO_NORMALISE   = 1<<9,
 		SERIALISABLE     = REV | OOC | LOCKED | REMINDER | FAILEDNORM | FAILEDREV,
+		ALL              = SERIALISABLE | INVALID | FIXED | COUPLED | AUTO_NORMALISE,
 	};
 
 	protected:
@@ -68,8 +69,13 @@ class genericpoints : public genericzlentrack {
 	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) { return nullptr; }
 
 	// this is only called if PTF::AUTO_NORMALISE is set
-	virtual bool ShouldAutoNormalise(unsigned int index, PTF change_flags) const { return false; }
+	virtual bool ShouldAutoNormalise(unsigned int index, PTF change_flags) const;
 
+	protected:
+	void CommonReservationAction(unsigned int points_index, EDGETYPE direction, unsigned int index,
+			RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction);
+
+	public:
 	virtual std::string GetTypeName() const override { return "Generic Points"; }
 
 	static inline bool IsFlagsOOC(PTF pflags);
@@ -148,7 +154,6 @@ class catchpoints : public genericpoints {
 	track_target_ptr prev;
 	track_target_ptr next;
 	PTF pflags;
-	track_reservation_state trs;
 
 	void InitSightingDistances();
 
@@ -163,8 +168,6 @@ class catchpoints : public genericpoints {
 	virtual const edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
 	unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
 	const edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override;
-
-	virtual bool ShouldAutoNormalise(unsigned int index, PTF change_flags) const override;
 
 	virtual std::string GetTypeName() const override { return "Catch Points"; }
 
@@ -232,7 +235,6 @@ class doubleslip : public genericpoints {
 	track_target_ptr backleft;
 	PTF pflags[4] = { PTF::ZERO, PTF::ZERO, PTF::ZERO, PTF::ZERO };
 	std::vector<points_coupling> couplings[4];
-	track_reservation_state trs;
 	unsigned int dof = 2;
 
 	enum class DSF {
