@@ -109,19 +109,22 @@ inline test_fixture_world_init_checked RoundTripCloneTestFixtureWorld(const test
 	return std::move(rt_tfw);
 }
 
-//! Where F has the signature void(test_fixture_world &)
-//! This executes the tests, both with and without a serialisation round-trip
-template<typename F> inline void ExecTestFixtureWorldWithRoundTrip(test_fixture_world &tfw, F func) {
-	test_fixture_world_init_checked rt_tfw = RoundTripCloneTestFixtureWorld(tfw);
-
-	{
-		INFO("Testing without serialisation round-trip");
-		func(tfw);
+//! Where S has the signature void()
+//! Where T has the signature void(std::function<void()> RoundTrip)
+//! This executes the test, both with and without serialisation round-trips
+template<typename S, typename T> inline void ExecTestFixtureWorldWithRoundTrip(test_fixture_world &env, S setup_func, T test_func) {
+	SECTION("No serialisation round-trip") {
+		setup_func();
+		test_func([]() { });
 	}
-	{
-		INFO("Testing with serialisation round-trip");
-		INFO("Gamestate: " + rt_tfw.orig_input_gamstate);
-		func(rt_tfw);
+	SECTION("With serialisation round-trip") {
+		info_rescoped_unique roundtrip_msg;
+		env.w->round_trip_actions = true;
+		setup_func();
+		test_func([&]() {
+			env = RoundTripCloneTestFixtureWorld(env, &roundtrip_msg);
+			setup_func();
+		});
 	}
 }
 
