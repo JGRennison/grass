@@ -219,6 +219,10 @@ class springpoints : public genericzlentrack {
 	void SetSendReverseFlag(bool sr) { sendreverse = sr; }
 
 	protected:
+	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override {
+		outputlist.push_back(&trs);
+		return 1;
+	}
 	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
 	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;

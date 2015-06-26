@@ -219,6 +219,12 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 		}
 	}
 
+	const springpoints *sp = dynamic_cast<const springpoints *>(gt);
+	if(sp) {
+		expecting_layout_direction = false;
+		expecting_points_layout = true;
+	}
+
 	if(expecting_layout_direction && layoutdirection == LAYOUT_DIR::NULLDIR) {
 		ec.RegisterNewError<error_layout>(*this, "No layout direction given.");
 		return;

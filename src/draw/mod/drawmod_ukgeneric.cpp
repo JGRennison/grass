@@ -179,11 +179,11 @@ namespace draw {
 		draw::sprite_ref base_sprite_reverse;
 	};
 
-	points_sprites MakePointsSprites(const genericpoints *gp, const guilayout::layouttrack_obj::points_layout_info *layout_info) {
+	points_sprites MakePointsSprites(const generictrack *gt, const guilayout::layouttrack_obj::points_layout_info *layout_info) {
 		points_sprites out;
 
 		draw::sprite_ref base = 0;
-		if(gp->GetTrackCircuit())
+		if(gt->GetTrackCircuit())
 			base |= SID_has_tc;
 
 		LAYOUT_DIR turn_dir = (layout_info->facing == ReverseLayoutDirection(layout_info->normal))
@@ -411,6 +411,29 @@ namespace draw {
 					layout.SetSprite(x, y, sprite, obj, 0);
 				};
 			}
+		}
+
+		const springpoints *sp = dynamic_cast<const springpoints *>(gt);
+		if(sp) {
+			using points_layout_info = guilayout::layouttrack_obj::points_layout_info;
+
+			auto layout_info = obj->GetPointsLayoutInfo();
+			if(!layout_info)
+				return get_draw_error_func(0x7FFF7F, 0);
+
+			points_sprites ps = MakePointsSprites(sp, layout_info);
+			draw::sprite_ref base_sprite;
+			if(layout_info->flags & points_layout_info::PLI_FLAGS::SHOW_MERGED)
+				base_sprite = ps.base_sprite_ooc;
+			else if(sp->GetSendReverseFlag())
+				base_sprite = ps.base_sprite_reverse;
+			else
+				base_sprite = ps.base_sprite_normal;
+
+			return [x, y, base_sprite, sp, obj](const draw_engine &eng, guilayout::world_layout &layout) {
+				draw::sprite_ref sprite = track_sprite_extras(sp) | base_sprite;
+				layout.SetSprite(x, y, sprite, obj, 0);
+			};
 		}
 
 		//default:
