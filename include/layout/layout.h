@@ -33,6 +33,7 @@
 #include <forward_list>
 #include "common.h"
 #include "util/error.h"
+#include "util/flags.h"
 #include "core/edgetype.h"
 #include "draw/drawtypes.h"
 
@@ -159,6 +160,10 @@ namespace guilayout {
 			LAYOUT_DIR facing = LAYOUT_DIR::NULLDIR;
 			LAYOUT_DIR normal = LAYOUT_DIR::NULLDIR;
 			LAYOUT_DIR reverse = LAYOUT_DIR::NULLDIR;
+			enum class PLI_FLAGS {
+				SHOW_MERGED        = 1<<0,
+			};
+			PLI_FLAGS flags;
 		};
 
 		protected:
@@ -310,7 +315,7 @@ namespace guilayout {
 
 		void LayoutTimeStep(world_time oldtime, world_time newtime);
 	};
-
 };
+template<> struct enum_traits< guilayout::layouttrack_obj::points_layout_info::PLI_FLAGS > { static constexpr bool flags = true; };
 
 #endif

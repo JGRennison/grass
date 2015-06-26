@@ -173,6 +173,30 @@ namespace draw {
 		}
 	}
 
+	struct points_sprites {
+		draw::sprite_ref base_sprite_ooc;
+		draw::sprite_ref base_sprite_normal;
+		draw::sprite_ref base_sprite_reverse;
+	};
+
+	points_sprites MakePointsSprites(const genericpoints *gp, const guilayout::layouttrack_obj::points_layout_info *layout_info) {
+		points_sprites out;
+
+		draw::sprite_ref base = 0;
+		if(gp->GetTrackCircuit())
+			base |= SID_has_tc;
+
+		LAYOUT_DIR turn_dir = (layout_info->facing == ReverseLayoutDirection(layout_info->normal))
+				? layout_info->reverse : layout_info->normal;
+		out.base_sprite_ooc = base | SID_pointsooc |
+				layoutdir_to_spriteid(guilayout::EdgesToDirection(layout_info->facing, turn_dir));
+		out.base_sprite_normal = base | SID_trackseg |
+				layoutdir_to_spriteid(guilayout::FoldLayoutDirection(guilayout::EdgesToDirection(layout_info->facing, layout_info->normal)));
+		out.base_sprite_reverse = base | SID_trackseg |
+				layoutdir_to_spriteid(guilayout::FoldLayoutDirection(guilayout::EdgesToDirection(layout_info->facing, layout_info->reverse)));
+		return out;
+	}
+
 	draw_func_type draw_module_ukgeneric::GetDrawTrack(const std::shared_ptr<guilayout::layouttrack_obj> &obj, error_collection &ec) {
 		int x, y;
 		std::tie(x, y) = obj->GetPosition();
@@ -348,30 +372,29 @@ namespace draw {
 			else {
 				// All types of genericpoints except doubleslip can be dealt with together
 
+				using points_layout_info = guilayout::layouttrack_obj::points_layout_info;
+
 				auto layout_info = obj->GetPointsLayoutInfo();
 
 				if(!layout_info)
 					return get_draw_error_func(0x7FFF7F, 0);
 
-				draw::sprite_ref base = 0;
-				if(gp->GetTrackCircuit())
-					base |= SID_has_tc;
+				points_sprites ps = MakePointsSprites(gp, layout_info);
 
-				draw::sprite_ref base_sprite_normal = base | SID_trackseg |
-						layoutdir_to_spriteid(guilayout::FoldLayoutDirection(guilayout::EdgesToDirection(layout_info->facing, layout_info->normal)));
-				draw::sprite_ref base_sprite_reverse = base | SID_trackseg |
-						layoutdir_to_spriteid(guilayout::FoldLayoutDirection(guilayout::EdgesToDirection(layout_info->facing, layout_info->reverse)));
+				if(layout_info->flags & points_layout_info::PLI_FLAGS::SHOW_MERGED) {
+					auto base_sprite_ooc = ps.base_sprite_ooc;
+					return [x, y, base_sprite_ooc, gp, obj](const draw_engine &eng, guilayout::world_layout &layout) {
+						draw::sprite_ref sprite = track_sprite_extras(gp) | base_sprite_ooc;
+						layout.SetSprite(x, y, sprite, obj, 0);
+					};
+				}
 
-				LAYOUT_DIR turn_dir = (layout_info->facing == ReverseLayoutDirection(layout_info->normal)) ? layout_info->reverse : layout_info->normal;
-				draw::sprite_ref base_sprite_ooc = base | SID_pointsooc |
-						layoutdir_to_spriteid(guilayout::EdgesToDirection(layout_info->facing, turn_dir));
-
-				return [x, y, base_sprite_normal, base_sprite_reverse, base_sprite_ooc, gp, obj](const draw_engine &eng, guilayout::world_layout &layout) {
+				return [x, y, ps, gp, obj](const draw_engine &eng, guilayout::world_layout &layout) {
 					draw::sprite_ref sprite = track_sprite_extras(gp);
 					genericpoints::PTF flags = gp->GetPointsFlags(0);
 
 					if(flags & genericpoints::PTF::OOC) {
-						sprite |= base_sprite_ooc;
+						sprite |= ps.base_sprite_ooc;
 						unsigned int timebin = layout.GetWorld().GetGameTime() / POINTS_OOC_FLASHINTERVAL;
 						if(timebin & 1)
 							sprite = change_spriteid_layoutdir(LAYOUT_DIR::NULLDIR, sprite);
@@ -382,9 +405,9 @@ namespace draw {
 					}
 
 					if(flags & genericpoints::PTF::REV)
-						sprite |= base_sprite_reverse;
+						sprite |= ps.base_sprite_reverse;
 					else
-						sprite |= base_sprite_normal;
+						sprite |= ps.base_sprite_normal;
 					layout.SetSprite(x, y, sprite, obj, 0);
 				};
 			}

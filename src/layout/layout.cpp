@@ -167,6 +167,7 @@ void guilayout::layouttrack_obj::Deserialise(const deserialiser_input &di, error
 				points_layout->normal == points_layout->reverse) {
 			ec.RegisterNewError<error_layout>(*this, "points layout: duplicate edges are not allowed");
 		}
+		CheckTransJsonValueFlag(points_layout->flags, points_layout_info::PLI_FLAGS::SHOW_MERGED, pointsdi, "show_merged", ec);
 	}
 }
 
