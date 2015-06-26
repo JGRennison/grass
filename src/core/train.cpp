@@ -113,6 +113,11 @@ void train::TrainMoveStep(unsigned int ms) {
 	int max_new_speed = ((int) current_speed) + ((max_acceleration * ((int) ms)) >> 8);
 	int min_new_speed = ((int) current_speed) + ((min_acceleration * ((int) ms)) >> 8);
 
+	if(min_new_speed < 0)
+		min_new_speed = 0;
+	if(max_new_speed < 0)
+		max_new_speed = 0;
+
 	int target_speed = std::min((int) current_max_speed, max_new_speed);
 	unsigned int displacement_limit = UINT_MAX;
 
