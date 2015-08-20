@@ -26,26 +26,31 @@ namespace route_class {
 	set Deserialise(const deserialiser_input &di, error_collection &ec);
 	bool DeserialiseProp(const char *prop, set &value, const deserialiser_input &di, error_collection &ec);
 	void DeserialiseGroup(set &s, const deserialiser_input &di, error_collection &ec, flag_conflict_checker<set> &conflictcheck);
+
 	inline void DeserialiseGroup(set &s, const deserialiser_input &di, error_collection &ec) {
 		flag_conflict_checker<set> conflictcheck;
 		DeserialiseGroup(s, di, ec, conflictcheck);
 	}
+
 	void DeserialiseGroupProp(set &s, const deserialiser_input &di, const char *prop, error_collection &ec, flag_conflict_checker<set> &conflictcheck);
+
 	inline void DeserialiseGroupProp(set &s, const deserialiser_input &di, const char *prop, error_collection &ec) {
 		flag_conflict_checker<set> conflictcheck;
 		DeserialiseGroupProp(s, di, prop, ec, conflictcheck);
 	}
+
 	std::pair<bool, ID> DeserialiseName(const std::string &name);
 
 	void SerialiseProp(const char *prop, set value, serialiser_output &so);
 }
 
 template <> inline bool IsType<route_class::ID>(const rapidjson::Value& val) {
-	if(val.IsString()) {
+	if (val.IsString()) {
 		auto pair = route_class::DeserialiseName(val.GetString());
 		return pair.first;
+	} else {
+		return false;
 	}
-	else return false;
 }
 
 template <> inline route_class::ID GetType<route_class::ID>(const rapidjson::Value& val) {

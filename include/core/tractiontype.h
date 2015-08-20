@@ -37,8 +37,11 @@ class tractionset : public serialisable_obj {
 
 	public:
 	inline void AddTractionType(traction_type *type) {
-		if(!HasTraction(type)) tractions.emplace_back(type);
+		if (!HasTraction(type)) {
+			tractions.emplace_back(type);
+		}
 	}
+
 	bool CanTrainPass(const train *t) const;
 	bool HasTraction(const traction_type *tt) const;
 	bool IsIntersecting(const tractionset &ts) const;

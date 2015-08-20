@@ -30,19 +30,21 @@ unsigned int AdvanceDisplacement(unsigned int displacement, track_location &trac
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/,
 		std::function<void (track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADF> adflags, flagwrapper<ADRESULTF> *adresultflags) {
 
-	if(elevationdelta)
+	if (elevationdelta) {
 		*elevationdelta = 0;
+	}
 
-	if(!track.IsValid()) {
-		if(adresultflags)
+	if (!track.IsValid()) {
+		if (adresultflags) {
 			*adresultflags |= ADRESULTF::TRACKINVALID;
+		}
 		return displacement;
 	}
 
-	while(displacement > 0) {
+	while (displacement > 0) {
 		unsigned int length_on_piece = track.GetTrack()->GetRemainingLength(track.GetDirection(), track.GetOffset());
 
-		if(adflags & ADF::CHECKFORTRAINS) {
+		if (adflags & ADF::CHECKFORTRAINS) {
 			unsigned int start_offset = track.GetOffset();
 			unsigned int end_offset = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), std::min(displacement, length_on_piece));
 
@@ -50,108 +52,113 @@ unsigned int AdvanceDisplacement(unsigned int displacement, track_location &trac
 
 			std::vector<generictrack::train_occupation> tos;
 			track.GetTrack()->GetTrainOccupationState(tos);
-			for(auto &it : tos) {
-				if(it.start_offset < start_offset && it.end_offset > start_offset) {
+			for (auto &it : tos) {
+				if (it.start_offset < start_offset && it.end_offset > start_offset) {
 					//whoops, we're in the middle of a train
 					obstruction_offset = 0;
 					break;
 				}
-				if(end_offset > start_offset && it.start_offset >= start_offset) {
+				if (end_offset > start_offset && it.start_offset >= start_offset) {
 					//going forwards, train in front
 					obstruction_offset = std::min(obstruction_offset, it.start_offset - start_offset);
-				}
-				else if(end_offset < start_offset && it.end_offset <= start_offset) {
+				} else if (end_offset < start_offset && it.end_offset <= start_offset) {
 					//going backwards, train behind
 					obstruction_offset = std::min(obstruction_offset, start_offset - it.end_offset);
 				}
 			}
 
-			if(obstruction_offset < displacement) {
+			if (obstruction_offset < displacement) {
 				track.GetOffset() = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), obstruction_offset);
-				if(elevationdelta)
+				if (elevationdelta) {
 					*elevationdelta += track.GetTrack()->GetPartialElevationDelta(track.GetDirection(), obstruction_offset);
+				}
 				displacement -= obstruction_offset;
 
-				if(adresultflags)
+				if (adresultflags) {
 					*adresultflags |= ADRESULTF::TRAININWAY;
+				}
 				return displacement;
 			}
 		}
 
-		if(length_on_piece >= displacement) {
+		if (length_on_piece >= displacement) {
 			track.GetOffset() = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), displacement);
-			if(elevationdelta)
+			if (elevationdelta) {
 				*elevationdelta += track.GetTrack()->GetPartialElevationDelta(track.GetDirection(), displacement);
+			}
 			break;
-		}
-		else {
+		} else {
 			displacement -= length_on_piece;
 
-			if(elevationdelta)
+			if (elevationdelta) {
 				*elevationdelta += track.GetTrack()->GetElevationDelta(track.GetDirection());
+			}
 
 			track_location old_track = track;
 			const track_target_ptr &targ = old_track.GetTrack()->GetConnectingPiece(old_track.GetDirection());
-			if(targ.IsValid()) {
+			if (targ.IsValid()) {
 				track.SetTargetStartLocation(targ);
-			}
-			else {    //run out of valid track
+			} else {    //run out of valid track
 				track.GetOffset() = track.GetTrack()->GetNewOffset(track.GetDirection(), track.GetOffset(), length_on_piece);
-				if(adresultflags)
+				if (adresultflags) {
 					*adresultflags |= ADRESULTF::RANOUTOFTRACK;
+				}
 				return displacement;
 			}
 
-			if(func)
+			if (func) {
 				func(old_track, track);
+			}
 		}
 	}
 	return 0;
 }
 
 void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces, generic_route_recording_state *grrs, TSEF &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece, generic_route_recording_state *grrs)> step_func) {
-	while(true) {
-		if(!start_track.IsValid()) {
+	while (true) {
+		if (!start_track.IsValid()) {
 			error_flags |= TSEF::OUTOFTRACK;
 			return;
 		}
-		if(max_pieces == 0) {
+		if (max_pieces == 0) {
 			error_flags |= TSEF::LENGTHLIMIT;
 			return;
 		}
-		if(start_track.track->GetFlags(start_track.direction) & GTF::ROUTEFORK) {
-			if(junction_max == 0) {
+		if (start_track.track->GetFlags(start_track.direction) & GTF::ROUTEFORK) {
+			if (junction_max == 0) {
 				error_flags |= TSEF::JUNCTIONLIMITREACHED;
 				return;
-			}
-			else {
+			} else {
 				junction_max--;
 			}
 		}
 
-		if(step_func(route_pieces, start_track, grrs))
+		if (step_func(route_pieces, start_track, grrs)) {
 			return;
+		}
 
 		unsigned int max_exit_pieces = start_track.track->GetMaxConnectingPieces(start_track.direction);
-		if(max_exit_pieces == 0) {
+		if (max_exit_pieces == 0) {
 			error_flags |= TSEF::OUTOFTRACK;
 			return;
 		}
 
 		max_pieces--;
 
-		if(max_exit_pieces >= 2) {
-			for(unsigned int i = 1; i < max_exit_pieces; i++) {
+		if (max_exit_pieces >= 2) {
+			for (unsigned int i = 1; i < max_exit_pieces; i++) {
 				unsigned int route_pieces_size = route_pieces.size();
 				route_pieces.emplace_back(start_track, i);
 				std::unique_ptr<generic_route_recording_state> temp_grrs;
-				if(grrs)
+				if (grrs) {
 					temp_grrs.reset(grrs->Clone());
+				}
 				TrackScan(max_pieces, junction_max, start_track.track->GetConnectingPieceByIndex(start_track.direction, i), route_pieces,
 						temp_grrs.get(), error_flags, step_func);
 				route_pieces.resize(route_pieces_size);
-				if(error_flags != TSEF::ZERO)
+				if (error_flags != TSEF::ZERO) {
 					return;
+				}
 			}
 		}
 		route_pieces.emplace_back(start_track, 0);
@@ -162,16 +169,17 @@ void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_
 
 std::string GetTrackScanErrorFlagsStr(TSEF error_flags) {
 	std::string str;
-	if(error_flags & TSEF::OUTOFTRACK) {
+	if (error_flags & TSEF::OUTOFTRACK) {
 		str += "Ran out of track, ";
 	}
-	if(error_flags & TSEF::JUNCTIONLIMITREACHED) {
+	if (error_flags & TSEF::JUNCTIONLIMITREACHED) {
 		str += "Route junction limit exceeded, ";
 	}
-	if(error_flags & TSEF::LENGTHLIMIT) {
+	if (error_flags & TSEF::LENGTHLIMIT) {
 		str += "Maximum route length exceeded, ";
 	}
-	if(str.size())
+	if (str.size()) {
 		str.resize(str.size() - 2);
+	}
 	return str;
 }

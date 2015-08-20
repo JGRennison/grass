@@ -94,13 +94,13 @@ class genericpoints : public genericzlentrack {
 template<> struct enum_traits< genericpoints::PTF > { static constexpr bool flags = true; };
 
 inline bool genericpoints::IsFlagsOOC(PTF pflags) {
-	if(pflags & PTF::OOC) return true;
-	if(pflags & PTF::REV && pflags & PTF::FAILEDREV) return true;
-	if(!(pflags & PTF::REV) && pflags & PTF::FAILEDNORM) return true;
+	if (pflags & PTF::OOC) return true;
+	if (pflags & PTF::REV && pflags & PTF::FAILEDREV) return true;
+	if (!(pflags & PTF::REV) && pflags & PTF::FAILEDNORM) return true;
 	return false;
 }
 inline bool genericpoints::IsFlagsImmovable(PTF pflags) {
-	if(pflags & (PTF::LOCKED | PTF::REMINDER)) return true;
+	if (pflags & (PTF::LOCKED | PTF::REMINDER)) return true;
 	return false;
 }
 
@@ -257,15 +257,19 @@ class doubleslip : public genericpoints {
 
 	private:
 	inline unsigned int GetPointsIndexByEdgeIntl(EDGETYPE direction) const {
-		switch(direction) {
+		switch (direction) {
 			case EDGE_DS_FL:
 				return 0;
+
 			case EDGE_DS_FR:
 				return 1;
+
 			case EDGE_DS_BR:
 				return 2;
+
 			case EDGE_DS_BL:
 				return 3;
+
 			default:
 				return UINT_MAX;
 		}
@@ -273,10 +277,11 @@ class doubleslip : public genericpoints {
 
 	inline const PTF &GetCurrentPointFlagsIntl(EDGETYPE direction) const {
 		unsigned int index = GetPointsIndexByEdgeIntl(direction);
-		if(index < 4)
+		if (index < 4) {
 			return pflags[index];
-		else
+		} else {
 			return fail_pflags;
+		}
 	}
 
 	public:
@@ -285,15 +290,19 @@ class doubleslip : public genericpoints {
 	virtual unsigned int GetPointsIndexByEdge(EDGETYPE direction) const override { return GetPointsIndexByEdgeIntl(direction); }
 
 	inline EDGETYPE GetConnectingPointDirection(EDGETYPE direction, bool reverse) const {
-		switch(direction) {
+		switch (direction) {
 			case EDGE_DS_FL:
 				return reverse ? EDGE_DS_BL : EDGE_DS_BR;
+
 			case EDGE_DS_FR:
 				return reverse ? EDGE_DS_BR : EDGE_DS_BL;
+
 			case EDGE_DS_BR:
 				return reverse ? EDGE_DS_FR : EDGE_DS_FL;
+
 			case EDGE_DS_BL:
 				return reverse ? EDGE_DS_FL : EDGE_DS_FR;
+
 			default:
 				return EDGE_NULL;
 		}
@@ -301,17 +310,21 @@ class doubleslip : public genericpoints {
 
 	private:
 	inline const track_target_ptr *GetInputPieceIntl(EDGETYPE direction) const {
-		switch(direction) {
+		switch (direction) {
 			case EDGE_DS_FL:
 				return &frontleft;
+
 			case EDGE_DS_FR:
 				return &frontright;
+
 			case EDGE_DS_BR:
 				return &backright;
+
 			case EDGE_DS_BL:
 				return &backleft;
+
 			default:
-				return 0;
+				return nullptr;
 		}
 	}
 
@@ -320,8 +333,11 @@ class doubleslip : public genericpoints {
 
 	inline generictrack::edge_track_target GetInputPieceOrEmpty(EDGETYPE direction) {
 		track_target_ptr *piece = GetInputPiece(direction);
-		if(piece) return *piece;
-		else return empty_track_target;
+		if (piece) {
+			return *piece;
+		} else {
+			return empty_track_target;
+		}
 	}
 
 	public:

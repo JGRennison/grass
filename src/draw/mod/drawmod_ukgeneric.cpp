@@ -91,12 +91,14 @@ namespace draw {
 	draw::sprite_ref track_sprite_extras(const generictrack *gt) {
 		draw::sprite_ref extras = 0;
 		const track_circuit *tc = gt->GetTrackCircuit();
-		if(tc && tc->Occupied())
+		if (tc && tc->Occupied()) {
 			extras |= SID_tc_occ;
+		}
 		reservationcountset rcs;
 		gt->ReservationTypeCount(rcs);
-		if(rcs.routeset > rcs.routesetauto)
+		if (rcs.routeset > rcs.routesetauto) {
 			extras |= SID_reserved;
+		}
 		return extras;
 	}
 
@@ -107,25 +109,31 @@ namespace draw {
 	// This converts a folded direction into either U, UR or R.
 	// Returns true if handled
 	bool dir_relative_fold(LAYOUT_DIR dir, draw::sprite_obj &sp, draw::sprite_ref sr) {
-		switch(dir) {
+		switch (dir) {
 			case LAYOUT_DIR::U:
 				return false;
+
 			case LAYOUT_DIR::UR:
 				return false;
+
 			case LAYOUT_DIR::RU:
 				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::RD, sr));
 				sp.Mirror(MIRROR::VERT);
 				return true;
+
 			case LAYOUT_DIR::R:
 				return false;
+
 			case LAYOUT_DIR::RD:
 				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::UR, sr));
 				sp.Mirror(MIRROR::HORIZ);
 				return true;
+
 			case LAYOUT_DIR::DR:
 				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::UR, sr));
 				sp.Mirror(MIRROR::VERT);
 				return true;
+
 			default:
 				return false;
 		}
@@ -135,18 +143,21 @@ namespace draw {
 	// Non-diagonal directions are unchanged
 	// Returns true if handled
 	bool dir_relative_diag(LAYOUT_DIR dir, draw::sprite_obj &sp, draw::sprite_ref sr) {
-		switch(dir) {
+		switch (dir) {
 			// vertical in
 			case LAYOUT_DIR::UR:
 				return false;
+
 			case LAYOUT_DIR::UL:
 				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::UR, sr));
 				sp.Mirror(MIRROR::HORIZ);
 				return true;
+
 			case LAYOUT_DIR::DR:
 				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::UR, sr));
 				sp.Mirror(MIRROR::VERT);
 				return true;
+
 			case LAYOUT_DIR::DL:
 				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::UL, sr));
 				sp.Mirror(MIRROR::VERT);
@@ -155,14 +166,17 @@ namespace draw {
 			// horizontal in
 			case LAYOUT_DIR::LD:
 				return false;
+
 			case LAYOUT_DIR::LU:
 				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::LD, sr));
 				sp.Mirror(MIRROR::VERT);
 				return true;
+
 			case LAYOUT_DIR::RD:
 				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::LD, sr));
 				sp.Mirror(MIRROR::HORIZ);
 				return true;
+
 			case LAYOUT_DIR::RU:
 				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::LU, sr));
 				sp.Mirror(MIRROR::HORIZ);
@@ -183,8 +197,9 @@ namespace draw {
 		points_sprites out;
 
 		draw::sprite_ref base = 0;
-		if(gt->GetTrackCircuit())
+		if (gt->GetTrackCircuit()) {
 			base |= SID_has_tc;
+		}
 
 		LAYOUT_DIR turn_dir = (layout_info->facing == ReverseLayoutDirection(layout_info->normal))
 				? layout_info->reverse : layout_info->normal;
@@ -213,7 +228,7 @@ namespace draw {
 
 		const generictrack *gt = obj->GetTrack();
 		const genericsignal *gs = FastSignalCast(gt);
-		if(gs) {
+		if (gs) {
 			enum {
 				SDF_STEP_RIGHT        = 1<<0,
 				SDF_HAVE_SHUNT        = 1<<1,
@@ -222,15 +237,17 @@ namespace draw {
 			};
 			unsigned int sigflags = 0;
 
-			switch(obj->GetLayoutDirection()) {
+			switch (obj->GetLayoutDirection()) {
 				case LAYOUT_DIR::UR:
 				case LAYOUT_DIR::DR:
 					sigflags |= SDF_STEP_RIGHT;
 					break;
+
 				case LAYOUT_DIR::UL:
 				case LAYOUT_DIR::DL:
 					sigflags &= ~SDF_STEP_RIGHT;
 					break;
+
 				default: {
 					// Bad signal direction
 					return get_draw_error_func(0x7F7FFF, 0);
@@ -238,19 +255,23 @@ namespace draw {
 			}
 
 			route_class::set route_types = gs->GetAvailableRouteTypes(EDGE_FRONT).start;
-			if(route_types & route_class::AllRoutes())
+			if (route_types & route_class::AllRoutes()) {
 				sigflags |= SDF_HAVE_ROUTE;
-			if(route_types & route_class::AllShunts())
+			}
+			if (route_types & route_class::AllShunts()) {
 				sigflags |= SDF_HAVE_SHUNT;
+			}
 
 			draw::sprite_ref stick_sprite = layoutdir_to_spriteid(guilayout::FoldLayoutDirection(obj->GetLayoutDirection()));
-			if(gs->GetSignalFlags() & GSF::AUTOSIGNAL)
+			if (gs->GetSignalFlags() & GSF::AUTOSIGNAL) {
 				stick_sprite |= SID_signalpostbar;
-			else
+			} else {
 				stick_sprite |= SID_signalpost;
+			}
 
-			if(is_higher_aspect_in_mask(gs->GetRouteDefaults().aspect_mask, 2))
+			if (is_higher_aspect_in_mask(gs->GetRouteDefaults().aspect_mask, 2)) {
 				sigflags |= SDF_CAN_DISPLAY_DY;
+			}
 
 			return [x, y, gs, obj, stick_sprite, sigflags](const draw_engine &eng, guilayout::world_layout &layout) {
 				int next_x = x;
@@ -259,8 +280,8 @@ namespace draw {
 
 				//first draw stick
 				draw::sprite_ref stick_sprite_extras = 0;
-				if((stick_sprite & SID_typemask) == SID_signalpost) {
-					if(gs->GetCurrentForwardRoute()) {
+				if ((stick_sprite & SID_typemask) == SID_signalpost) {
+					if (gs->GetCurrentForwardRoute()) {
 						stick_sprite_extras |= SID_reserved;
 					}
 				}
@@ -270,26 +291,30 @@ namespace draw {
 				//draw head(s)
 				std::shared_ptr<guilayout::pos_sprite_desc_opts> options;
 				bool draw_blank = false;
-				if(gs->GetSignalFlags() & GSF::APPROACHLOCKINGMODE) {
+				if (gs->GetSignalFlags() & GSF::APPROACHLOCKINGMODE) {
 					unsigned int timebin = layout.GetWorld().GetGameTime() / APPROACHLOCKING_FLASHINTERVAL;
-					if(timebin & 1)
+					if (timebin & 1) {
 						draw_blank = true;
-					if(!options)
+					}
+					if (!options) {
 						options = std::make_shared<guilayout::pos_sprite_desc_opts>();
+					}
 					options->refresh_interval_ms = APPROACHLOCKING_FLASHINTERVAL;
 				}
 
 				auto draw_route_head = [&](draw::sprite_ref extras) {
 					next_x += step_x;
-					if(draw_blank)
+					if (draw_blank) {
 						extras = SID_signal_blank;
+					}
 					layout.SetSprite(next_x, next_y, SID_signalroute | extras, obj, 0, options);
 				};
 
 				auto draw_single_route_head = [&](draw::sprite_ref extras) {
 					draw_route_head(extras);
-					if(sigflags & SDF_CAN_DISPLAY_DY)
+					if (sigflags & SDF_CAN_DISPLAY_DY) {
 						draw_route_head(SID_signal_blank);
+					}
 				};
 
 				auto draw_shunt_head = [&](draw::sprite_ref extras) {
@@ -297,42 +322,37 @@ namespace draw {
 
 					// Don't set options for grey shunt
 					std::shared_ptr<guilayout::pos_sprite_desc_opts> shunt_options;
-					if(!(extras & SID_shunt_grey)) {
+					if (!(extras & SID_shunt_grey)) {
 						shunt_options = options;
-						if(draw_blank)
+						if (draw_blank) {
 							extras = SID_shunt_blank;
+						}
 					}
 
 					layout.SetSprite(next_x, next_y, SID_signalshunt | layoutdir_to_spriteid(obj->GetLayoutDirection()) | extras, obj, 0, std::move(shunt_options));
 				};
 
-				if(sigflags & SDF_HAVE_SHUNT) {
-					if(gs->GetAspect() > 0 && route_class::IsShunt(gs->GetAspectType())) {
+				if (sigflags & SDF_HAVE_SHUNT) {
+					if (gs->GetAspect() > 0 && route_class::IsShunt(gs->GetAspectType())) {
 						draw_shunt_head(SID_shunt_white);
-					}
-					else if(sigflags & SDF_HAVE_ROUTE) {
+					} else if (sigflags & SDF_HAVE_ROUTE) {
 						draw_shunt_head(SID_shunt_grey);
-					}
-					else {
+					} else {
 						draw_shunt_head(SID_shunt_red);
 					}
 				}
 
-				if(sigflags & SDF_HAVE_ROUTE) {
-					if(gs->GetAspect() == 0) {
+				if (sigflags & SDF_HAVE_ROUTE) {
+					if (gs->GetAspect() == 0) {
 						draw_single_route_head(SID_signal_red);
-					}
-					else if(!is_higher_aspect_in_mask(gs->GetRouteDefaults().aspect_mask, gs->GetAspect())) {
+					} else if (!is_higher_aspect_in_mask(gs->GetRouteDefaults().aspect_mask, gs->GetAspect())) {
 						draw_single_route_head(SID_signal_green);
-					}
-					else if(gs->GetAspect() == 1) {
+					} else if (gs->GetAspect() == 1) {
 						draw_single_route_head(SID_signal_yellow);
-					}
-					else if(gs->GetAspect() == 2) {
+					} else if (gs->GetAspect() == 2) {
 						draw_route_head(SID_signal_yellow);
 						draw_route_head(SID_signal_yellow);
-					}
-					else {
+					} else {
 						draw_single_route_head(SID_signal_unknown);
 					}
 				}
@@ -340,7 +360,7 @@ namespace draw {
 		}
 
 		const trackseg *ts = dynamic_cast<const trackseg *>(gt);
-		if(ts) {
+		if (ts) {
 			struct tracksegpointinfo {
 				int x;
 				int y;
@@ -351,37 +371,39 @@ namespace draw {
 
 			guilayout::LayoutOffsetDirection(x, y, obj->GetLayoutDirection(), obj->GetLength(), [&](int sx, int sy, LAYOUT_DIR sdir) {
 				draw::sprite_ref base_sprite = SID_trackseg | layoutdir_to_spriteid(guilayout::FoldLayoutDirection(sdir));
-				if(ts->GetTrackCircuit()) base_sprite |= SID_has_tc;
+				if (ts->GetTrackCircuit()) {
+					base_sprite |= SID_has_tc;
+				}
 				points->push_back({sx, sy, sdir, base_sprite});
 			});
 
 			return [points, ts, obj](const draw_engine &eng, guilayout::world_layout &layout) {
 				draw::sprite_ref extras = track_sprite_extras(ts);
-				for(auto &it : *points) {
+				for (auto &it : *points) {
 					layout.SetSprite(it.x, it.y, it.base_sprite | extras, obj, 0);
 				}
 			};
 		}
 
 		const genericpoints *gp = dynamic_cast<const genericpoints *>(gt);
-		if(gp) {
+		if (gp) {
 			const doubleslip *ds = dynamic_cast<const doubleslip *>(gp);
-			if(ds) {
-
-			}
-			else {
+			if (ds) {
+				// TODO
+			} else {
 				// All types of genericpoints except doubleslip can be dealt with together
 
 				using points_layout_info = guilayout::layouttrack_obj::points_layout_info;
 
 				auto layout_info = obj->GetPointsLayoutInfo();
 
-				if(!layout_info)
+				if (!layout_info) {
 					return get_draw_error_func(0x7FFF7F, 0);
+				}
 
 				points_sprites ps = MakePointsSprites(gp, layout_info);
 
-				if(layout_info->flags & points_layout_info::PLI_FLAGS::SHOW_MERGED) {
+				if (layout_info->flags & points_layout_info::PLI_FLAGS::SHOW_MERGED) {
 					auto base_sprite_ooc = ps.base_sprite_ooc;
 					return [x, y, base_sprite_ooc, gp, obj](const draw_engine &eng, guilayout::world_layout &layout) {
 						draw::sprite_ref sprite = track_sprite_extras(gp) | base_sprite_ooc;
@@ -393,42 +415,46 @@ namespace draw {
 					draw::sprite_ref sprite = track_sprite_extras(gp);
 					genericpoints::PTF flags = gp->GetPointsFlags(0);
 
-					if(flags & genericpoints::PTF::OOC) {
+					if (flags & genericpoints::PTF::OOC) {
 						sprite |= ps.base_sprite_ooc;
 						unsigned int timebin = layout.GetWorld().GetGameTime() / POINTS_OOC_FLASHINTERVAL;
-						if(timebin & 1)
+						if (timebin & 1) {
 							sprite = change_spriteid_layoutdir(LAYOUT_DIR::NULLDIR, sprite);
+						}
 						auto options = std::make_shared<guilayout::pos_sprite_desc_opts>();
 						options->refresh_interval_ms = APPROACHLOCKING_FLASHINTERVAL;
 						layout.SetSprite(x, y, sprite, obj, 0, options);
 						return;
 					}
 
-					if(flags & genericpoints::PTF::REV)
+					if (flags & genericpoints::PTF::REV) {
 						sprite |= ps.base_sprite_reverse;
-					else
+					} else {
 						sprite |= ps.base_sprite_normal;
+					}
 					layout.SetSprite(x, y, sprite, obj, 0);
 				};
 			}
 		}
 
 		const springpoints *sp = dynamic_cast<const springpoints *>(gt);
-		if(sp) {
+		if (sp) {
 			using points_layout_info = guilayout::layouttrack_obj::points_layout_info;
 
 			auto layout_info = obj->GetPointsLayoutInfo();
-			if(!layout_info)
+			if (!layout_info) {
 				return get_draw_error_func(0x7FFF7F, 0);
+			}
 
 			points_sprites ps = MakePointsSprites(sp, layout_info);
 			draw::sprite_ref base_sprite;
-			if(layout_info->flags & points_layout_info::PLI_FLAGS::SHOW_MERGED)
+			if (layout_info->flags & points_layout_info::PLI_FLAGS::SHOW_MERGED) {
 				base_sprite = ps.base_sprite_ooc;
-			else if(sp->GetSendReverseFlag())
+			} else if (sp->GetSendReverseFlag()) {
 				base_sprite = ps.base_sprite_reverse;
-			else
+			} else {
 				base_sprite = ps.base_sprite_normal;
+			}
 
 			return [x, y, base_sprite, sp, obj](const draw_engine &eng, guilayout::world_layout &layout) {
 				draw::sprite_ref sprite = track_sprite_extras(sp) | base_sprite;
@@ -454,15 +480,14 @@ namespace draw {
 
 		return [berthdataptr, obj](const draw_engine &eng, guilayout::world_layout &layout) {
 			const std::string &btext = berthdataptr->b->contents;
-			if(!btext.empty()) {
+			if (!btext.empty()) {
 				std::unique_ptr<draw::drawtextchar> drawtext(new draw::drawtextchar);
 				drawtext->text = btext;
 				drawtext->foregroundcolour = 0xFFFFFF;
 				drawtext->backgroundcolour = 0;
 				layout.SetTextString(berthdataptr->x, berthdataptr->y, std::move(drawtext), obj, BERTHLEVEL, berthdataptr->length, berthdataptr->length);
-			}
-			else {
-				for(int i = 0; i < berthdataptr->length; i++) {
+			} else {
+				for (int i = 0; i < berthdataptr->length; i++) {
 					layout.ClearSpriteLevel(berthdataptr->x + i, berthdataptr->y, BERTHLEVEL);
 				}
 			}
@@ -487,55 +512,59 @@ namespace draw {
 			return draw::dir_relative_diag(dir, sp, sr);
 		};
 
-		if(sr & SID_raw_img) {
-			switch(type) {
+		if (sr & SID_raw_img) {
+			switch (type) {
 				case SID_trackseg:
-					if(dir_relative_fold(dir))
+					if (dir_relative_fold(dir)) {
 						return;
-					if(dir == LAYOUT_DIR::U) {
+					}
+					if (dir == LAYOUT_DIR::U) {
 						sp.LoadFromFileDataFallback("track_v.png", GetImageData_track_v());
 						return;
 					}
-					if(dir == LAYOUT_DIR::UR) {
+					if (dir == LAYOUT_DIR::UR) {
 						sp.LoadFromFileDataFallback("track_d.png", GetImageData_track_d());
 						return;
 					}
-					if(dir == LAYOUT_DIR::R) {
+					if (dir == LAYOUT_DIR::R) {
 						sp.LoadFromFileDataFallback("track_h.png", GetImageData_track_h());
 						return;
 					}
 					break;
 
 				case SID_pointsooc:
-					if(dir_relative_diag(dir))
+					if (dir_relative_diag(dir)) {
 						return;
-					if(dir == LAYOUT_DIR::UR) {
+					}
+					if (dir == LAYOUT_DIR::UR) {
 						sp.LoadFromFileDataFallback("track_dv.png", GetImageData_track_dv());
 						return;
 					}
-					if(dir == LAYOUT_DIR::LD) {
+					if (dir == LAYOUT_DIR::LD) {
 						sp.LoadFromFileDataFallback("track_dh.png", GetImageData_track_dh());
 						return;
 					}
-					if(dir == LAYOUT_DIR::NULLDIR) {
+					if (dir == LAYOUT_DIR::NULLDIR) {
 						sp.LoadFromFileDataFallback("blank.png", GetImageData_blank());
 						return;
 					}
 					break;
 
 				case SID_signalpost:
-					if(dir_relative_fold(dir))
+					if (dir_relative_fold(dir)) {
 						return;
-					if(dir == LAYOUT_DIR::UR) {
+					}
+					if (dir == LAYOUT_DIR::UR) {
 						sp.LoadFromFileDataFallback("sigpost.png", GetImageData_sigpost());
 						return;
 					}
 					break;
 
 				case SID_signalpostbar:
-					if(dir_relative_fold(dir))
+					if (dir_relative_fold(dir)) {
 						return;
-					if(dir == LAYOUT_DIR::UR) {
+					}
+					if (dir == LAYOUT_DIR::UR) {
 						sp.LoadFromFileDataFallback("sigpost_bar.png", GetImageData_sigpost_bar());
 						return;
 					}
@@ -546,9 +575,10 @@ namespace draw {
 					return;
 
 				case SID_signalshunt:
-					if(dir_relative_fold(dir))
+					if (dir_relative_fold(dir)) {
 						return;
-					if(dir == LAYOUT_DIR::UR) {
+					}
+					if (dir == LAYOUT_DIR::UR) {
 						sp.LoadFromFileDataFallback("shunt.png", GetImageData_shunt());
 						return;
 					}
@@ -559,54 +589,59 @@ namespace draw {
 			}
 		}
 		else {
-			switch(type) {
+			switch (type) {
 				case SID_trackseg:
 				case SID_pointsooc:
 					sp.LoadFromSprite((sr & (SID_typemask | SID_dirmask)) | SID_raw_img);
-					if(sr & SID_has_tc)
+					if (sr & SID_has_tc) {
 						sp.ReplaceColour(0x0000FF, 0xFF0000);
-					else
+					} else {
 						sp.ReplaceColour(0x0000FF, 0x000000);
-					if(!(sr & SID_tc_occ))
+					}
+					if (!(sr & SID_tc_occ)) {
 						sp.ReplaceColour(0xFF0000, 0xAAAAAA);
-					if((sr & SID_reserved) && !(sr & SID_tc_occ))
+					}
+					if ((sr & SID_reserved) && !(sr & SID_tc_occ)) {
 						sp.ReplaceColour(0xAAAAAA, 0xFFFFFF);
+					}
 					return;
 
 				case SID_signalpost:
 				case SID_signalpostbar:
 					sp.LoadFromSprite((sr & (SID_typemask | SID_dirmask)) | SID_raw_img);
-					if(!(sr & SID_reserved))
+					if (!(sr & SID_reserved)) {
 						sp.ReplaceColour(0xFFFFFF, 0xAAAAAA);
+					}
 					return;
 
 				case SID_signalroute:
 					sp.LoadFromSprite(SID_signalroute | SID_raw_img);
-					if(sr & SID_signal_red)
+					if (sr & SID_signal_red) {
 						sp.ReplaceColour(0xFFFFFF, 0xFF0000);
-					else if(sr & SID_signal_yellow)
+					} else if (sr & SID_signal_yellow) {
 						sp.ReplaceColour(0xFFFFFF, 0xFFFF00);
-					else if(sr & SID_signal_green)
+					} else if (sr & SID_signal_green) {
 						sp.ReplaceColour(0xFFFFFF, 0x00FF00);
-					else if(sr & SID_signal_blank)
+					} else if (sr & SID_signal_blank) {
 						sp.ReplaceColour(0xFFFFFF, 0x000000);
-					else
+					} else {
 						sp.ReplaceColour(0xFFFFFF, 0x7F7FFF);
+					}
 					return;
 
 				case SID_signalshunt:
 					sp.LoadFromSprite((sr & (SID_typemask | SID_dirmask)) | SID_raw_img);
-					if(sr & SID_shunt_red)
+					if (sr & SID_shunt_red) {
 						sp.ReplaceColour(0xFFFFFF, 0xFF0000);
-					else if(sr & SID_shunt_white) {
+					} else if (sr & SID_shunt_white) {
 						// do nothing
-					}
-					else if(sr & SID_shunt_grey)
+					} else if (sr & SID_shunt_grey) {
 						sp.ReplaceColour(0xFFFFFF, 0xAAAAAA);
-					else if(sr & SID_signal_blank)
+					} else if (sr & SID_signal_blank) {
 						sp.ReplaceColour(0xFFFFFF, 0x000000);
-					else
+					} else {
 						sp.ReplaceColour(0xFFFFFF, 0x7F7FFF);
+					}
 					return;
 
 				default:

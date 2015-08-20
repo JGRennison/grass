@@ -102,7 +102,11 @@ class crossover : public genericzlentrack {
 	virtual bool IsEdgeValid(EDGETYPE edge) const override;
 	virtual edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
 	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
-	virtual edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override { return GetConnectingPiece(direction); }
+
+	virtual edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override {
+		return GetConnectingPiece(direction);
+	}
+
 	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
 
 	virtual std::string GetTypeName() const override { return "Crossover"; }

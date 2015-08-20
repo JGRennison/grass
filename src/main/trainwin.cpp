@@ -37,14 +37,14 @@ maingui::trainwin::trainwin(std::shared_ptr<const world> w_, std::shared_ptr<grv
 	grid->AppendCols(columns->columns.size());
 
 	int colid = 0;
-	for(auto &it : columns->columns) {
+	for (auto &it : columns->columns) {
 		grid->SetColLabelValue(colid++, wxstrstd(it.name));
 	}
 
 	Redraw();
 
 	timer = statictimer.lock();
-	if(!timer) {
+	if (!timer) {
 		timer = std::make_shared<twtimer>(winlist);
 		statictimer = timer;
 	}
@@ -57,7 +57,7 @@ maingui::trainwin::~trainwin() {
 void maingui::trainwin::Redraw() {
 	Freeze();
 	grid->BeginBatch();
-	if(grid->GetNumberRows()) {
+	if (grid->GetNumberRows()) {
 		grid->DeleteRows(0, grid->GetNumberRows());
 	}
 
@@ -66,7 +66,7 @@ void maingui::trainwin::Redraw() {
 		int rowid = grid->GetNumberRows() - 1;
 		grid->SetRowLabelValue(rowid, wxT(""));
 		int colid = 0;
-		for(auto &it : columns->columns) {
+		for (auto &it : columns->columns) {
 			grid->SetCellValue(rowid, colid++, wxstrstd(it.func(t)));
 		}
 	});
@@ -81,7 +81,7 @@ maingui::trainwin::twtimer::twtimer(std::shared_ptr<grviewwinlist> winlist_)
 }
 
 void maingui::trainwin::twtimer::Notify() {
-	for(auto &it : winlist->trainwins) {
+	for (auto &it : winlist->trainwins) {
 		it->Redraw();
 	}
 }

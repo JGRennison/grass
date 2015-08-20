@@ -350,12 +350,12 @@ class overlap_ops_test_class_1 {
 		CHECK(signal->GetAspectNextTarget() == aspect_target);
 		CHECK(signal->GetAspectRouteTarget() == aspect_route_target);
 		const route *ovlp = signal->GetCurrentForwardOverlap();
-		if(overlapend) {
+		if (overlapend) {
 			CHECK(ovlp != 0);
-			if(ovlp)
+			if (ovlp) {
 				CHECK(ovlp->end.track == overlapend);
-		}
-		else {
+			}
+		} else {
 			CHECK(ovlp == 0);
 		}
 	}

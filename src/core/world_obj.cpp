@@ -29,7 +29,7 @@ void updatable_obj::MarkUpdated(world &w) {
 }
 
 void updatable_obj::UpdateNotification(world &w) {
-	for(auto &it : update_functions) {
+	for (auto &it : update_functions) {
 		it(this, w);
 	}
 }
@@ -47,13 +47,15 @@ void world_obj::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(GetTypeSerialisationName(), so, "type");
 
 	bool serialise_name = false;
-	if(so.flags & SOUTPUT_FLAGS::OUTPUT_ALLNAMES)
+	if (so.flags & SOUTPUT_FLAGS::OUTPUT_ALLNAMES) {
 		serialise_name = true;
-	else if(so.flags & SOUTPUT_FLAGS::OUTPUT_NONAUTONAMES && !IsAutoNamed())
+	} else if (so.flags & SOUTPUT_FLAGS::OUTPUT_NONAUTONAMES && !IsAutoNamed()) {
 		serialise_name = true;
+	}
 
-	if(serialise_name)
+	if (serialise_name) {
 		SerialiseValueJson(GetSerialisationName(), so, "name");
+	}
 
 	serialisable_futurable_obj::Serialise(so, ec);
 }

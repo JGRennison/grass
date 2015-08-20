@@ -50,12 +50,12 @@ void future_set::RegisterFuture(const std::shared_ptr<future> &f) {
 void future_set::RemoveFuture(future &f) {
 	f.GetTarget().DeregisterFuture(&f);
 	auto range = futures.equal_range(f.GetTriggerTime());
-	for(auto it = range.first; it != range.second; ) {
+	for (auto it = range.first; it != range.second; ) {
 		auto current = it;
 		++it;
 		//this is so that *current can be erased without invalidating *it
 
-		if(current->second.get() == &f)
+		if (current->second.get() == &f)
 			futures.erase(current);
 	}
 }
@@ -63,13 +63,13 @@ void future_set::RemoveFuture(future &f) {
 void future_set::ExecuteUpTo(world_time ft) {
 	auto past_end = futures.upper_bound(ft);
 	std::vector<std::shared_ptr<future> > current_execs;
-	for(auto it = futures.begin(); it != past_end; ++it) {
+	for (auto it = futures.begin(); it != past_end; ++it) {
 		current_execs.emplace_back(std::move(it->second));
 	}
 	futures.erase(futures.begin(), past_end);
 
 	//do it this way as futures could themselves insert items into the future set
-	for(auto &it : current_execs) {
+	for (auto &it : current_execs) {
 		it->Execute();
 		it->GetTarget().DeregisterFuture(it.get());
 	}
@@ -88,7 +88,7 @@ void futurable_obj::ClearFutures() {
 }
 
 void futurable_obj::EnumerateFutures(std::function<void (future &)> f) {
-	for(auto it = own_futures.begin(); it != own_futures.end();) {
+	for (auto it = own_futures.begin(); it != own_futures.end();) {
 		auto current = it;
 		++it;
 		f(**current);
@@ -96,7 +96,7 @@ void futurable_obj::EnumerateFutures(std::function<void (future &)> f) {
 }
 
 void futurable_obj::EnumerateFutures(std::function<void (const future &)> f) const {
-	for(auto it = own_futures.begin(); it != own_futures.end();) {
+	for (auto it = own_futures.begin(); it != own_futures.end();) {
 		auto current = it;
 		++it;
 		f(**current);
@@ -110,35 +110,33 @@ bool futurable_obj::HaveFutures() const {
 void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di, error_collection &ec,
 		const future_deserialisation_type_factory &dtf, future_container &fc) {
 	deserialiser_input futuresdi(di.json["futures"], "futures", "futures", di);
-	if(futuresdi.json.IsArray()) {
+	if (futuresdi.json.IsArray()) {
 		di.RegisterProp("futures");
-		for(rapidjson::SizeType i = 0; i < futuresdi.json.Size(); i++) {
+		for (rapidjson::SizeType i = 0; i < futuresdi.json.Size(); i++) {
 			deserialiser_input subdi(futuresdi.json[i], "", MkArrayRefName(i), futuresdi);
-			if(subdi.json.IsObject()) {
+			if (subdi.json.IsObject()) {
 				subdi.seenprops.reserve(subdi.json.GetMemberCount());
 
 				future_id_type fid;
 				world_time ftime;
-				if(CheckTransJsonValue(fid, subdi, "fid", ec, true) && CheckTransJsonValue(ftime, subdi, "ftime", ec, true)
+				if (CheckTransJsonValue(fid, subdi, "fid", ec, true) && CheckTransJsonValue(ftime, subdi, "ftime", ec, true)
 						&& CheckTransJsonValue(subdi.type, subdi, "ftype", ec, true)) {
-					if(!dtf.FindAndDeserialise(subdi.type, subdi, ec, fc, *this, ftime, fid)) {
+					if (!dtf.FindAndDeserialise(subdi.type, subdi, ec, fc, *this, ftime, fid)) {
 						ec.RegisterNewError<error_deserialisation>(subdi, string_format("Futures: Unknown future type: %s", subdi.type.c_str()));
 					}
 				}
 				subdi.PostDeserialisePropCheck(ec);
-			}
-			else {
+			} else {
 				ec.RegisterNewError<error_deserialisation>(subdi, "Futures: Expected object");
 			}
 		}
-	}
-	else if(!futuresdi.json.IsNull()) {
+	} else if (!futuresdi.json.IsNull()) {
 		ec.RegisterNewError<error_deserialisation>(di, "Futures: Expected an array");
 	}
 }
 
 void serialisable_futurable_obj::Serialise(serialiser_output &so, error_collection &ec) const {
-	if(HaveFutures()) {
+	if (HaveFutures()) {
 		so.json_out.String("futures");
 		so.json_out.StartArray();
 		EnumerateFutures([&](const future &f) {

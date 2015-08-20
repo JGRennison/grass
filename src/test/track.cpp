@@ -242,7 +242,7 @@ TEST_CASE( "track/deserialisation/track", "Test basic track segment deserialisat
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	trackseg *t = dynamic_cast<trackseg *>(env.w->FindTrackByName("T1"));
@@ -263,7 +263,7 @@ TEST_CASE( "track/deserialisation/points", "Test basic points deserialisation" )
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	points *p = dynamic_cast<points *>(env.w->FindTrackByName("P1"));
@@ -279,7 +279,7 @@ TEST_CASE( "track/deserialisation/autoname", "Test deserialisation automatic nam
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	trackseg *p = dynamic_cast<trackseg *>(env.w->FindTrackByName("#1"));
@@ -307,7 +307,7 @@ R"({ "content" : [ )"
 TEST_CASE( "track/deserialisation/doubleslip", "Test basic doubleslip deserialisation" ) {
 	test_fixture_world env(track_test_str_ds);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	auto checkds = [&](const char *name, genericpoints::PTF pffl, genericpoints::PTF pffr, genericpoints::PTF pfbl, genericpoints::PTF pfbr) {
@@ -346,7 +346,7 @@ class test_doubleslip {
 TEST_CASE( "track/conn/doubleslip", "Test basic doubleslip connectivity" ) {
 	test_fixture_world env(track_test_str_ds);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	generictrack *fl = env.w->FindTrackByName("FL");
@@ -415,7 +415,7 @@ TEST_CASE( "track/deserialisation/partialconnection", "Test partial track connec
 
 	env.w->LayoutInit(env.ec);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	points *p1 = dynamic_cast<points *>(env.w->FindTrackByName("P1"));
@@ -443,7 +443,7 @@ TEST_CASE( "track/deserialisation/ambiguouspartialconnection/1", "Test handling 
 
 	env.w->LayoutInit(env.ec);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() >= 1);
 }
 
@@ -459,7 +459,7 @@ TEST_CASE( "track/deserialisation/ambiguouspartialconnection/2", "Test handling 
 
 	env.w->LayoutInit(env.ec);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() >= 1);
 }
 
@@ -475,7 +475,7 @@ TEST_CASE( "track/deserialisation/ambiguouspartialconnection/3", "Test handling 
 
 	env.w->LayoutInit(env.ec);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() >= 1);
 }
 
@@ -495,7 +495,7 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 	env.w->CapAllTrackPieceUnconnectedEdges();
 	env.w->LayoutInit(env.ec);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	auto checkds = [&](const char *name, genericpoints::PTF pffl, genericpoints::PTF pffr, genericpoints::PTF pfbl, genericpoints::PTF pfbr) {
@@ -569,7 +569,7 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 
 	test_fixture_world env(track_test_str_sighting);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	auto checkpoints = [&](const std::string &name, unsigned int norm_dist, unsigned int rev_dist, unsigned int face_dist) {
@@ -597,7 +597,7 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 
 	auto check_parse_err = [&](const std::string &str) {
 		test_fixture_world env_err(str);
-		//if(env_err.ec.GetErrorCount()) { WARN("Error Collection: " << env_err.ec); }
+		//if (env_err.ec.GetErrorCount()) { WARN("Error Collection: " << env_err.ec); }
 		REQUIRE(env_err.ec.GetErrorCount() == 1);
 	};
 	check_parse_err(R"({ "content" : [ )"

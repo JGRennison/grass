@@ -33,14 +33,16 @@ class error_collection;
 template <typename I> I fast_isqrt( I n ){
 
 	I p = 1;
-	while (p <= n/p) p <<= 1;
+	while (p <= n/p) {
+		p <<= 1;
+	}
 
 	I r = p; // initial guess: isqrt(n) < r
 
 	do {
 		p = r;
 		r = (r + n/r) / 2;
-	} while(r < p);
+	} while (r < p);
 
 	return p;
 }
@@ -53,20 +55,17 @@ size_t GetLineNumberOfStringOffset(const std::string &input, size_t offset, size
 // len can be negative to signal string is null-terminated
 // returns true if whole input string is valid
 template <typename C, typename D> inline bool ownstrtonum(C &val, D *str, ssize_t len) {
-	if(len == 0)
-		return false;
-	if(str[0] == 0)
-		return false;
+	if (len == 0) return false;
+	if (str[0] == 0) return false;
+
 	val = 0;
-	for(ssize_t i = 0; len < 0 || i < len; i++) {
-		if(str[i] >= '0' && str[i] <= '9') {
+	for (ssize_t i = 0; len < 0 || i < len; i++) {
+		if (str[i] >= '0' && str[i] <= '9') {
 			val *= 10;
 			val += str[i] - '0';
-		}
-		else if(str[i] == 0) {
+		} else if (str[i] == 0) {
 			return len < 0;
-		}
-		else {
+		} else {
 			return false;
 		}
 	}
@@ -75,17 +74,19 @@ template <typename C, typename D> inline bool ownstrtonum(C &val, D *str, ssize_
 
 template <typename I> I swap_single_bits(I in, I bit1, I bit2) {
 	bool rev = !(in & bit1) != !(in & bit2);
-	if(rev)
+	if (rev) {
 		return in ^ (bit1 | bit2);
-	else
+	} else {
 		return in;
+	}
 }
 
 template <typename I> I SetOrClearBits(I in, I bits, bool set) {
-	if(set)
+	if (set) {
 		return in | bits;
-	else
+	} else {
 		in &= ~bits;
+	}
 	return in;
 }
 
@@ -95,19 +96,17 @@ template <typename I> void SetOrClearBitsRef(I &in, I bits, bool set) {
 
 template <typename C, typename UP> unsigned int container_unordered_remove_if(C &container, UP predicate) {
 	unsigned int removecount = 0;
-	for(auto it = container.begin(); it != container.end();) {
-		if(predicate(*it)) {
+	for (auto it = container.begin(); it != container.end();) {
+		if (predicate(*it)) {
 			removecount++;
-			if(std::next(it) != container.end()) {
+			if (std::next(it) != container.end()) {
 				*it = std::move(container.back());
 				container.pop_back();
-			}
-			else {
+			} else {
 				container.pop_back();
 				break;
 			}
-		}
-		else {
+		} else {
 			++it;
 		}
 	}

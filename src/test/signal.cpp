@@ -63,7 +63,7 @@ TEST_CASE( "signal/deserialisation/general", "Test basic signal and routing dese
 
 	test_fixture_world env(track_test_str_1);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	const route_class::set shuntset = route_class::Flag(route_class::RTC_SHUNT);
@@ -113,21 +113,21 @@ TEST_CASE( "signal/deserialisation/general", "Test basic signal and routing dese
 TEST_CASE( "signal/routing/general", "Test basic signal and routing connectivity and route creation" ) {
 	test_fixture_world env(track_test_str_1);
 
-	if(env.ec.GetErrorCount()) {
+	if (env.ec.GetErrorCount()) {
 		WARN("Error Collection: " << env.ec);
 	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	env.w->LayoutInit(env.ec);
 
-	if(env.ec.GetErrorCount()) {
+	if (env.ec.GetErrorCount()) {
 		WARN("Error Collection: " << env.ec);
 	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	env.w->PostLayoutInit(env.ec);
 
-	if(env.ec.GetErrorCount()) {
+	if (env.ec.GetErrorCount()) {
 		WARN("Error Collection: " << env.ec);
 	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
@@ -217,8 +217,9 @@ TEST_CASE( "signal/routing/general", "Test basic signal and routing connectivity
 
 		unsigned int overlapcount = 0;
 		auto callback = [&](const route *r) {
-			if(route_class::IsOverlap(r->type))
+			if (route_class::IsOverlap(r->type)) {
 				overlapcount++;
+			}
 		};
 		s->EnumerateRoutes(callback);
 		CHECK(overlapcount == 1);
@@ -376,7 +377,7 @@ TEST_CASE( "signal/propagation/typemixture", "Test aspect propagation and route 
 
 	std::vector<routingpoint::gmr_routeitem> routeset;
 	CHECK(tenv.s1->GetMatchingRoutes(routeset, tenv.s2, route_class::All()) == 0);
-	if(routeset.size()) {
+	if (routeset.size()) {
 		WARN("First route found has type: " << routeset[0].rt->type);
 	}
 
@@ -507,7 +508,7 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 		INFO("Signal check for: " << signal->GetName() << ", at time: " << env.w->GetGameTime());
 		CHECK(signal->GetReservedAspect() == reserved_aspect);
 		genericsignal *sig = dynamic_cast<genericsignal*>(signal);
-		if(sig) {
+		if (sig) {
 			CHECK(approachlocking == ((bool) (sig->GetSignalFlags() & GSF::APPROACHLOCKINGMODE)));
 		}
 	};
@@ -743,10 +744,9 @@ TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
 	auto overlapcheck = [&](genericsignal *s, bool exists) {
 		INFO("Overlap check for signal: " << s->GetName() << ", at time: " << env.w->GetGameTime());
 		const route *ovlp = s->GetCurrentForwardOverlap();
-		if(exists) {
+		if (exists) {
 			CHECK(ovlp != nullptr);
-		}
-		else {
+		} else {
 			CHECK(ovlp == nullptr);
 		}
 	};
@@ -852,7 +852,7 @@ TEST_CASE( "signal/overlap/tracktrigger/timeout", "Test overlap timeouts for tri
 TEST_CASE( "signal/deserialisation/flagchecks", "Test signal/route flags contradiction detection and sanity checks" ) {
 	auto check = [&](const std::string &str, unsigned int errcount) {
 		test_fixture_world env(str);
-		if(env.ec.GetErrorCount() && env.ec.GetErrorCount() != errcount) { WARN("Error Collection: " << env.ec); }
+		if (env.ec.GetErrorCount() && env.ec.GetErrorCount() != errcount) { WARN("Error Collection: " << env.ec); }
 		REQUIRE(env.ec.GetErrorCount() == errcount);
 	};
 
@@ -1165,7 +1165,7 @@ TEST_CASE( "signal/callon/general", "Test call-on routes" ) {
 	env.w->GameStep(1);
 
 	CHECK(env.w->GetLogText() != "");
-	if(s2->GetCurrentForwardRoute()) {
+	if (s2->GetCurrentForwardRoute()) {
 		FAIL(s2->GetCurrentForwardRoute()->type);
 	}
 
@@ -1194,7 +1194,7 @@ TEST_CASE( "signal/callon/general", "Test call-on routes" ) {
 	env.w->GameStep(1);
 
 	CHECK(env.w->GetLogText() != "");
-	if(s3->GetCurrentForwardRoute()) {
+	if (s3->GetCurrentForwardRoute()) {
 		FAIL(s3->GetCurrentForwardRoute()->type);
 	}
 }
@@ -1490,10 +1490,12 @@ TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal a
 		auto checkdelay = [&](world_time delay) {
 			INFO("Test at cumulative delay: " << cumuldelay);
 			world_time newcumuldelay = cumuldelay + delay;
-			if(newcumuldelay > expected_time) {
+			if (newcumuldelay > expected_time) {
 				world_time initial_delay = expected_time - cumuldelay - 1;
-				if(initial_delay) {
-					if(initial_delay > 1) env.w->GameStep(1);
+				if (initial_delay) {
+					if (initial_delay > 1) {
+						env.w->GameStep(1);
+					}
 					env.w->GameStep(initial_delay - 1);
 					cumuldelay += initial_delay;
 				}
@@ -1508,8 +1510,7 @@ TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal a
 					CHECK(s1->GetAspect() == 1);
 				}
 				env.w->GameStep(newcumuldelay - cumuldelay);
-			}
-			else {
+			} else {
 				env.w->GameStep(1);
 				CHECK(s1->GetAspect() == 0);
 				env.w->GameStep(delay - 1);
@@ -1562,14 +1563,14 @@ void SignalAspectTest(std::string allowed_aspects, aspect_mask_type expected_mas
 
 	std::string default_aspectstr = ", \"allowedaspects\" : \"0-31\"";
 	std::string param_aspectstr = ", \"allowedaspects\" : \"" + allowed_aspects + "\"";
-	if(!conditional_aspects.empty()) {
+	if (!conditional_aspects.empty()) {
 		param_aspectstr += R"(, "conditionalallowedaspects" : [ )" + conditional_aspects + "]";
 	}
 
-	for(unsigned int i = 0; i < signals; i++) {
+	for (unsigned int i = 0; i < signals; i++) {
 		std::string aspectstr;
-		if(i == 0) {
-			if(repeatermode) {
+		if (i == 0) {
+			if (repeatermode) {
 				content += string_format(
 					R"({ "type" : "autosignal", "name" : "Spre", "routesignal" : true }, )"
 					R"({ "type" : "routingmarker", "end" : { "allow" : "overlap" } }, )"
@@ -1577,12 +1578,10 @@ void SignalAspectTest(std::string allowed_aspects, aspect_mask_type expected_mas
 					, param_aspectstr.c_str()
 				);
 				aspectstr = default_aspectstr;
-			}
-			else {
+			} else {
 				aspectstr = param_aspectstr;
 			}
-		}
-		else {
+		} else {
 			aspectstr = default_aspectstr;
 		}
 
@@ -1606,20 +1605,19 @@ void SignalAspectTest(std::string allowed_aspects, aspect_mask_type expected_mas
 
 	const route *rt = targsig->GetCurrentForwardRoute();
 	REQUIRE(rt != 0);
-	if(repeatermode) {
+	if (repeatermode) {
 		//Signal Spre "owns" the route, it has the default aspect mask value of 3, the route should have the same value
 		CHECK(rt->aspect_mask == 3);
 
 		//Repeater signals don't have routes of their own, the route defaults value is used for aspect masking instead
 		CHECK(targsig->GetRouteDefaults().aspect_mask == expected_mask);
-	}
-	else {
+	} else {
 		//Normal signals use the route's aspect mask
 		CHECK(rt->aspect_mask == expected_mask);
 	}
 
 	unsigned int currentaspect = aspects.size();
-	while(currentaspect--) {    //count down from aspects.size()-1 to 0
+	while (currentaspect--) {    //count down from aspects.size()-1 to 0
 		unsigned int expectedaspect = aspects[currentaspect];
 		INFO("Current Aspect: " << currentaspect << ", Expected Aspect: " << expectedaspect);
 		track_circuit *t = env.w->track_circuits.FindOrMakeByName(string_format("T%d", currentaspect));

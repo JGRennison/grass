@@ -25,7 +25,7 @@
 #include <sstream>
 
 template <typename C> C* CheckPtr(C* in, const char *file, unsigned int line) {
-	if(!in) {
+	if (!in) {
 		FAIL("CheckPtr failed. File: " << file << ", line: " << line);
 	}
 	return in;

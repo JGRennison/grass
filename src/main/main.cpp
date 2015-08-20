@@ -49,7 +49,7 @@ int grassapp::OnExit() {
 bool grassapp::LoadGame(const wxString &base, const wxString &save) {
 	int x, y;
 	std::tie(x, y) = GetSpriteSizes();
-	if(!eng || x != (int) eng->GetSpriteWidth() || y != (int) eng->GetSpriteHeight()) {
+	if (!eng || x != (int) eng->GetSpriteWidth() || y != (int) eng->GetSpriteHeight()) {
 		eng = std::make_shared<draw::wx_draw_engine>(GetCurrentDrawModule(), x, y, GetDrawOptions());
 	}
 
@@ -61,11 +61,10 @@ bool grassapp::LoadGame(const wxString &base, const wxString &save) {
 	layout->SetWorldSerialisationLayout(ws);
 	ws.LoadGameFromFiles(stdstrwx(base), stdstrwx(save), ec);
 	layout->ProcessLayoutObjSet(ec);
-	if(ec.GetErrorCount()) {
+	if (ec.GetErrorCount()) {
 		DisplayErrors(ec);
 		return false;
-	}
-	else {
+	} else {
 		InitialDrawAll();
 		RunGameTimer();
 		MakeNewViewWin();
@@ -84,8 +83,9 @@ std::shared_ptr<draw::draw_module> grassapp::GetCurrentDrawModule() {
 }
 
 std::shared_ptr<draw::draw_options> grassapp::GetDrawOptions() {
-	if(!opts)
+	if (!opts) {
 		opts = std::make_shared<draw::draw_options>();
+	}
 	return opts;
 }
 
@@ -104,31 +104,31 @@ grassapp::~grassapp() {
 }
 
 void grassapp::RunGameTimer() {
-	if(!timer)
+	if (!timer) {
 		timer.reset(new gametimer(this));
-	if(ispaused || speedfactor == 0) {
-		timer->Stop();
 	}
-	else {
+	if (ispaused || speedfactor == 0) {
+		timer->Stop();
+	} else {
 		timer->Start(timestepms * 256 / speedfactor, wxTIMER_CONTINUOUS);
 	}
 }
 
 void gametimer::Notify() {
-	if(app->layout) {
+	if (app->layout) {
 		app->layout->ClearUpdateSet();
 		app->layout->ClearRedrawMap();
 	}
 	world_time oldtime = app->w->GetGameTime();
 	app->w->GameStep(app->timestepms);
 	world_time newtime = app->w->GetGameTime();
-	if(app->eng && app->layout) {
+	if (app->eng && app->layout) {
 		app->layout->LayoutTimeStep(oldtime, newtime);
 		app->layout->IterateUpdateSet([&](guilayout::layout_obj *obj) {
 			obj->drawfunction(*(app->eng), *(app->layout));
 		});
 		app->layout->IterateRedrawMap([&](int x, int y) {
-			for(auto &it : app->panelset->viewpanels) {
+			for (auto &it : app->panelset->viewpanels) {
 				it->RefreshSprites(x, y, 1, 1);
 			}
 		});
@@ -141,7 +141,7 @@ void grassapp::MakeNewViewWin() {
 }
 
 void grassapp::InitialDrawAll() {
-	if(eng && layout) {
+	if (eng && layout) {
 		layout->IterateAllLayoutObjects([&](guilayout::layout_obj *obj) {
 			obj->drawfunction(*eng, *layout);
 		});

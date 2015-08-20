@@ -70,9 +70,9 @@ namespace route_class {
 		RTCB_OVERLAPS    = (1 << RTC_OVERLAP) | (1 << RTC_ALTOVERLAP1) | (1 << RTC_ALTOVERLAP2) | (1 << RTC_ALTOVERLAP3),
 	};
 
-	inline void Set(set &s, ID r) { s |= (1<<r); }
-	inline void Unset(set &s, ID r) { s &= ~(1<<r); }
-	inline set Flag(ID r) { return (1<<r); }
+	inline void Set(set &s, ID r) { s |= (1 << r); }
+	inline void Unset(set &s, ID r) { s &= ~(1 << r); }
+	inline set Flag(ID r) { return (1 << r); }
 	inline set All() { return RTCB_ALL; }
 	inline set AllNonOverlaps() { return (RTCB_ALL & ~RTCB_OVERLAPS); }
 	inline set AllOverlaps() { return RTCB_OVERLAPS; }

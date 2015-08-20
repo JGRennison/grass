@@ -44,26 +44,28 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 	};
 
 	std::vector<std::string> tokens = TokenizeString(cmd, " \t\n\r");
-	if(tokens.size() < 1)
+	if (tokens.size() < 1) {
 		return input_err();
+	}
 
-	if(tokens[0] == "reserve") {
+	if (tokens[0] == "reserve") {
 		std::vector<routingpoint *> rps;
 		bool ok = true;
-		for(size_t i = 1; i < tokens.size(); i++) {
+		for (size_t i = 1; i < tokens.size(); i++) {
 			routingpoint *rp = w.FindTrackByNameCast<routingpoint>(tokens[i]);
-			if(!rp) {
+			if (!rp) {
 				cannot_use_err(tokens[i], "track/reservation/notroutingpoint");
 				ok = false;
-			}
-			else {
+			} else {
 				rps.emplace_back(rp);
 			}
 		}
-		if(!ok)
+		if (!ok) {
 			return false;
-		if(rps.size() < 2)
+		}
+		if (rps.size() < 2) {
 			return input_err();
+		}
 
 		action_reservepath act(w, rps.front(), rps.back());
 		act.SetVias(via_list(rps.begin() + 1, rps.end() - 1)); // Place all unused routing points in the via list
@@ -72,11 +74,12 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 		return true;
 	}
 
-	if(tokens[0] == "unreserve") {
-		if(tokens.size() != 2)
+	if (tokens[0] == "unreserve") {
+		if (tokens.size() != 2) {
 			return input_err();
+		}
 		genericsignal *rp = w.FindTrackByNameCast<genericsignal>(tokens[1]);
-		if(!rp) {
+		if (!rp) {
 			return cannot_use_err(tokens[1], "track/reservation/notsignal");
 		}
 		w.SubmitAction(action_unreservetrack(w, *rp));
@@ -84,25 +87,27 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 	}
 
 	auto points_cmd = [&](bool reverse) -> bool {
-		if(tokens.size() < 2 || tokens.size() > 3)
+		if (tokens.size() < 2 || tokens.size() > 3) {
 			return input_err();
+		}
 		genericpoints *p = w.FindTrackByNameCast<genericpoints>(tokens[1]);
-		if(!p) {
+		if (!p) {
 			return cannot_use_err(tokens[1], "track/notpoints");
 		}
 		unsigned int index = 0;
-		if(tokens.size() > 2) {
-			if(!ownstrtonum(index, tokens[2].c_str(), tokens[2].size()))
+		if (tokens.size() > 2) {
+			if (!ownstrtonum(index, tokens[2].c_str(), tokens[2].size())) {
 				return input_err();
+			}
 		}
 		w.SubmitAction(action_pointsaction(w, *p, index, reverse));
 		return true;
 	};
 
-	if(tokens[0] == "normalise_points") {
+	if (tokens[0] == "normalise_points") {
 		return points_cmd(false);
 	}
-	if(tokens[0] == "reverse_points") {
+	if (tokens[0] == "reverse_points") {
 		return points_cmd(true);
 	}
 

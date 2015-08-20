@@ -21,7 +21,7 @@
 #include "core/serialisable_impl.h"
 
 void world_test::SubmitAction(const action &request) {
-	if(round_trip_actions) {
+	if (round_trip_actions) {
 		error_collection ec;
 
 		std::string json;
@@ -35,17 +35,15 @@ void world_test::SubmitAction(const action &request) {
 		rapidjson::Document dc;
 		if (dc.Parse<0>(json.c_str()).HasParseError()) {
 			ec.RegisterNewError<error_jsonparse>(json, dc.GetErrorOffset(), dc.GetParseError());
-		}
-		else {
+		} else {
 			deserialiser_input di(dc, "", "[world_test::SubmitAction]", this, nullptr, nullptr);
 			DeserialiseAndSubmitAction(di, ec);
 		}
 
-		if(ec.GetErrorCount()) {
+		if (ec.GetErrorCount()) {
 			FAIL("Error Collection: " << ec);
 		}
-	}
-	else {
+	} else {
 		world::SubmitAction(request);
 	}
 }

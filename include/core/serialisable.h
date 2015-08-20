@@ -32,11 +32,12 @@ template <typename... Args> class deserialisation_type_factory {
 	public:
 	bool FindAndDeserialise(const std::string &name, const deserialiser_input &di, error_collection &ec, const Args & ...extras) const {
 		auto targ = typemapping.find(name);
-		if(targ != typemapping.end()) {
+		if (targ != typemapping.end()) {
 			targ->second(di, ec, extras...);
 			return true;
+		} else {
+			return false;
 		}
-		else return false;
 	}
 
 	void RegisterType(const std::string &name, std::function<void(const deserialiser_input &di, error_collection &ec, Args...)> func) {

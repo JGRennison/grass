@@ -68,7 +68,8 @@ class speedrestrictionset : public serialisable_obj {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deserialiser_input &di, error_collection &ec, bool after_layout_init_resolve=false);
+void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deserialiser_input &di, error_collection &ec,
+		bool after_layout_init_resolve = false);
 
 struct trackberth {
 	std::string contents;
@@ -135,16 +136,19 @@ class generictrack : public world_obj {
 	protected:
 	//return true if reservation OK
 	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) = 0;
-	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) { }
+	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute,
+			std::function<void(action &&reservation_act)> submitaction) { }
 
 	public:
 	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) {
 		bool result = ReservationV(direction, index, rr_flags, resroute, failreasonkey);
-		if(result)
+		if (result) {
 			MarkUpdated();
+		}
 		return result;
 	}
-	void ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) {
+	void ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute,
+			std::function<void(action &&reservation_act)> submitaction) {
 		ReservationActionsV(direction, index, rr_flags, resroute, submitaction);
 	}
 
@@ -169,8 +173,10 @@ class generictrack : public world_obj {
 	virtual bool IsTrackAlwaysPassable() const { return true; }
 	inline bool IsTrackPassable(EDGETYPE direction, unsigned int connection_index) const;
 
-	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask);
-	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func, RRF checkmask);
+	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func,
+			RRF checkmask);
+	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction,
+			unsigned int index, RRF rr_flags)> func, RRF checkmask);
 	void ReservationTypeCount(reservationcountset &rcs) const;
 	void ReservationTypeCountInDirection(reservationcountset &rcs, EDGETYPE direction) const;
 
@@ -299,10 +305,10 @@ template <typename T> class vartrack_location {
 	inline vartrack_target_ptr<T> &GetTrackTargetPtr() {
 		return trackpiece;
 	}
-	inline bool operator==(const track_location &other) const  {
+	inline bool operator==(const track_location &other) const {
 		return trackpiece == other.trackpiece && offset == other.offset;
 	}
-	inline bool operator!=(const track_location &other) const  {
+	inline bool operator!=(const track_location &other) const {
 		return !(*this == other);
 	}
 

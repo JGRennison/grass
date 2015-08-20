@@ -31,10 +31,10 @@ TEST_CASE( "deserialisation/error/invalid", "Test invalid JSON" ) {
 		INFO(testname);
 		test_fixture_world env(json);
 
-		//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+		//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 		REQUIRE(env.ec.GetErrorCount() == 1);
 		CHECK_CONTAINS(env.ec, "JSON Parsing error");
-		for(auto &it : checklist) {
+		for (auto &it : checklist) {
 			CHECK_CONTAINS(env.ec, it);
 		}
 	};
@@ -71,7 +71,7 @@ TEST_CASE( "deserialisation/error/notype", "Test missing object type" ) {
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 1);
 }
 
@@ -82,7 +82,7 @@ TEST_CASE( "deserialisation/error/wrongtype", "Test wrong value type" ) {
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 1);
 }
 
@@ -93,7 +93,7 @@ TEST_CASE( "deserialisation/error/wrongtypeobjectarray", "Test supplying a value
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 2);
 }
 
@@ -105,7 +105,7 @@ TEST_CASE( "deserialisation/error/arraytypemismatch", "Test supplying a value of
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 2);
 }
 
@@ -116,7 +116,7 @@ TEST_CASE( "deserialisation/error/extravalues", "Test unknown extra value detect
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 1);
 }
 
@@ -127,7 +127,7 @@ TEST_CASE( "deserialisation/error/flagcontradiction", "Test contradictory flags"
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 1);
 }
 
@@ -138,7 +138,7 @@ TEST_CASE( "deserialisation/error/flagnoncontradiction", "Test non-contradictory
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	if(env.ec.GetErrorCount()) {
+	if (env.ec.GetErrorCount()) {
 		WARN("Error Collection: " << env.ec);
 	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
@@ -153,7 +153,7 @@ TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	if(env.ec.GetErrorCount()) {
+	if (env.ec.GetErrorCount()) {
 		WARN("Error Collection: " << env.ec);
 	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
@@ -184,7 +184,7 @@ TEST_CASE( "deserialisation/error/templateextravalues", "Test templating extra v
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 1);
 }
 
@@ -195,7 +195,7 @@ TEST_CASE( "deserialisation/error/typedefextravalues", "Test typedef extra value
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	//if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	//if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 1);
 }
 
@@ -210,7 +210,7 @@ TEST_CASE( "deserialisation/scalartypeconv/length", "Test scalar type conversion
 	"] }";
 	test_fixture_world env(track_test_str);
 
-	if(env.ec.GetErrorCount()) {
+	if (env.ec.GetErrorCount()) {
 		WARN("Error Collection: " << env.ec);
 	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
@@ -225,7 +225,7 @@ TEST_CASE( "deserialisation/scalartypeconv/length", "Test scalar type conversion
 TEST_CASE( "deserialisation/scalartypeconv/errors", "Test scalar type conversion error detection" ) {
 	auto check_parse_err = [&](const std::string &str) {
 		test_fixture_world env_err(str);
-		//if(env_err.ec.GetErrorCount()) { WARN("Error Collection: " << env_err.ec); }
+		//if (env_err.ec.GetErrorCount()) { WARN("Error Collection: " << env_err.ec); }
 		REQUIRE(env_err.ec.GetErrorCount() >= 1);
 	};
 

@@ -56,8 +56,8 @@ struct RPRT {
 	route_class::set end;
 	RPRT_FLAGS flags;
 	inline route_class::set &GetRCSByRRF(RRF rr_flags) {
-		if(rr_flags & RRF::STARTPIECE) return start;
-		else if(rr_flags & RRF::ENDPIECE) return end;
+		if (rr_flags & RRF::STARTPIECE) return start;
+		else if (rr_flags & RRF::ENDPIECE) return end;
 		else return through;
 	}
 	RPRT() : start(0), through(0), end(0), flags(RPRT_FLAGS::ZERO) { }
@@ -100,7 +100,8 @@ class routingpoint : public genericzlentrack {
 
 	virtual route *GetRouteByIndex(unsigned int index) = 0;
 	const route *FindBestOverlap(route_class::set types = route_class::AllOverlaps()) const;
-	void EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags = RRF::ZERO, route_class::set types = route_class::AllOverlaps()) const;
+	void EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags = RRF::ZERO,
+			route_class::set types = route_class::AllOverlaps()) const;
 	virtual void EnumerateRoutes(std::function<void (const route *)> func) const;
 
 	enum class GPBF {
@@ -380,23 +381,27 @@ class routingmarker : public trackroutingpoint {
 };
 
 inline const genericsignal* FastSignalCast(const generictrack *gt, EDGETYPE direction) {
-	if(gt && gt->GetFlags(direction) & GTF::SIGNAL)
+	if (gt && gt->GetFlags(direction) & GTF::SIGNAL) {
 		return static_cast<const genericsignal*>(gt);
+	}
 	return nullptr;
 }
 inline const genericsignal* FastSignalCast(const generictrack *gt) {
-	if(gt)
+	if (gt) {
 		return FastSignalCast(gt, gt->GetDefaultValidDirecton());
+	}
 	return nullptr;
 }
 inline const routingpoint* FastRoutingpointCast(const generictrack *gt, EDGETYPE direction) {
-	if(gt && gt->GetFlags(direction) & GTF::ROUTINGPOINT)
+	if (gt && gt->GetFlags(direction) & GTF::ROUTINGPOINT) {
 		return static_cast<const routingpoint*>(gt);
+	}
 	return nullptr;
 }
 inline const routingpoint* FastRoutingpointCast(const generictrack *gt) {
-	if(gt)
+	if (gt) {
 		return FastRoutingpointCast(gt, gt->GetDefaultValidDirecton());
+	}
 	return nullptr;
 }
 

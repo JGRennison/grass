@@ -38,9 +38,11 @@ enum class ADRESULTF {
 template<> struct enum_traits<ADRESULTF> { static constexpr bool flags = true; };
 
 //return displacement length that could not be fulfilled
-unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, flagwrapper<ADF> adflags = 0, flagwrapper<ADRESULTF> *adresultflags = nullptr);
+unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, flagwrapper<ADF> adflags = 0,
+		flagwrapper<ADRESULTF> *adresultflags = nullptr);
 unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/,
-		std::function<void(track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADF> adflags = 0, flagwrapper<ADRESULTF> *adresultflags = nullptr);
+		std::function<void(track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADF> adflags = 0,
+		flagwrapper<ADRESULTF> *adresultflags = nullptr);
 
 enum class TSEF {
 	ZERO                    = 0,
@@ -55,9 +57,11 @@ struct route_recording_item {
 	unsigned int connection_index;
 	route_recording_item() : connection_index(0) { }
 	route_recording_item(const track_target_ptr &loc, unsigned int index) : location(loc), connection_index(index) { }
+
 	inline bool operator ==(const route_recording_item &other) const {
 		return location == other.location && connection_index == other.connection_index;
 	}
+
 	inline bool operator !=(const route_recording_item &other) const {
 		return !(*this == other);
 	}
@@ -71,8 +75,9 @@ struct generic_route_recording_state {
 };
 
 void TrackScan(unsigned int max_pieces, unsigned int junction_max, track_target_ptr start_track, route_recording_list &route_pieces,
-		generic_route_recording_state *grrs, TSEF &error_flags, std::function<bool(const route_recording_list &route_pieces, const track_target_ptr &piece,
-		generic_route_recording_state *grrs)> step_func);
+		generic_route_recording_state *grrs, TSEF &error_flags, std::function<bool(const route_recording_list &route_pieces,
+		const track_target_ptr &piece, generic_route_recording_state *grrs)> step_func);
+
 std::string GetTrackScanErrorFlagsStr(TSEF error_flags);
 
 #endif

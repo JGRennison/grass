@@ -69,15 +69,18 @@ class fixup_list {
 	void AddFixup(std::function<void(error_collection &ec)> fixup) {
 		fixups.push_back(fixup);
 	}
+
 	void Execute(error_collection &ec) {
-		for(auto it = fixups.begin(); it != fixups.end(); ++it) {
-			(*it)(ec);
+		for (auto &it : fixups) {
+			it(ec);
 		}
 		fixups.clear();
 	}
+
 	void Clear() {
 		fixups.clear();
 	}
+
 	size_t Count() const {
 		return fixups.size();
 	}
@@ -90,25 +93,31 @@ class track_train_counter_block_container {
 
 	public:
 	track_train_counter_block_container(world &w_) : w(w_) { }
+
 	C *FindByName(const std::string &name) {
 		auto it = all_items.find(name);
-		if(it != all_items.end()) {
-			if(it->second)
+		if (it != all_items.end()) {
+			if (it->second) {
 				return it->second.get();
+			}
 		}
 		return nullptr;
 	}
+
 	C *FindOrMakeByName(const std::string &name) {
 		std::unique_ptr<C> &tc = all_items[name];
-		if(!tc.get())
+		if (!tc.get()) {
 			tc.reset(new C(w, name));
+		}
 		return tc.get();
 	}
+
 	template <typename F> void Enumerate(F func) const {
-		for(auto &it : all_items) {
+		for (auto &it : all_items) {
 			func(*(it.second));
 		}
 	}
+
 	template <typename F> void Enumerate(F func) {
 		const_cast<const track_train_counter_block_container<C>*>(this)->EnumerateTrains([&](const C& t) { f(const_cast<C&>(t)); });
 	}
@@ -158,9 +167,11 @@ class world : public serialisable_futurable_obj {
 	void LayoutInit(error_collection &ec);
 	void PostLayoutInit(error_collection &ec);
 	generictrack *FindTrackByName(const std::string &name) const;
+
 	template <typename C> C *FindTrackByNameCast(const std::string &name) const {
 		return dynamic_cast<C*>(FindTrackByName(name));
 	}
+
 	track_train_counter_block *FindTrackTrainBlockOrTrackCircuitByName(const std::string &name);
 	void InitFutureTypes();
 	world_time GetGameTime() const { return gametime; }
@@ -177,9 +188,11 @@ class world : public serialisable_futurable_obj {
 	virtual void GameStep(world_time delta);
 	void RegisterTickUpdate(generictrack *targ);
 	void UnregisterTickUpdate(generictrack *targ);
+
 	inline bool IsAuthoritative() const {
 		return mode == GAMEMODE::SINGLE || mode == GAMEMODE::SERVER;
 	}
+
 	error_collection &GetEC() { return ec; }
 	inline uint64_t GetLoadCount() const { return load_count; }
 	void CapAllTrackPieceUnconnectedEdges();
@@ -187,9 +200,11 @@ class world : public serialisable_futurable_obj {
 	train *FindTrainByName(const std::string &name) const;
 	void DeleteTrain(train *t);
 	unsigned int EnumerateTrains(std::function<void(const train &)> f) const;
+
 	inline unsigned int EnumerateTrains(std::function<void(train &)> f) {
 		return const_cast<const world*>(this)->EnumerateTrains([&](const train &t) { f(const_cast<train&>(t)); });
 	}
+
 	vehicle_class *FindOrMakeVehicleClassByName(const std::string &name);
 	vehicle_class *FindVehicleClassByName(const std::string &name);
 	void MarkUpdated(updatable_obj *wo);
@@ -197,7 +212,9 @@ class world : public serialisable_futurable_obj {
 
 	flagwrapper<WFLAGS> GetWFlags() const { return wflags; }
 
-	uint64_t MakeNewFutureID() { return ++last_future_id; }
+	uint64_t MakeNewFutureID() {
+		return ++last_future_id;
+	}
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;

@@ -44,17 +44,19 @@ typedef uint32_t aspect_mask_type; // This is a bitmask for aspects: 0 (LSB) to 
 const unsigned int ASPECT_MAX = 31;
 
 inline bool aspect_in_mask(aspect_mask_type mask, unsigned int aspect) {
-	if(aspect > ASPECT_MAX)
+	if (aspect > ASPECT_MAX) {
 		return false;
-	else
+	} else {
 		return mask & (1 << aspect);
+	}
 }
 
 inline bool is_higher_aspect_in_mask(aspect_mask_type mask, unsigned int aspect) {
-	if(aspect >= ASPECT_MAX)
+	if (aspect >= ASPECT_MAX) {
 		return false;
-	else
+	} else {
 		return mask & ((~1) << aspect);
+	}
 }
 
 struct berth_record {

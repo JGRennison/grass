@@ -27,15 +27,13 @@ typedef unsigned int world_time;
 #include <sstream>
 
 //fix for MinGW, from http://pastebin.com/7rhvv92A
-namespace std
-{
-    template <typename T>
-    string to_string(const T & value)
-    {
-        stringstream stream;
-        stream << value;
-        return stream.str();// string_stream;
-    }
+namespace std {
+	template <typename T>
+	string to_string(const T & value) {
+		stringstream stream;
+		stream << value;
+		return stream.str();// string_stream;
+	}
 }
 #endif
 

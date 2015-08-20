@@ -70,7 +70,7 @@ namespace guilayout {
 	};
 
 	inline bool IsEdgeLayoutDirection(LAYOUT_DIR dir) {
-		switch(dir) {
+		switch (dir) {
 			case LAYOUT_DIR::U:       return true;
 			case LAYOUT_DIR::R:       return true;
 			case LAYOUT_DIR::D:       return true;
@@ -80,7 +80,7 @@ namespace guilayout {
 	}
 
 	inline LAYOUT_DIR ReverseLayoutDirection(LAYOUT_DIR dir) {
-		switch(dir) {
+		switch (dir) {
 			case LAYOUT_DIR::NULLDIR: return LAYOUT_DIR::NULLDIR;
 			case LAYOUT_DIR::U:       return LAYOUT_DIR::D;
 			case LAYOUT_DIR::UR:      return LAYOUT_DIR::LD;
@@ -109,10 +109,10 @@ namespace guilayout {
 	//This reduces the input set by half
 	//In that if two directions are reverse, they will fold to the same value
 	inline LAYOUT_DIR FoldLayoutDirection(LAYOUT_DIR dir) {
-		if(static_cast<std::underlying_type<guilayout::LAYOUT_DIR>::type>(dir) >= static_cast<std::underlying_type<guilayout::LAYOUT_DIR>::type>(LAYOUT_DIR::D)) {
+		if (static_cast<std::underlying_type<guilayout::LAYOUT_DIR>::type>(dir) >=
+				static_cast<std::underlying_type<guilayout::LAYOUT_DIR>::type>(LAYOUT_DIR::D)) {
 			return ReverseLayoutDirection(dir);
-		}
-		else {
+		} else {
 			return dir;
 		}
 	}
@@ -133,9 +133,11 @@ namespace guilayout {
 		public:
 		virtual ~layout_obj() { }
 		std::pair<unsigned int, unsigned int> GetDimensions() const;
+
 		inline std::pair<int, int> GetPosition() const {
 			return std::make_pair(x, y);
 		}
+
 		virtual std::string GetFriendlyName() const = 0;
 		virtual void Process(world_layout &wl, error_collection &ec) = 0;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
@@ -265,22 +267,31 @@ namespace guilayout {
 		std::set<layout_obj *> objs_updated;
 
 		public:
-		world_layout(const world &w_, std::shared_ptr<draw::draw_module> eng_ = std::shared_ptr<draw::draw_module>()) : w(w_), eng(std::move(eng_)) { }
+		world_layout(const world &w_, std::shared_ptr<draw::draw_module> eng_ = std::shared_ptr<draw::draw_module>())
+				: w(w_), eng(std::move(eng_)) { }
+
 		virtual ~world_layout() { }
 		const world & GetWorld() const { return w; }
 		void AddLayoutObj(const std::shared_ptr<layout_obj> &obj);
 		void SetWorldSerialisationLayout(world_deserialisation &ws);
 		void ProcessLayoutObjSet(error_collection &ec);
-		void GetTrackLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<layouttrack_obj> > &output);
-		void GetTrackBerthLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<layoutberth_obj> > &output);
+		void GetTrackLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec,
+				std::vector<std::shared_ptr<layouttrack_obj> > &output);
+		void GetTrackBerthLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec,
+				std::vector<std::shared_ptr<layoutberth_obj> > &output);
 		inline std::shared_ptr<draw::draw_module> GetDrawModule() const { return eng; }
-		inline void AddTrackLayoutObj(const generictrack *gt, std::shared_ptr<layouttrack_obj> &&obj) { tracktolayoutmap.emplace(gt, std::move(obj)); }
+
+		inline void AddTrackLayoutObj(const generictrack *gt, std::shared_ptr<layouttrack_obj> &&obj) {
+			tracktolayoutmap.emplace(gt, std::move(obj));
+		}
+
 		void SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<layout_obj> &owner,
 				int level = 0, std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
 		void SetTextChar(int x, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner,
 				int level = 0, std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
 		int SetTextString(int startx, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner,
-				int level = 0, int minlength = -1, int maxlength = -1, std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
+				int level = 0, int minlength = -1, int maxlength = -1,
+				std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
 		const pos_sprite_desc *GetSprite(int x, int y);
 		pos_sprite_desc &GetLocationRef(int x, int y, int level);
 		void ClearSpriteLevel(int x, int y, int level);
@@ -298,19 +309,34 @@ namespace guilayout {
 		std::shared_ptr<world_layout> GetSharedPtrThis() { return shared_from_this(); }
 		std::shared_ptr<const world_layout> GetSharedPtrThis() const { return shared_from_this(); }
 
-		void ClearUpdateSet() { objs_updated.clear(); }
+		void ClearUpdateSet() {
+			objs_updated.clear();
+		}
+
 		void IterateUpdateSet(std::function<void(layout_obj *)> func) {
-			for(auto &it : objs_updated) { func(it); }
+			for (auto &it : objs_updated) {
+				func(it);
+			}
 		}
+
 		void IterateAllLayoutObjects(std::function<void(layout_obj *)> func) {
-			for(auto &it : objs) { func(it.get()); }
+			for (auto &it : objs) {
+				func(it.get());
+			}
 		}
+
 		void MarkUpdated(layout_obj *obj) {
 			objs_updated.insert(obj);
 		}
-		void ClearRedrawMap() { redraw_map.clear(); }
+
+		void ClearRedrawMap() {
+			redraw_map.clear();
+		}
+
 		void IterateRedrawMap(std::function<void(int x, int y)> func) {
-			for(auto &it : redraw_map) { func(it.first, it.second); }
+			for (auto &it : redraw_map) {
+				func(it.first, it.second);
+			}
 		}
 
 		void LayoutTimeStep(world_time oldtime, world_time newtime);

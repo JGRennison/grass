@@ -25,11 +25,13 @@
 
 bool tractionset::CanTrainPass(const train *t) const {
 	const tractionset &ts = t->GetActiveTractionTypes();
-	for(auto &it : ts.tractions) {
-		if(it->alwaysavailable)
+	for (auto &it : ts.tractions) {
+		if (it->alwaysavailable) {
 			return true;
-		if(HasTraction(it))
+		}
+		if (HasTraction(it)) {
 			return true;
+		}
 	}
 	return false;
 }
@@ -39,9 +41,10 @@ bool tractionset::HasTraction(const traction_type *tt) const {
 }
 
 bool tractionset::IsIntersecting(const tractionset &ts) const {
-	for(auto &it : tractions) {
-		if(ts.HasTraction(it))
+	for (auto &it : tractions) {
+		if (ts.HasTraction(it)) {
 			return true;
+		}
 	}
 	return false;
 }
@@ -53,35 +56,35 @@ void tractionset::IntersectWith(const tractionset &ts) {
 }
 
 void tractionset::UnionWith(const tractionset &ts) {
-	for(auto &it : ts.tractions) {
+	for (auto &it : ts.tractions) {
 		AddTractionType(it);
 	}
 }
 
 void tractionset::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	if(!di.json.IsArray()) {
+	if (!di.json.IsArray()) {
 		ec.RegisterNewError<error_deserialisation>(di, "Invalid traction set definition");
 		return;
 	}
-	for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
+	for (rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
 		const rapidjson::Value &cur = di.json[i];
-		if(cur.IsString() && di.w) {
+		if (cur.IsString() && di.w) {
 			traction_type *tt = di.w->GetTractionTypeByName(cur.GetString());
-			if(tt) {
-				if(!HasTraction(tt)) tractions.push_back(tt);
-			}
-			else {
+			if (tt) {
+				if (!HasTraction(tt)) {
+					tractions.push_back(tt);
+				}
+			} else {
 				ec.RegisterNewError<error_deserialisation>(di, string_format("No such traction type: \"%s\"", cur.GetString()));
 			}
-		}
-		else {
+		} else {
 			ec.RegisterNewError<error_deserialisation>(di, "Invalid traction set definition");
 		}
 	}
 }
 
 void tractionset::Serialise(serialiser_output &so, error_collection &ec) const {
-	for(auto &it : tractions) {
+	for (auto &it : tractions) {
 		so.json_out.String(it->name);
 	}
 	return;
@@ -89,14 +92,15 @@ void tractionset::Serialise(serialiser_output &so, error_collection &ec) const {
 
 std::string tractionset::DumpString() const {
 	std::vector<std::string> strs;
-	for(auto &it : tractions) {
+	for (auto &it : tractions) {
 		strs.push_back(it->name);
 	}
 	std::sort(strs.begin(), strs.end());
 	std::string out;
-	for(auto &it : strs) {
-		if(!out.empty())
+	for (auto &it : strs) {
+		if (!out.empty()) {
 			out += ",";
+		}
 		out += it;
 	}
 	return out;

@@ -35,7 +35,7 @@ void maingui::grviewpanel::OnDraw(wxDC& dc) {
 	std::map<std::pair<int, int>, const guilayout::pos_sprite_desc *> redrawsprites;
 
 	wxRegionIterator upd(GetUpdateRegion());
-	while(upd) {
+	while (upd) {
 		wxRect rect(upd.GetRect());
 		CalcUnscrolledPosition(rect.x, rect.y, &rect.x, &rect.y);
 		int x1 = layout_origin_x + (rect.GetLeft() / (int) eng->GetSpriteWidth());
@@ -46,19 +46,18 @@ void maingui::grviewpanel::OnDraw(wxDC& dc) {
 		upd++;
 	}
 
-	for(auto &obj : redrawsprites) {
+	for (auto &obj : redrawsprites) {
 		int x, y, wx, wy;
 		std::tie(x, y) = obj.first;
 		wx = (x - layout_origin_x) * eng->GetSpriteWidth();
 		wy = (y - layout_origin_y) * eng->GetSpriteHeight();
 
-		if(obj.second->text) {
+		if (obj.second->text) {
 			draw::drawtextchar &dt = *(obj.second->text);
 			draw::wx_sprite_obj txt(eng.get(), 0);
 			txt.DrawTextChar(dt.text, dt.foregroundcolour, dt.backgroundcolour);
 			dc.DrawBitmap(txt.GetSpriteBitmap(), wx, wy, false);
-		}
-		else {
+		} else {
 			const wxBitmap &sprite = eng->GetSpriteBitmap(obj.second->sprite);
 			dc.DrawBitmap(sprite, wx, wy, false);
 		}

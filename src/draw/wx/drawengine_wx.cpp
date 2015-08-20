@@ -46,7 +46,7 @@ namespace draw {
 	void wx_sprite_obj::FillColour(uint32_t rgb) {
 		bmp = wxBitmap();
 		img.Create(eng->GetSpriteWidth(), eng->GetSpriteHeight(), true);
-		if(rgb) {
+		if (rgb) {
 			img.Replace(0, 0, 0,
 				(rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
 		}
@@ -61,7 +61,7 @@ namespace draw {
 	void wx_sprite_obj::DrawTextChar(const std::string &text, uint32_t foregroundcolour, uint32_t backgroundcolour) {
 		bmp = wxBitmap(eng->GetSpriteWidth(), eng->GetSpriteHeight());
 		wxMemoryDC memdc(bmp);
-		if(!memdc.IsOk()) {
+		if (!memdc.IsOk()) {
 			bmp = wxBitmap();
 			return;
 		}
@@ -84,23 +84,22 @@ namespace draw {
 	}
 
 	void wx_sprite_obj::CheckType(GST type) {
-		if(type == GST::IMG || type == GST::BMP) {
-			if(!img.IsOk()) {
+		if (type == GST::IMG || type == GST::BMP) {
+			if (!img.IsOk()) {
 				eng->dmod->BuildSprite(this_sr, *this, *(eng->dopt));
 			}
-			if(!img.IsOk()) {
+			if (!img.IsOk()) {
 				// image is failed, use a nice pink block instead to make it obvious
 				img.Create(eng->GetSpriteWidth(), eng->GetSpriteHeight(), true);
 				img.Replace(0, 0, 0, 0xFF, 0x7F, 0x7F);
 			}
 		}
-		if(type == GST::BMP) {
-			if(!bmp.IsOk()) {
-				if(eng->GetSpriteWidth() != (unsigned int) img.GetWidth() || eng->GetSpriteHeight() != (unsigned int) img.GetHeight()) {
+		if (type == GST::BMP) {
+			if (!bmp.IsOk()) {
+				if (eng->GetSpriteWidth() != (unsigned int) img.GetWidth() || eng->GetSpriteHeight() != (unsigned int) img.GetHeight()) {
 					wxImage simg = img.Scale(eng->GetSpriteWidth(), eng->GetSpriteHeight());
 					bmp = wxBitmap(simg);
-				}
-				else {
+				} else {
 					bmp = wxBitmap(img);
 				}
 			}
@@ -111,7 +110,7 @@ namespace draw {
 		: draw_engine(dmod_, sw, sh, dopt_) {
 		wxInitAllImageHandlers();
 		wxFont *textfont_p = wxFont::New(wxSize(sw, sh), wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
-		if(textfont_p) {
+		if (textfont_p) {
 			textfont = *textfont_p;
 			delete textfont_p;
 		}
@@ -120,7 +119,7 @@ namespace draw {
 	wx_sprite_obj &wx_draw_engine::GetSpriteObj(sprite_ref sr, wx_sprite_obj::GST type) {
 		auto sp = sprites.insert(std::make_pair(sr, wx_sprite_obj()));
 		wx_sprite_obj &s = sp.first->second;
-		if(sp.second) {
+		if (sp.second) {
 			// this is a new sprite
 			s.this_sr = sr;
 			s.eng = this;

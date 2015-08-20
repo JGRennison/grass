@@ -32,7 +32,7 @@
 
 void future_pointsaction::ExecuteAction() {
 	genericpoints *gp = dynamic_cast<genericpoints *>(&GetTarget());
-	if(gp) {
+	if (gp) {
 		gp->SetPointsFlagsMasked(index, bits, mask);
 	}
 }
@@ -55,19 +55,17 @@ void future_pointsaction::Serialise(serialiser_output &so, error_collection &ec)
 action_pointsaction::action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, bool reverse)
 		: action(w_), target(&targ), index(index_) {
 	genericpoints::PTF pflags = target->GetPointsFlags(index);
-	if(static_cast<bool>(pflags & genericpoints::PTF::REV) != reverse) {
-		if(pflags & genericpoints::PTF::LOCKED) {
+	if (static_cast<bool>(pflags & genericpoints::PTF::REV) != reverse) {
+		if (pflags & genericpoints::PTF::LOCKED) {
 			// unlock
 			bits = genericpoints::PTF::ZERO;
 			mask = genericpoints::PTF::LOCKED;
-		}
-		else {
+		} else {
 			// Change position
 			bits = SetOrClearBits<genericpoints::PTF>(genericpoints::PTF::ZERO, genericpoints::PTF::REV, reverse);
 			mask = genericpoints::PTF::REV;
 		}
-	}
-	else {
+	} else {
 		// Set locked state
 		bits = genericpoints::PTF::LOCKED;
 		mask = genericpoints::PTF::LOCKED;
@@ -75,8 +73,7 @@ action_pointsaction::action_pointsaction(world &w_, genericpoints &targ, unsigne
 }
 
 void action_pointsaction::ExecuteAction() const {
-	if(!target)
-		return;
+	if (!target) return;
 
 	genericpoints::PTF old_pflags = target->GetPointsFlags(index);
 	genericpoints::PTF change_flags = (old_pflags ^ bits) & mask;
@@ -86,20 +83,20 @@ void action_pointsaction::ExecuteAction() const {
 
 	std::function<void()> overlap_callback;
 
-	if(change_flags & genericpoints::PTF::REV) {
-		if(old_pflags & genericpoints::PTF::LOCKED) {
+	if (change_flags & genericpoints::PTF::REV) {
+		if (old_pflags & genericpoints::PTF::LOCKED) {
 			ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(*target, action_time+1, &w,
 					"track_ops/pointsunmovable", "points/locked"));
 			return;
 		}
-		if(old_pflags & genericpoints::PTF::REMINDER) {
+		if (old_pflags & genericpoints::PTF::REMINDER) {
 			ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(*target, action_time+1, &w,
 					"track_ops/pointsunmovable", "points/reminderset"));
 			return;
 		}
-		if(!(aflags & APAF::IGNORERESERVATION) && target->GetFlags(target->GetDefaultValidDirecton()) & GTF::ROUTESET) {
+		if (!(aflags & APAF::IGNORERESERVATION) && target->GetFlags(target->GetDefaultValidDirecton()) & GTF::ROUTESET) {
 			std::string failreason = "track/reserved";
-			if(!TrySwingOverlap(overlap_callback, !!(bits & genericpoints::PTF::REV), &failreason)) {
+			if (!TrySwingOverlap(overlap_callback, !!(bits & genericpoints::PTF::REV), &failreason)) {
 				ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(*target, action_time+1, &w,
 						"track_ops/pointsunmovable", failreason));
 				return;
@@ -121,14 +118,14 @@ void action_pointsaction::ExecuteAction() const {
 
 	ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, action_time + 1, index, immediate_action_bits, immediate_action_mask));
 
-	if(overlap_callback)
+	if (overlap_callback) {
 		overlap_callback();
+	}
 
-	if(old_pflags & genericpoints::PTF::AUTO_NORMALISE) {
-		if(!(aflags & APAF::NOPOINTSNORMALISE) && target->ShouldAutoNormalise(index, change_flags)) {
+	if (old_pflags & genericpoints::PTF::AUTO_NORMALISE) {
+		if (!(aflags & APAF::NOPOINTSNORMALISE) && target->ShouldAutoNormalise(index, change_flags)) {
 			w.SubmitAction(action_points_auto_normalise(w, *target, index));
-		}
-		else {
+		} else {
 			action_points_auto_normalise::CancelFutures(target, index);
 		}
 	}
@@ -143,15 +140,17 @@ void action_pointsaction::CancelFutures(unsigned int index, genericpoints::PTF s
 	auto check_instance = [&](genericpoints *p, unsigned int index, genericpoints::PTF setmask, genericpoints::PTF clearmask) {
 		auto func = [&](future &f) {
 			future_pointsaction *fp = dynamic_cast<future_pointsaction *>(&f);
-			if(!fp)
+			if (!fp) {
 				return;
-			if(fp->index != index)
+			}
+			if (fp->index != index) {
 				return;
+			}
 			genericpoints::PTF foundset = fp->mask & fp->bits & setmask;
 			genericpoints::PTF foundunset = fp->mask & (~fp->bits) & clearmask;
-			if(foundset || foundunset) {
+			if (foundset || foundunset) {
 				flagwrapper<genericpoints::PTF> newmask = fp->mask & ~(foundset | foundunset);
-				if(newmask) {
+				if (newmask) {
 					ActionRegisterFuture(std::make_shared<future_pointsaction>(*target, fp->GetTriggerTime(), index, fp->bits, newmask));
 				}
 				ActionCancelFuture(f);
@@ -162,8 +161,8 @@ void action_pointsaction::CancelFutures(unsigned int index, genericpoints::PTF s
 	};
 	check_instance(target, index, setmask, clearmask);
 	std::vector<genericpoints::points_coupling> *coupling = target->GetCouplingVector(index);
-	if(coupling) {
-		for(auto &it : *coupling) {
+	if (coupling) {
+		for (auto &it : *coupling) {
 			genericpoints::PTF rev = (setmask ^ clearmask) & it.xormask;
 			check_instance(it.targ, it.index, setmask ^ rev, clearmask ^ rev);
 		}
@@ -171,37 +170,41 @@ void action_pointsaction::CancelFutures(unsigned int index, genericpoints::PTF s
 }
 
 bool action_pointsaction::TrySwingOverlap(std::function<void()> &overlap_callback, bool settingreverse, std::string *failreasonkey) const {
-	if(aflags & APAF::NOOVERLAPSWING) return false;
+	if (aflags & APAF::NOOVERLAPSWING) return false;
 
 	const route *foundoverlap = nullptr;
 	bool failed = false;
 	target->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if(!route_class::IsOverlap(reserved_route->type)) {
+		if (!route_class::IsOverlap(reserved_route->type)) {
 			failed = true;
 			return;
 		}
-		if(foundoverlap) {
+		if (foundoverlap) {
 			failed = true;
 			return;
 		}
 		foundoverlap = reserved_route;
 	}, RRF::RESERVE | RRF::PROVISIONAL_RESERVE);
-	if(failed || !foundoverlap)
+	if (failed || !foundoverlap) {
 		return false;
+	}
 
 	genericsignal *start = FastSignalCast(foundoverlap->start.track, foundoverlap->start.direction);
-	if(!start)
+	if (!start) {
 		return false;
-	if(!start->IsOverlapSwingPermitted(failreasonkey))
+	}
+	if (!start->IsOverlapSwingPermitted(failreasonkey)) {
 		return false;
+	}
 
 	//temporarily "move" points
-	genericpoints::PTF saved_pflags = target->SetPointsFlagsMasked(index, settingreverse ? genericpoints::PTF::REV : genericpoints::PTF::ZERO, genericpoints::PTF::REV);
+	genericpoints::PTF saved_pflags = target->SetPointsFlagsMasked(index, settingreverse ? genericpoints::PTF::REV : genericpoints::PTF::ZERO,
+			genericpoints::PTF::REV);
 
 	const route *best_new_overlap = nullptr;
 	int best_overlap_score = INT_MIN;
 	start->EnumerateAvailableOverlaps([&](const route *rt, int score) {
-		if(score > best_overlap_score) {
+		if (score > best_overlap_score) {
 			best_new_overlap = rt;
 			best_overlap_score = score;
 		}
@@ -212,16 +215,16 @@ bool action_pointsaction::TrySwingOverlap(std::function<void()> &overlap_callbac
 
 	bool result = false;
 
-	if(best_new_overlap && best_new_overlap != foundoverlap) {
+	if (best_new_overlap && best_new_overlap != foundoverlap) {
 		overlap_callback = [=]() {
 			auto actioncallback = [&](action &&reservation_act) {
 				reservation_act.Execute();
 			};
-			if(foundoverlap) {
+			if (foundoverlap) {
 				foundoverlap->RouteReservationActions(RRF::UNRESERVE, actioncallback);
 				ActionRegisterFuture(std::make_shared<future_unreservetrack>(*start, action_time + 1, foundoverlap));
 			}
-			if(best_new_overlap) {
+			if (best_new_overlap) {
 				best_new_overlap->RouteReservationActions(RRF::RESERVE, actioncallback);
 				ActionRegisterFuture(std::make_shared<future_reservetrack>(*start, action_time + 1, best_new_overlap));
 				best_new_overlap->RouteReservation(RRF::PROVISIONAL_RESERVE | RRF::IGNORE_OWN_OVERLAP);
@@ -237,11 +240,13 @@ void action_pointsaction::Deserialise(const deserialiser_input &di, error_collec
 	action::Deserialise(di, ec);
 
 	std::string targetname;
-	if(CheckTransJsonValue(targetname, di, "target", ec))
+	if (CheckTransJsonValue(targetname, di, "target", ec)) {
 		target = w.FindTrackByNameCast<genericpoints>(targetname);
+	}
 
-	if(!target)
+	if (!target) {
 		ec.RegisterNewError<error_deserialisation>(di, "Invalid action_pointsaction definition");
+	}
 
 	CheckTransJsonValueDef(index, di, "index", 0, ec);
 	CheckTransJsonValueDef(bits, di, "bits", genericpoints::PTF::ZERO, ec);
@@ -259,11 +264,13 @@ void action_pointsaction::Serialise(serialiser_output &so, error_collection &ec)
 }
 
 void action_points_auto_normalise::ExecuteAction() const {
-	if(!target)
+	if (!target) {
 		return;
+	}
 
-	if(HasFutures(target, index))
+	if (HasFutures(target, index)) {
 		return;
+	}
 
 	ActionRegisterFutureAction(*target, GetNormalisationStartTime(),
 			std::unique_ptr<action>(new action_pointsaction(w, *target, index, genericpoints::PTF::ZERO, genericpoints::PTF::REV, action_pointsaction::APAF::ISPOINTSNORMALISE)));
@@ -273,11 +280,13 @@ void action_points_auto_normalise::Deserialise(const deserialiser_input &di, err
 	action::Deserialise(di, ec);
 
 	std::string targetname;
-	if(CheckTransJsonValue(targetname, di, "target", ec))
+	if (CheckTransJsonValue(targetname, di, "target", ec)) {
 		target = w.FindTrackByNameCast<genericpoints>(targetname);
+	}
 
-	if(!target)
+	if (!target) {
 		ec.RegisterNewError<error_deserialisation>(di, "Invalid action_points_auto_normalise definition");
+	}
 
 	CheckTransJsonValueDef(index, di, "index", 0, ec);
 }
@@ -296,19 +305,24 @@ bool action_points_auto_normalise::HandleFuturesGeneric(genericpoints *target, u
 	bool found = false;
 	target->EnumerateFutures([&](future &f) {
 		future_action_wrapper *faw = dynamic_cast<future_action_wrapper *>(&f);
-		if(!faw)
+		if (!faw) {
 			return;
+		}
 		action_pointsaction *apan = dynamic_cast<action_pointsaction *>(faw->act.get());
-		if(!apan)
+		if (!apan) {
 			return;
-		if(!(apan->GetFlags() & action_pointsaction::APAF::ISPOINTSNORMALISE))
+		}
+		if (!(apan->GetFlags() & action_pointsaction::APAF::ISPOINTSNORMALISE)) {
 			return;
-		if(apan->GetIndex() != index)
+		}
+		if (apan->GetIndex() != index) {
 			return;
+		}
 
 		found = true;
-		if(cancel)
+		if (cancel) {
 			apan->ActionCancelFuture(f);
+		}
 	});
 	return found;
 }
@@ -328,8 +342,8 @@ void future_routeoperation_base::Deserialise(const deserialiser_input &di, error
 
 void future_routeoperation_base::Serialise(serialiser_output &so, error_collection &ec) const {
 	future::Serialise(so, ec);
-	if(reserved_route) {
-		if(reserved_route->parent) {
+	if (reserved_route) {
+		if (reserved_route->parent) {
 			SerialiseValueJson(reserved_route->parent->GetName(), so, "route_parent");
 			SerialiseValueJson(reserved_route->index, so, "route_index");
 		}
@@ -337,7 +351,7 @@ void future_routeoperation_base::Serialise(serialiser_output &so, error_collecti
 }
 
 void future_reservetrack_base::ExecuteAction() {
-	if(reserved_route) {
+	if (reserved_route) {
 		reserved_route->RouteReservation(rflags);
 	}
 }
@@ -354,13 +368,16 @@ void future_reservetrack_base::Serialise(serialiser_output &so, error_collection
 
 const route *action_reservetrack_base::TestSwingOverlapAndReserve(const route *target_route, std::string *failreasonkey) const {
 	genericsignal *gs = FastSignalCast(target_route->start.track, target_route->start.direction);
-	if(!gs)
+	if (!gs) {
 		return nullptr;
-	if(!target_route->RouteReservation(RRF::TRYRESERVE | RRF::IGNORE_OWN_OVERLAP))
+	}
+	if (!target_route->RouteReservation(RRF::TRYRESERVE | RRF::IGNORE_OWN_OVERLAP)) {
 		return nullptr;    //can't reserve even when ignoring the overlap
+	}
 
-	if(!gs->IsOverlapSwingPermitted(failreasonkey))
+	if (!gs->IsOverlapSwingPermitted(failreasonkey)) {
 		return nullptr;
+	}
 
 	std::vector<std::pair<int, const route *> > candidates;
 	gs->EnumerateAvailableOverlaps([&](const route *rt, int score) {
@@ -369,8 +386,8 @@ const route *action_reservetrack_base::TestSwingOverlapAndReserve(const route *t
 	std::sort(candidates.begin(), candidates.end());
 
 	const route *result = nullptr;
-	for(auto &it : candidates) {
-		if(target_route->IsRouteSubSet(it.second)) {
+	for (auto &it : candidates) {
+		if (target_route->IsRouteSubSet(it.second)) {
 			result = it.second;
 			break;
 		}
@@ -387,23 +404,27 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 	bool route_conflict = false;
 	rt->start.track->ReservationEnumerationInDirection(rt->start.direction,
 			[&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if(route_class::IsOverlap(reserved_route->type))
+		if (route_class::IsOverlap(reserved_route->type)) {
 			return;
-		if(!(rr_flags & RRF::STARTPIECE))
-			return;
-		found_route = true;
-		if(reserved_route != rt)
-			route_conflict = true;
-	}, RRF::RESERVE | RRF::PROVISIONAL_RESERVE);
-	if(found_route) {
-		if(route_conflict) {
-			error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time + 1, &w, "track/reservation/fail", "track/reservation/alreadyset"));
-			return false;
 		}
-		else {
+		if (!(rr_flags & RRF::STARTPIECE)) {
+			return;
+		}
+		found_route = true;
+		if (reserved_route != rt) {
+			route_conflict = true;
+		}
+	}, RRF::RESERVE | RRF::PROVISIONAL_RESERVE);
+	if (found_route) {
+		if (route_conflict) {
+			error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time + 1, &w,
+					"track/reservation/fail", "track/reservation/alreadyset"));
+			return false;
+		} else {
 			genericsignal *sig = FastSignalCast(rt->start.track, rt->start.direction);
-			if(sig)
+			if (sig) {
 				CancelApproachLocking(sig);
+			}
 			return true;
 		}
 	}
@@ -412,27 +433,28 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 	const route *remove_prev_overlap = nullptr;
 	std::string tryreservation_failreasonkey = "generic/failurereason";
 	bool success = rt->RouteReservation(RRF::TRYRESERVE, &tryreservation_failreasonkey);
-	if(!success) {
+	if (!success) {
 		swing_this_overlap = TestSwingOverlapAndReserve(rt, &tryreservation_failreasonkey);
-		if(swing_this_overlap) {
+		if (swing_this_overlap) {
 			success = true;
 			genericsignal *sig = FastSignalCast(rt->start.track, rt->start.direction);
-			if(sig)
+			if (sig) {
 				remove_prev_overlap = sig->GetCurrentForwardOverlap();
+			}
 		}
 	}
 
-	if(!success) {
+	if (!success) {
 		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time + 1, &w,
 				"track/reservation/fail", tryreservation_failreasonkey));
 		return false;
 	}
 
 	const route *best_overlap = nullptr;
-	if(rt->overlap_type != route_class::ID::RTC_NULL) {
+	if (rt->overlap_type != route_class::ID::RTC_NULL) {
 		//need an overlap too
 		best_overlap = rt->end.track->FindBestOverlap(route_class::Flag(rt->overlap_type));
-		if(!best_overlap) {
+		if (!best_overlap) {
 			error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time + 1, &w,
 					"track/reservation/fail", "track/reservation/overlap/noneavailable"));
 			return false;
@@ -443,16 +465,17 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 
 	auto actioncallback = [&](action &&reservation_act) {
 		action_pointsaction *apa = dynamic_cast<action_pointsaction*>(&reservation_act);
-		if(apa)
+		if (apa) {
 			apa->SetFlagsMasked(action_pointsaction::APAF::IGNORERESERVATION, action_pointsaction::APAF::IGNORERESERVATION);
+		}
 		reservation_act.Execute();
 	};
 
-	if(remove_prev_overlap) {
+	if (remove_prev_overlap) {
 		remove_prev_overlap->RouteReservationActions(RRF::UNRESERVE, actioncallback);
 		ActionRegisterFuture(std::make_shared<future_unreservetrack>(*rt->start.track, action_time + 1, remove_prev_overlap));
 	}
-	if(swing_this_overlap) {
+	if (swing_this_overlap) {
 		swing_this_overlap->RouteReservationActions(RRF::RESERVE, actioncallback);
 		ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, swing_this_overlap));
 		swing_this_overlap->RouteReservation(RRF::PROVISIONAL_RESERVE | RRF::IGNORE_OWN_OVERLAP);
@@ -460,7 +483,7 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 	rt->RouteReservationActions(RRF::RESERVE, actioncallback);
 	ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, rt));
 	rt->RouteReservation(RRF::PROVISIONAL_RESERVE);
-	if(best_overlap) {
+	if (best_overlap) {
 		best_overlap->RouteReservationActions(RRF::RESERVE, actioncallback);
 		ActionRegisterFuture(std::make_shared<future_reservetrack>(*rt->start.track, action_time + 1, best_overlap));
 		best_overlap->RouteReservation(RRF::PROVISIONAL_RESERVE);
@@ -472,30 +495,30 @@ bool action_reservetrack_base::TryReserveRoute(const route *rt, world_time actio
 bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_time action_time,
 		std::function<void(const std::shared_ptr<future> &f)> error_handler) const {
 	genericsignal *sig = FastSignalCast(startsig);
-	if(!sig) {
+	if (!sig) {
 		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time + 1, &w,
 				"track/unreservation/fail", "track/reservation/notsignal"));
 		return false;
 	}
 
-	if(sig->GetSignalFlags() & GSF::AUTOSIGNAL) {
+	if (sig->GetSignalFlags() & GSF::AUTOSIGNAL) {
 		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time + 1, &w,
 				"track/unreservation/fail", "track/unreservation/autosignal"));
 		return false;
 	}
 
 	const route *rt = sig->GetCurrentForwardRoute();
-	if(!rt) {
+	if (!rt) {
 		error_handler(std::make_shared<future_genericusermessage_reason>(w, action_time + 1, &w,
 				"track/unreservation/fail", "track/notreserved"));
 		return false;
 	}
 
-	if(sig->GetSignalFlags() & GSF::APPROACHLOCKINGMODE)
+	if (sig->GetSignalFlags() & GSF::APPROACHLOCKINGMODE)
 		return true;    //don't try to unreserve again
 
 	//approach locking checks
-	if(sig->GetAspect() > 0) {
+	if (sig->GetAspect() > 0) {
 		bool approachlocking_engage = false;
 		unsigned int backaspect = 0;
 
@@ -510,18 +533,17 @@ bool action_reservetrack_base::TryUnreserveRoute(routingpoint *startsig, world_t
 
 		auto checkpiece = [&](const track_target_ptr &piece) -> bool {
 			track_circuit *tc = piece.track->GetTrackCircuit();
-			if(tc && tc->Occupied()) {
+			if (tc && tc->Occupied()) {
 				approachlocking_engage = true;    //found an occupied piece, train is on approach
 				return false;
-			}
-			else {
+			} else {
 				return true;
 			}
 		};
 
 		sig->BackwardsReservedTrackScan(checksignal, checkpiece);
 
-		if(approachlocking_engage) {
+		if (approachlocking_engage) {
 			ActionRegisterFuture(std::make_shared<future_signalflags>(*sig, action_time+1, GSF::APPROACHLOCKINGMODE, GSF::APPROACHLOCKINGMODE));
 			ActionRegisterFutureAction(*sig, action_time + rt->approachlocking_timeout, std::unique_ptr<action>(new action_approachlockingtimeout(w, *sig)));
 			return true;
@@ -550,13 +572,15 @@ void action_reservetrack_base::CancelApproachLocking(genericsignal *sig) const {
 
 	auto func = [&](future &f) {
 		future_action_wrapper *fa = dynamic_cast<future_action_wrapper *>(&f);
-		if(!fa)
+		if (!fa) {
 			return;
+		}
 
 		action_approachlockingtimeout *act = dynamic_cast<action_approachlockingtimeout *>(fa->act.get());
 
-		if(act)
+		if (act) {
 			ActionCancelFuture(f);
+		}
 	};
 	sig->EnumerateFutures(func);
 }
@@ -565,8 +589,9 @@ void action_reservetrack_routeop::Deserialise(const deserialiser_input &di, erro
 	action_reservetrack_base::Deserialise(di, ec);
 	DeserialiseRouteTargetByParentAndIndex(targetroute, di, ec, false);
 
-	if(!targetroute)
+	if (!targetroute) {
 		ec.RegisterNewError<error_deserialisation>(di, "Invalid track reservation action definition");
+	}
 }
 
 void action_reservetrack_routeop::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -578,12 +603,13 @@ void action_reservetrack_routeop::Serialise(serialiser_output &so, error_collect
 void action_reservetrack_sigop::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	action_reservetrack_base::Deserialise(di, ec);
 	std::string targetname;
-	if(CheckTransJsonValue(targetname, di, "target", ec)) {
+	if (CheckTransJsonValue(targetname, di, "target", ec)) {
 		target = FastSignalCast(w.FindTrackByName(targetname));
 	}
 
-	if(!target)
+	if (!target) {
 		ec.RegisterNewError<error_deserialisation>(di, "Invalid track reservation action definition");
+	}
 }
 
 void action_reservetrack_sigop::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -592,7 +618,7 @@ void action_reservetrack_sigop::Serialise(serialiser_output &so, error_collectio
 }
 
 void action_reservetrack::ExecuteAction() const {
-	if(!targetroute) return;
+	if (!targetroute) return;
 
 	TryReserveRoute(targetroute, action_time, [&](const std::shared_ptr<future> &f) {
 		ActionSendReplyFuture(f);
@@ -624,7 +650,7 @@ action_reservepath &action_reservepath::SetVias(via_list vias_) {
 }
 
 void action_reservepath::ExecuteAction() const {
-	if(!start) {
+	if (!start) {
 		ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(w, action_time + 1, &w,
 				"track/reservation/fail", "track/reservation/notsignal"));
 		return;
@@ -633,7 +659,7 @@ void action_reservepath::ExecuteAction() const {
 	std::vector<routingpoint::gmr_routeitem> routes;
 	unsigned int routecount = start->GetMatchingRoutes(routes, end, allowed_route_types, gmr_flags, extraflags, vias);
 
-	if(!routecount) {
+	if (!routecount) {
 		ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(w, action_time + 1, &w,
 				"track/reservation/fail", "track/reservation/noroute"));
 		return;
@@ -641,11 +667,11 @@ void action_reservepath::ExecuteAction() const {
 
 	std::vector<std::shared_ptr<future> > failmessages;
 
-	for(auto it = routes.begin(); it != routes.end(); ++it) {
-		if(it->rt->routecommonflags & route::RCF::EXITSIGCONTROL) {
+	for (auto it = routes.begin(); it != routes.end(); ++it) {
+		if (it->rt->routecommonflags & route::RCF::EXITSIGCONTROL) {
 			genericsignal *gs = FastSignalCast(it->rt->end.track, it->rt->end.direction);
-			if(gs) {
-				if(gs->GetCurrentForwardRoute()) {
+			if (gs) {
+				if (gs->GetCurrentForwardRoute()) {
 					ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(w, action_time + 1, &w,
 							"track/reservation/fail", "track/reservation/routesetfromexitsignal"));
 					return;
@@ -656,23 +682,26 @@ void action_reservepath::ExecuteAction() const {
 		genericsignal *startgs = FastSignalCast(it->rt->start.track, it->rt->start.direction);
 		bool isbackexitsigroute = false;
 		startgs->EnumerateCurrentBackwardsRoutes([&](const route *r) {
-			if(r->routecommonflags & route::RCF::EXITSIGCONTROL)
+			if (r->routecommonflags & route::RCF::EXITSIGCONTROL) {
 				isbackexitsigroute = true;
+			}
 		});
-		if(isbackexitsigroute) {
+		if (isbackexitsigroute) {
 			ActionSendReplyFuture(std::make_shared<future_genericusermessage_reason>(w, action_time + 1, &w,
 					"track/reservation/fail", "track/reservation/routesettothissignal"));
 			return;
 		}
 
 		bool success = TryReserveRoute(it->rt, action_time, [&](const std::shared_ptr<future> &f) {
-			if(it == routes.begin())
+			if (it == routes.begin()) {
 				failmessages.push_back(f);
+			}
 		});
-		if(success)
+		if (success) {
 			return;
+		}
 	}
-	for(auto &it : failmessages) {
+	for (auto &it : failmessages) {
 		ActionSendReplyFuture(it);
 	}
 }
@@ -680,10 +709,10 @@ void action_reservepath::ExecuteAction() const {
 void action_reservepath::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	action_reservetrack_base::Deserialise(di, ec);
 	std::string targetname;
-	if(CheckTransJsonValue(targetname, di, "start", ec)) {
+	if (CheckTransJsonValue(targetname, di, "start", ec)) {
 		start = FastRoutingpointCast(w.FindTrackByName(targetname));
 	}
-	if(CheckTransJsonValue(targetname, di, "end", ec)) {
+	if (CheckTransJsonValue(targetname, di, "end", ec)) {
 		end = FastRoutingpointCast(w.FindTrackByName(targetname));
 	}
 	CheckTransJsonValue(gmr_flags, di, "gmr_flags", ec);
@@ -692,14 +721,16 @@ void action_reservepath::Deserialise(const deserialiser_input &di, error_collect
 
 	auto viaparser = [&](const deserialiser_input &di, error_collection &ec) {
 		routingpoint *rp = FastRoutingpointCast(w.FindTrackByName(GetType<std::string>(di.json)));
-		if(rp)
+		if (rp) {
 			vias.push_back(rp);
+		}
 	};
 	vias.clear();
 	CheckIterateJsonArrayOrType<std::string>(di, "vias", "via", ec, viaparser);
 
-	if(!start)
+	if (!start) {
 		ec.RegisterNewError<error_deserialisation>(di, "Invalid path reservation action definition");
+	}
 }
 
 void action_reservepath::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -709,10 +740,10 @@ void action_reservepath::Serialise(serialiser_output &so, error_collection &ec) 
 	SerialiseValueJson(gmr_flags, so, "gmr_flags");
 	SerialiseValueJson(extraflags, so, "extraflags");
 	route_class::SerialiseProp("allowed_route_types", allowed_route_types, so);
-	if(vias.size()) {
+	if (vias.size()) {
 		so.json_out.String("vias");
 		so.json_out.StartArray();
-		for(auto &it : vias) {
+		for (auto &it : vias) {
 			so.json_out.String(it->GetSerialisationName());
 		}
 		so.json_out.EndArray();
@@ -720,7 +751,7 @@ void action_reservepath::Serialise(serialiser_output &so, error_collection &ec) 
 }
 
 void action_unreservetrack::ExecuteAction() const {
-	if(target) {
+	if (target) {
 		TryUnreserveRoute(target, action_time, [&](const std::shared_ptr<future> &f) {
 			ActionSendReplyFuture(f);
 		});
@@ -736,7 +767,7 @@ future_signalflags::future_signalflags(genericsignal &targ, world_time ft, GSF b
 
 void future_signalflags::ExecuteAction() {
 	genericsignal *sig = dynamic_cast<genericsignal *>(&GetTarget());
-	if(sig) {
+	if (sig) {
 		sig->SetSignalFlagsMasked(bits, mask);
 	}
 }
@@ -756,6 +787,7 @@ void future_signalflags::Serialise(serialiser_output &so, error_collection &ec) 
 void action_approachlockingtimeout::ExecuteAction() const {
 	ActionRegisterFuture(std::make_shared<future_signalflags>(*target, action_time + 1, GSF::ZERO, GSF::APPROACHLOCKINGMODE));
 	const route *rt = target->GetCurrentForwardRoute();
-	if(rt)
+	if (rt) {
 		GenericRouteUnreservation(rt, target, RRF::STOP_ON_OCCUPIED_TC);
+	}
 }

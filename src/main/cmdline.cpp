@@ -76,11 +76,10 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 	bool textinput = false;
 
 	auto set_game_action = [&](std::function<bool()> func) -> bool {
-		if(game_action) {
+		if (game_action) {
 			argerror(wxT("More than one new game/load game specified"));
 			return false;
-		}
-		else {
+		} else {
 			game_action = std::move(func);
 			return true;
 		}
@@ -91,47 +90,53 @@ bool grassapp::cmdlineproc(wxChar ** argv, int argc) {
 			argerror(cmdlineargerrorstr(args.LastError()));
 			return false;
 		}
-		switch(args.OptionId()) {
+
+		switch (args.OptionId()) {
 			case OPT_NEWGAME: {
 				wxString str1 = args.OptionArg();
-				if(!set_game_action([str1, this]() { return LoadGame(str1, wxT("")); }))
+				if (!set_game_action([str1, this]() { return LoadGame(str1, wxT("")); })) {
 					return false;
+				}
 				break;
 			}
+
 			case OPT_LOAD: {
-				if(args.m_nNextOption + 1 > args.m_nLastArg) {
+				if (args.m_nNextOption + 1 > args.m_nLastArg) {
 					argerror(cmdlineargerrorstr(SO_ARG_MISSING));
 					return false;
 				}
 				wxString str1 = args.OptionArg();
 				wxString str2 = args.m_argv[args.m_nNextOption++];
-				if(!set_game_action([str1, str2, this]() { return LoadGame(str1, str2); }))
+				if (!set_game_action([str1, str2, this]() { return LoadGame(str1, str2); })) {
 					return false;
+				}
 				break;
 			}
+
 			case OPT_TRAINLIST: {
 				trainlist = true;
 				break;
 			}
+
 			case OPT_TEXTCMDINPUTWIN: {
 				textinput = true;
 				break;
 			}
 		}
 	}
-	if(game_action) {
+
+	if (game_action) {
 		bool ok = game_action();
-		if(ok && trainlist) {
+		if (ok && trainlist) {
 			maingui::trainwin *trainlist = new maingui::trainwin(w, panelset, maingui::GetTrainwinColumnSet());
 			trainlist->Show(true);
 		}
-		if(ok && textinput) {
+		if (ok && textinput) {
 			maingui::cmdinputwin *cmdwin = new maingui::cmdinputwin(w, panelset);
 			cmdwin->Show(true);
 		}
 		return ok;
-	}
-	else {
+	} else {
 		return false;
 	}
 }

@@ -25,12 +25,15 @@
 inline wxString wxstrstd(const std::string &st) {
 	return wxString::FromUTF8(st.c_str(), st.length());
 }
+
 inline wxString wxstrstd(const char *ch) {
 	return wxString::FromUTF8(ch);
 }
+
 inline wxString wxstrstd(const char *ch, size_t len) {
 	return wxString::FromUTF8(ch, len);
 }
+
 inline std::string stdstrwx(const wxString &st) {
 	return std::string(st.ToUTF8(), st.Len());
 }

@@ -78,7 +78,7 @@ TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialis
 
 	test_fixture_world env(test_vc_deserialisation_1);
 
-	if(env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
 	checkvc(*(env.w), "VC1", 25000, 56098, 500000, 746000, 1000000, 1200000, 500, 100, 200, 50, 15000, 10000, "AC,diesel");

@@ -86,12 +86,11 @@ void CheckLookahead(const train *t, lookahead &l, const track_location &pos, std
 
 void CheckLookaheadResult(const track_location &pos, std::map<unsigned int, unsigned int> &map, unsigned int distance, unsigned int speed) {
 	auto it = map.find(distance);
-	if(it != map.end()) {
+	if (it != map.end()) {
 		INFO("CheckLookaheadResult: " << distance << " -> " << speed << " (" << pos << ")");
 		CHECK(it->second == speed);
 		map.erase(it);
-	}
-	else {
+	} else {
 		WARN("CheckLookaheadResult: No such result in map: " << distance << " -> " << speed << " (" << pos << ")");
 		CHECK(true == false);
 	}
@@ -99,7 +98,7 @@ void CheckLookaheadResult(const track_location &pos, std::map<unsigned int, unsi
 
 void FinaliseLookaheadCheck(const track_location &pos, std::map<unsigned int, unsigned int> &map) {
 	CHECK(map.empty() == true);
-	for(auto it : map) {
+	for (auto it : map) {
 		WARN("FinaliseLookaheadCheck: map still has values: " << it.first << " -> " << it.second << " (" << pos << ")");
 	}
 }
@@ -288,10 +287,11 @@ TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 		lookahead l;
 		std::map<unsigned int, unsigned int> map;
 		l.Init(t, pos, 0);
-		if(iserror)
+		if (iserror) {
 			CheckLookahead(t, l, pos, map, lookahead::LA_ERROR::TRACTION_UNSUITABLE, pos.GetTrackTargetPtr());
-		else
+		} else {
 			CheckLookahead(t, l, pos, map);
+		}
 		CheckLookaheadResult(pos, map, distance, 0);
 		FinaliseLookaheadCheck(pos, map);
 	};
@@ -343,14 +343,14 @@ TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserial
 	};
 	auto deserialise_lookahead = [&](lookahead &l, const std::string &json) {
 		rapidjson::Document dc;
-		if(dc.Parse<0>(json.c_str()).HasParseError()) {
+		if (dc.Parse<0>(json.c_str()).HasParseError()) {
 			env.ec.RegisterNewError<error_jsonparse>(json, dc.GetErrorOffset(), dc.GetParseError());
 			FAIL("JSON parsing error: \n" << env.ec);
 		}
 		deserialiser_input di(dc, "lookahead", "lookahead", env.w.get());
 		l.Deserialise(di, env.ec);
 		di.PostDeserialisePropCheck(env.ec);
-		if(env.ec.GetErrorCount()) { FAIL("JSON deserialisation error: \n" << env.ec); }
+		if (env.ec.GetErrorCount()) { FAIL("JSON deserialisation error: \n" << env.ec); }
 	};
 	auto compare_lookaheads = [&](lookahead &l1, lookahead &l2, const track_location &pos) {
 		std::forward_list<std::pair<unsigned int, unsigned int> > distances[2];
@@ -400,11 +400,12 @@ TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserial
 	unsigned int totaldistance = 500000;
 	unsigned int step = 1000;
 	unsigned int offset = 0;
-	while(true) {
+	while (true) {
 		INFO("State Test at offset: " << offset);
 		statetest(l1, l2, pos);
-		if(offset >= totaldistance)
+		if (offset >= totaldistance) {
 			break;
+		}
 		advance(step);
 		offset += step;
 	}

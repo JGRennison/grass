@@ -21,22 +21,22 @@
 
 std::string message_formatter::FormatMessage(const std::string &input) const {
 	std::string output;
-	for(auto it = input.begin(); it != input.end();) {
-		if(*it == '\\') {
+	for (auto it = input.begin(); it != input.end();) {
+		if (*it == '\\') {
 			++it;
-			if(it != input.end())
+			if (it != input.end()) {
 				output.push_back(*it);
-			else
+			} else {
 				break;
+			}
 			++it;
-		}
-		else if(*it == '$') {
+		} else if (*it == '$') {
 			++it;
-			if(it == input.end())
+			if (it == input.end()) {
 				break;
+			}
 			output.append(ExpandVariable(it, input.end()));
-		}
-		else {
+		} else {
 			output.push_back(*it);
 			++it;
 		}
@@ -55,39 +55,38 @@ void message_formatter::RegisterVariableString(const std::string &name, const st
 std::string message_formatter::ExpandVariable(std::string::const_iterator &begin, std::string::const_iterator end) const {
 	std::string varname;
 	std::string param;
-	for(; begin != end; ++begin) {
-		if(IsVarChar(*begin))
+	for (; begin != end; ++begin) {
+		if (IsVarChar(*begin)) {
 			varname.push_back(*begin);
-		else
+		} else {
 			break;
+		}
 	}
 
-	if(varname.empty()) return "";
+	if (varname.empty()) return "";
 
-	if(begin != end && *begin == '(') {
-		for(++begin; begin != end; ++begin) {
-			if(*begin == '\\') {
+	if (begin != end && *begin == '(') {
+		for (++begin; begin != end; ++begin) {
+			if (*begin == '\\') {
 				++begin;
-				if(begin != end)
+				if (begin != end) {
 					param.push_back(*begin);
-				else
+				} else {
 					break;
-			}
-			else if(*begin == ')') {
+				}
+			} else if (*begin == ')') {
 				++begin;
 				break;
-			}
-			else {
+			} else {
 				param.push_back(*begin);
 			}
 		}
 	}
 
 	auto targetvar = registered_variables.find(varname);
-	if(targetvar != registered_variables.end()) {
+	if (targetvar != registered_variables.end()) {
 		return targetvar->second(param);
-	}
-	else {
+	} else {
 		return "[No Such Variable]";
 	}
 }

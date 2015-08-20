@@ -24,15 +24,17 @@
 
 error_deserialisation::error_deserialisation(const deserialiser_input &di, const std::string &str) {
 	std::function<unsigned int (const deserialiser_input *, unsigned int)> f = [&](const deserialiser_input *des, unsigned int counter) {
-		if(des) {
+		if (des) {
 			counter = f(des->parent, counter);
 			msg << "\n\t" << counter << ": " << des->reference_name;
-			if(!des->type.empty())
+			if (!des->type.empty()) {
 				msg << ", Type: " << des->type;
-			if(des->json.IsObject()) {
+			}
+			if (des->json.IsObject()) {
 				const rapidjson::Value &nameval = des->json["name"];
-				if(IsType<std::string>(nameval))
+				if (IsType<std::string>(nameval)) {
 					msg << ", Name: " << GetType<std::string>(nameval);
+				}
 			}
 			counter++;
 		}
@@ -55,18 +57,16 @@ error_jsonparse::error_jsonparse(const std::string &json, size_t erroroffset, co
 	bool trail_start = false;
 	bool trail_end = false;
 	size_t linelen = strboundedlen_utf8(json, linestart, lineend);
-	if(linelen > 77) {
-		if(strboundedlen_utf8(json, linestart, erroroffset) <= 37) {
+	if (linelen > 77) {
+		if (strboundedlen_utf8(json, linestart, erroroffset) <= 37) {
 			//Trim end of string
 			trail_end = true;
 			lineend = stroffset_utf8(json, linestart, 71);
-		}
-		else if(strboundedlen_utf8(json, erroroffset, lineend) <= 36) {
+		} else if (strboundedlen_utf8(json, erroroffset, lineend) <= 36) {
 			//Trim start of string
 			trail_start = true;
 			linestart = stroffset_utf8(json, linestart, linelen - 71);
-		}
-		else {
+		} else {
 			//Trim both ends of string
 			lineend = stroffset_utf8(json, erroroffset, 36);
 			linestart = stroffset_utf8(json, erroroffset, -37);
@@ -76,13 +76,15 @@ error_jsonparse::error_jsonparse(const std::string &json, size_t erroroffset, co
 
 	msg << string_format("JSON Parsing error at offset: %d (line: %d, column: %d), Error: %s\n", erroroffset, lineno,
 			strboundedlen_utf8(json, reallinestart, erroroffset) + 1, parseerror);
-	if(trail_start)
+	if (trail_start) {
 		msg << "...";
+	}
 	msg << "\"";
 	msg << json.substr(linestart, lineend-linestart);
 	msg << "\"";
-	if(trail_end)
+	if (trail_end) {
 		msg << "...";
+	}
 	msg << "\n";
 	msg << std::string(1 + strboundedlen_utf8(json, linestart, erroroffset) + (trail_start?3:0), '.');
 	msg << "^\n";
@@ -90,21 +92,22 @@ error_jsonparse::error_jsonparse(const std::string &json, size_t erroroffset, co
 
 void serialisable_obj::DeserialiseObject(const deserialiser_input &di, error_collection &ec) {
 	di.seenprops.reserve(di.json.GetMemberCount());
-	if(di.objpreparse)
+	if (di.objpreparse) {
 		DeserialiseObject(*di.objpreparse, ec);
+	}
 	Deserialise(di, ec);
-	if(di.objpostparse)
+	if (di.objpostparse) {
 		DeserialiseObject(*di.objpostparse, ec);
+	}
 	di.PostDeserialisePropCheck(ec);
 }
 
 void deserialiser_input::PostDeserialisePropCheck(error_collection &ec) const {
-	if(seenprops.size() == json.GetMemberCount()) {
+	if (seenprops.size() == json.GetMemberCount()) {
 		return;
-	}
-	else {
-		for(auto it = json.MemberBegin(); it != json.MemberEnd(); ++it) {
-			if(std::find_if(seenprops.begin(), seenprops.end(),
+	} else {
+		for (auto it = json.MemberBegin(); it != json.MemberEnd(); ++it) {
+			if (std::find_if (seenprops.begin(), seenprops.end(),
 					[&](const char *& s) {
 						return strcmp(it->name.GetString(), s) == 0;
 					}) == seenprops.end()) {
@@ -129,12 +132,15 @@ std::shared_ptr<deserialiser_input::deserialiser_input_clone_with_ancestors> des
 	std::function<deserialiser_input *(const deserialiser_input *)> clone = [&](const deserialiser_input *in) -> deserialiser_input * {
 		deserialiser_input *out =  in->Clone();
 		items.emplace_back(out);
-		if(out->parent)
+		if (out->parent) {
 			out->parent = clone(out->parent);
-		if(out->objpreparse)
+		}
+		if (out->objpreparse) {
 			out->objpreparse = clone(out->objpreparse);
-		if(out->objpostparse)
+		}
+		if (out->objpostparse) {
 			out->objpostparse = clone(out->objpostparse);
+		}
 		return out;
 	};
 	deserialiser_input *top = clone(this);
@@ -144,25 +150,23 @@ std::shared_ptr<deserialiser_input::deserialiser_input_clone_with_ancestors> des
 bool CheckIterateJsonArrayOrValue(const deserialiser_input &di, const char *prop, const std::string &type_name, error_collection &ec,
 		std::function<void(const deserialiser_input &di, error_collection &ec)> func, bool arrayonly) {
 	deserialiser_input subdi(di.json[prop], type_name, prop, di);
-	if(!subdi.json.IsNull())
+	if (!subdi.json.IsNull()) {
 		di.RegisterProp(prop);
-	else
+	} else {
 		return false;
+	}
 
-	if(subdi.json.IsArray()) {
+	if (subdi.json.IsArray()) {
 		subdi.type += "_array";
-		for(rapidjson::SizeType i = 0; i < subdi.json.Size(); i++) {
+		for (rapidjson::SizeType i = 0; i < subdi.json.Size(); i++) {
 			func(deserialiser_input(subdi.json[i], type_name, MkArrayRefName(i), subdi), ec);
 		}
 		return true;
-	}
-	else if(!arrayonly) {
+	} else if (!arrayonly) {
 		func(subdi, ec);
 		return true;
-	}
-	else {
+	} else {
 		CheckJsonTypeAndReportError<json_array>(subdi, subdi.reference_name.c_str(), subdi.json, ec);
 		return false;
 	}
-
 }

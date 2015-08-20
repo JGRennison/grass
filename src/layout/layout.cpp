@@ -48,8 +48,8 @@ namespace guilayout {
 	} };
 
 	static bool DeserialiseLayoutDirectionName(guilayout::LAYOUT_DIR &dir, std::string str) {
-		for(auto &it : layout_direction_names) {
-			if(it.second == str) {
+		for (auto &it : layout_direction_names) {
+			if (it.second == str) {
 				dir = it.first;
 				return true;
 			}
@@ -65,19 +65,18 @@ namespace guilayout {
 	} };
 
 	LAYOUT_DIR EdgesToDirection(LAYOUT_DIR in, LAYOUT_DIR out) {
-		if(!IsEdgeLayoutDirection(in) || !IsEdgeLayoutDirection(out))
+		if (!IsEdgeLayoutDirection(in) || !IsEdgeLayoutDirection(out)) {
 			return LAYOUT_DIR::NULLDIR;
+		}
 
 		LAYOUT_DIR in_dir = ReverseLayoutDirection(in);
 
-		if(in_dir == out)
-			return in_dir;
+		if (in_dir == out) return in_dir;
 
-		for(auto &it : layout_table) {
-			if(it.step1 == in_dir && it.step2 == out) {
+		for (auto &it : layout_table) {
+			if (it.step1 == in_dir && it.step2 == out) {
 				return it.dir;
-			}
-			else if(it.step2 == in_dir && it.step1 == out) {
+			} else if (it.step2 == in_dir && it.step1 == out) {
 				return it.altstep;
 			}
 		}
@@ -92,11 +91,12 @@ struct flagtyperemover<C, typename std::enable_if<std::is_convertible<C, guilayo
 };
 
 template <> inline bool IsType<guilayout::LAYOUT_DIR>(const rapidjson::Value& val) {
-	if(val.IsString()) {
+	if (val.IsString()) {
 		guilayout::LAYOUT_DIR dir = guilayout::LAYOUT_DIR::NULLDIR;
 		return guilayout::DeserialiseLayoutDirectionName(dir, val.GetString());
+	} else {
+		return false;
 	}
-	else return false;
 }
 template <> inline guilayout::LAYOUT_DIR GetType<guilayout::LAYOUT_DIR>(const rapidjson::Value& val) {
 	guilayout::LAYOUT_DIR dir = guilayout::LAYOUT_DIR::NULLDIR;
@@ -104,8 +104,8 @@ template <> inline guilayout::LAYOUT_DIR GetType<guilayout::LAYOUT_DIR>(const ra
 	return dir;
 }
 template <> inline void SetType<guilayout::LAYOUT_DIR>(Handler &out, guilayout::LAYOUT_DIR val) {
-	for(auto &it : guilayout::layout_direction_names) {
-		if(it.first == val) {
+	for (auto &it : guilayout::layout_direction_names) {
+		if (it.first == val) {
 			out.String(it.second);
 			return;
 		}
@@ -127,33 +127,39 @@ std::string guilayout::layoutgui_obj::GetFriendlyName() const {
 };
 
 void guilayout::layout_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	if(CheckTransJsonValue(x, di, "x", ec))
+	if (CheckTransJsonValue(x, di, "x", ec)) {
 		setmembers |= LOSM_X;
-	if(CheckTransJsonValue(y, di, "y", ec))
+	}
+	if (CheckTransJsonValue(y, di, "y", ec)) {
 		setmembers |= LOSM_Y;
+	}
 }
 
 void guilayout::layouttrack_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	guilayout::layout_obj::Deserialise(di, ec);
-	if(CheckTransJsonValue(length, di, "length", ec))
+	if (CheckTransJsonValue(length, di, "length", ec)) {
 		setmembers |= LTOSM_LENGTH;
-	if(CheckTransJsonValue(layoutdirection, di, "direction", ec))
+	}
+	if (CheckTransJsonValue(layoutdirection, di, "direction", ec)) {
 		setmembers |= LTOSM_LAYOUTDIR;
-	if(CheckTransJsonValue(track_type, di, "tracktype", ec))
+	}
+	if (CheckTransJsonValue(track_type, di, "tracktype", ec)) {
 		setmembers |= LTOSM_TRACKTYPE;
+	}
 
 	deserialiser_input pointsdi(di.json["pointslayout"], "pointslayout", "pointslayout", di);
-	if(pointsdi.json.IsObject()) {
+	if (pointsdi.json.IsObject()) {
 		points_layout.reset(new points_layout_info());
 		auto parse_dir = [&](LAYOUT_DIR &out, const char *name) {
 			CheckTransJsonValue(out, pointsdi, name, ec);
-			switch(out) {
+			switch (out) {
 				case LAYOUT_DIR::U:
 				case LAYOUT_DIR::D:
 				case LAYOUT_DIR::L:
 				case LAYOUT_DIR::R:
 					// OK
 					break;
+
 				default:
 					ec.RegisterNewError<error_layout>(*this, string_format("points layout: direction for edge: '%s' is invalid", name));
 					break;
@@ -162,7 +168,7 @@ void guilayout::layouttrack_obj::Deserialise(const deserialiser_input &di, error
 		parse_dir(points_layout->facing, "facing");
 		parse_dir(points_layout->normal, "normal");
 		parse_dir(points_layout->reverse, "reverse");
-		if(points_layout->facing == points_layout->normal ||
+		if (points_layout->facing == points_layout->normal ||
 				points_layout->facing == points_layout->reverse ||
 				points_layout->normal == points_layout->reverse) {
 			ec.RegisterNewError<error_layout>(*this, "points layout: duplicate edges are not allowed");
@@ -173,18 +179,22 @@ void guilayout::layouttrack_obj::Deserialise(const deserialiser_input &di, error
 
 void guilayout::layoutberth_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	guilayout::layout_obj::Deserialise(di, ec);
-	if(CheckTransJsonValue(length, di, "length", ec))
+	if (CheckTransJsonValue(length, di, "length", ec)) {
 		setmembers |= LBOSM_LENGTH;
+	}
 }
 
 void guilayout::layoutgui_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	guilayout::layout_obj::Deserialise(di, ec);
-	if(CheckTransJsonValue(dx, di, "dx", ec))
+	if (CheckTransJsonValue(dx, di, "dx", ec)) {
 		setmembers |= LGOSM_DX;
-	if(CheckTransJsonValue(dy, di, "dy", ec))
+	}
+	if (CheckTransJsonValue(dy, di, "dy", ec)) {
 		setmembers |= LGOSM_DY;
-	if(CheckTransJsonValue(graphics, di, "graphics", ec))
+	}
+	if (CheckTransJsonValue(graphics, di, "graphics", ec)) {
 		setmembers |= LGOSM_GRAPHICS;
+	}
 }
 
 static void RegisterUpdateHook(guilayout::world_layout &wl, const generictrack *gt, guilayout::layout_obj *obj) {
@@ -193,13 +203,14 @@ static void RegisterUpdateHook(guilayout::world_layout &wl, const generictrack *
 	//NB: casting away constness to insert update hook!
 	const_cast<generictrack *>(gt)->AddUpdateHook([wlptr, obj](updatable_obj*, world &) {
 		std::shared_ptr<guilayout::world_layout> wl = wlptr.lock();
-		if(wl)
+		if (wl) {
 			wl->MarkUpdated(obj);
+		}
 	});
 }
 
 void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec) {
-	if(!(setmembers & LOSM_X) || !(setmembers & LOSM_Y)) {
+	if (!(setmembers & LOSM_X) || !(setmembers & LOSM_Y)) {
 		ec.RegisterNewError<error_layout>(*this, "x and/or y coordinate missing: layout track pieces must be positioned absolutely");
 		return;
 	}
@@ -208,36 +219,35 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 	bool expecting_points_layout = false;
 
 	const genericpoints *gp = dynamic_cast<const genericpoints *>(gt);
-	if(gp) {
+	if (gp) {
 		expecting_layout_direction = false;
 		const doubleslip *ds = dynamic_cast<const doubleslip *>(gp);
-		if(ds) {
+		if (ds) {
 			// TODO
-		}
-		else {
+		} else {
 			expecting_points_layout = true;
 		}
 	}
 
 	const springpoints *sp = dynamic_cast<const springpoints *>(gt);
-	if(sp) {
+	if (sp) {
 		expecting_layout_direction = false;
 		expecting_points_layout = true;
 	}
 
-	if(expecting_layout_direction && layoutdirection == LAYOUT_DIR::NULLDIR) {
+	if (expecting_layout_direction && layoutdirection == LAYOUT_DIR::NULLDIR) {
 		ec.RegisterNewError<error_layout>(*this, "No layout direction given.");
 		return;
 	}
-	if(!expecting_layout_direction && (setmembers & LTOSM_LAYOUTDIR)) {
+	if (!expecting_layout_direction && (setmembers & LTOSM_LAYOUTDIR)) {
 		ec.RegisterNewError<error_layout>(*this, "Unexpected layout direction.");
 		return;
 	}
-	if(expecting_points_layout && !points_layout) {
+	if (expecting_points_layout && !points_layout) {
 		ec.RegisterNewError<error_layout>(*this, "No points layout given.");
 		return;
 	}
-	if(!expecting_points_layout && points_layout) {
+	if (!expecting_points_layout && points_layout) {
 		ec.RegisterNewError<error_layout>(*this, "Unexpected points layout.");
 		return;
 	}
@@ -245,37 +255,38 @@ void guilayout::layouttrack_obj::Process(world_layout &wl, error_collection &ec)
 	wl.AddTrackLayoutObj(gt, std::static_pointer_cast<layouttrack_obj>(shared_from_this()));
 
 	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
-	if(dmod) {
+	if (dmod) {
 		drawfunction = std::move(dmod->GetDrawTrack(std::static_pointer_cast<layouttrack_obj>(shared_from_this()), ec));
 		RegisterUpdateHook(wl, gt, this);
 	}
 }
 
 void guilayout::layoutberth_obj::Process(world_layout &wl, error_collection &ec) {
-	if(!(setmembers & LOSM_X) || !(setmembers & LOSM_Y)) {
+	if (!(setmembers & LOSM_X) || !(setmembers & LOSM_Y)) {
 		ec.RegisterNewError<error_layout>(*this, "x and/or y coordinate missing: layout berths must be positioned absolutely");
 		return;
 	}
 
 	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
-	if(dmod) {
+	if (dmod) {
 		drawfunction = std::move(dmod->GetDrawBerth(std::static_pointer_cast<layoutberth_obj>(shared_from_this()), ec));
 		RegisterUpdateHook(wl, gt, this);
 	}
 }
 
 void guilayout::layoutgui_obj::Process(world_layout &wl, error_collection &ec) {
-	if(!(setmembers & LOSM_X) || !(setmembers & LOSM_Y)) {
+	if (!(setmembers & LOSM_X) || !(setmembers & LOSM_Y)) {
 		ec.RegisterNewError<error_layout>(*this, "x and/or y coordinate missing: gui layout objects must be positioned absolutely");
 		return;
 	}
 	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
-	if(dmod)
+	if (dmod) {
 		drawfunction = std::move(dmod->GetDrawObj(std::static_pointer_cast<layoutgui_obj>(shared_from_this()), ec));
+	}
 }
 
 guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length, std::function<void(int, int, LAYOUT_DIR)> stepfunc) {
-	if(ld == LAYOUT_DIR::NULLDIR || !length) {
+	if (ld == LAYOUT_DIR::NULLDIR || !length) {
 		return layoutoffsetdirectionresult{ startx, starty, startx, starty, ld };
 	}
 
@@ -284,14 +295,13 @@ guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int star
 	LAYOUT_DIR stepend1 = ld;
 	LAYOUT_DIR stepend2 = ld;
 
-	for(auto &it : layout_table) {
-		if(it.dir == ld) {
+	for (auto &it : layout_table) {
+		if (it.dir == ld) {
 			step1 = it.step2;
 			step2 = it.step1;
 			stepend1 = it.altstep;
 			break;
-		}
-		else if(it.altstep == ld) {
+		} else if (it.altstep == ld) {
 			step1 = it.step1;
 			step2 = it.step2;
 			stepend1 = it.dir;
@@ -306,41 +316,49 @@ guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int star
 	LAYOUT_DIR outld = ld;
 
 	auto stepcarddir = [&](LAYOUT_DIR ldcard) {
-		switch(ldcard) {
+		switch (ldcard) {
 			case LAYOUT_DIR::U:
-				next_y--; break;
+				next_y--;
+				break;
+
 			case LAYOUT_DIR::D:
-				next_y++; break;
+				next_y++;
+				break;
+
 			case LAYOUT_DIR::L:
-				next_x--; break;
+				next_x--;
+				break;
+
 			case LAYOUT_DIR::R:
-				next_x++; break;
+				next_x++;
+				break;
+
 			default:
 				break;
 		}
 
-		if(length == 2) {
+		if (length == 2) {
 			end_x = next_x;
 			end_y = next_y;
 		}
 	};
 
-	while(true) {
-		if(stepfunc)
+	while (true) {
+		if (stepfunc) {
 			stepfunc(next_x, next_y, outld);
+		}
 		stepcarddir(step1);
 		outld = stepend1;
 		length--;
-		if(!length)
-			break;
+		if (!length) break;
 
-		if(stepfunc)
+		if (stepfunc) {
 			stepfunc(next_x, next_y, outld);
+		}
 		stepcarddir(step2);
 		outld = stepend2;
 		length--;
-		if(!length)
-			break;
+		if (!length) break;
 	}
 
 	return layoutoffsetdirectionresult { end_x, end_y, next_x, next_y, outld };
@@ -350,8 +368,7 @@ void guilayout::world_layout::SetWorldSerialisationLayout(world_deserialisation 
 	std::weak_ptr<world_layout> wl_weak = shared_from_this();
 	ws.gui_layout_generictrack = [wl_weak](const generictrack *gt, const deserialiser_input &di, error_collection &ec) {
 		std::shared_ptr<world_layout> wl = wl_weak.lock();
-		if(!wl)
-			return;
+		if (!wl) return;
 
 		std::shared_ptr<layouttrack_obj> obj = std::make_shared<layouttrack_obj>(gt);
 		obj->Deserialise(di, ec);
@@ -360,8 +377,7 @@ void guilayout::world_layout::SetWorldSerialisationLayout(world_deserialisation 
 	};
 	ws.gui_layout_trackberth = [wl_weak](const trackberth *b, const generictrack *gt, const deserialiser_input &di, error_collection &ec) {
 		std::shared_ptr<world_layout> wl = wl_weak.lock();
-		if(!wl)
-			return;
+		if (!wl) return;
 
 		std::shared_ptr<layoutberth_obj> obj = std::make_shared<layoutberth_obj>(gt, b);
 		obj->Deserialise(di, ec);
@@ -370,8 +386,7 @@ void guilayout::world_layout::SetWorldSerialisationLayout(world_deserialisation 
 	};
 	ws.gui_layout_guiobject = [wl_weak](const deserialiser_input &di, error_collection &ec) {
 		std::shared_ptr<world_layout> wl = wl_weak.lock();
-		if(!wl)
-			return;
+		if (!wl) return;
 
 		std::shared_ptr<layoutgui_obj> obj = std::make_shared<layoutgui_obj>();
 		obj->Deserialise(di, ec);
@@ -385,7 +400,7 @@ void guilayout::world_layout::AddLayoutObj(const std::shared_ptr<layout_obj> &ob
 }
 
 void guilayout::world_layout::ProcessLayoutObjSet(error_collection &ec) {
-	for(auto &it : objs) {
+	for (auto &it : objs) {
 		it->Process(*this, ec);
 	}
 }
@@ -393,7 +408,7 @@ void guilayout::world_layout::ProcessLayoutObjSet(error_collection &ec) {
 void guilayout::world_layout::GetTrackLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<guilayout::layouttrack_obj> > &output) {
 	decltype(tracktolayoutmap)::iterator start, end;
 	std::tie(start, end) = tracktolayoutmap.equal_range(targetgt);
-	for(auto it = start; it != end; ++it) {
+	for (auto it = start; it != end; ++it) {
 		output.emplace_back(it->second);
 	}
 }
@@ -401,7 +416,7 @@ void guilayout::world_layout::GetTrackLayoutObjs(const layout_obj &src, const ge
 void guilayout::world_layout::GetTrackBerthLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<guilayout::layoutberth_obj> > &output) {
 	decltype(berthtolayoutmap)::iterator start, end;
 	std::tie(start, end) = berthtolayoutmap.equal_range(targetgt);
-	for(auto it = start; it != end; ++it) {
+	for (auto it = start; it != end; ++it) {
 		output.emplace_back(it->second);
 	}
 }
@@ -411,12 +426,13 @@ guilayout::pos_sprite_desc &guilayout::world_layout::GetLocationRef(int x, int y
 
 	auto prev = psd_list.before_begin();
 	auto cur = std::next(prev);
-	for(; cur != psd_list.end(); prev = cur, ++cur) {
-		if(level == cur->level) {
+	for (; cur != psd_list.end(); prev = cur, ++cur) {
+		if (level == cur->level) {
 			return *cur;
 		}
-		if(level > cur->level)
+		if (level > cur->level) {
 			break;
+		}
 	}
 
 	//couldn't find existing, make a new one
@@ -447,22 +463,22 @@ void guilayout::world_layout::SetTextChar(int x, int y, std::unique_ptr<draw::dr
 
 void guilayout::world_layout::ClearSpriteLevel(int x, int y, int level) {
 	auto it = location_map.find(std::make_pair(x, y));
-	if(it == location_map.end())
+	if (it == location_map.end()) {
 		return;
+	}
 
 	std::forward_list<pos_sprite_desc> &psd_list = it->second;
 
-	psd_list.remove_if([&](pos_sprite_desc &p) {
-		if(p.level == level) {
+	psd_list.remove_if ([&](pos_sprite_desc &p) {
+		if (p.level == level) {
 			redraw_map.insert(std::make_pair(x, y));
 			RemoveSpriteLevelOptions(p, x, y, level);
 			return true;
-		}
-		else {
+		} else {
 			return false;
 		}
 	});
-	if(psd_list.empty()) {
+	if (psd_list.empty()) {
 		location_map.erase(it);
 	}
 
@@ -473,8 +489,9 @@ int guilayout::world_layout::SetTextString(int startx, int y, std::unique_ptr<dr
 	std::unique_ptr<draw::drawtextchar> tdt = std::move(dt);
 
 	int len = strlen_utf8(tdt->text);
-	if(len > maxlength)
+	if (len > maxlength) {
 		len = maxlength;
+	}
 
 	auto puttext = [&](int x, std::string text) {
 		std::unique_ptr<draw::drawtextchar> cdt(new draw::drawtextchar);
@@ -485,13 +502,13 @@ int guilayout::world_layout::SetTextString(int startx, int y, std::unique_ptr<dr
 	};
 
 	const char *str = tdt->text.c_str();
-	for(int i = 0; i < len; i++) {
+	for (int i = 0; i < len; i++) {
 		int bytes = utf8firsttonumbytes(*str);
 		puttext(startx + i, std::string(str, bytes));
 		str += bytes;
 	}
-	if(minlength >= 0 && len < minlength) {
-		for(int i = len; i < minlength; i++) {
+	if (minlength >= 0 && len < minlength) {
+		for (int i = len; i < minlength; i++) {
 			puttext(startx + i, " ");
 		}
 		len = minlength;
@@ -501,25 +518,28 @@ int guilayout::world_layout::SetTextString(int startx, int y, std::unique_ptr<dr
 
 const guilayout::pos_sprite_desc *guilayout::world_layout::GetSprite(int x, int y) {
 	const auto &it = location_map.find(std::make_pair(x, y));
-	if(it == location_map.end())
+	if (it == location_map.end()) {
 		return nullptr;
+	}
 
 	std::forward_list<pos_sprite_desc> &psd_list = it->second;
-	if(!psd_list.empty())
+	if (!psd_list.empty()) {
 		return &(psd_list.front());
-	else
+	} else {
 		return nullptr;
+	}
 }
 
 //*1 are inclusive limits, *2 are exclusive limits
 void guilayout::world_layout::GetSpritesInRect(int x1, int x2, int y1, int y2, std::map<std::pair<int, int>, const guilayout::pos_sprite_desc *> &sprites) const {
-	for(const auto &it : location_map) {
+	for (const auto &it : location_map) {
 		int x, y;
 		std::tie(x, y) = it.first;
-		if(x >= x1 && x < x2 && y >= y1 && y < y2) {
+		if (x >= x1 && x < x2 && y >= y1 && y < y2) {
 			const std::forward_list<pos_sprite_desc> &psd_list = it.second;
-			if(!psd_list.empty())
+			if (!psd_list.empty()) {
 				sprites[it.first] = &(psd_list.front());
+			}
 		}
 	}
 }
@@ -528,20 +548,16 @@ void guilayout::world_layout::GetLayoutExtents(int &x1, int &x2, int &y1, int &y
 	x1 = y1 = std::numeric_limits<int>::max();
 	x2 = y2 = std::numeric_limits<int>::lowest();
 
-	for(const auto &it : location_map) {
+	for (const auto &it : location_map) {
 		int x, y;
 		std::tie(x, y) = it.first;
-		if(x < x1)
-			x1 = x;
-		if(x > x2)
-			x2 = x;
-		if(y < y1)
-			y1 = y;
-		if(y > y2)
-			y2 = y;
+		if (x < x1) x1 = x;
+		if (x > x2) x2 = x;
+		if (y < y1) y1 = y;
+		if (y > y2) y2 = y;
 	}
 
-	if(x1 > x2 || y1 > y2) {
+	if (x1 > x2 || y1 > y2) {
 		x1 = y1 = 0;
 		x2 = y2 = -1;
 	}
@@ -554,16 +570,16 @@ void guilayout::world_layout::GetLayoutExtents(int &x1, int &x2, int &y1, int &y
 //This should be used for all set/remove operations involving the options field of pos_sprite_desc objects
 //This handles (un)registering refresh intervals
 void guilayout::world_layout::ChangeSpriteLevelOptions(pos_sprite_desc &psd, int x, int y, int level, std::shared_ptr<const pos_sprite_desc_opts> options) {
-	if(psd.options) {
-		if(psd.options->refresh_interval_ms) {
-			refresh_items[psd.options->refresh_interval_ms].remove_if([&](const refresh_item &r) {
+	if (psd.options) {
+		if (psd.options->refresh_interval_ms) {
+			refresh_items[psd.options->refresh_interval_ms].remove_if ([&](const refresh_item &r) {
 				return r.x == x && r.y == y && r.level == level;
 			});
 		}
 	}
 	psd.options = options;
-	if(options) {
-		if(options->refresh_interval_ms) {
+	if (options) {
+		if (options->refresh_interval_ms) {
 			refresh_items[options->refresh_interval_ms].push_front(refresh_item({x, y, level, psd.owner}));
 		}
 	}
@@ -571,15 +587,15 @@ void guilayout::world_layout::ChangeSpriteLevelOptions(pos_sprite_desc &psd, int
 
 //This adds layout objects which have refresh intervals to the updated list, as necessary
 void guilayout::world_layout::LayoutTimeStep(world_time oldtime, world_time newtime) {
-	for(auto it : refresh_items) {
+	for (auto it : refresh_items) {
 		unsigned int time_ms = it.first;
 		unsigned int div = oldtime / time_ms;
-		if(newtime >= time_ms * (div + 1)) {
+		if (newtime >= time_ms * (div + 1)) {
 			//need to update these objects
 			auto rl = it.second;
-			for(auto &jt : rl) {
+			for (auto &jt : rl) {
 				std::shared_ptr<layout_obj> obj = jt.owner.lock();
-				if(obj) {
+				if (obj) {
 					MarkUpdated(obj.get());
 				}
 			}

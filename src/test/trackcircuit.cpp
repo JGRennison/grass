@@ -89,11 +89,12 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	};
 
 	auto hasroute = [&](generictrack *piece, const route *r) -> bool {
-		if(!piece) return false;
+		if (!piece) return false;
 		bool found = false;
 		piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
-			if(reserved_route == r)
+			if (reserved_route == r) {
 				found = true;
+			}
 		}, RRF::RESERVE);
 		return found;
 	};
@@ -101,26 +102,24 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	auto checkstate = [&](generictrack *start, generictrack *end, const route *rt) {
 		std::function<void(generictrack *piece)> checkpiece = [&](generictrack *piece) {
 			CHECK(piece != nullptr);
-			if(!piece)
-				return;
+			if (!piece) return;
 			bool found = false;
 			piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
-				if(reserved_route == rt) {
+				if (reserved_route == rt) {
 					INFO("checkstate: piece: " << piece->GetName());
 					found = true;
-					if(piece == end) {
+					if (piece == end) {
 						CHECK(hasroute(piece->GetConnectingPieceByIndex(r_direction, r_index).track, reserved_route) == false);
-					}
-					else {
+					} else {
 						checkpiece(piece->GetConnectingPieceByIndex(r_direction, r_index).track);
-						if(piece == start) {
+						if (piece == start) {
 							CHECK(hasroute(piece->GetEdgeConnectingPiece(r_direction).track, reserved_route) == false);
 						}
 					}
 				}
 			}, RRF::RESERVE);
 			CHECK(found == true);
-			if(found != true) {
+			if (found != true) {
 				WARN("Expected route to be reserved at piece " << piece);
 			}
 		};
@@ -132,16 +131,17 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 		auto checkpiece = [&](generictrack *piece) {
 			bool found = false;
 			piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
-				if(reserved_route == rt)
+				if (reserved_route == rt) {
 					found = true;
+				}
 			}, RRF::RESERVE);
-			if(found) {
+			if (found) {
 				WARN("Piece unexpectedly reserved: " << piece->GetName());
 			}
 			CHECK(found == false);
 		};
 		checkpiece(rt->start.track);
-		for(auto &it : rt->pieces) {
+		for (auto &it : rt->pieces) {
 			checkpiece(it.location.track);
 		}
 		checkpiece(rt->end.track);
@@ -241,7 +241,7 @@ TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 	genericsignal *s3 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S3"));
 	generictrack *t[7];
 	trackberth *b[7];
-	for(unsigned int i = 0; i < sizeof(t)/sizeof(t[0]); i++) {
+	for (unsigned int i = 0; i < sizeof(t)/sizeof(t[0]); i++) {
 		INFO("Load loop: " << i);
 		t[i] = PTR_CHECK(env.w->FindTrackByName(string_format("TS%d", i)));
 		b[i] = t[i]->GetBerth();
@@ -269,13 +269,12 @@ TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 		INFO("Berth advance: " << index << ", expected berth: " << berthindex);
 		PTR_CHECK(t[index]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
 		PTR_CHECK(t[index-1]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
-		for(unsigned int i = 0; i < sizeof(b)/sizeof(b[0]); i++) {
+		for (unsigned int i = 0; i < sizeof(b)/sizeof(b[0]); i++) {
 			INFO("Testing berth: " << i << ", expected berth: " << berthindex);
-			if(i == berthindex) {
+			if (i == berthindex) {
 				REQUIRE(b[i] != 0);
 				CHECK(b[i]->contents == "test");
-			}
-			else if(b[i]) {
+			} else if (b[i]) {
 				CHECK(b[i]->contents == "");
 			}
 		}
@@ -340,7 +339,7 @@ TEST_CASE( "berth/step/3", "Berth stepping test no 3: check stepping when route 
 	env.w->SubmitAction(action_reservepath(*(env.w), s2, c));
 	env.w->GameStep(100000);    //give points enough time to move
 	CHECK(env.w->GetLogText() == "");
-	if(env.ec.GetErrorCount()) {
+	if (env.ec.GetErrorCount()) {
 		FAIL("Error Collection: " << env.ec);
 	}
 

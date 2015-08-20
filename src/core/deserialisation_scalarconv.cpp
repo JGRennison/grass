@@ -39,63 +39,69 @@ namespace dsconv {
 		bool seennum = false;
 		unsigned int pointshift = 0;
 		auto it = in.cbegin();
-		for(; it != in.cend(); ++it) {
-			if(!isblank(*it))
+		for (; it != in.cend(); ++it) {
+			if (!isblank(*it)) {
 				break;
+			}
 		}
-		for(; it != in.cend(); ++it) {
-			if(*it >= '0' && *it <= '9') {
+		for (; it != in.cend(); ++it) {
+			if (*it >= '0' && *it <= '9') {
 				uint64_t newvalue = (value * 10) + (*it - '0');
-				if(newvalue < value)
+				if (newvalue < value) {
 					overflow = true;
+				}
 				value = newvalue;
 				seennum = true;
-				if(seenpoint)
+				if (seenpoint) {
 					pointshift++;
-			}
-			else if(*it == '.' && !seenpoint) {
+				}
+			} else if (*it == '.' && !seenpoint) {
 				seenpoint = true;
-			}
-			else {
+			} else {
 				break;
 			}
 		}
-		if(!seennum)
+		if (!seennum)
 			return false;
-		for(; it != in.cend(); ++it) {
-			if(!isblank(*it))
+		for (; it != in.cend(); ++it) {
+			if (!isblank(*it)) {
 				break;
+			}
 		}
 		std::string postfix(it, in.cend());
-		if(!postfix.empty()) {
+		if (!postfix.empty()) {
 			bool found = false;
-			for(auto pf : postfixes) {
-				if(pf.postfix == postfix) {
+			for (auto pf : postfixes) {
+				if (pf.postfix == postfix) {
 					uint64_t newvalue = value * ((uint64_t) pf.multiplier);
-					if(newvalue / ((uint64_t) pf.multiplier) != value)
+					if (newvalue / ((uint64_t) pf.multiplier) != value) {
 						overflow = true;    //inefficient overflow check
+					}
 					value = newvalue >> pf.postshift;
 					found = true;
 				}
 			}
-			if(!found) {
+			if (!found) {
 				ec.RegisterNewError<generic_error_obj>("Could not find scalar postfix: " + postfix + ", for input: " + in + ", of type: " + type);
 				return false;
 			}
 		}
-		if(pointshift) {
+		if (pointshift) {
 			uint64_t pshift = 10;
-			for(unsigned int i = 1; i < pointshift; i++)
+			for (unsigned int i = 1; i < pointshift; i++) {
 				pshift *= 10;
+			}
 			value /= pshift;
 		}
 
-		if(overflow) {
-			ec.RegisterNewError<generic_error_obj>("Integer wrap-around detected for input: " + in + ", of type: " + type + ", use a smaller value/less significant figures");
+		if (overflow) {
+			ec.RegisterNewError<generic_error_obj>("Integer wrap-around detected for input: " + in + ", of type: " + type +
+					", use a smaller value/less significant figures");
 			return false;
 		}
-		if(ok)
+		if (ok) {
 			out = value;
+		}
 		return ok;
 	}
 

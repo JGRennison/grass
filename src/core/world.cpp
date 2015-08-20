@@ -45,51 +45,49 @@ void world::GameStep(world_time delta) {
 
 	futures.ExecuteUpTo(gametime);
 
-	for(auto it = tick_update_list.begin(); it != tick_update_list.end(); ++it) {
+	for (auto it = tick_update_list.begin(); it != tick_update_list.end(); ++it) {
 		(*it)->TrackTick();
 	}
-	for(auto it = all_trains.begin(); it != all_trains.end(); ) {
+	for (auto it = all_trains.begin(); it != all_trains.end(); ) {
 		auto current = it;
 		++it;    //do this as *current may be modified/deleted
 		current->TrainTimeStep(delta);
 	}
-	for(auto &it : update_set) {
+	for (auto &it : update_set) {
 		it->UpdateNotification(*this);
 	}
 }
 
 void world::ConnectTrack(generictrack *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec) {
 	auto target_it = all_pieces.find(name2);
-	if(target_it == all_pieces.end()) {
+	if (target_it == all_pieces.end()) {
 		connection_forward_declarations.emplace_back(track1, dir1, name2, dir2);
-	}
-	else {
+	} else {
 		track1->FullConnect(dir1, track_target_ptr(target_it->second.get(), dir2), ec);
 	}
 }
 
 void world::LayoutInit(error_collection &ec) {
-	for(auto &it : connection_forward_declarations) {
+	for (auto &it : connection_forward_declarations) {
 		auto target_it = all_pieces.find(it.name2);
-		if(target_it == all_pieces.end()) {
+		if (target_it == all_pieces.end()) {
 			ec.RegisterNewError<error_trackconnection_notfound>(track_target_ptr(it.track1, it.dir1), it.name2);
-		}
-		else {
+		} else {
 			it.track1->FullConnect(it.dir1, track_target_ptr(target_it->second.get(), it.dir2), ec);
 		}
 	}
-	for(auto &it : all_pieces) {
+	for (auto &it : all_pieces) {
 		it.second->AutoConnections(ec);
 	}
 	layout_init_final_fixups.Execute(ec);
-	for(auto &it : all_pieces) {
+	for (auto &it : all_pieces) {
 		it.second->CheckUnconnectedEdges(ec);
 	}
 	wflags |= WFLAGS::DONE_LAYOUTINIT;
 }
 
 void world::PostLayoutInit(error_collection &ec) {
-	for(auto &it : all_pieces) {
+	for (auto &it : all_pieces) {
 		it.second->PostLayoutInit(ec);
 	}
 	post_layout_init_final_fixups.Execute(ec);
@@ -98,18 +96,20 @@ void world::PostLayoutInit(error_collection &ec) {
 
 named_futurable_obj *world::FindFuturableByName(const std::string &name) {
 	size_t offset = name.find('/');
-	if(offset == std::string::npos)
+	if (offset == std::string::npos) {
 		return nullptr;
-	if(name.compare(0, offset, generictrack::GetTypeSerialisationClassNameStatic()))
-		return FindTrackByName(name.substr(offset+1));
-	else if(name.compare(0, offset, track_circuit::GetTypeSerialisationClassNameStatic()))
-		return track_circuits.FindOrMakeByName(name.substr(offset+1));
-	else if(name.compare(0, offset, track_train_counter_block::GetTypeSerialisationClassNameStatic()))
-		return track_triggers.FindOrMakeByName(name.substr(offset+1));
-	else if(name.compare(0, offset, train::GetTypeSerialisationClassNameStatic()))
-		return FindTrainByName(name.substr(offset+1));
-	else if(name == this->GetFullSerialisationName())
+	}
+	if (name.compare(0, offset, generictrack::GetTypeSerialisationClassNameStatic())) {
+		return FindTrackByName(name.substr(offset + 1));
+	} else if (name.compare(0, offset, track_circuit::GetTypeSerialisationClassNameStatic())) {
+		return track_circuits.FindOrMakeByName(name.substr(offset + 1));
+	} else if (name.compare(0, offset, track_train_counter_block::GetTypeSerialisationClassNameStatic())) {
+		return track_triggers.FindOrMakeByName(name.substr(offset + 1));
+	} else if (name.compare(0, offset, train::GetTypeSerialisationClassNameStatic())) {
+		return FindTrainByName(name.substr(offset + 1));
+	} else if (name == this->GetFullSerialisationName()) {
 		return this;
+	}
 	return nullptr;
 }
 
@@ -141,16 +141,15 @@ void world::InitFutureTypes() {
 std::unique_ptr<action> world::DeserialiseAction(const deserialiser_input &di, error_collection &ec) {
 	std::unique_ptr<action> act;
 	deserialiser_input subdi(di.json, "", "[world::DeserialiseAction]", di);
-	if(subdi.json.IsObject()) {
+	if (subdi.json.IsObject()) {
 		subdi.seenprops.reserve(subdi.json.GetMemberCount());
-		if(CheckTransJsonValue(subdi.type, subdi, "atype", ec, true)) {
-			if(!action_types.FindAndDeserialise(subdi.type, subdi, ec, *this, act)) {
+		if (CheckTransJsonValue(subdi.type, subdi, "atype", ec, true)) {
+			if (!action_types.FindAndDeserialise(subdi.type, subdi, ec, *this, act)) {
 				ec.RegisterNewError<error_deserialisation>(subdi, string_format("Unknown action type: %s", subdi.type.c_str()));
 			}
 		}
 		subdi.PostDeserialisePropCheck(ec);
-	}
-	else {
+	} else {
 		ec.RegisterNewError<error_deserialisation>(di, "Action: Expected object");
 	}
 	return std::move(act);
@@ -158,8 +157,9 @@ std::unique_ptr<action> world::DeserialiseAction(const deserialiser_input &di, e
 
 void world::DeserialiseAndSubmitAction(const deserialiser_input &di, error_collection &ec) {
 	std::unique_ptr<action> act = DeserialiseAction(di, ec);
-	if(act)
+	if (act) {
 		act->Execute();
+	}
 }
 
 void world::SubmitAction(const action &request) {
@@ -173,27 +173,30 @@ void world::AddTractionType(std::string name, bool alwaysavailable) {
 
 traction_type *world::GetTractionTypeByName(std::string name) const {
 	auto tt = traction_types.find(name);
-	if(tt != traction_types.end())
+	if (tt != traction_types.end()) {
 		return const_cast<traction_type *>(&(tt->second));
-	else
+	} else {
 		return nullptr;
+	}
 }
 
 generictrack *world::FindTrackByName(const std::string &name) const {
 	auto it = all_pieces.find(name);
-	if(it != all_pieces.end()) {
-		if(it->second)
+	if (it != all_pieces.end()) {
+		if (it->second) {
 			return it->second.get();
+		}
 	}
 	return nullptr;
 }
 
 track_train_counter_block *world::FindTrackTrainBlockOrTrackCircuitByName(const std::string &name) {
 	track_train_counter_block *res = track_triggers.FindByName(name);
-	if(res)
+	if (res) {
 		return res;
-	else
+	} else {
 		return track_circuits.FindByName(name);
+	}
 }
 
 void world::RegisterTickUpdate(generictrack *targ) {
@@ -205,18 +208,19 @@ void world::UnregisterTickUpdate(generictrack *targ) {
 }
 
 void world::ExecuteIfActionScope(std::function<void()> func) {
-	if(IsAuthoritative())
+	if (IsAuthoritative()) {
 		func();
+	}
 }
 
 void world::CapAllTrackPieceUnconnectedEdges() {
 	layout_init_final_fixups.AddFixup([this](error_collection &ec) {
 		std::deque<startofline *> newpieces;
-		for(auto &it : all_pieces) {
+		for (auto &it : all_pieces) {
 			std::vector<generictrack::edgelistitem> edgelist;
 			it.second->GetListOfEdges(edgelist);
-			for(auto &jt : edgelist) {
-				if(!jt.target->IsValid()) {
+			for (auto &jt : edgelist) {
+				if (!jt.target->IsValid()) {
 					std::string name = string_format("#edge%d", this->auto_seq_item);
 					this->auto_seq_item++;
 					startofline *sol = new startofline(*this);
@@ -226,7 +230,7 @@ void world::CapAllTrackPieceUnconnectedEdges() {
 				}
 			}
 		}
-		for(auto &it : newpieces) {
+		for (auto &it : newpieces) {
 			this->all_pieces[it->GetName()].reset(it);
 		}
 	});
@@ -238,19 +242,21 @@ train *world::CreateEmptyTrain() {
 }
 
 void world::DeleteTrain(train *t) {
-	all_trains.remove_if([&](const train &lt) { return &lt == t; });
+	all_trains.remove_if ([&](const train &lt) { return &lt == t; });
 }
 
 train *world::FindTrainByName(const std::string &name) const {
-	for(auto &it : all_trains) {
-		if(it.GetName() == name) return const_cast<train*>(&it);
+	for (auto &it : all_trains) {
+		if (it.GetName() == name) {
+			return const_cast<train*>(&it);
+		}
 	}
 	return nullptr;
 }
 
 unsigned int world::EnumerateTrains(std::function<void(const train &)> f) const {
 	unsigned int count = 0;
-	for(auto &it : all_trains) {
+	for (auto &it : all_trains) {
 		f(it);
 		count++;
 	}
@@ -260,17 +266,19 @@ unsigned int world::EnumerateTrains(std::function<void(const train &)> f) const 
 
 vehicle_class *world::FindOrMakeVehicleClassByName(const std::string &name) {
 	std::unique_ptr<vehicle_class> &vc = all_vehicle_classes[name];
-	if(!vc.get())
+	if (!vc.get()) {
 		vc.reset(new vehicle_class(name));
+	}
 	return vc.get();
 }
 
 vehicle_class *world::FindVehicleClassByName(const std::string &name) {
 	auto vcit = all_vehicle_classes.find(name);
-	if(vcit == all_vehicle_classes.end())
+	if (vcit == all_vehicle_classes.end()) {
 		return nullptr;
-	else
+	} else {
 		return vcit->second.get();
+	}
 }
 
 void world::MarkUpdated(updatable_obj *wo) {

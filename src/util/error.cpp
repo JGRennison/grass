@@ -33,7 +33,7 @@ unsigned int error_collection::GetErrorCount() const {
 
 void error_collection::StreamOut(std::ostream& os) const {
 	os << "Errors: " << errors.size() << "\n";
-	for(auto &it : errors) {
+	for (auto &it : errors) {
 		const error_obj& obj = *it;
 		os << obj;
 	}

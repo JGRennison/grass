@@ -59,32 +59,33 @@ bool CheckCalculateProjectedBrakingSpeed(unsigned int brake_deceleration, unsign
 	// v^2 = u^2 + 2as
 	// (2000 * (m/(s^2) << 8) * mm) >> 8 --> 2000 * m/(s^2) * mm --> 2 * mm/(s^2) * mm --> 2 * (mm/s)^2
 	uint64_t vsq = ((((uint64_t) 2000) * ((uint64_t) brake_deceleration) * ((uint64_t) target_distance)) >> 8);
-	if(target_speed)
+	if (target_speed) {
 		vsq += (((uint64_t) target_speed) * ((uint64_t) target_speed));
+	}
 
 	displacement_limit = UINT_MAX;
 
-	if(vsq >= ((uint64_t) current_max_speed) * ((uint64_t) current_max_speed)) {
+	if (vsq >= ((uint64_t) current_max_speed) * ((uint64_t) current_max_speed)) {
 		return false;    //no need for any braking at all, don't bother with the isqrt
-	}
-	else if(vsq <= ((uint64_t) brake_threshold_speed) * ((uint64_t) brake_threshold_speed)) {
+	} else if (vsq <= ((uint64_t) brake_threshold_speed) * ((uint64_t) brake_threshold_speed)) {
 		brake_speed = brake_threshold_speed;    // Below the brake threshold speed, assume stopping distance is zero
-		if(target_speed == 0) {
+		if (target_speed == 0) {
 			displacement_limit = target_distance;
-			if(target_distance == 0)
+			if (target_distance == 0) {
 				brake_speed = 0;
+			}
 		}
 		return true;
-	}
-	else {
+	} else {
 		brake_speed = (unsigned int) fast_isqrt(vsq);
 		return true;
 	}
 }
 
 void train::TrainTimeStep(unsigned int ms) {
-	if(!train_segments.empty())
+	if (!train_segments.empty()) {
 		TrainMoveStep(ms);
+	}
 }
 
 void train::TrainMoveStep(unsigned int ms) {
@@ -92,10 +93,11 @@ void train::TrainMoveStep(unsigned int ms) {
 	int dragforce = CalcDrag(total_drag_const, total_drag_v, total_drag_v2, current_speed);
 
 	int current_max_tractive_force = total_tractive_force;
-	if(current_speed) {    //don't do this check if stationary, divide by zero issue...
+	if (current_speed) {    //don't do this check if stationary, divide by zero issue...
 		int speed_limited_tractive_force = 1000 * total_tractive_power / current_speed; // 1000 * W / (mm/s) -> N
-		if(speed_limited_tractive_force < current_max_tractive_force)
+		if (speed_limited_tractive_force < current_max_tractive_force) {
 			current_max_tractive_force = speed_limited_tractive_force;
+		}
 	}
 
 	int current_max_braking_force = total_braking_force;
@@ -106,17 +108,15 @@ void train::TrainMoveStep(unsigned int ms) {
 	int max_acceleration = (max_total_force << 8) / ((int) total_mass);
 	int min_acceleration = (min_total_force << 8) / ((int) total_mass);
 
-	if(max_acceleration > ACCEL_BRAKE_CAP) max_acceleration = ACCEL_BRAKE_CAP;    //cap acceleration/braking
-	if(min_acceleration < -ACCEL_BRAKE_CAP) min_acceleration = -ACCEL_BRAKE_CAP;
+	if (max_acceleration > ACCEL_BRAKE_CAP) max_acceleration = ACCEL_BRAKE_CAP;    //cap acceleration/braking
+	if (min_acceleration < -ACCEL_BRAKE_CAP) min_acceleration = -ACCEL_BRAKE_CAP;
 
 	// ((m/(s^2) << 8) * ms) >> 8 --> mm/(ms*s) * ms --> mm/s
 	int max_new_speed = ((int) current_speed) + ((max_acceleration * ((int) ms)) >> 8);
 	int min_new_speed = ((int) current_speed) + ((min_acceleration * ((int) ms)) >> 8);
 
-	if(min_new_speed < 0)
-		min_new_speed = 0;
-	if(max_new_speed < 0)
-		max_new_speed = 0;
+	if (min_new_speed < 0) min_new_speed = 0;
+	if (max_new_speed < 0) max_new_speed = 0;
 
 	int target_speed = std::min((int) current_max_speed, max_new_speed);
 	unsigned int displacement_limit = UINT_MAX;
@@ -124,29 +124,35 @@ void train::TrainMoveStep(unsigned int ms) {
 	auto lookaheadfunc = [&](unsigned int distance, unsigned int speed) {
 		unsigned int brake_speed;
 		unsigned int local_displacement_limit;
-		if(CheckCalculateProjectedBrakingSpeed(-min_acceleration, speed, target_speed, CREEP_SPEED, distance, brake_speed, local_displacement_limit)) {
-			if((int) brake_speed < target_speed)
+		if (CheckCalculateProjectedBrakingSpeed(-min_acceleration, speed, target_speed, CREEP_SPEED, distance, brake_speed, local_displacement_limit)) {
+			if ((int) brake_speed < target_speed) {
 				target_speed = brake_speed;
-			if(displacement_limit > local_displacement_limit)
+			}
+			if (displacement_limit > local_displacement_limit) {
 				displacement_limit = local_displacement_limit;
+			}
 		}
 	};
 
 	bool waitingatredsig = false;
 
 	auto lookaheaderrorfunc = [&](lookahead::LA_ERROR err, const track_target_ptr &piece) {
-		switch(err) {
+		switch (err) {
 			case lookahead::LA_ERROR::NONE:
 				break;
+
 			case lookahead::LA_ERROR::SIG_TARGET_CHANGE:
 				//TODO: fill this in
 				break;
+
 			case lookahead::LA_ERROR::SIG_ASPECT_LESS_THAN_EXPECTED:
 				//TODO: fill this in
 				break;
+
 			case lookahead::LA_ERROR::WAITING_AT_RED_SIG:
 				waitingatredsig = true;
 				break;
+
 			case lookahead::LA_ERROR::TRACTION_UNSUITABLE:
 				//TODO: fill this in
 				break;
@@ -155,8 +161,8 @@ void train::TrainMoveStep(unsigned int ms) {
 
 	la.CheckLookaheads(this, head_pos, lookaheadfunc, lookaheaderrorfunc);
 
-	if(waitingatredsig && current_speed == 0) {
-		if(!(tflags & TF::WAITINGREDSIG)) {
+	if (waitingatredsig && current_speed == 0) {
+		if (!(tflags & TF::WAITINGREDSIG)) {
 			tflags |= TF::WAITINGREDSIG;
 			redsigwaitstarttime = GetWorld().GetGameTime();
 		}
@@ -169,7 +175,7 @@ void train::TrainMoveStep(unsigned int ms) {
 	current_speed = std::max(std::min(max_new_speed, target_speed), min_new_speed);
 
 	unsigned int displacement = (ms * (current_speed + prev_speed)) / 2000;
-	if(displacement > displacement_limit)
+	if (displacement > displacement_limit)
 		displacement = displacement_limit;
 
 	int head_elevationdelta, tail_elevationdelta;
@@ -197,9 +203,9 @@ void train::CalculateTrainMotionProperties(unsigned int weatherfactor_shl8) {
 	veh_max_speed = 0;
 	current_max_speed = 0;
 
-	if(train_segments.begin() == train_segments.end()) return;    //train with no carriages
+	if (train_segments.begin() == train_segments.end()) return;    //train with no carriages
 
-	for(auto it = train_segments.begin(); it != train_segments.end(); ++it) {
+	for (auto it = train_segments.begin(); it != train_segments.end(); ++it) {
 		total_length += it->vehtype->length * it->veh_multiplier;
 		total_drag_const += it->vehtype->cumul_drag_const * it->veh_multiplier;
 		total_drag_v += it->vehtype->cumul_drag_v * it->veh_multiplier;
@@ -211,13 +217,14 @@ void train::CalculateTrainMotionProperties(unsigned int weatherfactor_shl8) {
 		unsigned int unit_traction_limit = (it->vehtype->nominal_rail_traction_limit * weatherfactor_shl8) >> 8;
 
 		total_braking_force += std::min(unit_braking_force, unit_traction_limit) * it->veh_multiplier;
-		if(active_tractions.IsIntersecting(it->vehtype->tractiontypes))	{
+		if (active_tractions.IsIntersecting(it->vehtype->tractiontypes))	{
 			total_tractive_force += std::min(unit_tractive_force, unit_traction_limit) * it->veh_multiplier;
 			total_tractive_power += it->vehtype->tractive_power * it->veh_multiplier;
 		}
 
-		if(it == train_segments.begin() || veh_max_speed > it->vehtype->max_speed)
+		if (it == train_segments.begin() || veh_max_speed > it->vehtype->max_speed) {
 			veh_max_speed = it->vehtype->max_speed;
+		}
 
 	}
 	total_drag_v2 += train_segments.front().vehtype->face_drag_v2;
@@ -225,10 +232,11 @@ void train::CalculateTrainMotionProperties(unsigned int weatherfactor_shl8) {
 }
 
 void train::AddCoveredTrackSpeedLimit(unsigned int speed) {
-	if(speed >= veh_max_speed)
+	if (speed >= veh_max_speed) {
 		return;
-	for(auto &it : covered_track_speed_limits) {
-		if(it.speed == speed) {
+	}
+	for (auto &it : covered_track_speed_limits) {
+		if (it.speed == speed) {
 			it.count++;
 			return;
 		}
@@ -237,15 +245,16 @@ void train::AddCoveredTrackSpeedLimit(unsigned int speed) {
 	CalculateCoveredTrackSpeedLimit();
 }
 void train::RemoveCoveredTrackSpeedLimit(unsigned int speed) {
-	if(speed >= veh_max_speed)
+	if (speed >= veh_max_speed) {
 		return;
+	}
 	auto prev_it = covered_track_speed_limits.before_begin();
 	auto it = prev_it;
 	++it;
-	for(; it != covered_track_speed_limits.end(); prev_it = it, ++it) {
-		if(it->speed == speed) {
+	for (; it != covered_track_speed_limits.end(); prev_it = it, ++it) {
+		if (it->speed == speed) {
 			it->count--;
-			if(it->count == 0) {
+			if (it->count == 0) {
 				covered_track_speed_limits.erase_after(prev_it);    //this invalidates iterator it
 				CalculateCoveredTrackSpeedLimit();
 			}
@@ -256,9 +265,10 @@ void train::RemoveCoveredTrackSpeedLimit(unsigned int speed) {
 
 void train::CalculateCoveredTrackSpeedLimit() {
 	current_max_speed = veh_max_speed;
-	for(auto it = covered_track_speed_limits.begin(); it != covered_track_speed_limits.begin(); ++it) {
-		if(it->speed < current_max_speed)
+	for (auto it = covered_track_speed_limits.begin(); it != covered_track_speed_limits.begin(); ++it) {
+		if (it->speed < current_max_speed) {
 			current_max_speed = it->speed;
+		}
 	}
 }
 
@@ -288,8 +298,9 @@ void train::RefreshCoveredTrackSpeedLimits() {
 
 	auto func = [this](track_location &old_track, track_location &new_track) {
 		const speedrestrictionset *speeds = new_track.GetTrack()->GetSpeedRestrictions();
-		if(speeds)
+		if (speeds) {
 			this->AddCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(this));
+		}
 	};
 
 	track_location temp;
@@ -326,7 +337,7 @@ void train::DropTrainIntoPosition(const track_location &position, error_collecti
 	func(tail_pos, temp);    //include the last track piece
 
 	tail_pos.ReverseDirection();
-	if(leftover) {
+	if (leftover) {
 		ec.RegisterNewError<error_droptrainintoposition>(this, position,
 				string_format("Insufficient track to drop train: tail at: (%s), leftover: %umm",
 				stringify(tail_pos).c_str(), leftover));
@@ -355,7 +366,7 @@ void train::UprootTrain(error_collection &ec) {
 
 tractionset train::GetAllTractionTypes() const {
 	tractionset ts_union;
-	for(auto &it : train_segments) {
+	for (auto &it : train_segments) {
 		ts_union.UnionWith(it.vehtype->tractiontypes);
 	}
 	return ts_union;
@@ -371,16 +382,15 @@ void train::GenerateName() {
 	do {
 		name = "train_" + std::to_string(GetWorld().GetLoadCount()) + "_" + std::to_string(GetWorld().GetGameTime()) + "_" + std::to_string(id);
 		id++;
-	} while(GetWorld().FindTrainByName(name));
+	} while (GetWorld().FindTrainByName(name));
 	SetName(name);
 }
 
 void train_unit::CalculateSegmentMass() {
-	if(vehtype) {
+	if (vehtype) {
 		unsigned int unit_mass = (stflags & STF::FULL) ? vehtype->fullmass : vehtype->emptymass;
 		segment_total_mass = unit_mass * veh_multiplier;
-	}
-	else {
+	} else {
 		segment_total_mass = 0;
 	}
 }

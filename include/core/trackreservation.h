@@ -87,8 +87,8 @@ class track_reservation_state : public serialisable_obj {
 	// F has the function signature: void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)
 	template <typename F> unsigned int ReservationEnumeration(F func, RRF checkmask = RRF::RESERVE) const {
 		unsigned int counter = 0;
-		for(const auto &it : itrss) {
-			if(it.rr_flags & checkmask) {
+		for (const auto &it : itrss) {
+			if (it.rr_flags & checkmask) {
 				func(it.reserved_route, it.direction, it.index, it.rr_flags);
 				counter++;
 			}
@@ -97,8 +97,8 @@ class track_reservation_state : public serialisable_obj {
 	}
 	template <typename F> unsigned int ReservationEnumerationInDirection(EDGETYPE direction, F func, RRF checkmask = RRF::RESERVE) const {
 		unsigned int counter = 0;
-		for(const auto &it : itrss) {
-			if(it.rr_flags & checkmask && it.direction == direction) {
+		for (const auto &it : itrss) {
+			if (it.rr_flags & checkmask && it.direction == direction) {
 				func(it.reserved_route, it.direction, it.index, it.rr_flags);
 				counter++;
 			}

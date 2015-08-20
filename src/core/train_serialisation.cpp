@@ -33,16 +33,16 @@ void vehicle_class::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonValueDefProc(cumul_drag_v, di, "dragv", 0, ec, dsconv::ForcePerSpeedCoeff);
 	CheckTransJsonValueDefProc(cumul_drag_v2, di, "dragv2", 0, ec, dsconv::ForcePerSpeedSqCoeff);
 	CheckTransJsonValueDefProc(face_drag_v2, di, "facedragv2", 0, ec, dsconv::ForcePerSpeedSqCoeff);
-	if(CheckTransJsonValueProc(fullmass, di, "mass", ec, dsconv::Mass)) {
+	if (CheckTransJsonValueProc(fullmass, di, "mass", ec, dsconv::Mass)) {
 		emptymass = fullmass;
-	}
-	else {
+	} else {
 		CheckTransJsonValueDefProc(fullmass, di, "fullmass", 0, ec, dsconv::Mass);
 		CheckTransJsonValueDefProc(emptymass, di, "emptymass", 0, ec, dsconv::Mass);
-		if(fullmass < emptymass)
+		if (fullmass < emptymass) {
 			ec.RegisterNewError<error_deserialisation>(di, "Vehicle class: full mass < empty mass");
+		}
 	}
-	if(!length || !fullmass || !emptymass) {
+	if (!length || !fullmass || !emptymass) {
 		ec.RegisterNewError<error_deserialisation>(di, "Vehicle class: length and mass must be non-zero");
 	}
 	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec);
@@ -58,32 +58,34 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 		ec.RegisterNewError<error_deserialisation>(edi, "Invalid train definition: " + message);
 	};
 
-	if(!di.w) {
+	if (!di.w) {
 		genericerror(di, "No world");
 		return;
 	}
 
 	auto add_train_segment = [&](const std::string &vehtypename, unsigned int multiplier, bool reversed, bool full, bool calc_seg_mass, unsigned int seg_mass) {
-		if(multiplier == 0)
+		if (multiplier == 0) {
 			return;
+		}
 		vehicle_class *vc = di.w->FindVehicleClassByName(vehtypename);
-		if(!vc) {
+		if (!vc) {
 			genericerror(di, "No such vehicle class: " + vehtypename);
 			return;
 		}
 		train_segments.emplace_back();
 		train_unit &tu = train_segments.back();
 		tu.vehtype = vc;
-		if(reversed)
+		if (reversed) {
 			tu.stflags |= train_unit::STF::REV;
-		if(full)
-			tu.stflags |= train_unit::STF::FULL;
-		tu.veh_multiplier = multiplier;
-		if(calc_seg_mass) {
-			tu.CalculateSegmentMass();
 		}
-		else {
-			if(seg_mass > vc->fullmass * multiplier || seg_mass < vc->emptymass * multiplier) {
+		if (full) {
+			tu.stflags |= train_unit::STF::FULL;
+		}
+		tu.veh_multiplier = multiplier;
+		if (calc_seg_mass) {
+			tu.CalculateSegmentMass();
+		} else {
+			if (seg_mass > vc->fullmass * multiplier || seg_mass < vc->emptymass * multiplier) {
 				genericerror(di, "Segment mass out of range");
 			}
 			tu.segment_total_mass = seg_mass;
@@ -91,12 +93,11 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	};
 
 	auto parse_train_segment_val = [&](const deserialiser_input &tsdi, error_collection &ec) {
-		if(tsdi.json.IsString()) {
+		if (tsdi.json.IsString()) {
 			add_train_segment(tsdi.json.GetString(), 1, false, false, true, 0);
-		}
-		else if(tsdi.json.IsObject()) {
+		} else if (tsdi.json.IsObject()) {
 			std::string vehclassname;
-			if(!CheckTransJsonValue(vehclassname, tsdi, "classname", ec)) {
+			if (!CheckTransJsonValue(vehclassname, tsdi, "classname", ec)) {
 				genericerror(tsdi, "No class name");
 				return;
 			}
@@ -112,8 +113,7 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 					 segment_mass);
 
 			tsdi.PostDeserialisePropCheck(ec);
-		}
-		else {
+		} else {
 			genericerror(tsdi, "Invalid type");
 		}
 	};
@@ -134,7 +134,7 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 
 	track_location newpos;
 	newpos.Deserialise("position", di, ec);
-	if(newpos.IsValid()) {
+	if (newpos.IsValid()) {
 		//do this after calculating motion properties (ie. length))
 		DropTrainIntoPosition(newpos, ec);
 	}

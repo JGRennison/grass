@@ -43,29 +43,28 @@ namespace route_class {
 	void DeserialiseGroupProp(set &s, const deserialiser_input &di, const char *prop, error_collection &ec, flag_conflict_checker<set> &conflictcheck) {
 		const rapidjson::Value &subval=di.json[prop];
 
-		if(subval.IsObject()) {
+		if (subval.IsObject()) {
 			di.RegisterProp(prop);
 			deserialiser_input subdi(subval, "routeclassgroup", prop, di);
 			DeserialiseGroup(s, subdi, ec, conflictcheck);
 			subdi.PostDeserialisePropCheck(ec);
-		}
-		else {
+		} else {
 			CheckJsonTypeAndReportError<json_object>(di, prop, subval, ec, false);
 		}
 	}
 
 	void DeserialiseGroup(set &s, const deserialiser_input &di, error_collection &ec, flag_conflict_checker<set> &conflictcheck) {
 		set val = 0;
-		if(DeserialiseProp("allow", val, di, ec)) {
+		if (DeserialiseProp("allow", val, di, ec)) {
 			s |= val;
 			conflictcheck.RegisterFlags(true, val, di, "allow", ec);
 		}
-		if(DeserialiseProp("allowonly", val, di, ec)) {
+		if (DeserialiseProp("allowonly", val, di, ec)) {
 			s = val;
 			conflictcheck.RegisterFlags(true, val, di, "allowonly", ec);
 			conflictcheck.RegisterFlags(false, ~val, di, "allowonly", ec);
 		}
-		if(DeserialiseProp("deny", val, di, ec)) {
+		if (DeserialiseProp("deny", val, di, ec)) {
 			s &= ~val;
 			conflictcheck.RegisterFlags(false, val, di, "deny", ec);
 		}
@@ -73,17 +72,15 @@ namespace route_class {
 
 	bool DeserialiseProp(const char *prop, set &value, const deserialiser_input &di, error_collection &ec) {
 		deserialiser_input subdi(di.json[prop], "routeclassset", prop, di);
-		if(subdi.json.IsArray()) {
+		if (subdi.json.IsArray()) {
 			di.RegisterProp(prop);
 			value = Deserialise(subdi, ec);
 			return true;
-		}
-		else if(subdi.json.IsString()) {
+		} else if (subdi.json.IsString()) {
 			di.RegisterProp(prop);
 			value = Deserialise(subdi, ec);
 			return true;
-		}
-		else if(!subdi.json.IsNull()) {
+		} else if (!subdi.json.IsNull()) {
 			ec.RegisterNewError<error_deserialisation>(di, "Invalid route class set definition");
 		}
 		return false;
@@ -93,39 +90,38 @@ namespace route_class {
 		set current = 0;
 
 		auto processitem = [&](rapidjson::SizeType index, const rapidjson::Value &item) {
-			if(item.IsString()) {
-				if(strcmp(item.GetString(), "all") == 0)
+			if (item.IsString()) {
+				if (strcmp(item.GetString(), "all") == 0) {
 					current |= route_class::All();
-				else if(strcmp(item.GetString(), "alloverlaps") == 0)
+				} else if (strcmp(item.GetString(), "alloverlaps") == 0) {
 					current |= route_class::AllOverlaps();
-				else if(strcmp(item.GetString(), "allnonoverlaps") == 0)
+				} else if (strcmp(item.GetString(), "allnonoverlaps") == 0) {
 					current |= route_class::AllNonOverlaps();
-				else if(strcmp(item.GetString(), "allroutes") == 0)
+				} else if (strcmp(item.GetString(), "allroutes") == 0) {
 					current |= route_class::AllRoutes();
-				else if(strcmp(item.GetString(), "allshunts") == 0)
+				} else if (strcmp(item.GetString(), "allshunts") == 0) {
 					current |= route_class::AllShunts();
-				else if(strcmp(item.GetString(), "allneedingoverlaps") == 0)
+				} else if (strcmp(item.GetString(), "allneedingoverlaps") == 0) {
 					current |= route_class::AllNeedingOverlap();
-				else {
+				} else {
 					auto res = DeserialiseName(item.GetString());
-					if(res.first)
+					if (res.first) {
 						current |= Flag(res.second);
-					else
+					} else {
 						ec.RegisterNewError<error_deserialisation>(di, "Invalid route class set definition: Invalid route type: " + std::string(item.GetString()));
+					}
 				}
-			}
-			else {
+			} else {
 				CheckJsonTypeAndReportError<std::string>(di, MkArrayRefName(index).c_str(), item, ec, true);
 			}
 		};
 
-		if(di.json.IsArray()) {
-			for(rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
+		if (di.json.IsArray()) {
+			for (rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
 				const rapidjson::Value &item = di.json[i];
 				processitem(i, item);
 			}
-		}
-		else {
+		} else {
 			processitem(0, di.json);
 		}
 
@@ -135,8 +131,8 @@ namespace route_class {
 	std::pair<bool, ID> DeserialiseName(const std::string &name) {
 		bool found = false;
 		ID current = ID::RTC_NULL;
-		for(unsigned char i = 0; i < route_class::LAST_RTC; i++ ) {
-			if(route_class::route_names[i].name == name) {
+		for (unsigned char i = 0; i < route_class::LAST_RTC; i++ ) {
+			if (route_class::route_names[i].name == name) {
 				found = true;
 				current = static_cast<ID>(i);
 				break;
@@ -148,8 +144,8 @@ namespace route_class {
 	void SerialiseProp(const char *prop, set value, serialiser_output &so) {
 		so.json_out.String(prop);
 		so.json_out.StartArray();
-		for(unsigned char i = 0; i < route_class::LAST_RTC; i++ ) {
-			if(Flag(static_cast<ID>(i)) & value) {
+		for (unsigned char i = 0; i < route_class::LAST_RTC; i++ ) {
+			if (Flag(static_cast<ID>(i)) & value) {
 				so.json_out.String(route_class::route_names[i].name);
 			}
 		}
@@ -159,12 +155,13 @@ namespace route_class {
 	std::ostream& StreamOutRouteClassSet(std::ostream& os, const set& obj) {
 		set found_types = obj;
 		bool first = true;
-		while(found_types) {
+		while (found_types) {
 			route_class::set bit = found_types & (found_types ^ (found_types - 1));
 			route_class::ID type = static_cast<route_class::ID>(__builtin_ffs(bit) - 1);
 			found_types ^= bit;
-			if(!first)
+			if (!first) {
 				os << ", ";
+			}
 			os << GetRouteTypeName(type);
 			first = false;
 		}
