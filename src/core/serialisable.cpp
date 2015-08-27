@@ -107,7 +107,7 @@ void deserialiser_input::PostDeserialisePropCheck(error_collection &ec) const {
 		return;
 	} else {
 		for (auto it = json.MemberBegin(); it != json.MemberEnd(); ++it) {
-			if (std::find_if (seenprops.begin(), seenprops.end(),
+			if (std::find_if(seenprops.begin(), seenprops.end(),
 					[&](const char *& s) {
 						return strcmp(it->name.GetString(), s) == 0;
 					}) == seenprops.end()) {

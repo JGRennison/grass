@@ -217,7 +217,7 @@ void trackseg::TrainEnter(EDGETYPE direction, train *t) {
 void trackseg::TrainLeave(EDGETYPE direction, train *t) {
 	generictrack::TrainLeave(direction, t);
 	traincount--;
-	container_unordered_remove_if (occupying_trains, [&](const train * const it) { return it == t; });
+	container_unordered_remove_if(occupying_trains, [&](const train * const it) { return it == t; });
 	for (auto &it : ttcbs) {
 		it->TrainLeave(t);
 	}
@@ -275,7 +275,7 @@ bool trackseg::IsEdgeValid(EDGETYPE edge) const {
 }
 
 int trackseg::GetElevationDelta(EDGETYPE direction) const {
-	return (direction==EDGE_FRONT) ? elevationdelta : -elevationdelta;
+	return (direction == EDGE_FRONT) ? elevationdelta : -elevationdelta;
 }
 
 unsigned int trackseg::GetStartOffset(EDGETYPE direction) const {

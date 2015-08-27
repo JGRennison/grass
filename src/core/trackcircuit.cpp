@@ -30,7 +30,7 @@ enum {
 	BPFF_SOFT      = 1<<0,
 };
 
-static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int flags = 0) {
+static void BerthPushFront(const route *rt, std::string newvalue, unsigned int flags = 0) {
 	auto it = rt->berths.begin();
 	if (it == rt->berths.end()) {
 		return;    //no berths here
@@ -42,10 +42,9 @@ static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int
 				return;
 			}
 		}
-		rt->berths.back().berth->contents = newvalue;
+		rt->berths.back().berth->contents = std::move(newvalue);
 		if (rt->berths.back().ownertrack) rt->berths.back().ownertrack->MarkUpdated();
-	}
-	else {
+	} else {
 		std::function<void(decltype(it) &)> advance = [&](decltype(it) &start) {
 			if ((*start).berth->contents.empty()) {
 				return;
@@ -72,7 +71,7 @@ static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int
 			advance(it);
 			if ((*it).berth->contents.empty()) {
 				if (next == rt->berths.end() || !(*next).berth->contents.empty()) {
-					(*it).berth->contents = newvalue;
+					(*it).berth->contents = std::move(newvalue);
 					if ((*it).ownertrack) {
 						(*it).ownertrack->MarkUpdated();
 					}
@@ -82,7 +81,7 @@ static void BerthPushFront(const route *rt, std::string &&newvalue, unsigned int
 		}
 
 		//berths all full, overwrite first
-		rt->berths.front().berth->contents = newvalue;
+		rt->berths.front().berth->contents = std::move(newvalue);
 		if (rt->berths.front().ownertrack) {
 			rt->berths.front().ownertrack->MarkUpdated();
 		}

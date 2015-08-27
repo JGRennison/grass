@@ -587,8 +587,7 @@ namespace draw {
 				default:
 					break;
 			}
-		}
-		else {
+		} else {
 			switch (type) {
 				case SID_trackseg:
 				case SID_pointsooc:

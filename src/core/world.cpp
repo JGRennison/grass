@@ -242,7 +242,7 @@ train *world::CreateEmptyTrain() {
 }
 
 void world::DeleteTrain(train *t) {
-	all_trains.remove_if ([&](const train &lt) { return &lt == t; });
+	all_trains.remove_if([&](const train &lt) { return &lt == t; });
 }
 
 train *world::FindTrainByName(const std::string &name) const {

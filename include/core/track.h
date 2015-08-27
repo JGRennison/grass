@@ -113,7 +113,7 @@ class generictrack : public world_obj {
 	virtual unsigned int GetLength(EDGETYPE direction) const = 0;
 	virtual int GetElevationDelta(EDGETYPE direction) const = 0;
 	virtual int GetPartialElevationDelta(EDGETYPE direction, unsigned int displacement) const;
-	virtual const std::vector<track_train_counter_block *> *GetOtherTrackTriggers() const { return 0; }
+	virtual const std::vector<track_train_counter_block *> *GetOtherTrackTriggers() const { return nullptr; }
 	virtual void TrainEnter(EDGETYPE direction, train *t);
 	virtual void TrainLeave(EDGETYPE direction, train *t);
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const = 0;

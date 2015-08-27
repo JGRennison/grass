@@ -285,7 +285,8 @@ void guilayout::layoutgui_obj::Process(world_layout &wl, error_collection &ec) {
 	}
 }
 
-guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length, std::function<void(int, int, LAYOUT_DIR)> stepfunc) {
+guilayout::layoutoffsetdirectionresult guilayout::LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length,
+		std::function<void(int, int, LAYOUT_DIR)> stepfunc) {
 	if (ld == LAYOUT_DIR::NULLDIR || !length) {
 		return layoutoffsetdirectionresult{ startx, starty, startx, starty, ld };
 	}
@@ -405,7 +406,8 @@ void guilayout::world_layout::ProcessLayoutObjSet(error_collection &ec) {
 	}
 }
 
-void guilayout::world_layout::GetTrackLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<guilayout::layouttrack_obj> > &output) {
+void guilayout::world_layout::GetTrackLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec,
+		std::vector<std::shared_ptr<guilayout::layouttrack_obj> > &output) {
 	decltype(tracktolayoutmap)::iterator start, end;
 	std::tie(start, end) = tracktolayoutmap.equal_range(targetgt);
 	for (auto it = start; it != end; ++it) {
@@ -413,7 +415,8 @@ void guilayout::world_layout::GetTrackLayoutObjs(const layout_obj &src, const ge
 	}
 }
 
-void guilayout::world_layout::GetTrackBerthLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec, std::vector<std::shared_ptr<guilayout::layoutberth_obj> > &output) {
+void guilayout::world_layout::GetTrackBerthLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec,
+		std::vector<std::shared_ptr<guilayout::layoutberth_obj> > &output) {
 	decltype(berthtolayoutmap)::iterator start, end;
 	std::tie(start, end) = berthtolayoutmap.equal_range(targetgt);
 	for (auto it = start; it != end; ++it) {
@@ -469,7 +472,7 @@ void guilayout::world_layout::ClearSpriteLevel(int x, int y, int level) {
 
 	std::forward_list<pos_sprite_desc> &psd_list = it->second;
 
-	psd_list.remove_if ([&](pos_sprite_desc &p) {
+	psd_list.remove_if([&](pos_sprite_desc &p) {
 		if (p.level == level) {
 			redraw_map.insert(std::make_pair(x, y));
 			RemoveSpriteLevelOptions(p, x, y, level);
@@ -572,7 +575,7 @@ void guilayout::world_layout::GetLayoutExtents(int &x1, int &x2, int &y1, int &y
 void guilayout::world_layout::ChangeSpriteLevelOptions(pos_sprite_desc &psd, int x, int y, int level, std::shared_ptr<const pos_sprite_desc_opts> options) {
 	if (psd.options) {
 		if (psd.options->refresh_interval_ms) {
-			refresh_items[psd.options->refresh_interval_ms].remove_if ([&](const refresh_item &r) {
+			refresh_items[psd.options->refresh_interval_ms].remove_if([&](const refresh_item &r) {
 				return r.x == x && r.y == y && r.level == level;
 			});
 		}
