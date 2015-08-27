@@ -59,6 +59,7 @@ class future_container {
 	public:
 	virtual void RegisterFuture(const std::shared_ptr<future> &f) = 0;
 	virtual void RemoveFuture(future &f) = 0;
+	virtual void EnumerateRegisteredFutures(std::function<void(world_time, const std::shared_ptr<future> &)> func) const = 0;
 };
 
 class future_set : public future_container {
@@ -68,6 +69,7 @@ class future_set : public future_container {
 	void ExecuteUpTo(world_time ft);
 	virtual void RegisterFuture(const std::shared_ptr<future> &f) override;
 	virtual void RemoveFuture(future &f) override;
+	virtual void EnumerateRegisteredFutures(std::function<void(world_time, const std::shared_ptr<future> &)> func) const override;
 };
 
 class serialisable_futurable_obj;

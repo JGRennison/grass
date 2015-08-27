@@ -75,6 +75,12 @@ void future_set::ExecuteUpTo(world_time ft) {
 	}
 }
 
+void future_set::EnumerateRegisteredFutures(std::function<void(world_time, const std::shared_ptr<future> &)> func) const {
+	for (auto &it : futures) {
+		func(it.first, it.second);
+	}
+}
+
 void futurable_obj::RegisterFuture(future *f) {
 	own_futures.emplace_back(f);
 }
