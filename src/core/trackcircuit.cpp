@@ -288,6 +288,20 @@ void track_train_counter_block::GetSetRoutes(std::vector<const route *> &routes)
 	}
 }
 
+void track_circuit::TrackReserved(generictrack *track) {
+	reserved_track_pieces++;
+	if (reserved_track_pieces == 1) {
+		OccupationStateChangeTrigger();
+	}
+}
+
+void track_circuit::TrackUnreserved(generictrack *track) {
+	reserved_track_pieces--;
+	if (reserved_track_pieces == 0) {
+		OccupationStateChangeTrigger();
+	}
+}
+
 void track_circuit::OccupationStateChangeTrigger() {
 	GetWorld().MarkUpdated(this);
 	for (auto &it : GetOwnedTrackSet()) {

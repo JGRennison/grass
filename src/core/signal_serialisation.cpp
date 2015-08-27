@@ -97,8 +97,8 @@ void trackroutingpoint::Serialise(serialiser_output &so, error_collection &ec) c
 void genericsignal::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	trackroutingpoint::Deserialise(di, ec);
 
-	CheckTransJsonSubObj(start_trs, di, "start_trs", "trs", ec);
-	CheckTransJsonSubObj(end_trs, di, "end_trs", "trs", ec);
+	DeserialiseReservationState(start_trs, di, "start_trs", ec);
+	DeserialiseReservationState(end_trs, di, "end_trs", ec);
 
 	CheckTransJsonValueFlag(sflags, GSF::APPROACHLOCKINGMODE, di, "approachlockingmode", ec);
 	CheckTransJsonValueFlag(sflags, GSF::OVERLAPTIMEOUTSTARTED, di, "overlaptimeoutstarted", ec);
@@ -255,7 +255,7 @@ void repeatersignal::Serialise(serialiser_output &so, error_collection &ec) cons
 void startofline::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	routingpoint::Deserialise(di, ec);
 
-	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	DeserialiseReservationState(trs, di, "trs", ec);
 	route_class::DeserialiseGroupProp(availableroutetypes.end, di, "end", ec);
 }
 

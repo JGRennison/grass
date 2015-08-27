@@ -1380,32 +1380,53 @@ TEST_CASE( "route/restrictions/end", "Test route end restrictions" ) {
 	CHECK(env.w->GetLogText() == "");
 }
 
-TEST_CASE( "signal/updates", "Test basic signal state and reservation state change updates" ) {
+TEST_CASE( "signal/updates", "Test signal state and reservation state change updates" ) {
 	test_fixture_world_init_checked env(autosig_test_str_1);
 
 	autosig_test_class_1 tenv(*(env.w));
+	track_circuit *s5ovlp = env.w->track_circuits.FindOrMakeByName("S5ovlp");
+	track_circuit *s6ovlp = env.w->track_circuits.FindOrMakeByName("S6ovlp");
+	track_circuit *t6 = env.w->track_circuits.FindOrMakeByName("T6");
+	track_circuit *t7 = env.w->track_circuits.FindOrMakeByName("T7");
+
 	env.w->GameStep(1);
 
 	env.w->GameStep(1);
 	CHECK(env.w->GetLastUpdateSet().size() == 0);
+	CHECK(s5ovlp->IsAnyPieceReserved() == true);
+	CHECK(s6ovlp->IsAnyPieceReserved() == false);
+	CHECK(t6->IsAnyPieceReserved() == false);
+	CHECK(t7->IsAnyPieceReserved() == false);
 
 	env.w->SubmitAction(action_reservepath(*(env.w), tenv.s5, tenv.s6));
 	env.w->GameStep(1);
-	CHECK(env.w->GetLastUpdateSet().size() == 9);    //5 pieces on route, overlap (2) and 2 preceding signals.
+	CHECK(env.w->GetLastUpdateSet().size() == 11);    // 5 pieces on route, overlap (2), 2 preceding signals and track circuits S6ovlp and T6
+	CHECK(s5ovlp->IsAnyPieceReserved() == true);
+	CHECK(s6ovlp->IsAnyPieceReserved() == true);
+	CHECK(t6->IsAnyPieceReserved() == true);
+	CHECK(t7->IsAnyPieceReserved() == false);
 
 	env.w->GameStep(1);
 	CHECK(env.w->GetLastUpdateSet().size() == 0);
 
 	env.w->SubmitAction(action_reservepath(*(env.w), tenv.s6, tenv.b));
 	env.w->GameStep(1);
-	CHECK(env.w->GetLastUpdateSet().size() == 7);    //5 pieces on route and 2 preceding signals.
+	CHECK(env.w->GetLastUpdateSet().size() == 8);    // 5 pieces on route, 2 preceding signals and track circuit T7
+	CHECK(s5ovlp->IsAnyPieceReserved() == true);
+	CHECK(s6ovlp->IsAnyPieceReserved() == true);
+	CHECK(t6->IsAnyPieceReserved() == true);
+	CHECK(t7->IsAnyPieceReserved() == true);
 
 	env.w->GameStep(1);
 	CHECK(env.w->GetLastUpdateSet().size() == 0);
 
 	env.w->SubmitAction(action_unreservetrack(*(env.w), *tenv.s6));
 	env.w->GameStep(1);
-	CHECK(env.w->GetLastUpdateSet().size() == 7);    //5 pieces on route and 2 preceding signals.
+	CHECK(env.w->GetLastUpdateSet().size() == 8);    // 5 pieces on route, 2 preceding signals and track circuit T7
+	CHECK(s5ovlp->IsAnyPieceReserved() == true);
+	CHECK(s6ovlp->IsAnyPieceReserved() == true);
+	CHECK(t6->IsAnyPieceReserved() == true);
+	CHECK(t7->IsAnyPieceReserved() == false);
 }
 
 TEST_CASE( "signal/propagation/repeater", "Test aspect propagation and route creation with aspected and non-aspected repeater signals") {

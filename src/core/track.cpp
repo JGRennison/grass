@@ -141,6 +141,29 @@ bool generictrack::PostLayoutInit(error_collection &ec) {
 	return true;
 }
 
+bool generictrack::Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
+	bool result = ReservationV(direction, index, rr_flags, resroute, failreasonkey);
+	if (result) {
+		MarkUpdated();
+		UpdateTrackCircuitReservationState();
+	}
+	return result;
+}
+
+void generictrack::UpdateTrackCircuitReservationState() {
+	if (tc) {
+		reservationcountset rcs;
+		ReservationTypeCount(rcs);
+		if (rcs.routeset > 0 && !(gt_privflags & GTPRIVF::RESERVATION_IN_TC)) {
+			tc->TrackReserved(this);
+			gt_privflags |= GTPRIVF::RESERVATION_IN_TC;
+		} else if (rcs.routeset == 0 && (gt_privflags & GTPRIVF::RESERVATION_IN_TC)) {
+			tc->TrackUnreserved(this);
+			gt_privflags &= ~GTPRIVF::RESERVATION_IN_TC;
+		}
+	}
+}
+
 unsigned int generictrack::ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func,
 		RRF checkmask) {
 	unsigned int counter = 0;

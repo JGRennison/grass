@@ -73,7 +73,8 @@ R"({ "content" : [ )"
 	R"({ "type" : "trackseg", "name" : "TS7", "length" : 20000, "trackcircuit" : "T7" }, )"
 	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "route" } }, )"
 
-	R"({ "type" : "endofline", "name" : "C", "connect" : { "to" : "P1" } } )"
+	R"({ "type" : "trackseg", "name" : "TS8", "length" : 30000, "trackcircuit" : "T4", "connect" : { "to" : "P1" } }, )"
+	R"({ "type" : "endofline", "name" : "C" } )"
 "] }";
 
 TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route dereservation" ) {
@@ -204,6 +205,67 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	settcstate("T7", false);
 	INFO("Check 10");
 	checkunreserved(s2rt);
+}
+
+TEST_CASE( "track_circuit/reservation_state", "Test track circuit reservation state handling" ) {
+	test_fixture_world_init_checked env(tcdereservation_test_str_1);
+	track_circuit *t4;
+	track_circuit *t5;
+	trackseg *ts4;
+	trackseg *ts5;
+	trackseg *ts8;
+	genericsignal *s1;
+	genericsignal *s2;
+
+	auto setup = [&]() {
+		t4 = env.w->track_circuits.FindOrMakeByName("T4");
+		t5 = env.w->track_circuits.FindOrMakeByName("T5");
+		ts4 = PTR_CHECK(env.w->FindTrackByNameCast<trackseg>("TS4"));
+		ts5 = PTR_CHECK(env.w->FindTrackByNameCast<trackseg>("TS5"));
+		ts8 = PTR_CHECK(env.w->FindTrackByNameCast<trackseg>("TS8"));
+		s1 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S1"));
+		s2 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S2"));
+	};
+
+	auto test = [&](std::function<void()> RoundTrip) {
+		env.w->SubmitAction(action_reservepath(*(env.w), s1, s2));
+		RoundTrip();
+		CHECK(t4->IsAnyPieceReserved() == false);
+		CHECK(t5->IsAnyPieceReserved() == false);
+
+		env.w->GameStep(1);
+		CHECK(t4->IsAnyPieceReserved() == true);
+		CHECK(t5->IsAnyPieceReserved() == true);
+		CHECK(env.w->GetLastUpdateSet().count(t4) == 1);
+		CHECK(env.w->GetLastUpdateSet().count(t5) == 1);
+		CHECK(env.w->GetLastUpdateSet().count(ts4) == 1);
+		CHECK(env.w->GetLastUpdateSet().count(ts5) == 1);
+		CHECK(env.w->GetLastUpdateSet().count(ts8) == 1);
+		RoundTrip();
+		CHECK(t4->IsAnyPieceReserved() == true);
+		CHECK(t5->IsAnyPieceReserved() == true);
+
+		env.w->SubmitAction(action_unreservetrack(*(env.w), *s1));
+		RoundTrip();
+		CHECK(t4->IsAnyPieceReserved() == true);
+		CHECK(t5->IsAnyPieceReserved() == true);
+
+		env.w->GameStep(1);
+		CHECK(t4->IsAnyPieceReserved() == false);
+		CHECK(t5->IsAnyPieceReserved() == false);
+		CHECK(env.w->GetLastUpdateSet().count(t4) == 1);
+		CHECK(env.w->GetLastUpdateSet().count(t5) == 1);
+		CHECK(env.w->GetLastUpdateSet().count(ts4) == 1);
+		CHECK(env.w->GetLastUpdateSet().count(ts5) == 1);
+		CHECK(env.w->GetLastUpdateSet().count(ts8) == 1);
+		RoundTrip();
+		CHECK(t4->IsAnyPieceReserved() == false);
+		CHECK(t5->IsAnyPieceReserved() == false);
+
+		CHECK(env.w->GetLogText() == "");
+	};
+
+	ExecTestFixtureWorldWithRoundTrip(env, setup, test);
 }
 
 std::string berth_test_str_1 =

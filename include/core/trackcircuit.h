@@ -83,9 +83,18 @@ inline bool track_train_counter_block::Occupied() const {
 }
 
 class track_circuit : public track_train_counter_block {
+	unsigned int reserved_track_pieces = 0;
+
 	public:
 	track_circuit(world &w_, const std::string &name_) : track_train_counter_block(w_, name_) { }
 	track_circuit(world &w_) : track_train_counter_block(w_) { }
+
+	bool IsAnyPieceReserved() const {
+		return reserved_track_pieces > 0;
+	}
+
+	void TrackReserved(generictrack *track);
+	void TrackUnreserved(generictrack *track);
 
 	virtual std::string GetTypeName() const override { return "Track Circuit"; }
 	static std::string GetTypeSerialisationClassNameStatic() { return "trackcircuit"; }

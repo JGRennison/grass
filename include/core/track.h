@@ -84,7 +84,8 @@ class generictrack : public world_obj {
 
 	enum class GTPRIVF {
 		ZERO                = 0,
-		REVERSEAUTOCONN     = 1<<0,
+		REVERSEAUTOCONN     = 1<<0,     ///< Reverse auto connection
+		RESERVATION_IN_TC   = 1<<1,     ///< The reservation counter of the track circuit has been incremented
 	};
 	GTPRIVF gt_privflags = GTPRIVF::ZERO;
 
@@ -138,15 +139,12 @@ class generictrack : public world_obj {
 	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) = 0;
 	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute,
 			std::function<void(action &&reservation_act)> submitaction) { }
+	void DeserialiseReservationState(track_reservation_state &trs, const deserialiser_input &di, const char *name, error_collection &ec);
 
 	public:
-	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) {
-		bool result = ReservationV(direction, index, rr_flags, resroute, failreasonkey);
-		if (result) {
-			MarkUpdated();
-		}
-		return result;
-	}
+	void UpdateTrackCircuitReservationState();
+	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr);
+
 	void ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute,
 			std::function<void(action &&reservation_act)> submitaction) {
 		ReservationActionsV(direction, index, rr_flags, resroute, submitaction);

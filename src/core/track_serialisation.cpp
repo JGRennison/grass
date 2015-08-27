@@ -195,6 +195,12 @@ void generictrack::Deserialise(const deserialiser_input &di, error_collection &e
 	}
 }
 
+void generictrack::DeserialiseReservationState(track_reservation_state &trs, const deserialiser_input &di, const char *name, error_collection &ec) {
+	if (CheckTransJsonSubObj(trs, di, name, "trs", ec)) {
+		UpdateTrackCircuitReservationState();
+	}
+}
+
 void generictrack::Serialise(serialiser_output &so, error_collection &ec) const {
 	world_obj::Serialise(so, ec);
 	if (berth) {
@@ -208,7 +214,7 @@ void trackseg::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckTransJsonValueProc(length, di, "length", ec, dsconv::Length);
 	CheckTransJsonValueProc(elevationdelta, di, "elevationdelta", ec, dsconv::Length);
 	CheckTransJsonValue(traincount, di, "traincount", ec);
-	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	DeserialiseReservationState(trs, di, "trs", ec);
 	CheckTransJsonSubArray(speed_limits, di, "speedlimits", "speedlimits", ec);
 	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec);
 
@@ -248,7 +254,7 @@ void SerialisePointFlags(genericpoints::PTF pflags, serialiser_output &so, error
 void points::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	genericpoints::Deserialise(di, ec);
 
-	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	DeserialiseReservationState(trs, di, "trs", ec);
 	DeserialisePointFlags(pflags, di, ec);
 }
 
@@ -262,7 +268,7 @@ void points::Serialise(serialiser_output &so, error_collection &ec) const {
 void catchpoints::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	genericpoints::Deserialise(di, ec);
 
-	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	DeserialiseReservationState(trs, di, "trs", ec);
 	DeserialisePointFlags(pflags, di, ec);
 }
 
@@ -276,7 +282,7 @@ void catchpoints::Serialise(serialiser_output &so, error_collection &ec) const {
 void springpoints::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	genericzlentrack::Deserialise(di, ec);
 
-	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	DeserialiseReservationState(trs, di, "trs", ec);
 	CheckTransJsonValue(sendreverse, di, "sendreverse", ec);
 }
 
@@ -289,7 +295,7 @@ void springpoints::Serialise(serialiser_output &so, error_collection &ec) const 
 void crossover::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	genericzlentrack::Deserialise(di, ec);
 
-	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	DeserialiseReservationState(trs, di, "trs", ec);
 }
 
 void crossover::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -320,7 +326,7 @@ class pointsflagssubobj : public serialisable_obj {
 void doubleslip::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	genericpoints::Deserialise(di, ec);
 
-	CheckTransJsonSubObj(trs, di, "trs", "trs", ec);
+	DeserialiseReservationState(trs, di, "trs", ec);
 	if (CheckTransJsonValue(dof, di, "degreesoffreedom", ec)) {
 		if (dof != 1 && dof != 2 && dof != 4) {
 			ec.RegisterNewError<error_deserialisation>(di, "Invalid double slip degrees of freedom: " + std::to_string(dof));
