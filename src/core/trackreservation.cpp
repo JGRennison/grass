@@ -151,12 +151,7 @@ void track_reservation_state::Serialise(serialiser_output &so, error_collection 
 		so.json_out.StartArray();
 		for (auto it = itrss.begin(); it != itrss.end(); ++it) {
 			so.json_out.StartObject();
-			if (it->reserved_route) {
-				if (it->reserved_route->parent) {
-					SerialiseValueJson(it->reserved_route->parent->GetName(), so, "route_parent");
-					SerialiseValueJson(it->reserved_route->index, so, "route_index");
-				}
-			}
+			SerialiseRouteTargetByParentAndIndex(it->reserved_route, so, ec);
 			SerialiseValueJson(it->direction, so, "direction");
 			SerialiseValueJson(it->index, so, "index");
 			SerialiseValueJson(it->rr_flags, so, "rr_flags");

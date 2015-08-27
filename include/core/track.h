@@ -70,6 +70,7 @@ class speedrestrictionset : public serialisable_obj {
 
 void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deserialiser_input &di, error_collection &ec,
 		bool after_layout_init_resolve = false);
+void SerialiseRouteTargetByParentAndIndex(const route *rt, serialiser_output &so, error_collection &ec);
 
 struct trackberth {
 	std::string contents;

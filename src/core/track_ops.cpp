@@ -342,12 +342,7 @@ void future_routeoperation_base::Deserialise(const deserialiser_input &di, error
 
 void future_routeoperation_base::Serialise(serialiser_output &so, error_collection &ec) const {
 	future::Serialise(so, ec);
-	if (reserved_route) {
-		if (reserved_route->parent) {
-			SerialiseValueJson(reserved_route->parent->GetName(), so, "route_parent");
-			SerialiseValueJson(reserved_route->index, so, "route_index");
-		}
-	}
+	SerialiseRouteTargetByParentAndIndex(reserved_route, so, ec);
 }
 
 void future_reservetrack_base::ExecuteAction() {
@@ -596,8 +591,7 @@ void action_reservetrack_routeop::Deserialise(const deserialiser_input &di, erro
 
 void action_reservetrack_routeop::Serialise(serialiser_output &so, error_collection &ec) const {
 	action_reservetrack_base::Serialise(so, ec);
-	SerialiseValueJson(targetroute->parent->GetSerialisationName(), so, "routeparent");
-	SerialiseValueJson(targetroute->index, so, "routeindex");
+	SerialiseRouteTargetByParentAndIndex(targetroute, so, ec);
 }
 
 void action_reservetrack_sigop::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -759,7 +753,9 @@ void action_unreservetrack::ExecuteAction() const {
 }
 
 void action_unreservetrackroute::ExecuteAction() const {
-	GenericRouteUnreservation(targetroute, targetroute->start.track, RRF::STOP_ON_OCCUPIED_TC);
+	if (targetroute) {
+		GenericRouteUnreservation(targetroute, targetroute->start.track, RRF::STOP_ON_OCCUPIED_TC);
+	}
 }
 
 future_signalflags::future_signalflags(genericsignal &targ, world_time ft, GSF bits_, GSF mask_)

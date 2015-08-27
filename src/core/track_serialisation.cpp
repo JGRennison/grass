@@ -372,6 +372,15 @@ void doubleslip::Serialise(serialiser_output &so, error_collection &ec) const {
 	}
 }
 
+void SerialiseRouteTargetByParentAndIndex(const route *rt, serialiser_output &so, error_collection &ec) {
+	if (rt) {
+		if (rt->parent) {
+			SerialiseValueJson(rt->parent->GetName(), so, "route_parent");
+			SerialiseValueJson(rt->index, so, "route_index");
+		}
+	}
+}
+
 //if after_layout_init_resolve is true, and the target piece cannot be found (does not exist yet),
 //then a fixup is added to after_layout_init in world to resolve it and set output,
 //such that output *must* remain in scope throughout the layout initialisation phase
