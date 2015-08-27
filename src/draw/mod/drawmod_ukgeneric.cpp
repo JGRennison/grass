@@ -90,14 +90,16 @@ namespace {
 namespace draw {
 	draw::sprite_ref track_sprite_extras(const generictrack *gt) {
 		draw::sprite_ref extras = 0;
-		const track_circuit *tc = gt->GetTrackCircuit();
-		if (tc && tc->Occupied()) {
-			extras |= SID_tc_occ;
-		}
 		reservationcountset rcs;
 		gt->ReservationTypeCount(rcs);
 		if (rcs.routeset > rcs.routesetauto) {
 			extras |= SID_reserved;
+		}
+		const track_circuit *tc = gt->GetTrackCircuit();
+		if (tc && tc->Occupied()) {
+			if ((rcs.routeset > 0) || !(tc->IsAnyPieceReserved())) {
+				extras |= SID_tc_occ;
+			}
 		}
 		return extras;
 	}
