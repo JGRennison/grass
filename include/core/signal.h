@@ -378,6 +378,7 @@ class routingmarker : public trackroutingpoint {
 	static std::string GetTypeSerialisationNameStatic() { return "routingmarker"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
 inline const genericsignal* FastSignalCast(const generictrack *gt, EDGETYPE direction) {

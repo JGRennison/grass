@@ -280,4 +280,11 @@ void routingmarker::Deserialise(const deserialiser_input &di, error_collection &
 	}
 	route_class::DeserialiseGroupProp(availableroutetypes_forward.end, di, "end", ec, conflictcheck_end);
 	route_class::DeserialiseGroupProp(availableroutetypes_reverse.end, di, "end_rev", ec, conflictcheck_end_rev);
+	DeserialiseReservationState(trs, di, "trs", ec);
+}
+
+void routingmarker::Serialise(serialiser_output &so, error_collection &ec) const {
+	trackroutingpoint::Serialise(so, ec);
+
+	SerialiseSubObjJson(trs, so, "trs", ec);
 }
