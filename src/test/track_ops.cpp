@@ -17,13 +17,13 @@
 //==========================================================================
 
 #include "test/catch.hpp"
-#include "test/deserialisation-test.h"
-#include "test/world-test.h"
-#include "test/testutil.h"
+#include "test/deserialisation_test.h"
+#include "test/world_test.h"
+#include "test/test_util.h"
 #include "core/track_ops.h"
 #include "core/track.h"
 #include "core/points.h"
-#include "core/textpool.h"
+#include "core/text_pool.h"
 #include "core/var.h"
 #include "core/signal.h"
 

@@ -20,7 +20,7 @@
 #define INC_POINTS_ALREADY
 
 #include "core/track.h"
-#include "core/trackreservation.h"
+#include "core/track_reservation.h"
 
 class generic_points : public generic_zlen_track {
 	protected:

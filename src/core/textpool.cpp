@@ -17,7 +17,7 @@
 //==========================================================================
 
 #include "common.h"
-#include "core/textpool.h"
+#include "core/text_pool.h"
 
 text_pool::text_pool() {
 	RegisterNewText("text_pool/keynotfound", "text_pool: No such key: ");

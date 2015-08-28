@@ -18,7 +18,7 @@
 
 #include <vector>
 #include "common.h"
-#include "core/trackreservation.h"
+#include "core/track_reservation.h"
 #include "core/track.h"
 #include "core/signal.h"
 #include "core/serialisable_impl.h"

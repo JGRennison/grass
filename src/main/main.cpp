@@ -18,35 +18,35 @@
 
 #include <cstdio>
 #include "common.h"
-#include "main/wxcommon.h"
+#include "main/wx_common.h"
 #include "main/main.h"
-#include "main/wxutil.h"
+#include "main/wx_util.h"
 #include "main/view.h"
-#include "main/maingui.h"
+#include "main/main_gui.h"
 #include "core/world_serialisation.h"
 #include "core/world.h"
-#include "draw/wx/drawengine_wx.h"
-#include "draw/drawmodule.h"
-#include "draw/drawoptions.h"
+#include "draw/wx/draw_engine_wx.h"
+#include "draw/draw_module.h"
+#include "draw/draw_options.h"
 #include "layout/layout.h"
 #include <wx/log.h>
 
-#include "draw/mod/drawmod_ukgeneric.h"
+#include "draw/mod/draw_mod_uk_generic.h"
 
-IMPLEMENT_APP(grassapp)
+IMPLEMENT_APP(grass_app)
 
-bool grassapp::OnInit() {
+bool grass_app::OnInit() {
 	//wxApp::OnInit();	//don't call this, it just calls the default command line processor
 	SetAppName(wxT("GRASS"));
 	srand((unsigned int) time(0));
-	return cmdlineproc(argv, argc);
+	return CmdLineProc(argv, argc);
 }
 
-int grassapp::OnExit() {
+int grass_app::OnExit() {
 	return wxApp::OnExit();
 }
 
-bool grassapp::LoadGame(const wxString &base, const wxString &save) {
+bool grass_app::LoadGame(const wxString &base, const wxString &save) {
 	int x, y;
 	std::tie(x, y) = GetSpriteSizes();
 	if (!eng || x != (int) eng->GetSpriteWidth() || y != (int) eng->GetSpriteHeight()) {
@@ -72,40 +72,40 @@ bool grassapp::LoadGame(const wxString &base, const wxString &save) {
 	}
 }
 
-std::pair<int, int> grassapp::GetSpriteSizes() const {
+std::pair<int, int> grass_app::GetSpriteSizes() const {
 	//place-holder values
 	return std::make_pair(8, 16);
 }
 
-std::shared_ptr<draw::draw_module> grassapp::GetCurrentDrawModule() {
+std::shared_ptr<draw::draw_module> grass_app::GetCurrentDrawModule() {
 	//TODO: make this user-controllable
-	return std::shared_ptr<draw::draw_module>(new draw::draw_module_ukgeneric);
+	return std::shared_ptr<draw::draw_module>(new draw::draw_module_uk_generic);
 }
 
-std::shared_ptr<draw::draw_options> grassapp::GetDrawOptions() {
+std::shared_ptr<draw::draw_options> grass_app::GetDrawOptions() {
 	if (!opts) {
 		opts = std::make_shared<draw::draw_options>();
 	}
 	return opts;
 }
 
-void grassapp::DisplayErrors(error_collection &ec) {
+void grass_app::DisplayErrors(error_collection &ec) {
 	std::stringstream str;
 	str << ec;
 	wxLogError(wxT("One or more errors occurred, aborting:\n%s\n"), wxstrstd(str.str()).c_str());
 }
 
-grassapp::grassapp() {
-	panelset.reset(new maingui::grviewwinlist);
+grass_app::grass_app() {
+	panelset.reset(new main_gui::gr_view_winlist);
 }
 
-grassapp::~grassapp() {
+grass_app::~grass_app() {
 
 }
 
-void grassapp::RunGameTimer() {
+void grass_app::RunGameTimer() {
 	if (!timer) {
-		timer.reset(new gametimer(this));
+		timer.reset(new game_timer(this));
 	}
 	if (ispaused || speedfactor == 0) {
 		timer->Stop();
@@ -114,7 +114,7 @@ void grassapp::RunGameTimer() {
 	}
 }
 
-void gametimer::Notify() {
+void game_timer::Notify() {
 	if (app->layout) {
 		app->layout->ClearUpdateSet();
 		app->layout->ClearRedrawMap();
@@ -135,12 +135,12 @@ void gametimer::Notify() {
 	}
 }
 
-void grassapp::MakeNewViewWin() {
-	maingui::grviewwin *view = new maingui::grviewwin(layout, eng, panelset);
+void grass_app::MakeNewViewWin() {
+	main_gui::gr_view_win *view = new main_gui::gr_view_win(layout, eng, panelset);
 	view->Show(true);
 }
 
-void grassapp::InitialDrawAll() {
+void grass_app::InitialDrawAll() {
 	if (eng && layout) {
 		layout->IterateAllLayoutObjects([&](gui_layout::layout_obj *obj) {
 			obj->draw_function(*eng, *layout);

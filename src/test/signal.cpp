@@ -17,14 +17,14 @@
 //==========================================================================
 
 #include "test/catch.hpp"
-#include "test/deserialisation-test.h"
-#include "test/world-test.h"
-#include "test/testutil.h"
+#include "test/deserialisation_test.h"
+#include "test/world_test.h"
+#include "test/test_util.h"
 #include "util/util.h"
 #include "core/track.h"
 #include "core/signal.h"
 #include "core/traverse.h"
-#include "core/trackcircuit.h"
+#include "core/track_circuit.h"
 #include "core/track_ops.h"
 
 std::string track_test_str_1 =

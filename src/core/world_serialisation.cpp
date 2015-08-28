@@ -23,10 +23,10 @@
 #include "core/serialisable_impl.h"
 #include "core/world_serialisation.h"
 #include "core/track.h"
-#include "core/trackpiece.h"
+#include "core/track_piece.h"
 #include "core/points.h"
 #include "core/signal.h"
-#include "core/trackcircuit.h"
+#include "core/track_circuit.h"
 #include "core/train.h"
 #include "core/pretty_serialiser.h"
 #include <typeinfo>

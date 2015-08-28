@@ -19,15 +19,15 @@
 #include <memory>
 #include <algorithm>
 #include "common.h"
-#include "core/trackreservation.h"
+#include "core/track_reservation.h"
 #include "core/track_ops.h"
 #include "core/track.h"
 #include "core/points.h"
 #include "core/serialisable_impl.h"
 #include "core/signal.h"
-#include "core/textpool.h"
-#include "core/trackcircuit.h"
-#include "core/routetypes_serialisation.h"
+#include "core/text_pool.h"
+#include "core/track_circuit.h"
+#include "core/route_types_serialisation.h"
 
 
 void future_points_action::ExecuteAction() {

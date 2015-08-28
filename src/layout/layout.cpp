@@ -23,7 +23,7 @@
 #include "core/signal.h"
 #include "core/points.h"
 #include "core/serialisable_impl.h"
-#include "draw/drawmodule.h"
+#include "draw/draw_module.h"
 
 namespace gui_layout {
 
@@ -454,7 +454,7 @@ void gui_layout::world_layout::SetSprite(int x, int y, draw::sprite_ref sprite, 
 	redraw_map.insert(std::make_pair(x, y));
 }
 
-void gui_layout::world_layout::SetTextChar(int x, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<gui_layout::layout_obj> &owner,
+void gui_layout::world_layout::SetTextChar(int x, int y, std::unique_ptr<draw::draw_text_char> &&dt, const std::shared_ptr<gui_layout::layout_obj> &owner,
 		int level, std::shared_ptr<const pos_sprite_desc_opts> options) {
 	pos_sprite_desc &psd = GetLocationRef(x, y, level);
 	psd.sprite = 0;
@@ -487,9 +487,9 @@ void gui_layout::world_layout::ClearSpriteLevel(int x, int y, int level) {
 
 }
 
-int gui_layout::world_layout::SetTextString(int startx, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<gui_layout::layout_obj> &owner,
+int gui_layout::world_layout::SetTextString(int startx, int y, std::unique_ptr<draw::draw_text_char> &&dt, const std::shared_ptr<gui_layout::layout_obj> &owner,
 		int level, int minlength, int maxlength, std::shared_ptr<const pos_sprite_desc_opts> options) {
-	std::unique_ptr<draw::drawtextchar> tdt = std::move(dt);
+	std::unique_ptr<draw::draw_text_char> tdt = std::move(dt);
 
 	int len = strlen_utf8(tdt->text);
 	if (len > maxlength) {
@@ -497,7 +497,7 @@ int gui_layout::world_layout::SetTextString(int startx, int y, std::unique_ptr<d
 	}
 
 	auto puttext = [&](int x, std::string text) {
-		std::unique_ptr<draw::drawtextchar> cdt(new draw::drawtextchar);
+		std::unique_ptr<draw::draw_text_char> cdt(new draw::draw_text_char);
 		cdt->text = std::move(text);
 		cdt->foregroundcolour = dt->foregroundcolour;
 		cdt->backgroundcolour = dt->backgroundcolour;

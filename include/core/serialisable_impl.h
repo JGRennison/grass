@@ -30,7 +30,7 @@
 #include "util/util.h"
 #include "core/serialisable.h"
 #include "core/world_serialisation.h"
-#include "core/edgetype.h"
+#include "core/edge_type.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"

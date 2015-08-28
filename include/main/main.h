@@ -26,7 +26,7 @@
 
 class error_collection;
 class world;
-class grassapp;
+class grass_app;
 namespace gui_layout {
 	class world_layout;
 }
@@ -35,21 +35,21 @@ namespace draw {
 	class draw_options;
 	class draw_module;
 }
-namespace maingui {
-	class grviewwin;
-	struct grviewwinlist;
+namespace main_gui {
+	class gr_view_win;
+	struct gr_view_winlist;
 }
 
-class gametimer : public wxTimer {
-	grassapp *app;
+class game_timer : public wxTimer {
+	grass_app *app;
 
 	public:
-	gametimer(grassapp *app_) : app(app_) { }
+	game_timer(grass_app *app_) : app(app_) { }
 	virtual void Notify() override;
 };
 
-class grassapp: public wxApp {
-	friend gametimer;
+class grass_app: public wxApp {
+	friend game_timer;
 
 	virtual bool OnInit();
 	virtual int OnExit();
@@ -61,13 +61,13 @@ class grassapp: public wxApp {
 	unsigned int timestepms = 50;
 	unsigned int speedfactor = 256;
 	bool ispaused = false;
-	std::unique_ptr<gametimer> timer;
-	std::shared_ptr<maingui::grviewwinlist> panelset;
+	std::unique_ptr<game_timer> timer;
+	std::shared_ptr<main_gui::gr_view_winlist> panelset;
 
 	public:
-	grassapp();
-	virtual ~grassapp();
-	bool cmdlineproc(wxChar ** argv, int argc);
+	grass_app();
+	virtual ~grass_app();
+	bool CmdLineProc(wxChar ** argv, int argc);
 	bool LoadGame(const wxString &base, const wxString &save);
 	std::pair<int, int> GetSpriteSizes() const;
 	std::shared_ptr<draw::draw_module> GetCurrentDrawModule();

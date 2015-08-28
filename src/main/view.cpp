@@ -23,15 +23,15 @@
 #include <wx/dcclient.h>
 #include <wx/region.h>
 
-BEGIN_EVENT_TABLE(maingui::grviewpanel, wxScrolledWindow)
+BEGIN_EVENT_TABLE(main_gui::gr_view_panel, wxScrolledWindow)
 END_EVENT_TABLE()
 
-maingui::grviewpanel::grviewpanel(wxWindow *parent, std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_)
+main_gui::gr_view_panel::gr_view_panel(wxWindow *parent, std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_)
 		: wxScrolledWindow(parent), layout(layout_), eng(eng_) {
 	SetBackgroundColour(*wxBLACK);
 }
 
-void maingui::grviewpanel::OnDraw(wxDC& dc) {
+void main_gui::gr_view_panel::OnDraw(wxDC& dc) {
 	std::map<std::pair<int, int>, const gui_layout::pos_sprite_desc *> redrawsprites;
 
 	wxRegionIterator upd(GetUpdateRegion());
@@ -53,7 +53,7 @@ void maingui::grviewpanel::OnDraw(wxDC& dc) {
 		wy = (y - layout_origin_y) * eng->GetSpriteHeight();
 
 		if (obj.second->text) {
-			draw::drawtextchar &dt = *(obj.second->text);
+			draw::draw_text_char &dt = *(obj.second->text);
 			draw::wx_sprite_obj txt(eng.get(), 0);
 			txt.DrawTextChar(dt.text, dt.foregroundcolour, dt.backgroundcolour);
 			dc.DrawBitmap(txt.GetSpriteBitmap(), wx, wy, false);
@@ -64,7 +64,7 @@ void maingui::grviewpanel::OnDraw(wxDC& dc) {
 	}
 }
 
-void maingui::grviewpanel::InitLayout() {
+void main_gui::gr_view_panel::InitLayout() {
 	int x1, x2, y1, y2;
 	layout->GetLayoutExtents(x1, x2, y1, y2, 2);
 	layout_origin_x = x1;
@@ -76,7 +76,7 @@ void maingui::grviewpanel::InitLayout() {
 	Refresh(true);
 }
 
-void maingui::grviewpanel::RefreshSprites(int x, int y, int w, int h) {
+void main_gui::gr_view_panel::RefreshSprites(int x, int y, int w, int h) {
 	int wx = (x - layout_origin_x) * eng->GetSpriteWidth();
 	int wy = (y - layout_origin_y) * eng->GetSpriteHeight();
 	int dx = w * eng->GetSpriteWidth();
@@ -84,15 +84,15 @@ void maingui::grviewpanel::RefreshSprites(int x, int y, int w, int h) {
 	RefreshRect(wxRect(wx, wy, dx, dy));
 }
 
-maingui::grviewwin::grviewwin(std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_, std::shared_ptr<maingui::grviewwinlist> winlist_)
+main_gui::gr_view_win::gr_view_win(std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_, std::shared_ptr<main_gui::gr_view_winlist> winlist_)
 	: wxFrame(0, wxID_ANY, wxT("GRASS")), winlist(std::move(winlist_)) {
-	panel = new grviewpanel(this, std::move(layout_), std::move(eng_));
+	panel = new gr_view_panel(this, std::move(layout_), std::move(eng_));
 	panel->InitLayout();
 	winlist->viewpanels.emplace_back(panel);
 	winlist->toplevelpanels.emplace_back(this);
 }
 
-maingui::grviewwin::~grviewwin() {
+main_gui::gr_view_win::~gr_view_win() {
 	container_unordered_remove(winlist->viewpanels, panel);
 	container_unordered_remove(winlist->toplevelpanels, this);
 }

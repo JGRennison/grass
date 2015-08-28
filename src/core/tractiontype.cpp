@@ -19,7 +19,7 @@
 #include <algorithm>
 
 #include "common.h"
-#include "core/tractiontype.h"
+#include "core/traction_type.h"
 #include "core/serialisable_impl.h"
 #include "core/train.h"
 

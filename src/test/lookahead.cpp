@@ -17,15 +17,15 @@
 //==========================================================================
 
 #include "test/catch.hpp"
-#include "test/deserialisation-test.h"
-#include "test/world-test.h"
+#include "test/deserialisation_test.h"
+#include "test/world_test.h"
 #include "core/track.h"
 #include "core/points.h"
 #include "core/signal.h"
 #include "core/lookahead.h"
 #include "core/track_ops.h"
 #include "core/train.h"
-#include "core/tractiontype.h"
+#include "core/traction_type.h"
 #include "core/serialisable_impl.h"
 
 std::string lookahead_test_str_1 =

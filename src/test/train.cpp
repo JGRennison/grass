@@ -17,12 +17,12 @@
 //==========================================================================
 
 #include "test/catch.hpp"
-#include "test/deserialisation-test.h"
-#include "test/world-test.h"
-#include "test/testutil.h"
+#include "test/deserialisation_test.h"
+#include "test/world_test.h"
+#include "test/test_util.h"
 #include "util/util.h"
 #include "core/train.h"
-#include "core/trackcircuit.h"
+#include "core/track_circuit.h"
 #include "core/points.h"
 #include <sstream>
 

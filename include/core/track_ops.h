@@ -25,7 +25,7 @@
 #include "core/action.h"
 #include "core/world_ops.h"
 #include "core/points.h"
-#include "core/routetypes.h"
+#include "core/route_types.h"
 
 class generic_points;
 class generic_track;

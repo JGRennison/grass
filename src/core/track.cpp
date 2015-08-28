@@ -19,9 +19,9 @@
 #include "common.h"
 #include "util/error.h"
 #include "core/track.h"
-#include "core/trackpiece.h"
+#include "core/track_piece.h"
 #include "core/train.h"
-#include "core/trackcircuit.h"
+#include "core/track_circuit.h"
 
 #include <cassert>
 #include <cstring>

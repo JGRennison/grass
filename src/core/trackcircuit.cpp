@@ -16,10 +16,10 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#include "core/trackcircuit.h"
+#include "core/track_circuit.h"
 #include "core/serialisable_impl.h"
 #include "core/track.h"
-#include "core/trackreservation.h"
+#include "core/track_reservation.h"
 #include "core/signal.h"
 
 #include <algorithm>

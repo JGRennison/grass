@@ -17,8 +17,8 @@
 //==========================================================================
 
 #include "test/catch.hpp"
-#include "test/deserialisation-test.h"
-#include "test/testutil.h"
+#include "test/deserialisation_test.h"
+#include "test/test_util.h"
 #include "core/track.h"
 #include "core/train.h"
 #include "core/traverse.h"

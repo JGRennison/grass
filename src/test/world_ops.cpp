@@ -17,11 +17,11 @@
 //==========================================================================
 
 #include "test/catch.hpp"
-#include "test/world-test.h"
+#include "test/world_test.h"
 #include "core/world_ops.h"
 #include "core/track.h"
 #include "core/points.h"
-#include "core/textpool.h"
+#include "core/text_pool.h"
 #include "core/var.h"
 
 struct test_fixture_world_ops_1 {

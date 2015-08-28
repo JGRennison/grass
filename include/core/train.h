@@ -24,7 +24,7 @@
 #include "core/timetable.h"
 #include "core/lookahead.h"
 #include "core/serialisable.h"
-#include "core/tractiontype.h"
+#include "core/traction_type.h"
 #include <list>
 
 struct vehicle_class : public serialisable_obj {

@@ -24,9 +24,9 @@
 
 #include "util/flags.h"
 #include "core/track.h"
-#include "core/routetypes.h"
+#include "core/route_types.h"
 #include "core/traverse.h"
-#include "core/trackreservation.h"
+#include "core/track_reservation.h"
 
 class route;
 class routing_point;

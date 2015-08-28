@@ -20,23 +20,23 @@
 #define INC_MAIN_VIEW_ALREADY
 
 #include "layout/layout.h"
-#include "draw/wx/drawengine_wx.h"
-#include "main/maingui.h"
+#include "draw/wx/draw_engine_wx.h"
+#include "main/main_gui.h"
 #include <memory>
 #include <wx/scrolwin.h>
 #include <wx/frame.h>
 #include <set>
 
-namespace maingui {
+namespace main_gui {
 
-	class grviewpanel : public wxScrolledWindow {
+	class gr_view_panel : public wxScrolledWindow {
 		std::shared_ptr<gui_layout::world_layout> layout;
 		std::shared_ptr<draw::wx_draw_engine> eng;
 		int layout_origin_x = 0;
 		int layout_origin_y = 0;
 
 		public:
-		grviewpanel(wxWindow *parent, std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_);
+		gr_view_panel(wxWindow *parent, std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_);
 		void OnDraw(wxDC& dc);
 		void InitLayout();
 		void RefreshSprites(int x, int y, int w = 1, int h = 1);
@@ -44,13 +44,13 @@ namespace maingui {
 		DECLARE_EVENT_TABLE()
 	};
 
-	class grviewwin : public wxFrame {
-		grviewpanel *panel;
-		std::shared_ptr<grviewwinlist> winlist;
+	class gr_view_win : public wxFrame {
+		gr_view_panel *panel;
+		std::shared_ptr<gr_view_winlist> winlist;
 
 		public:
-		grviewwin(std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_, std::shared_ptr<grviewwinlist> winlist_);
-		~grviewwin();
+		gr_view_win(std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_, std::shared_ptr<gr_view_winlist> winlist_);
+		~gr_view_win();
 	};
 
 };

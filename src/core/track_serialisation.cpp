@@ -19,13 +19,13 @@
 #include "common.h"
 #include "util/error.h"
 #include "core/track.h"
-#include "core/trackpiece.h"
+#include "core/track_piece.h"
 #include "core/points.h"
 #include "core/signal.h"
 #include "core/serialisable_impl.h"
 #include "core/world.h"
 #include "core/deserialisation_scalarconv.h"
-#include "core/trackcircuit.h"
+#include "core/track_circuit.h"
 
 void generic_track::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	world_obj::Deserialise(di, ec);

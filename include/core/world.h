@@ -24,11 +24,11 @@
 #include <forward_list>
 #include <set>
 #include "util/flags.h"
-#include "core/tractiontype.h"
+#include "core/traction_type.h"
 #include "core/serialisable.h"
 #include "core/action.h"
 #include "core/future.h"
-#include "core/edgetype.h"
+#include "core/edge_type.h"
 
 class world_deserialisation;
 class world_serialisation;

@@ -28,9 +28,9 @@
 
 #include "util/error.h"
 #include "util/flags.h"
-#include "core/edgetype.h"
+#include "core/edge_type.h"
 #include "core/world_obj.h"
-#include "core/tractiontype.h"
+#include "core/traction_type.h"
 
 class train;
 class generic_track;

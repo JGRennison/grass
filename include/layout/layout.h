@@ -34,8 +34,8 @@
 #include "common.h"
 #include "util/error.h"
 #include "util/flags.h"
-#include "core/edgetype.h"
-#include "draw/drawtypes.h"
+#include "core/edge_type.h"
+#include "draw/draw_types.h"
 
 class world_deserialisation;
 class generic_track;
@@ -239,7 +239,7 @@ namespace gui_layout {
 		int level = std::numeric_limits<int>::lowest();
 		draw::sprite_ref sprite = 0;
 		std::weak_ptr<layout_obj> owner;
-		std::unique_ptr<draw::drawtextchar> text;
+		std::unique_ptr<draw::draw_text_char> text;
 		std::shared_ptr<const pos_sprite_desc_opts> options;
 	};
 
@@ -287,9 +287,9 @@ namespace gui_layout {
 
 		void SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<layout_obj> &owner,
 				int level = 0, std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
-		void SetTextChar(int x, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner,
+		void SetTextChar(int x, int y, std::unique_ptr<draw::draw_text_char> &&dt, const std::shared_ptr<layout_obj> &owner,
 				int level = 0, std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
-		int SetTextString(int startx, int y, std::unique_ptr<draw::drawtextchar> &&dt, const std::shared_ptr<layout_obj> &owner,
+		int SetTextString(int startx, int y, std::unique_ptr<draw::draw_text_char> &&dt, const std::shared_ptr<layout_obj> &owner,
 				int level = 0, int minlength = -1, int maxlength = -1,
 				std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
 		const pos_sprite_desc *GetSprite(int x, int y);

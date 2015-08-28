@@ -17,9 +17,9 @@
 //==========================================================================
 
 #include "common.h"
-#include "core/routetypes.h"
+#include "core/route_types.h"
 #include "core/serialisable_impl.h"
-#include "core/routetypes_serialisation.h"
+#include "core/route_types_serialisation.h"
 
 namespace route_class {
 	std::array<name_set, LAST_RTC> route_names {{

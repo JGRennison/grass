@@ -17,13 +17,13 @@
 //==========================================================================
 
 #include "common.h"
-#include "core/trackreservation.h"
+#include "core/track_reservation.h"
 #include "core/signal.h"
 #include "core/world.h"
-#include "core/trackcircuit.h"
+#include "core/track_circuit.h"
 #include "core/track_ops.h"
 #include "core/param.h"
-#include "core/routetypes.h"
+#include "core/route_types.h"
 #include "util/util.h"
 
 #include <algorithm>

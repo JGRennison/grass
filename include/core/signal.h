@@ -23,9 +23,9 @@
 
 #include "util/flags.h"
 #include "core/track.h"
-#include "core/trackreservation.h"
-#include "core/routetypes.h"
-#include "core/tractiontype.h"
+#include "core/track_reservation.h"
+#include "core/route_types.h"
+#include "core/traction_type.h"
 #include "core/route.h"
 
 enum class GMRF : unsigned int {

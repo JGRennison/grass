@@ -20,9 +20,9 @@
 #include "util/error.h"
 #include "core/signal.h"
 #include "core/serialisable_impl.h"
-#include "core/routetypes_serialisation.h"
+#include "core/route_types_serialisation.h"
 #include "core/deserialisation_scalarconv.h"
-#include "core/trackcircuit.h"
+#include "core/track_circuit.h"
 
 void routing_point::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	generic_zlen_track::Deserialise(di, ec);
