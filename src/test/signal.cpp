@@ -66,9 +66,9 @@ TEST_CASE( "signal/deserialisation/general", "Test basic signal and routing dese
 	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	const route_class::set shuntset = route_class::Flag(route_class::RTC_SHUNT);
-	const route_class::set route_set = route_class::Flag(route_class::RTC_ROUTE);
-	const route_class::set overlapset = route_class::Flag(route_class::RTC_OVERLAP);
+	const route_class::set shuntset = route_class::Flag(route_class::ID::SHUNT);
+	const route_class::set route_set = route_class::Flag(route_class::ID::ROUTE);
+	const route_class::set overlapset = route_class::Flag(route_class::ID::OVERLAP);
 
 	start_of_line *a = dynamic_cast<start_of_line *>(env.w->FindTrackByName("A"));
 	REQUIRE(a != nullptr);
@@ -162,8 +162,8 @@ TEST_CASE( "signal/routing/general", "Test basic signal and routing connectivity
 		CHECK(s5->GetRouteByIndex(index)->end == vartrack_target_ptr<routing_point>(s4, EDGE::FRONT));
 		CHECK(s5->GetRouteByIndex(index)->pieces.size() == 1);
 	};
-	s5check(0, route_class::RTC_ROUTE);
-	s5check(1, route_class::RTC_OVERLAP);
+	s5check(0, route_class::ID::ROUTE);
+	s5check(1, route_class::ID::OVERLAP);
 
 	std::vector<routing_point::gmr_route_item> route_set;
 	CHECK(s1->GetMatchingRoutes(route_set, a, route_class::All()) == 0);
@@ -306,36 +306,36 @@ TEST_CASE( "signal/propagation/auto_signal", "Test basic auto_signal aspect prop
 
 	autosig_test_class_1 tenv(*(env.w));
 
-	tenv.checksignal(tenv.a, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.b, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s1, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s3, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s4, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s5, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s6, 0, route_class::RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.a, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.b, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s1, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s3, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s4, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s5, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s6, 0, route_class::ID::NONE, 0, 0);
 
 	env.w->GameStep(1);
 
-	tenv.checksignal(tenv.a, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.b, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s1, 3, route_class::RTC_ROUTE, tenv.s2, tenv.s2);
-	tenv.checksignal(tenv.s2, 3, route_class::RTC_ROUTE, tenv.s3, tenv.s3);
-	tenv.checksignal(tenv.s3, 2, route_class::RTC_ROUTE, tenv.s4, tenv.s4);
-	tenv.checksignal(tenv.s4, 1, route_class::RTC_ROUTE, tenv.s5, tenv.s5);
-	tenv.checksignal(tenv.s5, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s6, 0, route_class::RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.a, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.b, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s1, 3, route_class::ID::ROUTE, tenv.s2, tenv.s2);
+	tenv.checksignal(tenv.s2, 3, route_class::ID::ROUTE, tenv.s3, tenv.s3);
+	tenv.checksignal(tenv.s3, 2, route_class::ID::ROUTE, tenv.s4, tenv.s4);
+	tenv.checksignal(tenv.s4, 1, route_class::ID::ROUTE, tenv.s5, tenv.s5);
+	tenv.checksignal(tenv.s5, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s6, 0, route_class::ID::NONE, 0, 0);
 
 	track_circuit *s3ovlp = env.w->track_circuits.FindOrMakeByName("S3ovlp");
 	s3ovlp->SetTCFlagsMasked(track_circuit::TCF::FORCE_OCCUPIED, track_circuit::TCF::FORCE_OCCUPIED);
 	env.w->GameStep(1);
 
-	tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2);
-	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s3, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s4, 1, route_class::RTC_ROUTE, tenv.s5, tenv.s5);
-	tenv.checksignal(tenv.s5, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s6, 0, route_class::RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.s1, 1, route_class::ID::ROUTE, tenv.s2, tenv.s2);
+	tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s3, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s4, 1, route_class::ID::ROUTE, tenv.s5, tenv.s5);
+	tenv.checksignal(tenv.s5, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s6, 0, route_class::ID::NONE, 0, 0);
 }
 
 std::string signalmixture_test_str_1 =
@@ -396,14 +396,14 @@ TEST_CASE( "signal/propagation/typemixture", "Test aspect propagation and route 
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
 
-	tenv.checksignal(tenv.a, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.b, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s1, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s2, 1, route_class::RTC_SHUNT, tenv.s3, tenv.s3);
-	tenv.checksignal(tenv.s3, 1, route_class::RTC_ROUTE, tenv.s4, tenv.s4);
-	tenv.checksignal(tenv.s4, 1, route_class::RTC_SHUNT, tenv.s5, tenv.s5);
-	tenv.checksignal(tenv.s5, 2, route_class::RTC_ROUTE, tenv.s6, tenv.s6);
-	tenv.checksignal(tenv.s6, 1, route_class::RTC_ROUTE, tenv.b, tenv.b);
+	tenv.checksignal(tenv.a, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.b, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s1, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s2, 1, route_class::ID::SHUNT, tenv.s3, tenv.s3);
+	tenv.checksignal(tenv.s3, 1, route_class::ID::ROUTE, tenv.s4, tenv.s4);
+	tenv.checksignal(tenv.s4, 1, route_class::ID::SHUNT, tenv.s5, tenv.s5);
+	tenv.checksignal(tenv.s5, 2, route_class::ID::ROUTE, tenv.s6, tenv.s6);
+	tenv.checksignal(tenv.s6, 1, route_class::ID::ROUTE, tenv.b, tenv.b);
 }
 
 TEST_CASE( "signal/route_signal/reserveaction", "Test basic route_signal reservation action and aspect propagation" ) {
@@ -417,25 +417,25 @@ TEST_CASE( "signal/route_signal/reserveaction", "Test basic route_signal reserva
 
 	env.w->SubmitAction(action_reserve_track(*(env.w), *(out[0].rt)));
 
-	tenv.checksignal(tenv.a, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.b, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s1, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s3, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s4, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s5, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s6, 0, route_class::RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.a, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.b, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s1, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s3, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s4, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s5, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s6, 0, route_class::ID::NONE, 0, 0);
 
 	env.w->GameStep(1);
 
-	tenv.checksignal(tenv.a, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.b, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s1, 3, route_class::RTC_ROUTE, tenv.s2, tenv.s2);
-	tenv.checksignal(tenv.s2, 3, route_class::RTC_ROUTE, tenv.s3, tenv.s3);
-	tenv.checksignal(tenv.s3, 3, route_class::RTC_ROUTE, tenv.s4, tenv.s4);
-	tenv.checksignal(tenv.s4, 2, route_class::RTC_ROUTE, tenv.s5, tenv.s5);
-	tenv.checksignal(tenv.s5, 1, route_class::RTC_ROUTE, tenv.s6, tenv.s6);
-	tenv.checksignal(tenv.s6, 0, route_class::RTC_NULL, 0, 0);
+	tenv.checksignal(tenv.a, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.b, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s1, 3, route_class::ID::ROUTE, tenv.s2, tenv.s2);
+	tenv.checksignal(tenv.s2, 3, route_class::ID::ROUTE, tenv.s3, tenv.s3);
+	tenv.checksignal(tenv.s3, 3, route_class::ID::ROUTE, tenv.s4, tenv.s4);
+	tenv.checksignal(tenv.s4, 2, route_class::ID::ROUTE, tenv.s5, tenv.s5);
+	tenv.checksignal(tenv.s5, 1, route_class::ID::ROUTE, tenv.s6, tenv.s6);
+	tenv.checksignal(tenv.s6, 0, route_class::ID::NONE, 0, 0);
 
 	routecount = tenv.s6->GetMatchingRoutes(out, tenv.b, route_class::All());
 	REQUIRE(routecount == 1);
@@ -444,14 +444,14 @@ TEST_CASE( "signal/route_signal/reserveaction", "Test basic route_signal reserva
 
 	env.w->GameStep(1);
 
-	tenv.checksignal(tenv.a, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.b, 0, route_class::RTC_NULL, 0, 0);
-	tenv.checksignal(tenv.s1, 3, route_class::RTC_ROUTE, tenv.s2, tenv.s2);
-	tenv.checksignal(tenv.s2, 3, route_class::RTC_ROUTE, tenv.s3, tenv.s3);
-	tenv.checksignal(tenv.s3, 3, route_class::RTC_ROUTE, tenv.s4, tenv.s4);
-	tenv.checksignal(tenv.s4, 3, route_class::RTC_ROUTE, tenv.s5, tenv.s5);
-	tenv.checksignal(tenv.s5, 2, route_class::RTC_ROUTE, tenv.s6, tenv.s6);
-	tenv.checksignal(tenv.s6, 1, route_class::RTC_ROUTE, tenv.b, tenv.b);
+	tenv.checksignal(tenv.a, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.b, 0, route_class::ID::NONE, 0, 0);
+	tenv.checksignal(tenv.s1, 3, route_class::ID::ROUTE, tenv.s2, tenv.s2);
+	tenv.checksignal(tenv.s2, 3, route_class::ID::ROUTE, tenv.s3, tenv.s3);
+	tenv.checksignal(tenv.s3, 3, route_class::ID::ROUTE, tenv.s4, tenv.s4);
+	tenv.checksignal(tenv.s4, 3, route_class::ID::ROUTE, tenv.s5, tenv.s5);
+	tenv.checksignal(tenv.s5, 2, route_class::ID::ROUTE, tenv.s6, tenv.s6);
+	tenv.checksignal(tenv.s6, 1, route_class::ID::ROUTE, tenv.b, tenv.b);
 }
 
 std::string approachlocking_test_str_1 =
@@ -521,14 +521,14 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 		CHECK(is_reserved == should_be_reserved);
 	};
 
-	checksignal2(tenv.a, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.b, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s1, 3, 3, route_class::RTC_ROUTE, tenv.s2, false);
-	checksignal2(tenv.s2, 3, 3, route_class::RTC_ROUTE, tenv.s3, false);
-	checksignal2(tenv.s3, 3, 3, route_class::RTC_ROUTE, tenv.s4, false);
-	checksignal2(tenv.s4, 2, 2, route_class::RTC_ROUTE, tenv.s5, false);
-	checksignal2(tenv.s5, 1, 1, route_class::RTC_ROUTE, tenv.s6, false);
-	checksignal2(tenv.s6, 1, 1, route_class::RTC_SHUNT, tenv.b, false);
+	checksignal2(tenv.a, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.b, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s1, 3, 3, route_class::ID::ROUTE, tenv.s2, false);
+	checksignal2(tenv.s2, 3, 3, route_class::ID::ROUTE, tenv.s3, false);
+	checksignal2(tenv.s3, 3, 3, route_class::ID::ROUTE, tenv.s4, false);
+	checksignal2(tenv.s4, 2, 2, route_class::ID::ROUTE, tenv.s5, false);
+	checksignal2(tenv.s5, 1, 1, route_class::ID::ROUTE, tenv.s6, false);
+	checksignal2(tenv.s6, 1, 1, route_class::ID::SHUNT, tenv.b, false);
 
 	auto routecheck = [&](generic_signal *s, routing_point *backtarget, routing_point *forwardtarget, world_time timeout) {
 		INFO("Signal route check for: " << s->GetName());
@@ -553,44 +553,44 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	env.w->track_circuits.FindOrMakeByName("T4")->SetTCFlagsMasked(track_circuit::TCF::FORCE_OCCUPIED, track_circuit::TCF::FORCE_OCCUPIED);
 	env.w->GameStep(1);
 
-	checksignal2(tenv.s1, 1, 1, route_class::RTC_ROUTE, tenv.s2, false);
-	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 2, 2, route_class::RTC_ROUTE, tenv.s5, false);
-	checksignal2(tenv.s5, 1, 1, route_class::RTC_ROUTE, tenv.s6, false);
-	checksignal2(tenv.s6, 1, 1, route_class::RTC_SHUNT, tenv.b, false);
+	checksignal2(tenv.s1, 1, 1, route_class::ID::ROUTE, tenv.s2, false);
+	checksignal2(tenv.s2, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s3, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s4, 2, 2, route_class::ID::ROUTE, tenv.s5, false);
+	checksignal2(tenv.s5, 1, 1, route_class::ID::ROUTE, tenv.s6, false);
+	checksignal2(tenv.s6, 1, 1, route_class::ID::SHUNT, tenv.b, false);
 
 	env.w->SubmitAction(action_unreserve_track(*(env.w), *tenv.s1));
 	env.w->SubmitAction(action_unreserve_track(*(env.w), *tenv.s4));
 	env.w->GameStep(1);
 
-	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 2, route_class::RTC_ROUTE, tenv.s5, true);
-	checksignal2(tenv.s5, 1, 1, route_class::RTC_ROUTE, tenv.s6, false);
-	checksignal2(tenv.s6, 1, 1, route_class::RTC_SHUNT, tenv.b, false);
+	checksignal2(tenv.s1, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s2, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s3, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s4, 0, 2, route_class::ID::ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 1, 1, route_class::ID::ROUTE, tenv.s6, false);
+	checksignal2(tenv.s6, 1, 1, route_class::ID::SHUNT, tenv.b, false);
 
 	env.w->SubmitAction(action_unreserve_track(*(env.w), *tenv.s5));
 	env.w->GameStep(1);
 
-	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 2, route_class::RTC_ROUTE, tenv.s5, true);
-	checksignal2(tenv.s5, 0, 1, route_class::RTC_ROUTE, tenv.s6, true);
-	checksignal2(tenv.s6, 1, 1, route_class::RTC_SHUNT, tenv.b, false);
+	checksignal2(tenv.s1, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s2, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s3, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s4, 0, 2, route_class::ID::ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, route_class::ID::ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 1, 1, route_class::ID::SHUNT, tenv.b, false);
 	check_track_reserved(t5, true);
 
 	env.w->SubmitAction(action_unreserve_track(*(env.w), *tenv.s6));
 	env.w->GameStep(1);
 
-	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 2, route_class::RTC_ROUTE, tenv.s5, true);
-	checksignal2(tenv.s5, 0, 1, route_class::RTC_ROUTE, tenv.s6, true);
-	checksignal2(tenv.s6, 0, 0, route_class::RTC_NULL, 0, false);
+	checksignal2(tenv.s1, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s2, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s3, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s4, 0, 2, route_class::ID::ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, route_class::ID::ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 0, 0, route_class::ID::NONE, 0, false);
 
 	env.w->SubmitAction(action_reserve_path(*(env.w), tenv.s6, tenv.b));
 	env.w->track_circuits.FindOrMakeByName("T6")->SetTCFlagsMasked(track_circuit::TCF::FORCE_OCCUPIED, track_circuit::TCF::FORCE_OCCUPIED);
@@ -598,12 +598,12 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 	env.w->SubmitAction(action_unreserve_track(*(env.w), *tenv.s6));
 	env.w->GameStep(1);
 
-	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 2, route_class::RTC_ROUTE, tenv.s5, true);
-	checksignal2(tenv.s5, 0, 1, route_class::RTC_ROUTE, tenv.s6, true);
-	checksignal2(tenv.s6, 0, 1, route_class::RTC_SHUNT, tenv.b, true);
+	checksignal2(tenv.s1, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s2, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s3, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s4, 0, 2, route_class::ID::ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, route_class::ID::ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 0, 1, route_class::ID::SHUNT, tenv.b, true);
 
 	//timing
 
@@ -616,61 +616,61 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 
 	env.w->GameStep(44500);
 
-	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 2, route_class::RTC_ROUTE, tenv.s5, true);
-	checksignal2(tenv.s5, 0, 1, route_class::RTC_ROUTE, tenv.s6, true);
-	checksignal2(tenv.s6, 0, 1, route_class::RTC_SHUNT, tenv.b, true);
+	checksignal2(tenv.s1, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s2, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s3, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s4, 0, 2, route_class::ID::ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, route_class::ID::ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 0, 1, route_class::ID::SHUNT, tenv.b, true);
 
 	env.w->GameStep(1000);
 	env.w->GameStep(1);
 
-	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 2, route_class::RTC_ROUTE, tenv.s5, true);
-	checksignal2(tenv.s5, 0, 1, route_class::RTC_ROUTE, tenv.s6, true);
-	checksignal2(tenv.s6, 0, 0, route_class::RTC_NULL, 0, false);
+	checksignal2(tenv.s1, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s2, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s3, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s4, 0, 2, route_class::ID::ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, route_class::ID::ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 0, 0, route_class::ID::NONE, 0, false);
 
 	env.w->GameStep(14000);
 
-	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 2, route_class::RTC_ROUTE, tenv.s5, true);
-	checksignal2(tenv.s5, 0, 1, route_class::RTC_ROUTE, tenv.s6, true);
-	checksignal2(tenv.s6, 0, 0, route_class::RTC_NULL, 0, false);
+	checksignal2(tenv.s1, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s2, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s3, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s4, 0, 2, route_class::ID::ROUTE, tenv.s5, true);
+	checksignal2(tenv.s5, 0, 1, route_class::ID::ROUTE, tenv.s6, true);
+	checksignal2(tenv.s6, 0, 0, route_class::ID::NONE, 0, false);
 
 	env.w->GameStep(1000);
 	env.w->GameStep(1);
 
-	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 1, route_class::RTC_ROUTE, tenv.s5, true);    //TODO: would 2 be better than 1?
-	checksignal2(tenv.s5, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s6, 0, 0, route_class::RTC_NULL, 0, false);
+	checksignal2(tenv.s1, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s2, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s3, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s4, 0, 1, route_class::ID::ROUTE, tenv.s5, true);    //TODO: would 2 be better than 1?
+	checksignal2(tenv.s5, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s6, 0, 0, route_class::ID::NONE, 0, false);
 
 	env.w->GameStep(59000);
 
-	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 1, route_class::RTC_ROUTE, tenv.s5, true);    //TODO: would 2 be better than 1?
-	checksignal2(tenv.s5, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s6, 0, 0, route_class::RTC_NULL, 0, false);
+	checksignal2(tenv.s1, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s2, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s3, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s4, 0, 1, route_class::ID::ROUTE, tenv.s5, true);    //TODO: would 2 be better than 1?
+	checksignal2(tenv.s5, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s6, 0, 0, route_class::ID::NONE, 0, false);
 	check_track_reserved(t5, true);
 
 	env.w->GameStep(1000);
 	env.w->GameStep(1);
 
-	checksignal2(tenv.s1, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s2, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s3, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s4, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s5, 0, 0, route_class::RTC_NULL, 0, false);
-	checksignal2(tenv.s6, 0, 0, route_class::RTC_NULL, 0, false);
+	checksignal2(tenv.s1, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s2, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s3, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s4, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s5, 0, 0, route_class::ID::NONE, 0, false);
+	checksignal2(tenv.s6, 0, 0, route_class::ID::NONE, 0, false);
 	check_track_reserved(t5, false);
 }
 
@@ -1151,12 +1151,12 @@ TEST_CASE( "signal/callon/general", "Test call-on routes" ) {
 	env.w->SubmitAction(action_reserve_path(*(env.w), s3, b));
 	env.w->GameStep(1);
 
-	checkaspects(3, route_class::RTC_ROUTE, 2, route_class::RTC_ROUTE, 1, route_class::RTC_ROUTE);
+	checkaspects(3, route_class::ID::ROUTE, 2, route_class::ID::ROUTE, 1, route_class::ID::ROUTE);
 
 	settcstate("T3", true);
 	env.w->GameStep(1);
 
-	checkaspects(1, route_class::RTC_ROUTE, 0, route_class::RTC_NULL, 1, route_class::RTC_ROUTE);
+	checkaspects(1, route_class::ID::ROUTE, 0, route_class::ID::NONE, 1, route_class::ID::ROUTE);
 
 	env.w->SubmitAction(action_unreserve_track(*(env.w), *s2));
 	env.w->GameStep(1);
@@ -1181,14 +1181,14 @@ TEST_CASE( "signal/callon/general", "Test call-on routes" ) {
 
 	CHECK(env.w->GetLogText() == "");
 	REQUIRE(s2->GetCurrentForwardRoute() != nullptr);
-	CHECK(s2->GetCurrentForwardRoute()->type == route_class::RTC_CALLON);
+	CHECK(s2->GetCurrentForwardRoute()->type == route_class::ID::CALLON);
 
-	checkaspects(1, route_class::RTC_ROUTE, 0, route_class::RTC_NULL, 0, route_class::RTC_NULL);
+	checkaspects(1, route_class::ID::ROUTE, 0, route_class::ID::NONE, 0, route_class::ID::NONE);
 
 	settcstate("T2", true);
 	env.w->GameStep(1);
 
-	checkaspects(0, route_class::RTC_NULL, 1, route_class::RTC_CALLON, 0, route_class::RTC_NULL);
+	checkaspects(0, route_class::ID::NONE, 1, route_class::ID::CALLON, 0, route_class::ID::NONE);
 
 	env.w->SubmitAction(action_reserve_path(*(env.w), s3, b));
 	env.w->GameStep(1);
@@ -1219,7 +1219,7 @@ TEST_CASE( "signal/overlap/general", "Test basic overlap assignment" ) {
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
 
-	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::RTC_OVERLAP);
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::OVERLAP);
 }
 
 TEST_CASE( "signal/overlap/nooverlapflag", "Test signal no overlap flag" ) {
@@ -1283,7 +1283,7 @@ TEST_CASE( "signal/overlap/alt", "Test basic alternative overlap assignment" ) {
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
 
-	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::RTC_ALTOVERLAP1);
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::ALTOVERLAP1);
 }
 
 TEST_CASE( "signal/overlap/missingaltoverlap", "Test that a missing alternative overlap triggers an error" ) {
@@ -1322,19 +1322,19 @@ TEST_CASE( "signal/overlap/multi", "Test multiple overlap types" ) {
 	generic_signal *s1 = PTR_CHECK(env.w->FindTrackByNameCast<generic_signal>("S1"));
 	generic_signal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<generic_signal>("S2"));
 
-	env.w->SubmitAction(action_reserve_path(*(env.w), s1, s2).SetAllowedRouteTypes(route_class::Flag(route_class::ID::RTC_ROUTE)));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s1, s2).SetAllowedRouteTypes(route_class::Flag(route_class::ID::ROUTE)));
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
-	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::RTC_OVERLAP);
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::OVERLAP);
 	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->end.track->GetName() == "B");
 
 	env.w->SubmitAction(action_unreserve_track(*(env.w), *s1));
 	env.w->GameStep(1);
 
-	env.w->SubmitAction(action_reserve_path(*(env.w), s1, s2).SetAllowedRouteTypes(route_class::Flag(route_class::ID::RTC_CALLON)));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s1, s2).SetAllowedRouteTypes(route_class::Flag(route_class::ID::CALLON)));
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
-	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::RTC_ALTOVERLAP1);
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::ALTOVERLAP1);
 	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->end.track->GetName() == "C");
 }
 
@@ -1357,25 +1357,25 @@ TEST_CASE( "route/restrictions/end", "Test route end restrictions" ) {
 	generic_signal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<generic_signal>("S2"));
 	routing_point *b = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("B"));
 
-	env.w->SubmitAction(action_reserve_path(*(env.w), s1, s2).SetAllowedRouteTypes(route_class::Flag(route_class::ID::RTC_ROUTE)));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s1, s2).SetAllowedRouteTypes(route_class::Flag(route_class::ID::ROUTE)));
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
-	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::RTC_OVERLAP);
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::OVERLAP);
 	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->end.track->GetName() == "B");
 
 	env.w->SubmitAction(action_unreserve_track(*(env.w), *s1));
 	env.w->GameStep(1);
 
-	env.w->SubmitAction(action_reserve_path(*(env.w), s1, s2).SetAllowedRouteTypes(route_class::Flag(route_class::ID::RTC_CALLON)));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s1, s2).SetAllowedRouteTypes(route_class::Flag(route_class::ID::CALLON)));
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
-	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::RTC_ALTOVERLAP1);
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->type == route_class::ID::ALTOVERLAP1);
 	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->end.track->GetName() == "C");
 
 	env.w->SubmitAction(action_unreserve_track(*(env.w), *s1));
 	env.w->GameStep(1);
 
-	env.w->SubmitAction(action_reserve_path(*(env.w), s2, b).SetAllowedRouteTypes(route_class::Flag(route_class::ID::RTC_SHUNT)));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s2, b).SetAllowedRouteTypes(route_class::Flag(route_class::ID::SHUNT)));
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
 }
@@ -1463,16 +1463,16 @@ TEST_CASE( "signal/propagation/repeater", "Test aspect propagation and route cre
 
 		auto checksignal = makechecksignal(*(env.w));
 
-		checksignal(s1, nonaspected ? 2 : 3, route_class::RTC_ROUTE, nonaspected ? s3 : rs2, s3);
-		checksignal(rs2, 2, route_class::RTC_ROUTE, s3, s3);
-		checksignal(s3, 1, route_class::RTC_ROUTE, b, b);
+		checksignal(s1, nonaspected ? 2 : 3, route_class::ID::ROUTE, nonaspected ? s3 : rs2, s3);
+		checksignal(rs2, 2, route_class::ID::ROUTE, s3, s3);
+		checksignal(s3, 1, route_class::ID::ROUTE, b, b);
 
 		t1->SetTCFlagsMasked(track_circuit::TCF::FORCE_OCCUPIED, track_circuit::TCF::FORCE_OCCUPIED);
 		env.w->GameStep(1);
 
-		checksignal(s1, 0, route_class::RTC_NULL, 0, 0);
-		checksignal(rs2, 2, route_class::RTC_ROUTE, s3, s3);
-		checksignal(s3, 1, route_class::RTC_ROUTE, b, b);
+		checksignal(s1, 0, route_class::ID::NONE, 0, 0);
+		checksignal(rs2, 2, route_class::ID::ROUTE, s3, s3);
+		checksignal(s3, 1, route_class::ID::ROUTE, b, b);
 	};
 	test(false);
 	test(true);

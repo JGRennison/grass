@@ -55,12 +55,12 @@ enum class GAME_MODE {
 	CLIENT,
 };
 
-typedef enum {
-	LOG_NULL,
-	LOG_DENIED,
-	LOG_MESSAGE,
-	LOG_FAILED,
-} LOG_CATEGORY;
+enum class LOG_CATEGORY {
+	INVALID,
+	DENIED,
+	MESSAGE,
+	FAILED,
+};
 
 class fixup_list {
 	std::deque<std::function<void(error_collection &ec)> > fixups;

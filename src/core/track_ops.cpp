@@ -446,7 +446,7 @@ bool action_reserve_track_base::TryReserveRoute(const route *rt, world_time acti
 	}
 
 	const route *best_overlap = nullptr;
-	if (rt->overlap_type != route_class::ID::RTC_NULL) {
+	if (rt->overlap_type != route_class::ID::NONE) {
 		//need an overlap too
 		best_overlap = rt->end.track->FindBestOverlap(route_class::Flag(rt->overlap_type));
 		if (!best_overlap) {

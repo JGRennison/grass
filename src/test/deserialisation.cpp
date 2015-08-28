@@ -161,7 +161,7 @@ TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 	routing_marker *rm = dynamic_cast<routing_marker *>(env.w->FindTrackByName("R1"));
 	REQUIRE(rm != nullptr);
 	CHECK(rm->GetAvailableRouteTypes(EDGE::FRONT) == RPRT());
-	CHECK(rm->GetAvailableRouteTypes(EDGE::BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::RTC_OVERLAP), 0));
+	CHECK(rm->GetAvailableRouteTypes(EDGE::BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::ID::OVERLAP), 0));
 }
 
 TEST_CASE( "deserialisation/error/typedefrecursion", "Test check for typedef recursion" ) {

@@ -391,12 +391,12 @@ TEST_CASE( "track/ops/overlap/reservationswing", "Test track reservation overlap
 		CHECK(route_set[0].rt->IsRouteSubSet(route_set[2].rt) == false);
 		CHECK(route_set[1].rt->IsRouteSubSet(route_set[2].rt) == true);
 
-		tenv.checksignal(tenv.s1, 0, route_class::RTC_NULL, 0, 0, 0);
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
+		tenv.checksignal(tenv.s1, 0, route_class::ID::NONE, 0, 0, 0);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.bovlp);
 
 		env.w->GameStep(1);
-		tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
+		tenv.checksignal(tenv.s1, 1, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.bovlp);
 
 		env.w->SubmitAction(action_reserve_path(*(env.w), tenv.s2, tenv.c));
 		RoundTrip();
@@ -404,38 +404,38 @@ TEST_CASE( "track/ops/overlap/reservationswing", "Test track reservation overlap
 		CHECK(env.w->GetLogText() == "");
 		REQUIRE(tenv.p1 != 0);
 		CHECK(tenv.p1->GetPointsFlags(0) == (generic_points::PTF::OOC | generic_points::PTF::REV));
-		tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
+		tenv.checksignal(tenv.s1, 1, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.covlp);
 
 		RoundTrip();
 		env.w->GameStep(100000);
 		CHECK(env.w->GetLogText() == "");
 		CHECK(tenv.p1->GetPointsFlags(0) == generic_points::PTF::REV);
-		tenv.checksignal(tenv.s1, 2, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
-		tenv.checksignal(tenv.s2, 1, route_class::RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
+		tenv.checksignal(tenv.s1, 2, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
+		tenv.checksignal(tenv.s2, 1, route_class::ID::ROUTE, tenv.c, tenv.c, tenv.covlp);
 
 		env.w->SubmitAction(action_reserve_path(*(env.w), tenv.s2, tenv.b));
 		RoundTrip();
 		env.w->GameStep(1);
 		CHECK(env.w->GetLogText() != "");
 		CHECK(tenv.p1->GetPointsFlags(0) == generic_points::PTF::REV);
-		tenv.checksignal(tenv.s1, 2, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
-		tenv.checksignal(tenv.s2, 1, route_class::RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
+		tenv.checksignal(tenv.s1, 2, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
+		tenv.checksignal(tenv.s2, 1, route_class::ID::ROUTE, tenv.c, tenv.c, tenv.covlp);
 		env.w->ResetLogText();
 
 		env.w->SubmitAction(action_unreserve_track(*(env.w), *tenv.s2));
 		RoundTrip();
 		env.w->GameStep(1);
 		CHECK(env.w->GetLogText() == "");
-		tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
+		tenv.checksignal(tenv.s1, 1, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.covlp);
 
 		env.w->SubmitAction(action_reserve_path(*(env.w), tenv.s2, tenv.d));
 		RoundTrip();
 		env.w->GameStep(1);
 		CHECK(env.w->GetLogText() != "");
-		tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
+		tenv.checksignal(tenv.s1, 1, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.covlp);
 		env.w->ResetLogText();
 	});
 }
@@ -443,8 +443,8 @@ TEST_CASE( "track/ops/overlap/reservationswing", "Test track reservation overlap
 TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swinging" ) {
 	OverlapOpsRoundTripMultiTest([](test_fixture_world_init_checked &env, overlap_ops_test_class_1 &tenv, std::function<void()> RoundTrip) {
 		env.w->GameStep(1);
-		tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
+		tenv.checksignal(tenv.s1, 1, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.bovlp);
 
 		REQUIRE(tenv.p1 != 0);
 		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, generic_points::PTF::REV, generic_points::PTF::REV));
@@ -453,7 +453,7 @@ TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swingi
 
 		CHECK(env.w->GetLogText() == "");
 		CHECK(tenv.p1->GetPointsFlags(0) == (generic_points::PTF::OOC | generic_points::PTF::REV));
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.covlp);
 
 		REQUIRE(tenv.p2 != 0);
 		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p2, 0, generic_points::PTF::REV, generic_points::PTF::REV));
@@ -462,7 +462,7 @@ TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swingi
 
 		CHECK(env.w->GetLogText() != "");
 		CHECK(tenv.p1->GetPointsFlags(0) == (generic_points::PTF::OOC | generic_points::PTF::REV));
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.covlp);
 		env.w->ResetLogText();
 
 		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, generic_points::PTF::ZERO, generic_points::PTF::REV));
@@ -471,21 +471,21 @@ TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swingi
 		env.w->GameStep(1);
 		RoundTrip();
 		CHECK(env.w->GetLogText() == "");
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.bovlp);
 
 		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, generic_points::PTF::REV, generic_points::PTF::REV));
 		RoundTrip();
 		env.w->GameStep(1);
 		CHECK(env.w->GetLogText() != "");
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.bovlp);
 	});
 }
 
 TEST_CASE( "track/ops/reservation/overset", "Test overset track reservation and dereservation" ) {
 	OverlapOpsRoundTripMultiTest([](test_fixture_world_init_checked &env, overlap_ops_test_class_1 &tenv, std::function<void()> RoundTrip) {
 		env.w->GameStep(1);
-		tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
+		tenv.checksignal(tenv.s1, 1, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.bovlp);
 
 		CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 2);
 
@@ -495,16 +495,16 @@ TEST_CASE( "track/ops/reservation/overset", "Test overset track reservation and 
 		env.w->GameStep(100000);
 		RoundTrip();
 		CHECK(env.w->GetLogText() == "");
-		tenv.checksignal(tenv.s1, 2, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
-		tenv.checksignal(tenv.s2, 1, route_class::RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
+		tenv.checksignal(tenv.s1, 2, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
+		tenv.checksignal(tenv.s2, 1, route_class::ID::ROUTE, tenv.c, tenv.c, tenv.covlp);
 
 		env.w->SubmitAction(action_reserve_path(*(env.w), tenv.s2, tenv.c));
 		RoundTrip();
 		env.w->GameStep(100000);
 		RoundTrip();
 		CHECK(env.w->GetLogText() == "");
-		tenv.checksignal(tenv.s1, 2, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
-		tenv.checksignal(tenv.s2, 1, route_class::RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
+		tenv.checksignal(tenv.s1, 2, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
+		tenv.checksignal(tenv.s2, 1, route_class::ID::ROUTE, tenv.c, tenv.c, tenv.covlp);
 
 		CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 3);
 
@@ -513,8 +513,8 @@ TEST_CASE( "track/ops/reservation/overset", "Test overset track reservation and 
 		env.w->GameStep(100000);
 		RoundTrip();
 		CHECK(env.w->GetLogText() == "");
-		tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
-		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
+		tenv.checksignal(tenv.s1, 1, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.covlp);
 
 		CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 2);
 	});

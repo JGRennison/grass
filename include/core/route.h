@@ -73,7 +73,7 @@ struct route_common {
 	unsigned int approach_locking_timeout = 0;
 	unsigned int overlap_timeout = 0;
 	unsigned int approach_control_triggerdelay = 0;
-	route_class::ID overlap_type = route_class::ID::RTC_NULL;
+	route_class::ID overlap_type = route_class::ID::NONE;
 	unsigned int route_prove_delay = 0;
 	unsigned int route_clear_delay = 0;
 	unsigned int route_set_delay = 0;
@@ -163,7 +163,7 @@ struct route  : public route_common {
 	routing_point *parent = nullptr;
 	unsigned int index  = 0;
 
-	route() : type(route_class::RTC_NULL) { }
+	route() : type(route_class::ID::NONE) { }
 	void FillLists();
 	bool TestRouteForMatch(const routing_point *check_end, const via_list &check_vias) const;
 	bool RouteReservation(RRF reserve_flags, std::string *fail_reason_key = nullptr) const;

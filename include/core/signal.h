@@ -85,7 +85,7 @@ class routing_point : public generic_zlen_track {
 	protected:
 	unsigned int aspect = 0;
 	unsigned int reserved_aspect = 0;
-	route_class::ID aspect_type  = route_class::RTC_NULL;
+	route_class::ID aspect_type  = route_class::ID::NONE;
 	void SetAspectNextTarget(routing_point *target);
 	void SetAspectRouteTarget(routing_point *target);
 
@@ -196,7 +196,7 @@ class generic_signal : public track_routing_point {
 	world_time last_route_set_time = 0;
 	unsigned int overlap_swing_min_aspect_distance = 1;
 
-	std::array<unsigned int, route_class::LAST_RTC> approach_locking_default_timeouts;
+	std::array<unsigned int, static_cast<size_t>(route_class::ID::END)> approach_locking_default_timeouts;
 	route_common route_defaults;
 
 	route_class::set available_overlaps = 0;
@@ -259,7 +259,7 @@ class auto_signal : public std_signal {
 	public:
 	auto_signal(world &w_)
 			: std_signal(w_) {
-		available_route_types_forward.start |= route_class::Flag(route_class::RTC_ROUTE);
+		available_route_types_forward.start |= route_class::Flag(route_class::ID::ROUTE);
 		available_route_types_forward.end |= route_class::AllNonOverlaps();
 		sflags |= GSF::AUTO_SIGNAL;
 	}

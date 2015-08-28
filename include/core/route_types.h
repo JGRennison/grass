@@ -24,37 +24,38 @@
 #include "core/serialisable.h"
 
 namespace route_class {
-	typedef enum {
-		RTC_NULL = 0,
-		RTC_SHUNT,
-		RTC_ROUTE,
-		RTC_OVERLAP,
-		RTC_ALTOVERLAP1,
-		RTC_ALTOVERLAP2,
-		RTC_ALTOVERLAP3,
-		RTC_CALLON,
-		LAST_RTC,
-	} ID;
+	enum class ID {
+		NONE = 0,
+		SHUNT,
+		ROUTE,
+		OVERLAP,
+		ALTOVERLAP1,
+		ALTOVERLAP2,
+		ALTOVERLAP3,
+		CALLON,
+
+		END,
+	};
 
 	struct name_set {
 		std::string name;
 		std::string friendlyname;
 	};
 
-	extern std::array<name_set, LAST_RTC> route_names;
-	extern std::array<unsigned int, LAST_RTC> default_approach_locking_timeouts;
+	extern std::array<name_set, static_cast<size_t>(ID::END)> route_names;
+	extern std::array<unsigned int, static_cast<size_t>(ID::END)> default_approach_locking_timeouts;
 
-	inline const std::string &GetRouteTypeName(ID id) { return route_names[id].name; }
-	inline const std::string &GetRouteTypeFriendlyName(ID id) { return route_names[id].friendlyname; }
+	inline const std::string &GetRouteTypeName(ID id) { return route_names[static_cast<size_t>(id)].name; }
+	inline const std::string &GetRouteTypeFriendlyName(ID id) { return route_names[static_cast<size_t>(id)].friendlyname; }
 
-	inline bool IsValid(ID id) { return id != RTC_NULL; }
-	inline bool IsShunt(ID id) { return id == RTC_SHUNT || id == RTC_CALLON; }
-	inline bool IsRoute(ID id) { return id == RTC_ROUTE; }
-	inline bool IsOverlap(ID id) { return id == RTC_OVERLAP || id == RTC_ALTOVERLAP1 || id == RTC_ALTOVERLAP2 || id == RTC_ALTOVERLAP3; }
-	inline bool IsCallOn(ID id) { return id == RTC_CALLON; }
+	inline bool IsValid(ID id) { return id != ID::NONE; }
+	inline bool IsShunt(ID id) { return id == ID::SHUNT || id == ID::CALLON; }
+	inline bool IsRoute(ID id) { return id == ID::ROUTE; }
+	inline bool IsOverlap(ID id) { return id == ID::OVERLAP || id == ID::ALTOVERLAP1 || id == ID::ALTOVERLAP2 || id == ID::ALTOVERLAP3; }
+	inline bool IsCallOn(ID id) { return id == ID::CALLON; }
 	inline bool IsValidForApproachLocking(ID id) { return IsValid(id) && !IsOverlap(id); }
 	inline bool IsAspectLimitedToUnity(ID id) { return IsShunt(id); }
-	inline bool IsAspectDirectlyPropagatable(ID dep, ID targ) { return dep == RTC_ROUTE && targ == RTC_ROUTE; }
+	inline bool IsAspectDirectlyPropagatable(ID dep, ID targ) { return dep == ID::ROUTE && targ == ID::ROUTE; }
 	inline bool NeedsOverlap(ID id) { return IsRoute(id); }
 	inline bool IsNotEndExtendable(ID id) { return IsOverlap(id); }
 	inline bool AllowEntryWhilstOccupied(ID id) { return IsCallOn(id); }
@@ -63,16 +64,17 @@ namespace route_class {
 
 	typedef unsigned char set;
 
+	inline constexpr set Flag(ID r) { return (1 << static_cast<unsigned char>(r)); }
+
 	enum {
-		RTCB_ALL         = ((1 << route_class::LAST_RTC) - 1) & ~(1 << RTC_NULL),
-		RTCB_SHUNTS      = (1 << RTC_SHUNT) | (1 << RTC_CALLON),
-		RTCB_ROUTES      = 1 << RTC_ROUTE,
-		RTCB_OVERLAPS    = (1 << RTC_OVERLAP) | (1 << RTC_ALTOVERLAP1) | (1 << RTC_ALTOVERLAP2) | (1 << RTC_ALTOVERLAP3),
+		RTCB_ALL         = (Flag(ID::END) - 1) & ~Flag(ID::NONE),
+		RTCB_SHUNTS      = Flag(ID::SHUNT) | Flag(ID::CALLON),
+		RTCB_ROUTES      = Flag(ID::ROUTE),
+		RTCB_OVERLAPS    = Flag(ID::OVERLAP) | Flag(ID::ALTOVERLAP1) | Flag(ID::ALTOVERLAP2) | Flag(ID::ALTOVERLAP3),
 	};
 
-	inline void Set(set &s, ID r) { s |= (1 << r); }
-	inline void Unset(set &s, ID r) { s &= ~(1 << r); }
-	inline set Flag(ID r) { return (1 << r); }
+	inline void Set(set &s, ID r) { s |= Flag(r); }
+	inline void Unset(set &s, ID r) { s &= ~Flag(r); }
 	inline set All() { return RTCB_ALL; }
 	inline set AllNonOverlaps() { return (RTCB_ALL & ~RTCB_OVERLAPS); }
 	inline set AllOverlaps() { return RTCB_OVERLAPS; }
@@ -81,6 +83,8 @@ namespace route_class {
 	inline set AllNeedingOverlap() { return AllRoutes(); }
 
 	std::ostream& StreamOutRouteClassSet(std::ostream& os, const set& obj);
+	std::ostream& operator<<(std::ostream& os, ID obj);
+	std::ostream& operator<<(std::ostream& os, set obj);
 }
 
 #endif

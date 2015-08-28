@@ -59,7 +59,7 @@ template <> inline route_class::ID GetType<route_class::ID>(const rapidjson::Val
 }
 
 template <> inline void SetType<route_class::ID>(Handler &out, route_class::ID val) {
-	out.String(route_class::route_names[val].name);
+	out.String(route_class::route_names[static_cast<size_t>(val)].name);
 }
 
 template <> inline const char *GetTypeFriendlyName<route_class::ID>() { return "route class ID"; }

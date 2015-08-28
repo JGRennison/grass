@@ -31,7 +31,7 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 	auto input_err = [&]() -> bool {
 		message_formatter mf;
 		mf.RegisterVariableString("input", cmd);
-		w.LogUserMessageLocal(LOG_FAILED, mf.FormatMessage(w.GetUserMessageTextpool().GetTextByName("generic/invalidcommand")));
+		w.LogUserMessageLocal(LOG_CATEGORY::FAILED, mf.FormatMessage(w.GetUserMessageTextpool().GetTextByName("generic/invalidcommand")));
 		return false;
 	};
 
@@ -39,7 +39,7 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 		message_formatter mf;
 		mf.RegisterVariableString("reason", w.GetUserMessageTextpool().GetTextByName(reasoncode));
 		mf.RegisterVariableString("item", item);
-		w.LogUserMessageLocal(LOG_FAILED, mf.FormatMessage(w.GetUserMessageTextpool().GetTextByName("generic/cannotuse")));
+		w.LogUserMessageLocal(LOG_CATEGORY::FAILED, mf.FormatMessage(w.GetUserMessageTextpool().GetTextByName("generic/cannotuse")));
 		return false;
 	};
 

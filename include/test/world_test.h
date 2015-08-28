@@ -24,7 +24,7 @@
 
 class world_test : public world {
 	std::stringstream logtext;
-	LOG_CATEGORY last_logcat = LOG_NULL;
+	LOG_CATEGORY last_logcat = LOG_CATEGORY::INVALID;
 
 	public:
 	bool round_trip_actions = false;

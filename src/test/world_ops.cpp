@@ -35,18 +35,18 @@ struct test_fixture_world_ops_1 {
 TEST_CASE( "logging/basic", "Test basic text logging" ) {
 	test_fixture_world_ops_1 env;
 
-	env.w.LogUserMessageLocal(LOG_DENIED, "test test");
-	env.w.LogUserMessageLocal(LOG_MESSAGE, "foo bar");
+	env.w.LogUserMessageLocal(LOG_CATEGORY::DENIED, "test test");
+	env.w.LogUserMessageLocal(LOG_CATEGORY::MESSAGE, "foo bar");
 
 	REQUIRE(env.w.GetLogText() == "test test\nfoo bar\n");
-	REQUIRE(env.w.GetLastLogCategory() == LOG_MESSAGE);
+	REQUIRE(env.w.GetLastLogCategory() == LOG_CATEGORY::MESSAGE);
 }
 
 TEST_CASE( "text_pool/lookup", "Test basic text lookup" ) {
 	test_fixture_world_ops_1 env;
 
 	env.w.GetUserMessageTextpool().RegisterNewText("test", "foobar");
-	env.w.LogUserMessageLocal(LOG_MESSAGE, env.w.GetUserMessageTextpool().GetTextByName("test"));
+	env.w.LogUserMessageLocal(LOG_CATEGORY::MESSAGE, env.w.GetUserMessageTextpool().GetTextByName("test"));
 
 	REQUIRE(env.w.GetLogText() == "foobar\n");
 }
@@ -55,7 +55,7 @@ TEST_CASE( "text_pool/missing", "Test handling of nonexistent key text lookup" )
 	test_fixture_world_ops_1 env;
 
 	env.w.GetUserMessageTextpool().RegisterNewText("test", "foobar");
-	env.w.LogUserMessageLocal(LOG_MESSAGE, env.w.GetUserMessageTextpool().GetTextByName("test1"));
+	env.w.LogUserMessageLocal(LOG_CATEGORY::MESSAGE, env.w.GetUserMessageTextpool().GetTextByName("test1"));
 
 	REQUIRE(env.w.GetLogText() == "text_pool: No such key: test1\n");
 }
@@ -67,7 +67,7 @@ TEST_CASE( "text_pool/variables", "Test variable expansion" ) {
 	message_formatter mf;
 	mf.RegisterVariable("bar", [&](const std::string &in) { return "[baz](" + in + ")"; });
 	mf.RegisterVariable("foo", [&](const std::string &in) { return "[zab](" + in + ")"; });
-	env.w.LogUserMessageLocal(LOG_MESSAGE, mf.FormatMessage(env.w.GetUserMessageTextpool().GetTextByName("test")));
+	env.w.LogUserMessageLocal(LOG_CATEGORY::MESSAGE, mf.FormatMessage(env.w.GetUserMessageTextpool().GetTextByName("test")));
 
 	REQUIRE(env.w.GetLogText() == "foobar [baz]() [zab]() [baz](test) $bar\n");
 }
@@ -77,7 +77,7 @@ TEST_CASE( "text_pool/variables/badinput", "Test variable expansion input error"
 
 	env.w.GetUserMessageTextpool().RegisterNewText("test", "foobar $bar $foo() $bar(test) $() $@ $");
 	message_formatter mf;
-	env.w.LogUserMessageLocal(LOG_MESSAGE, mf.FormatMessage(env.w.GetUserMessageTextpool().GetTextByName("test")));
+	env.w.LogUserMessageLocal(LOG_CATEGORY::MESSAGE, mf.FormatMessage(env.w.GetUserMessageTextpool().GetTextByName("test")));
 
 	REQUIRE(env.w.GetLogText() == "foobar [No Such Variable] [No Such Variable] [No Such Variable] () @ \n");
 }

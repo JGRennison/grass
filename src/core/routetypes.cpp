@@ -22,7 +22,7 @@
 #include "core/route_types_serialisation.h"
 
 namespace route_class {
-	std::array<name_set, LAST_RTC> route_names {{
+	std::array<name_set, static_cast<size_t>(ID::END)> route_names {{
 		{ "null", "Null route type" },
 		{ "shunt", "Shunt route" },
 		{ "route", "Main route" },
@@ -33,7 +33,7 @@ namespace route_class {
 		{ "call_on", "Call On" },
 	}};
 
-	std::array<unsigned int, LAST_RTC> default_approach_locking_timeouts {{
+	std::array<unsigned int, static_cast<size_t>(ID::END)> default_approach_locking_timeouts {{
 		0,
 		30000,
 		90000,
@@ -130,8 +130,8 @@ namespace route_class {
 
 	std::pair<bool, ID> DeserialiseName(const std::string &name) {
 		bool found = false;
-		ID current = ID::RTC_NULL;
-		for (unsigned char i = 0; i < route_class::LAST_RTC; i++ ) {
+		ID current = ID::NONE;
+		for (unsigned char i = 0; i < static_cast<size_t>(ID::END); i++) {
 			if (route_class::route_names[i].name == name) {
 				found = true;
 				current = static_cast<ID>(i);
@@ -144,7 +144,7 @@ namespace route_class {
 	void SerialiseProp(const char *prop, set value, serialiser_output &so) {
 		so.json_out.String(prop);
 		so.json_out.StartArray();
-		for (unsigned char i = 0; i < route_class::LAST_RTC; i++ ) {
+		for (unsigned char i = 0; i < static_cast<size_t>(ID::END); i++) {
 			if (Flag(static_cast<ID>(i)) & value) {
 				so.json_out.String(route_class::route_names[i].name);
 			}
@@ -167,4 +167,15 @@ namespace route_class {
 		}
 		return os;
 	}
+
+	std::ostream& operator<<(std::ostream& os, set obj) {
+		return StreamOutRouteClassSet(os, obj);
+	}
+
+	std::ostream& operator<<(std::ostream& os, route_class::ID obj) {
+		os << GetRouteTypeName(obj);
+		return os;
+	}
+
+
 }

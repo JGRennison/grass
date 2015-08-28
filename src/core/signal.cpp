@@ -325,7 +325,7 @@ void generic_signal::UpdateSignalState() {
 		reserved_aspect = 0;
 		SetAspectNextTarget(nullptr);
 		SetAspectRouteTarget(nullptr);
-		aspect_type = route_class::RTC_NULL;
+		aspect_type = route_class::ID::NONE;
 		check_aspect_change();
 	};
 
@@ -775,7 +775,7 @@ route *auto_signal::GetRouteByIndex(unsigned int index) {
 
 void auto_signal::EnumerateRoutes(std::function<void (const route *)> func) const {
 	func(&signal_route);
-	if (overlap_route.type == route_class::RTC_OVERLAP) {
+	if (overlap_route.type == route_class::ID::OVERLAP) {
 		func(&overlap_route);
 	}
 };
@@ -812,10 +812,10 @@ bool auto_signal::PostLayoutInit(error_collection &ec) {
 
 	auto mkroutefunc = [&](route_class::ID type, const track_target_ptr &piece) -> route* {
 		route *candidate = nullptr;
-		if (type == route_class::RTC_ROUTE) {
+		if (type == route_class::ID::ROUTE) {
 			candidate = &this->signal_route;
 			candidate->index = 0;
-		} else if (type == route_class::RTC_OVERLAP) {
+		} else if (type == route_class::ID::OVERLAP) {
 			candidate = &this->overlap_route;
 			candidate->index = 1;
 		} else {
@@ -823,7 +823,7 @@ bool auto_signal::PostLayoutInit(error_collection &ec) {
 			return nullptr;
 		}
 
-		if (candidate->type != route_class::RTC_NULL) {
+		if (candidate->type != route_class::ID::NONE) {
 			ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Autosignal already has a route of the corresponding type");
 			return nullptr;
 		} else {
@@ -834,17 +834,17 @@ bool auto_signal::PostLayoutInit(error_collection &ec) {
 
 	bool scanresult = PostLayoutInitTrackScan(ec, 100, 0, 0, mkroutefunc);
 
-	if (scanresult && signal_route.type == route_class::RTC_ROUTE) {
+	if (scanresult && signal_route.type == route_class::ID::ROUTE) {
 		if (signal_route.RouteReservation(RRF::AUTO_ROUTE | RRF::TRY_RESERVE)) {
 			signal_route.RouteReservation(RRF::AUTO_ROUTE | RRF::RESERVE);
 
 			generic_signal *end_signal = FastSignalCast(signal_route.end.track, signal_route.end.direction);
 			if (end_signal && ! (end_signal->GetSignalFlags() & GSF::NO_OVERLAP)) {    //reserve an overlap beyond the end signal too if needed
 				end_signal->PostLayoutInit(ec);    //make sure that the end piece is inited
-				const route *best_overlap = end_signal->FindBestOverlap(route_class::Flag(route_class::RTC_OVERLAP));
+				const route *best_overlap = end_signal->FindBestOverlap(route_class::Flag(route_class::ID::OVERLAP));
 				if (best_overlap && best_overlap->RouteReservation(RRF::AUTO_ROUTE | RRF::TRY_RESERVE)) {
 					best_overlap->RouteReservation(RRF::AUTO_ROUTE | RRF::RESERVE);
-					signal_route.overlap_type = route_class::RTC_OVERLAP;
+					signal_route.overlap_type = route_class::ID::OVERLAP;
 				} else {
 					ec.RegisterNewError<error_signalinit>(*this, "Autosignal route cannot reserve overlap");
 					return false;
@@ -911,32 +911,32 @@ bool generic_signal::PostLayoutInitTrackScan(error_collection &ec, unsigned int 
 				restriction_permitted_types &= target_routing_piece->GetRouteEndRestrictions().CheckAllRestrictions(matching_restrictions,
 						route_pieces, track_target_ptr(this, EDGE::FRONT));
 
-				auto mk_route = [&](route_class::ID type) {
-					route *rt = make_blank_route(type, piece);
+				auto mk_route = [&](route_class::ID route_type) {
+					route *rt = make_blank_route(route_type, piece);
 					if (rt) {
 						rt->start = vartrack_target_ptr<routing_point>(this, EDGE::FRONT);
 						rt->pieces = route_pieces;
 						rt->end = vartrack_target_ptr<routing_point>(target_routing_piece, piece.direction);
 						route_defaults.ApplyTo(*rt);
-						rt->approach_locking_timeout = approach_locking_default_timeouts[type];
+						rt->approach_locking_timeout = approach_locking_default_timeouts[static_cast<size_t>(route_type)];
 						rt->FillLists();
 						rt->parent = this;
 
 						generic_signal *rt_sig = FastSignalCast(target_routing_piece, piece.direction);
 
-						if (route_class::NeedsOverlap(type)) {
-							if (rt_sig && !(rt_sig->GetSignalFlags()&GSF::NO_OVERLAP)) {
-								rt->overlap_type = route_class::ID::RTC_OVERLAP;
+						if (route_class::NeedsOverlap(route_type)) {
+							if (rt_sig && !(rt_sig->GetSignalFlags() & GSF::NO_OVERLAP)) {
+								rt->overlap_type = route_class::ID::OVERLAP;
 							}
 						}
 
 						for (auto &it : matching_restrictions) {
-							if (it->GetApplyRouteTypes() & route_class::Flag(type)) {
+							if (it->GetApplyRouteTypes() & route_class::Flag(route_type)) {
 								it->ApplyRestriction(*rt);
 							}
 						}
 
-						if (rt->overlap_type != route_class::ID::RTC_NULL) {    //check whether the target overlap exists
+						if (rt->overlap_type != route_class::ID::NONE) {    //check whether the target overlap exists
 							if (rt_sig) {
 								auto checktarg = [this, rt_sig, rt](error_collection &ec) {
 									if (!(rt_sig->GetAvailableOverlapTypes() & route_class::Flag(rt->overlap_type))) {
@@ -955,19 +955,19 @@ bool generic_signal::PostLayoutInitTrackScan(error_collection &ec, unsigned int 
 							}
 						}
 					} else {
-						ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Unable to make new route of type: " + route_class::GetRouteTypeFriendlyName(type));
+						ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Unable to make new route of type: " + route_class::GetRouteTypeFriendlyName(route_type));
 					}
 				};
 				route_class::set found_types = rrrs->allowed_routeclasses & available_route_types.end & restriction_permitted_types;
 				while (found_types) {
 					route_class::set bit = found_types & (found_types ^ (found_types - 1));
-					route_class::ID type = static_cast<route_class::ID>(__builtin_ffs(bit) - 1);
+					route_class::ID route_type = static_cast<route_class::ID>(__builtin_ffs(bit) - 1);
 					found_types ^= bit;
-					mk_route(type);
-					if (route_class::IsNotEndExtendable(type)) {
+					mk_route(route_type);
+					if (route_class::IsNotEndExtendable(route_type)) {
 						rrrs->allowed_routeclasses &= ~bit;    //don't look for more overlap ends beyond the end of the first
 					}
-					if (route_class::IsOverlap(type)) {
+					if (route_class::IsOverlap(route_type)) {
 						foundoverlaps |= bit;
 					}
 				}

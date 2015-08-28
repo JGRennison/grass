@@ -212,7 +212,7 @@ void route_common::DeserialiseRouteCommon(const deserialiser_input &subdi, error
 		subdi.RegisterProp("overlap");
 
 		if (odi.json.IsBool()) {
-			overlap_type = odi.json.GetBool() ? route_class::ID::RTC_OVERLAP : route_class::ID::RTC_NULL;
+			overlap_type = odi.json.GetBool() ? route_class::ID::OVERLAP : route_class::ID::NONE;
 		} else if (odi.json.IsString()) {
 			auto res = route_class::DeserialiseName(odi.json.GetString());
 			if (res.first) {

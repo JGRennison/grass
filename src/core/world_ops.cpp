@@ -44,7 +44,7 @@ void future_generic_user_message::ExecuteAction() {
 		message_formatter mf;
 		InitVariables(mf, *w);
 		PrepareVariables(mf, *w);
-		w->LogUserMessageLocal(LOG_MESSAGE, mf.FormatMessage(w->GetUserMessageTextpool().GetTextByName(text_key)));
+		w->LogUserMessageLocal(LOG_CATEGORY::MESSAGE, mf.FormatMessage(w->GetUserMessageTextpool().GetTextByName(text_key)));
 	}
 }
 
