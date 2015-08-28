@@ -31,19 +31,19 @@
 TEST_CASE( "track_circuit/deserialisation", "Test basic deserialisation of track circuit name" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
-		R"({ "type" : "startofline", "name" : "A"}, )"
-		R"({ "type" : "trackseg", "name" : "TS1", "trackcircuit" : "T1" }, )"
-		R"({ "type" : "routingmarker", "name" : "RM1", "trackcircuit" : "T1" }, )"
-		R"({ "type" : "trackseg", "name" : "TS2", "trackcircuit" : "T2" }, )"
-		R"({ "type" : "routingmarker", "name" : "RM2" }, )"
-		R"({ "type" : "endofline", "name" : "B" } )"
+		R"({ "type" : "start_of_line", "name" : "A"}, )"
+		R"({ "type" : "track_seg", "name" : "TS1", "track_circuit" : "T1" }, )"
+		R"({ "type" : "routing_marker", "name" : "RM1", "track_circuit" : "T1" }, )"
+		R"({ "type" : "track_seg", "name" : "TS2", "track_circuit" : "T2" }, )"
+		R"({ "type" : "routing_marker", "name" : "RM2" }, )"
+		R"({ "type" : "end_of_line", "name" : "B" } )"
 	"] }";
 	test_fixture_world_init_checked env(track_test_str);
 
-	trackseg *ts1 = PTR_CHECK(env.w->FindTrackByNameCast<trackseg>("TS1"));
-	trackseg *ts2 = PTR_CHECK(env.w->FindTrackByNameCast<trackseg>("TS2"));
-	routingmarker *rm1 = PTR_CHECK(env.w->FindTrackByNameCast<routingmarker>("RM1"));
-	routingmarker *rm2 = PTR_CHECK(env.w->FindTrackByNameCast<routingmarker>("RM2"));
+	track_seg *ts1 = PTR_CHECK(env.w->FindTrackByNameCast<track_seg>("TS1"));
+	track_seg *ts2 = PTR_CHECK(env.w->FindTrackByNameCast<track_seg>("TS2"));
+	routing_marker *rm1 = PTR_CHECK(env.w->FindTrackByNameCast<routing_marker>("RM1"));
+	routing_marker *rm2 = PTR_CHECK(env.w->FindTrackByNameCast<routing_marker>("RM2"));
 
 	CHECK(PTR_CHECK(ts1->GetTrackCircuit())->GetName() == "T1");
 	CHECK(PTR_CHECK(ts2->GetTrackCircuit())->GetName() == "T2");
@@ -54,42 +54,42 @@ TEST_CASE( "track_circuit/deserialisation", "Test basic deserialisation of track
 
 std::string tcdereservation_test_str_1 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
-	R"({ "type" : "startofline", "name" : "A" }, )"
-	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1" }, )"
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "start_of_line", "name" : "A" }, )"
+	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S1", "routerestrictions" : [{ "torr" : true }] }, )"
-	R"({ "type" : "trackseg", "name" : "TS2", "length" : 20000, "trackcircuit" : "T2" }, )"
-	R"({ "type" : "routingmarker", "overlapend" : true, "trackcircuit" : "T2" }, )"
-	R"({ "type" : "trackseg", "name" : "TS3", "length" : 30000, "trackcircuit" : "T3" }, )"
-	R"({ "type" : "routingmarker" }, )"
-	R"({ "type" : "trackseg", "name" : "TS4", "length" : 30000, "trackcircuit" : "T4" }, )"
+	R"({ "type" : "track_seg", "name" : "TS2", "length" : 20000, "track_circuit" : "T2" }, )"
+	R"({ "type" : "routing_marker", "overlapend" : true, "track_circuit" : "T2" }, )"
+	R"({ "type" : "track_seg", "name" : "TS3", "length" : 30000, "track_circuit" : "T3" }, )"
+	R"({ "type" : "routing_marker" }, )"
+	R"({ "type" : "track_seg", "name" : "TS4", "length" : 30000, "track_circuit" : "T4" }, )"
 
 	R"({ "type" : "points", "name" : "P1" }, )"
 
-	R"({ "type" : "trackseg", "name" : "TS5", "length" : 30000, "trackcircuit" : "T5" }, )"
+	R"({ "type" : "track_seg", "name" : "TS5", "length" : 30000, "track_circuit" : "T5" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S2", "routerestrictions" : [{ "torr" : false }] }, )"
-	R"({ "type" : "trackseg", "name" : "TS6", "length" : 20000, "trackcircuit" : "T6" }, )"
-	R"({ "type" : "routingmarker", "overlapend" : true }, )"
-	R"({ "type" : "trackseg", "name" : "TS7", "length" : 20000, "trackcircuit" : "T7" }, )"
-	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "route" } }, )"
+	R"({ "type" : "track_seg", "name" : "TS6", "length" : 20000, "track_circuit" : "T6" }, )"
+	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "track_seg", "name" : "TS7", "length" : 20000, "track_circuit" : "T7" }, )"
+	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "route" } }, )"
 
-	R"({ "type" : "trackseg", "name" : "TS8", "length" : 30000, "trackcircuit" : "T4", "connect" : { "to" : "P1" } }, )"
-	R"({ "type" : "endofline", "name" : "C" } )"
+	R"({ "type" : "track_seg", "name" : "TS8", "length" : 30000, "track_circuit" : "T4", "connect" : { "to" : "P1" } }, )"
+	R"({ "type" : "end_of_line", "name" : "C" } )"
 "] }";
 
 TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route dereservation" ) {
 	test_fixture_world_init_checked env(tcdereservation_test_str_1);
 
-	genericsignal *s1 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S1"));
-	genericsignal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S2"));
-	routingpoint *b = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>("B"));
+	generic_signal *s1 = PTR_CHECK(env.w->FindTrackByNameCast<generic_signal>("S1"));
+	generic_signal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<generic_signal>("S2"));
+	routing_point *b = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("B"));
 
 	auto settcstate = [&](const std::string &tcname, bool enter) {
 		track_circuit *tc = env.w->track_circuits.FindOrMakeByName(tcname);
-		tc->SetTCFlagsMasked(enter ? track_circuit::TCF::FORCEOCCUPIED : track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+		tc->SetTCFlagsMasked(enter ? track_circuit::TCF::FORCE_OCCUPIED : track_circuit::TCF::ZERO, track_circuit::TCF::FORCE_OCCUPIED);
 	};
 
-	auto hasroute = [&](generictrack *piece, const route *r) -> bool {
+	auto hasroute = [&](generic_track *piece, const route *r) -> bool {
 		if (!piece) return false;
 		bool found = false;
 		piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
@@ -100,8 +100,8 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 		return found;
 	};
 
-	auto checkstate = [&](generictrack *start, generictrack *end, const route *rt) {
-		std::function<void(generictrack *piece)> checkpiece = [&](generictrack *piece) {
+	auto checkstate = [&](generic_track *start, generic_track *end, const route *rt) {
+		std::function<void(generic_track *piece)> check_piece = [&](generic_track *piece) {
 			CHECK(piece != nullptr);
 			if (!piece) return;
 			bool found = false;
@@ -112,7 +112,7 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 					if (piece == end) {
 						CHECK(hasroute(piece->GetConnectingPieceByIndex(r_direction, r_index).track, reserved_route) == false);
 					} else {
-						checkpiece(piece->GetConnectingPieceByIndex(r_direction, r_index).track);
+						check_piece(piece->GetConnectingPieceByIndex(r_direction, r_index).track);
 						if (piece == start) {
 							CHECK(hasroute(piece->GetEdgeConnectingPiece(r_direction).track, reserved_route) == false);
 						}
@@ -124,12 +124,12 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 				WARN("Expected route to be reserved at piece " << piece);
 			}
 		};
-		checkpiece(start);
+		check_piece(start);
 	};
 
 	auto checkunreserved = [&](const route *rt) {
 		REQUIRE(rt != nullptr);
-		auto checkpiece = [&](generictrack *piece) {
+		auto check_piece = [&](generic_track *piece) {
 			bool found = false;
 			piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
 				if (reserved_route == rt) {
@@ -141,15 +141,15 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 			}
 			CHECK(found == false);
 		};
-		checkpiece(rt->start.track);
+		check_piece(rt->start.track);
 		for (auto &it : rt->pieces) {
-			checkpiece(it.location.track);
+			check_piece(it.location.track);
 		}
-		checkpiece(rt->end.track);
+		check_piece(rt->end.track);
 	};
 
-	env.w->SubmitAction(action_reservepath(*(env.w), s1, s2));
-	env.w->SubmitAction(action_reservepath(*(env.w), s2, b));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s1, s2));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s2, b));
 	env.w->GameStep(1);
 
 	const route *s1rt = s1->GetCurrentForwardRoute();
@@ -172,7 +172,7 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	INFO("Check 3");
 	checkunreserved(s1rt);
 
-	env.w->SubmitAction(action_reservepath(*(env.w), s1, s2));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s1, s2));
 	env.w->GameStep(1);
 
 	settcstate("T2", true);
@@ -200,7 +200,7 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	checkstate(s2, b, s2rt);
 
 	settcstate("T7", true);
-	env.w->SubmitAction(action_unreservetrack(*(env.w), *s2));
+	env.w->SubmitAction(action_unreserve_track(*(env.w), *s2));
 	env.w->GameStep(1);
 	settcstate("T7", false);
 	INFO("Check 10");
@@ -211,24 +211,24 @@ TEST_CASE( "track_circuit/reservation_state", "Test track circuit reservation st
 	test_fixture_world_init_checked env(tcdereservation_test_str_1);
 	track_circuit *t4;
 	track_circuit *t5;
-	trackseg *ts4;
-	trackseg *ts5;
-	trackseg *ts8;
-	genericsignal *s1;
-	genericsignal *s2;
+	track_seg *ts4;
+	track_seg *ts5;
+	track_seg *ts8;
+	generic_signal *s1;
+	generic_signal *s2;
 
 	auto setup = [&]() {
 		t4 = env.w->track_circuits.FindOrMakeByName("T4");
 		t5 = env.w->track_circuits.FindOrMakeByName("T5");
-		ts4 = PTR_CHECK(env.w->FindTrackByNameCast<trackseg>("TS4"));
-		ts5 = PTR_CHECK(env.w->FindTrackByNameCast<trackseg>("TS5"));
-		ts8 = PTR_CHECK(env.w->FindTrackByNameCast<trackseg>("TS8"));
-		s1 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S1"));
-		s2 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S2"));
+		ts4 = PTR_CHECK(env.w->FindTrackByNameCast<track_seg>("TS4"));
+		ts5 = PTR_CHECK(env.w->FindTrackByNameCast<track_seg>("TS5"));
+		ts8 = PTR_CHECK(env.w->FindTrackByNameCast<track_seg>("TS8"));
+		s1 = PTR_CHECK(env.w->FindTrackByNameCast<generic_signal>("S1"));
+		s2 = PTR_CHECK(env.w->FindTrackByNameCast<generic_signal>("S2"));
 	};
 
 	auto test = [&](std::function<void()> RoundTrip) {
-		env.w->SubmitAction(action_reservepath(*(env.w), s1, s2));
+		env.w->SubmitAction(action_reserve_path(*(env.w), s1, s2));
 		RoundTrip();
 		CHECK(t4->IsAnyPieceReserved() == false);
 		CHECK(t5->IsAnyPieceReserved() == false);
@@ -245,7 +245,7 @@ TEST_CASE( "track_circuit/reservation_state", "Test track circuit reservation st
 		CHECK(t4->IsAnyPieceReserved() == true);
 		CHECK(t5->IsAnyPieceReserved() == true);
 
-		env.w->SubmitAction(action_unreservetrack(*(env.w), *s1));
+		env.w->SubmitAction(action_unreserve_track(*(env.w), *s1));
 		RoundTrip();
 		CHECK(t4->IsAnyPieceReserved() == true);
 		CHECK(t5->IsAnyPieceReserved() == true);
@@ -270,39 +270,39 @@ TEST_CASE( "track_circuit/reservation_state", "Test track circuit reservation st
 
 std::string berth_test_str_1 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectauto", "basetype" : "autosignal", "content" : { "maxaspect" : 3 } }, )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
-	R"({ "type" : "startofline", "name" : "A" }, )"
-	R"({ "type" : "trackseg", "name" : "TS0", "length" : 50000, "berth" : true  }, )"
+	R"({ "type" : "typedef", "newtype" : "4aspectauto", "basetype" : "auto_signal", "content" : { "maxaspect" : 3 } }, )"
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "start_of_line", "name" : "A" }, )"
+	R"({ "type" : "track_seg", "name" : "TS0", "length" : 50000, "berth" : true  }, )"
 	R"({ "type" : "4aspectauto", "name" : "S0" }, )"
-	R"({ "type" : "trackseg", "name" : "TS0A", "length" : 50000, "trackcircuit" : "T0A", "berth" : true }, )"
+	R"({ "type" : "track_seg", "name" : "TS0A", "length" : 50000, "track_circuit" : "T0A", "berth" : true }, )"
 	R"({ "type" : "4aspectauto", "name" : "S0A", "overlapend" : true }, )"
-	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1" }, )"
+	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1" }, )"
 	R"({ "type" : "4aspectauto", "name" : "S1", "overlapend" : true }, )"
-	R"({ "type" : "trackseg", "name" : "TS2", "length" : 20000, "trackcircuit" : "T2", "berth" : true }, )"
+	R"({ "type" : "track_seg", "name" : "TS2", "length" : 20000, "track_circuit" : "T2", "berth" : true }, )"
 	R"({ "type" : "4aspectroute", "name" : "S2", "overlapend" : true, "overlapswingable" : true }, )"
-	R"({ "type" : "trackseg", "name" : "TS3", "length" : 30000, "trackcircuit" : "T3" }, )"
+	R"({ "type" : "track_seg", "name" : "TS3", "length" : 30000, "track_circuit" : "T3" }, )"
 
 	R"({ "type" : "points", "name" : "P1" }, )"
 
-	R"({ "type" : "trackseg", "name" : "TS4", "length" : 30000, "trackcircuit" : "T4", "berth" : true }, )"
+	R"({ "type" : "track_seg", "name" : "TS4", "length" : 30000, "track_circuit" : "T4", "berth" : true }, )"
 	R"({ "type" : "4aspectauto", "name" : "S3", "overlapend" : true }, )"
-	R"({ "type" : "trackseg", "name" : "TS5", "length" : 20000, "trackcircuit" : "T5" }, )"
-	R"({ "type" : "routingmarker", "overlapend" : true }, )"
-	R"({ "type" : "trackseg", "name" : "TS6", "length" : 20000, "trackcircuit" : "T6", "berth" : true }, )"
-	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "route" }, "trackcircuit" : "T6" }, )"
+	R"({ "type" : "track_seg", "name" : "TS5", "length" : 20000, "track_circuit" : "T5" }, )"
+	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "track_seg", "name" : "TS6", "length" : 20000, "track_circuit" : "T6", "berth" : true }, )"
+	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "route" }, "track_circuit" : "T6" }, )"
 
-	R"({ "type" : "trackseg", "name" : "TS7", "length" : 30000, "connect" : { "to" : "P1" }, "berth" : true }, )"
-	R"({ "type" : "endofline", "name" : "C", "end" : { "allow" : [ "route", "overlap" ] } } )"
+	R"({ "type" : "track_seg", "name" : "TS7", "length" : 30000, "connect" : { "to" : "P1" }, "berth" : true }, )"
+	R"({ "type" : "end_of_line", "name" : "C", "end" : { "allow" : [ "route", "overlap" ] } } )"
 "] }";
 
 TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 	test_fixture_world_init_checked env(berth_test_str_1);
 
-	genericsignal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S2"));
-	genericsignal *s3 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S3"));
-	generictrack *t[7];
-	trackberth *b[7];
+	generic_signal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<generic_signal>("S2"));
+	generic_signal *s3 = PTR_CHECK(env.w->FindTrackByNameCast<generic_signal>("S3"));
+	generic_track *t[7];
+	track_berth *b[7];
 	for (unsigned int i = 0; i < sizeof(t)/sizeof(t[0]); i++) {
 		INFO("Load loop: " << i);
 		t[i] = PTR_CHECK(env.w->FindTrackByName(string_format("TS%d", i)));
@@ -321,16 +321,16 @@ TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 	CHECK(b[4]->contents == "");
 	CHECK(b[6]->contents == "");
 
-	env.w->SubmitAction(action_reservepath(*(env.w), s2, s3));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s2, s3));
 	env.w->GameStep(1);
 
 	b[2]->contents = "test";
-	PTR_CHECK(t[1]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	PTR_CHECK(t[1]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::FORCE_OCCUPIED, track_circuit::TCF::FORCE_OCCUPIED);
 
 	auto advance = [&](unsigned int index, unsigned int berthindex) {
 		INFO("Berth advance: " << index << ", expected berth: " << berthindex);
-		PTR_CHECK(t[index]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
-		PTR_CHECK(t[index-1]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+		PTR_CHECK(t[index]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::FORCE_OCCUPIED, track_circuit::TCF::FORCE_OCCUPIED);
+		PTR_CHECK(t[index-1]->GetTrackCircuit())->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCE_OCCUPIED);
 		for (unsigned int i = 0; i < sizeof(b)/sizeof(b[0]); i++) {
 			INFO("Testing berth: " << i << ", expected berth: " << berthindex);
 			if (i == berthindex) {
@@ -351,31 +351,31 @@ TEST_CASE( "berth/step/1", "Berth stepping test no 1: basic stepping" ) {
 
 void FillBerth(test_fixture_world &env, const std::string &name, std::string &&val) {
 	INFO("FillBerth: " << name << ", " << val);
-	generictrack *gt = PTR_CHECK(env.w->FindTrackByName(name));
+	generic_track *gt = PTR_CHECK(env.w->FindTrackByName(name));
 	REQUIRE(gt->HasBerth() == true);
 	PTR_CHECK(gt->GetBerth())->contents = std::move(val);
 }
 
 void SetTrackTC(test_fixture_world &env, const std::string &name, bool val) {
 	INFO("SetTrackTC: " << name << ", " << val);
-	generictrack *gt = PTR_CHECK(env.w->FindTrackByName(name));
-	PTR_CHECK(gt->GetTrackCircuit())->SetTCFlagsMasked(val ? track_circuit::TCF::FORCEOCCUPIED : track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	generic_track *gt = PTR_CHECK(env.w->FindTrackByName(name));
+	PTR_CHECK(gt->GetTrackCircuit())->SetTCFlagsMasked(val ? track_circuit::TCF::FORCE_OCCUPIED : track_circuit::TCF::ZERO, track_circuit::TCF::FORCE_OCCUPIED);
 }
 
 void CheckBerth(test_fixture_world &env, const std::string &name, const std::string &val) {
 	INFO("CheckBerth: " << name << ", " << val);
-	generictrack *gt = PTR_CHECK(env.w->FindTrackByName(name));
+	generic_track *gt = PTR_CHECK(env.w->FindTrackByName(name));
 	REQUIRE(gt->HasBerth() == true);
 	CHECK(PTR_CHECK(gt->GetBerth())->contents == val);
 }
 
 void SetRoute(test_fixture_world &env, const std::string &start, const std::string &end) {
 	INFO("SetRoute: " << start << " -> " << end);
-	routingpoint *s = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>(start));
-	routingpoint *e = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>(end));
+	routing_point *s = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>(start));
+	routing_point *e = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>(end));
 
 	std::string logtext = env.w->GetLogText();
-	env.w->SubmitAction(action_reservepath(*(env.w), s, e));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s, e));
 	env.w->GameStep(1);
 	env.w->GameStep(10000);
 
@@ -395,10 +395,10 @@ TEST_CASE( "berth/step/2", "Berth stepping test no 2: check no stepping when no 
 TEST_CASE( "berth/step/3", "Berth stepping test no 3: check stepping when route has partial TC coverage" ) {
 	test_fixture_world_init_checked env(berth_test_str_1);
 
-	genericsignal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<genericsignal>("S2"));
-	routingpoint *c = PTR_CHECK(env.w->FindTrackByNameCast<routingpoint>("C"));
+	generic_signal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<generic_signal>("S2"));
+	routing_point *c = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("C"));
 
-	env.w->SubmitAction(action_reservepath(*(env.w), s2, c));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s2, c));
 	env.w->GameStep(100000);    //give points enough time to move
 	CHECK(env.w->GetLogText() == "");
 	if (env.ec.GetErrorCount()) {
@@ -423,24 +423,24 @@ TEST_CASE( "berth/step/4", "Berth stepping test no 4: check stepping when leavin
 
 std::string berth_test_str_2 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
-	R"({ "type" : "startofline", "name" : "A" }, )"
-	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1", "berth" : true  }, )"
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "start_of_line", "name" : "A" }, )"
+	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1", "berth" : true  }, )"
 	R"({ "type" : "4aspectroute", "name" : "S1" }, )"
-	R"({ "type" : "trackseg", "name" : "TS2", "length" : 50000, "trackcircuit" : "T2" }, )"
+	R"({ "type" : "track_seg", "name" : "TS2", "length" : 50000, "track_circuit" : "T2" }, )"
 
 	R"({ "type" : "points", "name" : "P1", "reverseautoconnection" : true }, )"
 
 	R"({ "type" : "4aspectroute", "name" : "BS", "reverseautoconnection" : true, "overlapend_rev" : true }, )"
-	R"({ "type" : "trackseg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
-	R"({ "type" : "trackseg", "name" : "BTS1", "length" : 50000, "berth" : true }, )"
-	R"({ "type" : "trackseg", "name" : "BTS2", "length" : 50000, "berth" : true }, )"
-	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : [ "route", "overlap" ] } }, )"
+	R"({ "type" : "track_seg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
+	R"({ "type" : "track_seg", "name" : "BTS1", "length" : 50000, "berth" : true }, )"
+	R"({ "type" : "track_seg", "name" : "BTS2", "length" : 50000, "berth" : true }, )"
+	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : [ "route", "overlap" ] } }, )"
 
-	R"({ "type" : "trackseg", "name" : "RTS1", "length" : 30000, "trackcircuit" : "RT1", "connect" : { "to" : "P1" }, "berth" : true }, )"
+	R"({ "type" : "track_seg", "name" : "RTS1", "length" : 30000, "track_circuit" : "RT1", "connect" : { "to" : "P1" }, "berth" : true }, )"
 	R"({ "type" : "4aspectroute", "name" : "RS1", "overlapend" : true }, )"
-	R"({ "type" : "trackseg", "name" : "RTS2", "length" : 50000, "trackcircuit" : "RT2", "berth" : true }, )"
-	R"({ "type" : "endofline", "name" : "C", "end" : { "allow" : [ "route", "overlap" ] } } )"
+	R"({ "type" : "track_seg", "name" : "RTS2", "length" : 50000, "track_circuit" : "RT2", "berth" : true }, )"
+	R"({ "type" : "end_of_line", "name" : "C", "end" : { "allow" : [ "route", "overlap" ] } } )"
 "] }";
 
 TEST_CASE( "berth/step/5", "Berth stepping test no 5: check stepping into multi-berth bay" ) {
@@ -525,16 +525,16 @@ TEST_CASE( "berth/step/10", "Berth stepping test no 10: check stepping into mult
 
 std::string berth_test_str_3 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "routesignal", "content" : { "maxaspect" : 3, "routesignal" : true } }, )"
+	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
 	R"({ "type" : "typedef", "newtype" : "4aspectrouteshunt", "basetype" : "4aspectroute", "content" : { "shuntsignal" : true } }, )"
-	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "routesignal", "content" : { "shuntsignal" : true, "through" : { "allow" : "route" } } }, )"
-	R"({ "type" : "startofline", "name" : "A" }, )"
-	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1", "berth" : true  }, )"
+	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "route_signal", "content" : { "shuntsignal" : true, "through" : { "allow" : "route" } } }, )"
+	R"({ "type" : "start_of_line", "name" : "A" }, )"
+	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1", "berth" : true  }, )"
 	R"({ "type" : "4aspectrouteshunt", "name" : "S1" }, )"
-	R"({ "type" : "trackseg", "name" : "TS2", "length" : 50000, "trackcircuit" : "T2", "berth" : true  }, )"
+	R"({ "type" : "track_seg", "name" : "TS2", "length" : 50000, "track_circuit" : "T2", "berth" : true  }, )"
 	R"({ "type" : "shunt", "name" : "S2", "overlapend" : true }, )"
-	R"({ "type" : "trackseg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
-	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : [ "route", "overlap" ] } } )"
+	R"({ "type" : "track_seg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
+	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : [ "route", "overlap" ] } } )"
 "] }";
 
 TEST_CASE( "berth/step/11", "Berth stepping test no 11: check stepping across unrelated berths" ) {
@@ -562,15 +562,15 @@ TEST_CASE( "berth/step/12", "Berth stepping test no 12: check stepping across un
 
 std::string berth_test_str_4 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "routesignal", "content" : { "shuntsignal" : true } }, )"
-	R"({ "type" : "startofline", "name" : "A", "end" : { "allow" : "shunt" } }, )"
-	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1", "berth" : true }, )"
+	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "route_signal", "content" : { "shuntsignal" : true } }, )"
+	R"({ "type" : "start_of_line", "name" : "A", "end" : { "allow" : "shunt" } }, )"
+	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1", "berth" : true }, )"
 	R"({ "type" : "shunt", "name" : "S1" }, )"
 	R"({ "type" : "shunt", "name" : "RS1", "reverseautoconnection" : true }, )"
-	R"({ "type" : "trackseg", "name" : "TS2", "length" : 50000, "trackcircuit" : "T2", "berth" : "back" }, )"
+	R"({ "type" : "track_seg", "name" : "TS2", "length" : 50000, "track_circuit" : "T2", "berth" : "back" }, )"
 	R"({ "type" : "shunt", "name" : "RS2", "overlapend" : true, "reverseautoconnection" : true }, )"
-	R"({ "type" : "trackseg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
-	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "shunt" } } )"
+	R"({ "type" : "track_seg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
+	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "shunt" } } )"
 "] }";
 
 TEST_CASE( "berth/step/13", "Berth stepping test no 13: check stepping across berth in opposite direction" ) {
@@ -632,17 +632,17 @@ TEST_CASE( "berth/step/16", "Berth stepping test no 16: check stepping using ber
 
 std::string berth_test_str_5 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "routesignal", "content" : { "shuntsignal" : true } }, )"
-	R"({ "type" : "startofline", "name" : "A", "end" : { "allow" : "shunt" } }, )"
-	R"({ "type" : "trackseg", "name" : "TS1", "length" : 50000, "trackcircuit" : "T1", "berth" : true }, )"
+	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "route_signal", "content" : { "shuntsignal" : true } }, )"
+	R"({ "type" : "start_of_line", "name" : "A", "end" : { "allow" : "shunt" } }, )"
+	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1", "berth" : true }, )"
 	R"({ "type" : "shunt", "name" : "S1" }, )"
-	R"({ "type" : "trackseg", "name" : "TS2", "length" : 50000, "trackcircuit" : "T1" }, )"
+	R"({ "type" : "track_seg", "name" : "TS2", "length" : 50000, "track_circuit" : "T1" }, )"
 	R"({ "type" : "shunt", "name" : "RS1", "reverseautoconnection" : true }, )"
-	R"({ "type" : "trackseg", "name" : "BTS0", "length" : 50000, "trackcircuit" : "BT0", "berth" : true }, )"
-	R"({ "type" : "trackseg", "name" : "BTS1", "length" : 50000, "trackcircuit" : "BT1", "berth" : true }, )"
+	R"({ "type" : "track_seg", "name" : "BTS0", "length" : 50000, "track_circuit" : "BT0", "berth" : true }, )"
+	R"({ "type" : "track_seg", "name" : "BTS1", "length" : 50000, "track_circuit" : "BT1", "berth" : true }, )"
 	R"({ "type" : "shunt", "name" : "S2", "overlapend" : true }, )"
-	R"({ "type" : "trackseg", "name" : "TS3", "length" : 50000, "trackcircuit" : "T3", "berth" : true }, )"
-	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "shunt" } } )"
+	R"({ "type" : "track_seg", "name" : "TS3", "length" : 50000, "track_circuit" : "T3", "berth" : true }, )"
+	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "shunt" } } )"
 "] }";
 
 TEST_CASE( "berth/step/17", "Berth stepping test no 17: check stepping out of non-last berth from bidirectional multi-berth section" ) {
@@ -680,13 +680,13 @@ TEST_CASE( "track_circuit/updates", "Test basic track circuit updates" ) {
 
 	track_circuit *tc = PTR_CHECK(env.w->track_circuits.FindOrMakeByName("T1"));
 
-	tc->SetTCFlagsMasked(track_circuit::TCF::FORCEOCCUPIED, track_circuit::TCF::FORCEOCCUPIED);
+	tc->SetTCFlagsMasked(track_circuit::TCF::FORCE_OCCUPIED, track_circuit::TCF::FORCE_OCCUPIED);
 	CHECK(env.w->GetLastUpdateSet().size() == 2);
 
 	env.w->GameStep(1);
 	CHECK(env.w->GetLastUpdateSet().size() == 0);
 
-	tc->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCEOCCUPIED);
+	tc->SetTCFlagsMasked(track_circuit::TCF::ZERO, track_circuit::TCF::FORCE_OCCUPIED);
 	CHECK(env.w->GetLastUpdateSet().size() == 2);
 
 	env.w->GameStep(1);
@@ -719,5 +719,5 @@ TEST_CASE( "track_circuit/deserialisation/gamestate/basicload", "Test basic game
 	INFO("Error Collection: " << env2.ec);
 	CHECK(env2.ec.GetErrorCount() == 0);
 
-	CHECK(t1->GetTCFlags() == track_train_counter_block::TCF::FORCEOCCUPIED);
+	CHECK(t1->GetTCFlags() == track_train_counter_block::TCF::FORCE_OCCUPIED);
 }

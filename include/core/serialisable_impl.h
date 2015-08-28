@@ -136,9 +136,9 @@ struct deserialiser_input {
 };
 
 enum class SOUTPUT_FLAGS {
-	OUTPUT_STATIC        = 1<<0,
-	OUTPUT_ALLNAMES      = 1<<1,
-	OUTPUT_NONAUTONAMES  = 1<<2,
+	OUTPUT_STATIC         = 1<<0,
+	OUTPUT_ALL_NAMES      = 1<<1,
+	OUTPUT_NON_AUTO_NAMES = 1<<2,
 };
 template<> struct enum_traits< SOUTPUT_FLAGS > { static constexpr bool flags = true; };
 

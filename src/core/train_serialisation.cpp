@@ -33,19 +33,19 @@ void vehicle_class::Deserialise(const deserialiser_input &di, error_collection &
 	CheckTransJsonValueDefProc(cumul_drag_v, di, "dragv", 0, ec, dsconv::ForcePerSpeedCoeff);
 	CheckTransJsonValueDefProc(cumul_drag_v2, di, "dragv2", 0, ec, dsconv::ForcePerSpeedSqCoeff);
 	CheckTransJsonValueDefProc(face_drag_v2, di, "facedragv2", 0, ec, dsconv::ForcePerSpeedSqCoeff);
-	if (CheckTransJsonValueProc(fullmass, di, "mass", ec, dsconv::Mass)) {
-		emptymass = fullmass;
+	if (CheckTransJsonValueProc(full_mass, di, "mass", ec, dsconv::Mass)) {
+		empty_mass = full_mass;
 	} else {
-		CheckTransJsonValueDefProc(fullmass, di, "fullmass", 0, ec, dsconv::Mass);
-		CheckTransJsonValueDefProc(emptymass, di, "emptymass", 0, ec, dsconv::Mass);
-		if (fullmass < emptymass) {
+		CheckTransJsonValueDefProc(full_mass, di, "full_mass", 0, ec, dsconv::Mass);
+		CheckTransJsonValueDefProc(empty_mass, di, "empty_mass", 0, ec, dsconv::Mass);
+		if (full_mass < empty_mass) {
 			ec.RegisterNewError<error_deserialisation>(di, "Vehicle class: full mass < empty mass");
 		}
 	}
-	if (!length || !fullmass || !emptymass) {
+	if (!length || !full_mass || !empty_mass) {
 		ec.RegisterNewError<error_deserialisation>(di, "Vehicle class: length and mass must be non-zero");
 	}
-	CheckTransJsonSubArray(tractiontypes, di, "tractiontypes", "tractiontypes", ec);
+	CheckTransJsonSubArray(traction_types, di, "traction_types", "traction_types", ec);
 }
 
 void vehicle_class::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -63,18 +63,18 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 		return;
 	}
 
-	auto add_train_segment = [&](const std::string &vehtypename, unsigned int multiplier, bool reversed, bool full, bool calc_seg_mass, unsigned int seg_mass) {
+	auto add_train_segment = [&](const std::string &veh_typename, unsigned int multiplier, bool reversed, bool full, bool calc_seg_mass, unsigned int seg_mass) {
 		if (multiplier == 0) {
 			return;
 		}
-		vehicle_class *vc = di.w->FindVehicleClassByName(vehtypename);
+		vehicle_class *vc = di.w->FindVehicleClassByName(veh_typename);
 		if (!vc) {
-			genericerror(di, "No such vehicle class: " + vehtypename);
+			genericerror(di, "No such vehicle class: " + veh_typename);
 			return;
 		}
 		train_segments.emplace_back();
 		train_unit &tu = train_segments.back();
-		tu.vehtype = vc;
+		tu.veh_type = vc;
 		if (reversed) {
 			tu.stflags |= train_unit::STF::REV;
 		}
@@ -85,7 +85,7 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 		if (calc_seg_mass) {
 			tu.CalculateSegmentMass();
 		} else {
-			if (seg_mass > vc->fullmass * multiplier || seg_mass < vc->emptymass * multiplier) {
+			if (seg_mass > vc->full_mass * multiplier || seg_mass < vc->empty_mass * multiplier) {
 				genericerror(di, "Segment mass out of range");
 			}
 			tu.segment_total_mass = seg_mass;
@@ -121,9 +121,9 @@ void train::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	CheckIterateJsonArrayOrValue(di, "vehicleclasses", "vehicleclass", ec, parse_train_segment_val);
 	CheckTransJsonValueProc(current_speed, di, "speed", ec, dsconv::Speed);
 	CheckTransJsonValue(head_relative_height, di, "head_relative_height", ec);
-	CheckTransJsonValue(vehspeedclass, di, "vehspeedclass", ec);
-	CheckTransJsonSubArray(active_tractions, di, "activetractions", "tractiontypes", ec);
-	CheckTransJsonValueFlag(tflags, TF::CONSISTREVDIR, di, "reverseconsist", ec);
+	CheckTransJsonValue(veh_speed_class, di, "veh_speed_class", ec);
+	CheckTransJsonSubArray(active_tractions, di, "activetractions", "traction_types", ec);
+	CheckTransJsonValueFlag(tflags, TF::CONSIST_REV_DIR, di, "reverseconsist", ec);
 	CheckTransJsonSubObj(la, di, "lookahead", "lookahead", ec, false);
 
 	ValidateActiveTractionSet();
@@ -144,7 +144,7 @@ void train::Serialise(serialiser_output &so, error_collection &ec) const {
 	world_obj::Serialise(so, ec);
 
 	SerialiseObjectArrayContainer(train_segments, so, "vehicleclasses", [&](serialiser_output &so, const train_unit &tu) {
-		SerialiseValueJson(tu.vehtype->name, so, "classname");
+		SerialiseValueJson(tu.veh_type->name, so, "classname");
 		SerialiseValueJson(tu.veh_multiplier, so, "count");
 		SerialiseFlagJson(tu.stflags, train_unit::STF::FULL, so, "full");
 		SerialiseFlagJson(tu.stflags, train_unit::STF::REV, so, "reversed");
@@ -152,9 +152,9 @@ void train::Serialise(serialiser_output &so, error_collection &ec) const {
 	});
 	SerialiseValueJson(current_speed, so, "speed");
 	SerialiseValueJson(head_relative_height - tail_relative_height, so, "head_relative_height");
-	SerialiseValueJson(vehspeedclass, so, "vehspeedclass");
+	SerialiseValueJson(veh_speed_class, so, "veh_speed_class");
 	SerialiseSubArrayJson(active_tractions, so, "activetractions", ec);
-	SerialiseFlagJson(tflags, TF::CONSISTREVDIR, so, "reverseconsist");
+	SerialiseFlagJson(tflags, TF::CONSIST_REV_DIR, so, "reverseconsist");
 	SerialiseSubObjJson(la, so, "lookahead", ec);
 
 	//todo: timetables, headcode

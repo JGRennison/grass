@@ -25,100 +25,100 @@
 #include <algorithm>
 
 void route_common::ApplyTo(route_common &target) const {
-	if (routecommonflags & RCF::PRIORITYSET) {
+	if (route_common_flags & RCF::PRIORITY_SET) {
 		target.priority = priority;
 	}
-	if (routecommonflags & RCF::APLOCK_TIMEOUTSET) {
-		target.approachlocking_timeout = approachlocking_timeout;
+	if (route_common_flags & RCF::AP_LOCKING_TIMEOUT_SET) {
+		target.approach_locking_timeout = approach_locking_timeout;
 	}
-	if (routecommonflags & RCF::OVERLAPTIMEOUTSET) {
+	if (route_common_flags & RCF::OVERLAP_TIMEOUT_SET) {
 		target.overlap_timeout = overlap_timeout;
 	}
-	if (routecommonflags & RCF::APCONTROLTRIGGERDELAY_SET) {
-		target.approachcontrol_triggerdelay = approachcontrol_triggerdelay;
+	if (route_common_flags & RCF::AP_CONTROL_TRIGGER_DELAY_SET) {
+		target.approach_control_triggerdelay = approach_control_triggerdelay;
 	}
-	if (routecommonflags & RCF::APCONTROL_SET) {
-		SetOrClearBitsRef(target.routecommonflags, RCF::APCONTROL, routecommonflags & RCF::APCONTROL);
+	if (route_common_flags & RCF::AP_CONTROL_SET) {
+		SetOrClearBitsRef(target.route_common_flags, RCF::AP_CONTROL, route_common_flags & RCF::AP_CONTROL);
 	}
-	if (routecommonflags & RCF::TORR_SET) {
-		SetOrClearBitsRef(target.routecommonflags, RCF::TORR, routecommonflags & RCF::TORR);
+	if (route_common_flags & RCF::TORR_SET) {
+		SetOrClearBitsRef(target.route_common_flags, RCF::TORR, route_common_flags & RCF::TORR);
 	}
-	if (routecommonflags & RCF::EXITSIGCONTROL_SET) {
-		SetOrClearBitsRef(target.routecommonflags, RCF::EXITSIGCONTROL, routecommonflags & RCF::EXITSIGCONTROL);
+	if (route_common_flags & RCF::EXIT_SIGNAL_CONTROL_SET) {
+		SetOrClearBitsRef(target.route_common_flags, RCF::EXIT_SIGNAL_CONTROL, route_common_flags & RCF::EXIT_SIGNAL_CONTROL);
 	}
-	if (routecommonflags & RCF::OVERLAPTYPE_SET) {
+	if (route_common_flags & RCF::OVERLAP_TYPE_SET) {
 		target.overlap_type = overlap_type;
 	}
-	if (routecommonflags & RCF::ROUTEPROVEDELAY_SET) {
-		target.routeprove_delay = routeprove_delay;
+	if (route_common_flags & RCF::ROUTE_PROVE_DELAY_SET) {
+		target.route_prove_delay = route_prove_delay;
 	}
-	if (routecommonflags & RCF::ROUTECLEARDELAY_SET) {
-		target.routeclear_delay = routeclear_delay;
+	if (route_common_flags & RCF::ROUTE_CLEAR_DELAY_SET) {
+		target.route_clear_delay = route_clear_delay;
 	}
-	if (routecommonflags & RCF::ROUTESETDELAY_SET) {
-		target.routeset_delay = routeset_delay;
+	if (route_common_flags & RCF::ROUTE_SET_DELAY_SET) {
+		target.route_set_delay = route_set_delay;
 	}
-	if (routecommonflags & RCF::ASPECTMASK_SET) {
+	if (route_common_flags & RCF::ASPECT_MASK_SET) {
 		target.aspect_mask = aspect_mask;
 	}
-	if (routecommonflags & RCF::APCONTROL_IF_NOROUTE_SET) {
-		SetOrClearBitsRef(target.routecommonflags, RCF::APCONTROL_IF_NOROUTE, routecommonflags & RCF::APCONTROL_IF_NOROUTE);
+	if (route_common_flags & RCF::AP_CONTROL_IF_NOROUTE_SET) {
+		SetOrClearBitsRef(target.route_common_flags, RCF::AP_CONTROL_IF_NOROUTE, route_common_flags & RCF::AP_CONTROL_IF_NOROUTE);
 	}
-	if (approachcontrol_trigger) {
-		target.approachcontrol_trigger = approachcontrol_trigger;
+	if (approach_control_trigger) {
+		target.approach_control_trigger = approach_control_trigger;
 	}
-	if (overlaptimeout_trigger) {
-		target.overlaptimeout_trigger = overlaptimeout_trigger;
+	if (overlap_timeout_trigger) {
+		target.overlap_timeout_trigger = overlap_timeout_trigger;
 	}
 	target.conditional_aspect_masks.insert(target.conditional_aspect_masks.end(), conditional_aspect_masks.begin(), conditional_aspect_masks.end());
 }
 
 //returns false on failure/partial completion
-bool route::RouteReservation(RRF reserve_flags, std::string *failreasonkey) const {
-	if (!start.track->Reservation(start.direction, 0, reserve_flags | RRF::STARTPIECE, this, failreasonkey)) {
+bool route::RouteReservation(RRF reserve_flags, std::string *fail_reason_key) const {
+	if (!start.track->Reservation(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key)) {
 		return false;
 	}
 
 	for (auto &it : pieces) {
-		if (!it.location.track->Reservation(it.location.direction, it.connection_index, reserve_flags, this, failreasonkey)) {
+		if (!it.location.track->Reservation(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key)) {
 			return false;
 		}
 	}
 
-	if (!end.track->Reservation(end.direction, 0, reserve_flags | RRF::ENDPIECE, this, failreasonkey)) {
+	if (!end.track->Reservation(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key)) {
 		return false;
 	}
 	return true;
 }
 
 //returns false on failure/partial completion
-bool route::PartialRouteReservationWithActions(RRF reserve_flags, std::string *failreasonkey, RRF action_reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const {
-	if (!start.track->Reservation(start.direction, 0, reserve_flags | RRF::STARTPIECE, this, failreasonkey)) {
+bool route::PartialRouteReservationWithActions(RRF reserve_flags, std::string *fail_reason_key, RRF action_reserve_flags, std::function<void(action &&reservation_act)> action_callback) const {
+	if (!start.track->Reservation(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key)) {
 		return false;
 	}
-	start.track->ReservationActions(start.direction, 0, action_reserve_flags | RRF::STARTPIECE, this, actioncallback);
+	start.track->ReservationActions(start.direction, 0, action_reserve_flags | RRF::START_PIECE, this, action_callback);
 
 	for (auto &it : pieces) {
-		if (!it.location.track->Reservation(it.location.direction, it.connection_index, reserve_flags, this, failreasonkey)) {
+		if (!it.location.track->Reservation(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key)) {
 			return false;
 		}
-		it.location.track->ReservationActions(it.location.direction, it.connection_index, action_reserve_flags, this, actioncallback);
+		it.location.track->ReservationActions(it.location.direction, it.connection_index, action_reserve_flags, this, action_callback);
 	}
 
-	if (!end.track->Reservation(end.direction, 0, reserve_flags | RRF::ENDPIECE, this, failreasonkey))
+	if (!end.track->Reservation(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key))
 		return false;
-	end.track->ReservationActions(end.direction, 0, action_reserve_flags | RRF::ENDPIECE, this, actioncallback);
+	end.track->ReservationActions(end.direction, 0, action_reserve_flags | RRF::END_PIECE, this, action_callback);
 	return true;
 }
 
-void route::RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const {
-	start.track->ReservationActions(start.direction, 0, reserve_flags | RRF::STARTPIECE, this, actioncallback);
+void route::RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> action_callback) const {
+	start.track->ReservationActions(start.direction, 0, reserve_flags | RRF::START_PIECE, this, action_callback);
 
 	for (auto &it : pieces) {
-		it.location.track->ReservationActions(it.location.direction, it.connection_index, reserve_flags, this, actioncallback);
+		it.location.track->ReservationActions(it.location.direction, it.connection_index, reserve_flags, this, action_callback);
 	}
 
-	end.track->ReservationActions(end.direction, 0, reserve_flags | RRF::ENDPIECE, this, actioncallback);
+	end.track->ReservationActions(end.direction, 0, reserve_flags | RRF::END_PIECE, this, action_callback);
 }
 
 void route::FillLists() {
@@ -127,18 +127,18 @@ void route::FillLists() {
 		track_circuit *this_tc = it.location.track->GetTrackCircuit();
 		if (this_tc && this_tc != last_tc) {
 			last_tc = this_tc;
-			trackcircuits.push_back(this_tc);
+			track_circuits.push_back(this_tc);
 		}
-		routingpoint *target_routing_piece = FastRoutingpointCast(it.location.track, it.location.direction);
+		routing_point *target_routing_piece = FastRoutingpointCast(it.location.track, it.location.direction);
 		if (target_routing_piece && target_routing_piece->GetAvailableRouteTypes(it.location.direction).flags & RPRT_FLAGS::VIA) {
 			vias.push_back(target_routing_piece);
 		}
-		genericsignal *this_signal = FastSignalCast(target_routing_piece, it.location.direction);
+		generic_signal *this_signal = FastSignalCast(target_routing_piece, it.location.direction);
 		if (this_signal && this_signal->RepeaterAspectMeaningfulForRouteType(type)) {
-			repeatersignals.push_back(this_signal);
+			repeater_signals.push_back(this_signal);
 		}
 		if (!it.location.track->IsTrackAlwaysPassable()) {
-			passtestlist.push_back(it);
+			pass_test_list.push_back(it);
 		}
 		if (it.location.track->HasBerth(it.location.direction)) {
 			berths.emplace_back(it.location.track->GetBerth(), it.location.track);
@@ -149,12 +149,12 @@ void route::FillLists() {
 	}
 }
 
-bool route::TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const {
-	return checkend == end.track && checkvias == vias;
+bool route::TestRouteForMatch(const routing_point *check_end, const via_list &check_vias) const {
+	return check_end == end.track && check_vias == vias;
 }
 
 bool route::IsRouteSubSet(const route *subset) const {
-	const vartrack_target_ptr<routingpoint> &substart = subset->start;
+	const vartrack_target_ptr<routing_point> &substart = subset->start;
 
 	auto this_it = pieces.begin();
 	if (substart != start) {    //scan along route for start
@@ -191,19 +191,19 @@ bool route::IsRouteSubSet(const route *subset) const {
 	}
 }
 
-bool route::IsStartAnchored(RRF checkmask) const {
+bool route::IsStartAnchored(RRF check_mask) const {
 	bool anchored = false;
 	start.track->ReservationEnumerationInDirection(start.direction, [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if (rr_flags && RRF::STARTPIECE && reserved_route == this) {
+		if (rr_flags && RRF::START_PIECE && reserved_route == this) {
 			anchored = true;
 		}
-	}, checkmask);
+	}, check_mask);
 	return anchored;
 }
 
 bool route::IsRouteTractionSuitable(const train* t) const {
 	for (auto &it : pieces) {
-		const tractionset *ts = it.location.track->GetTractionTypes();
+		const traction_set *ts = it.location.track->GetTractionTypes();
 		if (ts && !ts->CanTrainPass(t)) {
 			return false;
 		}
@@ -219,7 +219,7 @@ bool route_restriction::CheckRestriction(route_class::set &allowed_routes, const
 
 	auto via_start = via.begin();
 	for (auto &it : route_pieces) {
-		if (!notvia.empty() && std::find(notvia.begin(), notvia.end(), it.location.track->GetName()) != notvia.end()) {
+		if (!not_via.empty() && std::find(not_via.begin(), not_via.end(), it.location.track->GetName()) != not_via.end()) {
 			return false;
 		}
 		if (!via.empty()) {
@@ -233,7 +233,7 @@ bool route_restriction::CheckRestriction(route_class::set &allowed_routes, const
 		return false;
 	}
 
-	allowed_routes &= allowedtypes;
+	allowed_routes &= allowed_types;
 	return true;
 }
 

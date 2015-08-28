@@ -46,20 +46,20 @@ IMG_EXTERN(blank_png, blank)
 #define APPROACHLOCKING_FLASHINTERVAL 500
 #define POINTS_OOC_FLASHINTERVAL 500
 
-using guilayout::LAYOUT_DIR;
+using gui_layout::LAYOUT_DIR;
 
 namespace {
 	enum sprite_ids {
-		SID_typemask        = 0xFF,
-		SID_trackseg        = 1,
-		SID_pointsooc       = 2,
-		SID_signalroute     = 8,
-		SID_signalshunt     = 9,
-		SID_signalpost      = 16,
-		SID_signalpostbar   = 17,
+		SID_type_mask       = 0xFF,
+		SID_track_seg       = 1,
+		SID_points_ooc      = 2,
+		SID_signal_route    = 8,
+		SID_signal_shunt    = 9,
+		SID_signal_post     = 16,
+		SID_signal_post_bar = 17,
 
-		SID_dirmask         = 0xF00,
-		SID_dirshift        = 8,
+		SID_dir_mask        = 0xF00,
+		SID_dir_shift       = 8,
 
 		SID_raw_img         = 0x1000,
 
@@ -80,24 +80,24 @@ namespace {
 	};
 
 	LAYOUT_DIR spriteid_to_layoutdir(draw::sprite_ref sid) {
-		return static_cast<LAYOUT_DIR>((sid & SID_dirmask) >> SID_dirshift);
+		return static_cast<LAYOUT_DIR>((sid & SID_dir_mask) >> SID_dir_shift);
 	}
 	draw::sprite_ref layoutdir_to_spriteid(LAYOUT_DIR dir) {
-		return static_cast<std::underlying_type<LAYOUT_DIR>::type>(dir) << SID_dirshift;
+		return static_cast<std::underlying_type<LAYOUT_DIR>::type>(dir) << SID_dir_shift;
 	}
 }
 
 namespace draw {
-	draw::sprite_ref track_sprite_extras(const generictrack *gt) {
+	draw::sprite_ref track_sprite_extras(const generic_track *gt) {
 		draw::sprite_ref extras = 0;
-		reservationcountset rcs;
+		reservation_count_set rcs;
 		gt->ReservationTypeCount(rcs);
-		if (rcs.routeset > rcs.routesetauto) {
+		if (rcs.route_set > rcs.route_set_auto) {
 			extras |= SID_reserved;
 		}
 		const track_circuit *tc = gt->GetTrackCircuit();
 		if (tc && tc->Occupied()) {
-			if ((rcs.routeset > 0) || !(tc->IsAnyPieceReserved())) {
+			if ((rcs.route_set > 0) || !(tc->IsAnyPieceReserved())) {
 				extras |= SID_tc_occ;
 			}
 		}
@@ -105,7 +105,7 @@ namespace draw {
 	}
 
 	sprite_ref change_spriteid_layoutdir(LAYOUT_DIR newdir, sprite_ref sr) {
-		return (sr & ~SID_dirmask) | layoutdir_to_spriteid(newdir);
+		return (sr & ~SID_dir_mask) | layoutdir_to_spriteid(newdir);
 	}
 
 	// This converts a folded direction into either U, UR or R.
@@ -195,7 +195,7 @@ namespace draw {
 		draw::sprite_ref base_sprite_reverse;
 	};
 
-	points_sprites MakePointsSprites(const generictrack *gt, const guilayout::layouttrack_obj::points_layout_info *layout_info) {
+	points_sprites MakePointsSprites(const generic_track *gt, const gui_layout::layout_track_obj::points_layout_info *layout_info) {
 		points_sprites out;
 
 		draw::sprite_ref base = 0;
@@ -205,21 +205,21 @@ namespace draw {
 
 		LAYOUT_DIR turn_dir = (layout_info->facing == ReverseLayoutDirection(layout_info->normal))
 				? layout_info->reverse : layout_info->normal;
-		out.base_sprite_ooc = base | SID_pointsooc |
-				layoutdir_to_spriteid(guilayout::EdgesToDirection(layout_info->facing, turn_dir));
-		out.base_sprite_normal = base | SID_trackseg |
-				layoutdir_to_spriteid(guilayout::FoldLayoutDirection(guilayout::EdgesToDirection(layout_info->facing, layout_info->normal)));
-		out.base_sprite_reverse = base | SID_trackseg |
-				layoutdir_to_spriteid(guilayout::FoldLayoutDirection(guilayout::EdgesToDirection(layout_info->facing, layout_info->reverse)));
+		out.base_sprite_ooc = base | SID_points_ooc |
+				layoutdir_to_spriteid(gui_layout::EdgesToDirection(layout_info->facing, turn_dir));
+		out.base_sprite_normal = base | SID_track_seg |
+				layoutdir_to_spriteid(gui_layout::FoldLayoutDirection(gui_layout::EdgesToDirection(layout_info->facing, layout_info->normal)));
+		out.base_sprite_reverse = base | SID_track_seg |
+				layoutdir_to_spriteid(gui_layout::FoldLayoutDirection(gui_layout::EdgesToDirection(layout_info->facing, layout_info->reverse)));
 		return out;
 	}
 
-	draw_func_type draw_module_ukgeneric::GetDrawTrack(const std::shared_ptr<guilayout::layouttrack_obj> &obj, error_collection &ec) {
+	draw_func_type draw_module_ukgeneric::GetDrawTrack(const std::shared_ptr<gui_layout::layout_track_obj> &obj, error_collection &ec) {
 		int x, y;
 		std::tie(x, y) = obj->GetPosition();
 
 		auto get_draw_error_func = [&](uint32_t foreground, uint32_t background) -> draw_func_type {
-			return [x, y, obj, foreground, background](const draw_engine &eng, guilayout::world_layout &layout) {
+			return [x, y, obj, foreground, background](const draw_engine &eng, gui_layout::world_layout &layout) {
 				std::unique_ptr<draw::drawtextchar> drawtext(new draw::drawtextchar);
 				drawtext->foregroundcolour = foreground;
 				drawtext->backgroundcolour = background;
@@ -228,8 +228,8 @@ namespace draw {
 			};
 		};
 
-		const generictrack *gt = obj->GetTrack();
-		const genericsignal *gs = FastSignalCast(gt);
+		const generic_track *gt = obj->GetTrack();
+		const generic_signal *gs = FastSignalCast(gt);
 		if (gs) {
 			enum {
 				SDF_STEP_RIGHT        = 1<<0,
@@ -264,25 +264,25 @@ namespace draw {
 				sigflags |= SDF_HAVE_SHUNT;
 			}
 
-			draw::sprite_ref stick_sprite = layoutdir_to_spriteid(guilayout::FoldLayoutDirection(obj->GetLayoutDirection()));
-			if (gs->GetSignalFlags() & GSF::AUTOSIGNAL) {
-				stick_sprite |= SID_signalpostbar;
+			draw::sprite_ref stick_sprite = layoutdir_to_spriteid(gui_layout::FoldLayoutDirection(obj->GetLayoutDirection()));
+			if (gs->GetSignalFlags() & GSF::AUTO_SIGNAL) {
+				stick_sprite |= SID_signal_post_bar;
 			} else {
-				stick_sprite |= SID_signalpost;
+				stick_sprite |= SID_signal_post;
 			}
 
 			if (is_higher_aspect_in_mask(gs->GetRouteDefaults().aspect_mask, 2)) {
 				sigflags |= SDF_CAN_DISPLAY_DY;
 			}
 
-			return [x, y, gs, obj, stick_sprite, sigflags](const draw_engine &eng, guilayout::world_layout &layout) {
+			return [x, y, gs, obj, stick_sprite, sigflags](const draw_engine &eng, gui_layout::world_layout &layout) {
 				int next_x = x;
 				int next_y = y;
 				int step_x = (sigflags & SDF_STEP_RIGHT) ? +1 : -1;
 
 				//first draw stick
 				draw::sprite_ref stick_sprite_extras = 0;
-				if ((stick_sprite & SID_typemask) == SID_signalpost) {
+				if ((stick_sprite & SID_type_mask) == SID_signal_post) {
 					if (gs->GetCurrentForwardRoute()) {
 						stick_sprite_extras |= SID_reserved;
 					}
@@ -291,15 +291,15 @@ namespace draw {
 
 
 				//draw head(s)
-				std::shared_ptr<guilayout::pos_sprite_desc_opts> options;
+				std::shared_ptr<gui_layout::pos_sprite_desc_opts> options;
 				bool draw_blank = false;
-				if (gs->GetSignalFlags() & GSF::APPROACHLOCKINGMODE) {
+				if (gs->GetSignalFlags() & GSF::APPROACH_LOCKING_MODE) {
 					unsigned int timebin = layout.GetWorld().GetGameTime() / APPROACHLOCKING_FLASHINTERVAL;
 					if (timebin & 1) {
 						draw_blank = true;
 					}
 					if (!options) {
-						options = std::make_shared<guilayout::pos_sprite_desc_opts>();
+						options = std::make_shared<gui_layout::pos_sprite_desc_opts>();
 					}
 					options->refresh_interval_ms = APPROACHLOCKING_FLASHINTERVAL;
 				}
@@ -309,7 +309,7 @@ namespace draw {
 					if (draw_blank) {
 						extras = SID_signal_blank;
 					}
-					layout.SetSprite(next_x, next_y, SID_signalroute | extras, obj, 0, options);
+					layout.SetSprite(next_x, next_y, SID_signal_route | extras, obj, 0, options);
 				};
 
 				auto draw_single_route_head = [&](draw::sprite_ref extras) {
@@ -323,7 +323,7 @@ namespace draw {
 					next_x += step_x;
 
 					// Don't set options for grey shunt
-					std::shared_ptr<guilayout::pos_sprite_desc_opts> shunt_options;
+					std::shared_ptr<gui_layout::pos_sprite_desc_opts> shunt_options;
 					if (!(extras & SID_shunt_grey)) {
 						shunt_options = options;
 						if (draw_blank) {
@@ -331,7 +331,7 @@ namespace draw {
 						}
 					}
 
-					layout.SetSprite(next_x, next_y, SID_signalshunt | layoutdir_to_spriteid(obj->GetLayoutDirection()) | extras, obj, 0, std::move(shunt_options));
+					layout.SetSprite(next_x, next_y, SID_signal_shunt | layoutdir_to_spriteid(obj->GetLayoutDirection()) | extras, obj, 0, std::move(shunt_options));
 				};
 
 				if (sigflags & SDF_HAVE_SHUNT) {
@@ -361,25 +361,25 @@ namespace draw {
 			};
 		}
 
-		const trackseg *ts = dynamic_cast<const trackseg *>(gt);
+		const track_seg *ts = dynamic_cast<const track_seg *>(gt);
 		if (ts) {
-			struct tracksegpointinfo {
+			struct track_segpointinfo {
 				int x;
 				int y;
 				LAYOUT_DIR direction;
 				draw::sprite_ref base_sprite;
 			};
-			auto points = std::make_shared<std::vector<tracksegpointinfo> >();
+			auto points = std::make_shared<std::vector<track_segpointinfo> >();
 
-			guilayout::LayoutOffsetDirection(x, y, obj->GetLayoutDirection(), obj->GetLength(), [&](int sx, int sy, LAYOUT_DIR sdir) {
-				draw::sprite_ref base_sprite = SID_trackseg | layoutdir_to_spriteid(guilayout::FoldLayoutDirection(sdir));
+			gui_layout::LayoutOffsetDirection(x, y, obj->GetLayoutDirection(), obj->GetLength(), [&](int sx, int sy, LAYOUT_DIR sdir) {
+				draw::sprite_ref base_sprite = SID_track_seg | layoutdir_to_spriteid(gui_layout::FoldLayoutDirection(sdir));
 				if (ts->GetTrackCircuit()) {
 					base_sprite |= SID_has_tc;
 				}
 				points->push_back({sx, sy, sdir, base_sprite});
 			});
 
-			return [points, ts, obj](const draw_engine &eng, guilayout::world_layout &layout) {
+			return [points, ts, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
 				draw::sprite_ref extras = track_sprite_extras(ts);
 				for (auto &it : *points) {
 					layout.SetSprite(it.x, it.y, it.base_sprite | extras, obj, 0);
@@ -387,15 +387,15 @@ namespace draw {
 			};
 		}
 
-		const genericpoints *gp = dynamic_cast<const genericpoints *>(gt);
+		const generic_points *gp = dynamic_cast<const generic_points *>(gt);
 		if (gp) {
-			const doubleslip *ds = dynamic_cast<const doubleslip *>(gp);
+			const double_slip *ds = dynamic_cast<const double_slip *>(gp);
 			if (ds) {
 				// TODO
 			} else {
-				// All types of genericpoints except doubleslip can be dealt with together
+				// All types of generic_points except double_slip can be dealt with together
 
-				using points_layout_info = guilayout::layouttrack_obj::points_layout_info;
+				using points_layout_info = gui_layout::layout_track_obj::points_layout_info;
 
 				auto layout_info = obj->GetPointsLayoutInfo();
 
@@ -407,29 +407,29 @@ namespace draw {
 
 				if (layout_info->flags & points_layout_info::PLI_FLAGS::SHOW_MERGED) {
 					auto base_sprite_ooc = ps.base_sprite_ooc;
-					return [x, y, base_sprite_ooc, gp, obj](const draw_engine &eng, guilayout::world_layout &layout) {
+					return [x, y, base_sprite_ooc, gp, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
 						draw::sprite_ref sprite = track_sprite_extras(gp) | base_sprite_ooc;
 						layout.SetSprite(x, y, sprite, obj, 0);
 					};
 				}
 
-				return [x, y, ps, gp, obj](const draw_engine &eng, guilayout::world_layout &layout) {
+				return [x, y, ps, gp, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
 					draw::sprite_ref sprite = track_sprite_extras(gp);
-					genericpoints::PTF flags = gp->GetPointsFlags(0);
+					generic_points::PTF flags = gp->GetPointsFlags(0);
 
-					if (flags & genericpoints::PTF::OOC) {
+					if (flags & generic_points::PTF::OOC) {
 						sprite |= ps.base_sprite_ooc;
 						unsigned int timebin = layout.GetWorld().GetGameTime() / POINTS_OOC_FLASHINTERVAL;
 						if (timebin & 1) {
 							sprite = change_spriteid_layoutdir(LAYOUT_DIR::NULLDIR, sprite);
 						}
-						auto options = std::make_shared<guilayout::pos_sprite_desc_opts>();
+						auto options = std::make_shared<gui_layout::pos_sprite_desc_opts>();
 						options->refresh_interval_ms = APPROACHLOCKING_FLASHINTERVAL;
 						layout.SetSprite(x, y, sprite, obj, 0, options);
 						return;
 					}
 
-					if (flags & genericpoints::PTF::REV) {
+					if (flags & generic_points::PTF::REV) {
 						sprite |= ps.base_sprite_reverse;
 					} else {
 						sprite |= ps.base_sprite_normal;
@@ -439,9 +439,9 @@ namespace draw {
 			}
 		}
 
-		const springpoints *sp = dynamic_cast<const springpoints *>(gt);
+		const spring_points *sp = dynamic_cast<const spring_points *>(gt);
 		if (sp) {
-			using points_layout_info = guilayout::layouttrack_obj::points_layout_info;
+			using points_layout_info = gui_layout::layout_track_obj::points_layout_info;
 
 			auto layout_info = obj->GetPointsLayoutInfo();
 			if (!layout_info) {
@@ -458,7 +458,7 @@ namespace draw {
 				base_sprite = ps.base_sprite_normal;
 			}
 
-			return [x, y, base_sprite, sp, obj](const draw_engine &eng, guilayout::world_layout &layout) {
+			return [x, y, base_sprite, sp, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
 				draw::sprite_ref sprite = track_sprite_extras(sp) | base_sprite;
 				layout.SetSprite(x, y, sprite, obj, 0);
 			};
@@ -468,42 +468,42 @@ namespace draw {
 		return get_draw_error_func(0xFFFF00, 0x0000FF);
 	}
 
-	draw_func_type draw_module_ukgeneric::GetDrawBerth(const std::shared_ptr<guilayout::layoutberth_obj> &obj, error_collection &ec) {
-		struct drawberthdata {
+	draw_func_type draw_module_ukgeneric::GetDrawBerth(const std::shared_ptr<gui_layout::layout_berth_obj> &obj, error_collection &ec) {
+		struct draw_berth_data {
 			int length;
-			const trackberth *b;
+			const track_berth *b;
 			int x, y;
 		};
 
-		auto berthdataptr = std::make_shared<drawberthdata>();
-		berthdataptr->length = obj->GetLength();
-		berthdataptr->b = obj->GetBerth();
-		std::tie(berthdataptr->x, berthdataptr->y) = obj->GetPosition();
+		auto berth_data_ptr = std::make_shared<draw_berth_data>();
+		berth_data_ptr->length = obj->GetLength();
+		berth_data_ptr->b = obj->GetBerth();
+		std::tie(berth_data_ptr->x, berth_data_ptr->y) = obj->GetPosition();
 
-		return [berthdataptr, obj](const draw_engine &eng, guilayout::world_layout &layout) {
-			const std::string &btext = berthdataptr->b->contents;
+		return [berth_data_ptr, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
+			const std::string &btext = berth_data_ptr->b->contents;
 			if (!btext.empty()) {
 				std::unique_ptr<draw::drawtextchar> drawtext(new draw::drawtextchar);
 				drawtext->text = btext;
 				drawtext->foregroundcolour = 0xFFFFFF;
 				drawtext->backgroundcolour = 0;
-				layout.SetTextString(berthdataptr->x, berthdataptr->y, std::move(drawtext), obj, BERTHLEVEL, berthdataptr->length, berthdataptr->length);
+				layout.SetTextString(berth_data_ptr->x, berth_data_ptr->y, std::move(drawtext), obj, BERTHLEVEL, berth_data_ptr->length, berth_data_ptr->length);
 			} else {
-				for (int i = 0; i < berthdataptr->length; i++) {
-					layout.ClearSpriteLevel(berthdataptr->x + i, berthdataptr->y, BERTHLEVEL);
+				for (int i = 0; i < berth_data_ptr->length; i++) {
+					layout.ClearSpriteLevel(berth_data_ptr->x + i, berth_data_ptr->y, BERTHLEVEL);
 				}
 			}
 		};
 	}
 
-	draw_func_type draw_module_ukgeneric::GetDrawObj(const std::shared_ptr<guilayout::layoutgui_obj> &obj, error_collection &ec) {
-		return [](const draw_engine &eng, guilayout::world_layout &layout) {
+	draw_func_type draw_module_ukgeneric::GetDrawObj(const std::shared_ptr<gui_layout::layout_gui_obj> &obj, error_collection &ec) {
+		return [](const draw_engine &eng, gui_layout::world_layout &layout) {
 
 		};
 	}
 
 	void draw_module_ukgeneric::BuildSprite(draw::sprite_ref sr, draw::sprite_obj &sp, const draw_options &dopt) {  // must be re-entrant
-		unsigned int type = sr & SID_typemask;
+		unsigned int type = sr & SID_type_mask;
 		LAYOUT_DIR dir = spriteid_to_layoutdir(sr);
 
 		auto dir_relative_fold = [&](LAYOUT_DIR dir) -> bool {
@@ -516,7 +516,7 @@ namespace draw {
 
 		if (sr & SID_raw_img) {
 			switch (type) {
-				case SID_trackseg:
+				case SID_track_seg:
 					if (dir_relative_fold(dir)) {
 						return;
 					}
@@ -534,7 +534,7 @@ namespace draw {
 					}
 					break;
 
-				case SID_pointsooc:
+				case SID_points_ooc:
 					if (dir_relative_diag(dir)) {
 						return;
 					}
@@ -552,7 +552,7 @@ namespace draw {
 					}
 					break;
 
-				case SID_signalpost:
+				case SID_signal_post:
 					if (dir_relative_fold(dir)) {
 						return;
 					}
@@ -562,7 +562,7 @@ namespace draw {
 					}
 					break;
 
-				case SID_signalpostbar:
+				case SID_signal_post_bar:
 					if (dir_relative_fold(dir)) {
 						return;
 					}
@@ -572,11 +572,11 @@ namespace draw {
 					}
 					break;
 
-				case SID_signalroute:
+				case SID_signal_route:
 					sp.LoadFromFileDataFallback("circle.png", GetImageData_circle());
 					return;
 
-				case SID_signalshunt:
+				case SID_signal_shunt:
 					if (dir_relative_fold(dir)) {
 						return;
 					}
@@ -591,9 +591,9 @@ namespace draw {
 			}
 		} else {
 			switch (type) {
-				case SID_trackseg:
-				case SID_pointsooc:
-					sp.LoadFromSprite((sr & (SID_typemask | SID_dirmask)) | SID_raw_img);
+				case SID_track_seg:
+				case SID_points_ooc:
+					sp.LoadFromSprite((sr & (SID_type_mask | SID_dir_mask)) | SID_raw_img);
 					if (sr & SID_has_tc) {
 						sp.ReplaceColour(0x0000FF, 0xFF0000);
 					} else {
@@ -607,16 +607,16 @@ namespace draw {
 					}
 					return;
 
-				case SID_signalpost:
-				case SID_signalpostbar:
-					sp.LoadFromSprite((sr & (SID_typemask | SID_dirmask)) | SID_raw_img);
+				case SID_signal_post:
+				case SID_signal_post_bar:
+					sp.LoadFromSprite((sr & (SID_type_mask | SID_dir_mask)) | SID_raw_img);
 					if (!(sr & SID_reserved)) {
 						sp.ReplaceColour(0xFFFFFF, 0xAAAAAA);
 					}
 					return;
 
-				case SID_signalroute:
-					sp.LoadFromSprite(SID_signalroute | SID_raw_img);
+				case SID_signal_route:
+					sp.LoadFromSprite(SID_signal_route | SID_raw_img);
 					if (sr & SID_signal_red) {
 						sp.ReplaceColour(0xFFFFFF, 0xFF0000);
 					} else if (sr & SID_signal_yellow) {
@@ -630,8 +630,8 @@ namespace draw {
 					}
 					return;
 
-				case SID_signalshunt:
-					sp.LoadFromSprite((sr & (SID_typemask | SID_dirmask)) | SID_raw_img);
+				case SID_signal_shunt:
+					sp.LoadFromSprite((sr & (SID_type_mask | SID_dir_mask)) | SID_raw_img);
 					if (sr & SID_shunt_red) {
 						sp.ReplaceColour(0xFFFFFF, 0xFF0000);
 					} else if (sr & SID_shunt_white) {

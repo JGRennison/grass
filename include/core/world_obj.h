@@ -43,9 +43,9 @@ class world_obj : public serialisable_futurable_obj, public updatable_obj {
 	world &w;
 
 	enum class WOPRIVF {
-		AUTONAME     = 1<<0,
+		AUTO_NAME     = 1<<0,
 	};
-	flagwrapper<WOPRIVF> wo_privflags;
+	flagwrapper<WOPRIVF> wo_priv_flags;
 
 	public:
 	world_obj(world &w_) : w(w_) { }
@@ -56,8 +56,8 @@ class world_obj : public serialisable_futurable_obj, public updatable_obj {
 	virtual std::string GetFriendlyName() const;
 	world &GetWorld() const { return w; }
 	void MarkUpdated() { updatable_obj::MarkUpdated(w); }
-	bool IsAutoNamed() const { return wo_privflags & WOPRIVF::AUTONAME; }
-	void SetAutoName(bool autoname) { SetOrClearBitsRef(wo_privflags.getref(), WOPRIVF::AUTONAME, autoname); }
+	bool IsAutoNamed() const { return wo_priv_flags & WOPRIVF::AUTO_NAME; }
+	void SetAutoName(bool autoname) { SetOrClearBitsRef(wo_priv_flags.getref(), WOPRIVF::AUTO_NAME, autoname); }
 
 	virtual std::string GetTypeSerialisationName() const {
 		return GetTypeSerialisationClassName();

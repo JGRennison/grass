@@ -31,7 +31,7 @@
 #include "core/pretty_serialiser.h"
 #include <typeinfo>
 
-void world_deserialisation::ParseInputString(const std::string &input, error_collection &ec, world_deserialisation::WSLOADGAME_FLAGS flags) {
+void world_deserialisation::ParseInputString(const std::string &input, error_collection &ec, world_deserialisation::WS_LOAD_GAME_FLAGS flags) {
 	parsed_inputs.emplace_front();
 	rapidjson::Document &dc = parsed_inputs.front();
 	if (dc.Parse<0>(input.c_str()).HasParseError()) {
@@ -41,30 +41,30 @@ void world_deserialisation::ParseInputString(const std::string &input, error_col
 	}
 }
 
-void world_deserialisation::LoadGame(const deserialiser_input &di, error_collection &ec, world_deserialisation::WSLOADGAME_FLAGS flags) {
-	if (!(flags & WSLOADGAME_FLAGS::NOCONTENT)) {
+void world_deserialisation::LoadGame(const deserialiser_input &di, error_collection &ec, world_deserialisation::WS_LOAD_GAME_FLAGS flags) {
+	if (!(flags & WS_LOAD_GAME_FLAGS::NO_CONTENT)) {
 		deserialiser_input contentdi(di.json["content"], "content", "content", di);
 		if (!contentdi.json.IsNull()) {
 			DeserialiseRootObjArray(content_object_types, ws_dtf_params(), contentdi, ec);
 		}
 	}
 
-	if (!(flags & WSLOADGAME_FLAGS::NOGAMESTATE)) {
+	if (!(flags & WS_LOAD_GAME_FLAGS::NO_GAME_STATE)) {
 		deserialiser_input gamestatetdi(di.json["gamestate"], "gamestate", "gamestate", di);
 		if (!gamestatetdi.json.IsNull()) {
-			if (flags & WSLOADGAME_FLAGS::TRYREPLACEGAMESTATE) {
-				gamestate_init.Clear();
+			if (flags & WS_LOAD_GAME_FLAGS::TRY_REPLACE_GAME_STATE) {
+				game_state_init.Clear();
 			}
 			auto gsclone = gamestatetdi.CloneWithAncestors();
-			gamestate_init.AddFixup([gsclone, this](error_collection &ec) {
-				DeserialiseRootObjArray(gamestate_object_types, ws_dtf_params(ws_dtf_params::WSDTFP_FLAGS::NONEWTRACK), *gsclone->GetTop(), ec);
+			game_state_init.AddFixup([gsclone, this](error_collection &ec) {
+				DeserialiseRootObjArray(game_state_object_types, ws_dtf_params(ws_dtf_params::WSDTFP_FLAGS::NO_NEW_TRACK), *gsclone->GetTop(), ec);
 			});
 		}
 	}
 }
 
 void world_deserialisation::DeserialiseGameState(error_collection &ec) {
-	gamestate_init.Execute(ec);
+	game_state_init.Execute(ec);
 }
 
 void world_deserialisation::DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params,
@@ -102,7 +102,7 @@ template <typename T> T* world_deserialisation::MakeOrFindGenericTrack(const des
 		isautoname = true;
 	}
 
-	std::unique_ptr<generictrack> &ptr = w.all_pieces[trackname];
+	std::unique_ptr<generic_track> &ptr = w.all_pieces[trackname];
 	if (ptr) {
 		if (typeid(*ptr) != typeid(T)) {
 			ec.RegisterNewError<error_deserialisation>(di,
@@ -113,10 +113,10 @@ template <typename T> T* world_deserialisation::MakeOrFindGenericTrack(const des
 		ptr.reset(new T(w));
 		ptr->SetName(trackname);
 		ptr->SetAutoName(isautoname);
-		ptr->SetPreviousTrackPiece(previoustrackpiece);
-		if (previoustrackpiece)
-			previoustrackpiece->SetNextTrackPiece(ptr.get());
-		previoustrackpiece = ptr.get();
+		ptr->SetPreviousTrackPiece(previous_track_piece);
+		if (previous_track_piece)
+			previous_track_piece->SetNextTrackPiece(ptr.get());
+		previous_track_piece = ptr.get();
 	} else {
 		ec.RegisterNewError<error_deserialisation>(di, string_format("LoadGame: Cannot make a new track piece at this point: %s", trackname.c_str()));
 		return nullptr;
@@ -125,7 +125,7 @@ template <typename T> T* world_deserialisation::MakeOrFindGenericTrack(const des
 }
 
 template <typename T> T* world_deserialisation::DeserialiseGenericTrack(const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
-	T* target = MakeOrFindGenericTrack<T>(di, ec, wdp.flags & ws_dtf_params::WSDTFP_FLAGS::NONEWTRACK);
+	T* target = MakeOrFindGenericTrack<T>(di, ec, wdp.flags & ws_dtf_params::WSDTFP_FLAGS::NO_NEW_TRACK);
 	if (target) {
 		target->DeserialiseObject(di, ec);
 	}
@@ -221,7 +221,7 @@ void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &
 void world_deserialisation::DeserialiseTractionType(const deserialiser_input &di, error_collection &ec) {
 	std::string name;
 	if (CheckTransJsonValue(name, di, "name", ec) && di.w) {
-		di.w->AddTractionType(name, CheckGetJsonValueDef<bool, bool>(di, "alwaysavailable", false, ec));
+		di.w->AddTractionType(name, CheckGetJsonValueDef<bool, bool>(di, "always_available", false, ec));
 		di.PostDeserialisePropCheck(ec);
 	} else {
 		ec.RegisterNewError<error_deserialisation>(di, "Invalid traction type definition");
@@ -232,7 +232,7 @@ template<typename T> void DeserialiseTrackTrainCounterBlockCommon(const deserial
 	std::string name;
 	if (CheckTransJsonValue(name, di, "name", ec) && di.w) {
 		T *ttcb = nullptr;
-		if (wdp.flags & world_deserialisation::ws_dtf_params::WSDTFP_FLAGS::NONEWTRACK) {
+		if (wdp.flags & world_deserialisation::ws_dtf_params::WSDTFP_FLAGS::NO_NEW_TRACK) {
 			ttcb = ttcb_container.FindByName(name);
 			if (!ttcb) {
 				ec.RegisterNewError<error_deserialisation>(di, "No such track circuit/track train counter block: " + name);
@@ -279,7 +279,7 @@ void world_deserialisation::DeserialiseTrain(const deserialiser_input &di, error
 
 template <typename... Args> void wd_RegisterBothTypes(world_deserialisation &wd, Args... args) {
 	wd.content_object_types.RegisterType(args...);
-	wd.gamestate_object_types.RegisterType(args...);
+	wd.game_state_object_types.RegisterType(args...);
 }
 
 template <typename C> void world_deserialisation::MakeGenericTrackTypeWrapper() {
@@ -290,25 +290,25 @@ template <typename C> void world_deserialisation::MakeGenericTrackTypeWrapper() 
 }
 
 void world_deserialisation::InitObjectTypes() {
-	MakeGenericTrackTypeWrapper<trackseg>();
+	MakeGenericTrackTypeWrapper<track_seg>();
 	MakeGenericTrackTypeWrapper<points>();
-	MakeGenericTrackTypeWrapper<autosignal>();
-	MakeGenericTrackTypeWrapper<routesignal>();
-	MakeGenericTrackTypeWrapper<repeatersignal>();
+	MakeGenericTrackTypeWrapper<auto_signal>();
+	MakeGenericTrackTypeWrapper<route_signal>();
+	MakeGenericTrackTypeWrapper<repeater_signal>();
 	MakeGenericTrackTypeWrapper<catchpoints>();
-	MakeGenericTrackTypeWrapper<springpoints>();
+	MakeGenericTrackTypeWrapper<spring_points>();
 	MakeGenericTrackTypeWrapper<crossover>();
-	MakeGenericTrackTypeWrapper<doubleslip>();
-	MakeGenericTrackTypeWrapper<startofline>();
-	MakeGenericTrackTypeWrapper<endofline>();
-	MakeGenericTrackTypeWrapper<routingmarker>();
+	MakeGenericTrackTypeWrapper<double_slip>();
+	MakeGenericTrackTypeWrapper<start_of_line>();
+	MakeGenericTrackTypeWrapper<end_of_line>();
+	MakeGenericTrackTypeWrapper<routing_marker>();
 	content_object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseTypeDefinition(di, ec);
 	});
 	content_object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseTractionType(di, ec);
 	});
-	wd_RegisterBothTypes(*this, "trackcircuit", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+	wd_RegisterBothTypes(*this, "track_circuit", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseTrackTrainCounterBlockCommon<track_circuit>(di, ec, wdp, w.track_circuits);
 	});
 	wd_RegisterBothTypes(*this, "tracktraincounterblock", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
@@ -320,15 +320,15 @@ void world_deserialisation::InitObjectTypes() {
 	content_object_types.RegisterType("vehicleclass", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseVehicleClass(di, ec);
 	});
-	gamestate_object_types.RegisterType("train", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+	game_state_object_types.RegisterType("train", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseTrain(di, ec);
 	});
 	wd_RegisterBothTypes(*this, "world", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		w.DeserialiseObject(di, ec);
 	});
 
-	gui_layout_generictrack = [](const generictrack *t, const deserialiser_input &di, error_collection &ec) { };
-	gui_layout_trackberth = [](const trackberth *b, const generictrack *t, const deserialiser_input &di, error_collection &ec) { };
+	gui_layout_generic_track = [](const generic_track *t, const deserialiser_input &di, error_collection &ec) { };
+	gui_layout_track_berth = [](const track_berth *b, const generic_track *t, const deserialiser_input &di, error_collection &ec) { };
 	gui_layout_guiobject = [](const deserialiser_input &di, error_collection &ec) { };
 	content_object_types.RegisterType("layoutobj", [this](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		this->gui_layout_guiobject(di, ec);
@@ -350,7 +350,7 @@ void world_deserialisation::LoadGameFromStrings(const std::string &base, const s
 
 	if (!save.empty()) {
 		//load gamestate from save, override any initial gamestate in base
-		ParseInputString(base, ec, WSLOADGAME_FLAGS::NOCONTENT | WSLOADGAME_FLAGS::TRYREPLACEGAMESTATE);
+		ParseInputString(base, ec, WS_LOAD_GAME_FLAGS::NO_CONTENT | WS_LOAD_GAME_FLAGS::TRY_REPLACE_GAME_STATE);
 	}
 
 	if (ec.GetErrorCount()) {
@@ -385,10 +385,10 @@ void world_deserialisation::LoadGameFromFiles(const std::string &basefile, const
 	}
 }
 
-std::string world_serialisation::SaveGameToString(error_collection &ec, flagwrapper<world_serialisation::WSSAVEGAME_FLAGS> ws_flags) {
+std::string world_serialisation::SaveGameToString(error_collection &ec, flagwrapper<world_serialisation::WS_SAVE_GAME_FLAGS> ws_flags) {
 	auto exec = [&](Handler &hndl) {
 		serialiser_output so(hndl);
-		so.flags |= SOUTPUT_FLAGS::OUTPUT_ALLNAMES;
+		so.flags |= SOUTPUT_FLAGS::OUTPUT_ALL_NAMES;
 
 		hndl.StartObject();
 		hndl.String("gamestate");
@@ -398,7 +398,7 @@ std::string world_serialisation::SaveGameToString(error_collection &ec, flagwrap
 		w.Serialise(so, ec);
 		hndl.EndObject();
 		for (auto &it : w.all_pieces) {
-			generictrack &gt = *(it.second);
+			generic_track &gt = *(it.second);
 			hndl.StartObject();
 			gt.Serialise(so, ec);
 			hndl.EndObject();
@@ -420,7 +420,7 @@ std::string world_serialisation::SaveGameToString(error_collection &ec, flagwrap
 
 	std::string output;
 	writestream wr(output);
-	if (ws_flags & WSSAVEGAME_FLAGS::PRETTYMODE) {
+	if (ws_flags & WS_SAVE_GAME_FLAGS::PRETTY_MODE) {
 		PrettyWriterHandler hndl(wr);
 		exec(hndl);
 	} else {

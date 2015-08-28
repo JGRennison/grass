@@ -33,22 +33,22 @@
 
 class error_signalinit : public layout_initialisation_error_obj {
 	public:
-	error_signalinit(const genericsignal &sig, const std::string &str = "") {
+	error_signalinit(const generic_signal &sig, const std::string &str = "") {
 		msg << "Signal Initialisation Error for " << sig << ": " << str;
 	}
 };
 
 class error_signalinit_trackscan : public error_signalinit {
 	public:
-	error_signalinit_trackscan(const genericsignal &sig, const track_target_ptr &piece, const std::string &str = "")
+	error_signalinit_trackscan(const generic_signal &sig, const track_target_ptr &piece, const std::string &str = "")
 			: error_signalinit(sig) {
 		msg << "Track Scan: Piece: " << piece << ": " << str;
 	}
 };
 
-void routingpoint::EnumerateRoutes(std::function<void (const route *)> func) const { }
+void routing_point::EnumerateRoutes(std::function<void (const route *)> func) const { }
 
-const route *routingpoint::FindBestOverlap(route_class::set types) const {
+const route *routing_point::FindBestOverlap(route_class::set types) const {
 	int best_score = INT_MIN;
 	const route *best_overlap = nullptr;
 	EnumerateAvailableOverlaps([&](const route *r, int score) {
@@ -60,7 +60,7 @@ const route *routingpoint::FindBestOverlap(route_class::set types) const {
 	return best_overlap;
 }
 
-void routingpoint::EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extraflags, route_class::set types) const {
+void routing_point::EnumerateAvailableOverlaps(std::function<void(const route *rt, int score)> func, RRF extra_flags, route_class::set types) const {
 
 	auto overlap_finder = [&](const route *r) {
 		if (!route_class::IsOverlap(r->type)) {
@@ -69,30 +69,30 @@ void routingpoint::EnumerateAvailableOverlaps(std::function<void(const route *rt
 		if (!(types & route_class::Flag(r->type))) {
 			return;
 		}
-		if (!r->RouteReservation(RRF::TRYRESERVE | extraflags)) {
+		if (!r->RouteReservation(RRF::TRY_RESERVE | extra_flags)) {
 			return;
 		}
 
 		int score = r->priority;
-		auto actioncounter = [&](action &&reservation_act) {
+		auto action_counter = [&](action &&reservation_act) {
 			score -= 10;
 		};
-		r->RouteReservationActions(RRF::RESERVE | extraflags, actioncounter);
+		r->RouteReservationActions(RRF::RESERVE | extra_flags, action_counter);
 		func(r, score);
 	};
 	EnumerateRoutes(overlap_finder);
 }
 
-unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes, const routingpoint *end, route_class::set rc_mask, GMRF gmr_flags, RRF extraflags, const via_list &vias) const {
+unsigned int routing_point::GetMatchingRoutes(std::vector<gmr_route_item> &routes, const routing_point *end, route_class::set rc_mask, GMRF gmr_flags, RRF extra_flags, const via_list &vias) const {
 	unsigned int count = 0;
-	if (!(gmr_flags & GMRF::DONTCLEARVECTOR)) {
+	if (!(gmr_flags & GMRF::DONT_CLEAR_VECTOR)) {
 		routes.clear();
 	}
 	auto route_finder = [&](const route *r) {
 		if (!(route_class::Flag(r->type) & rc_mask)) {
 			return;
 		}
-		if (gmr_flags & GMRF::CHECKVIAS && r->vias != vias) {
+		if (gmr_flags & GMRF::CHECK_VIAS && r->vias != vias) {
 			return;
 		}
 		if (end && r->end.track != end) {
@@ -100,19 +100,19 @@ unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes,
 		}
 
 		int score = r->priority;
-		if (gmr_flags & GMRF::CHECKTRYRESERVE) {
-			if (!r->RouteReservation(RRF::TRYRESERVE | extraflags)) {
+		if (gmr_flags & GMRF::CHECK_TRY_RESERVE) {
+			if (!r->RouteReservation(RRF::TRY_RESERVE | extra_flags)) {
 				return;
 			}
 		}
-		if (gmr_flags & GMRF::DYNPRIORITY) {
-			auto actioncounter = [&](action &&reservation_act) {
+		if (gmr_flags & GMRF::DYNAMIC_PRIORITY) {
+			auto action_counter = [&](action &&reservation_act) {
 				score -= 10;
 			};
-			r->RouteReservationActions(RRF::RESERVE | extraflags, actioncounter);
+			r->RouteReservationActions(RRF::RESERVE | extra_flags, action_counter);
 
 			if (route_class::PreferWhenReservingIfAlreadyOccupied(r->type)) {
-				for (auto &it : r->trackcircuits) {
+				for (auto &it : r->track_circuits) {
 					if (it->Occupied()) {
 						score += 10;
 						break;
@@ -120,7 +120,7 @@ unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes,
 				}
 			}
 		}
-		gmr_routeitem gmr;
+		gmr_route_item gmr;
 		gmr.rt = r;
 		gmr.score = score;
 		routes.push_back(gmr);
@@ -128,7 +128,7 @@ unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes,
 
 	};
 	EnumerateRoutes(route_finder);
-	auto sortfunc = [&](const gmr_routeitem &a, const gmr_routeitem &b) -> bool {
+	auto sortfunc = [&](const gmr_route_item &a, const gmr_route_item &b) -> bool {
 		if (a.score > b.score) return true;
 		if (a.score < b.score) return false;
 		if (route_class::IsRoute(a.rt->type) && route_class::IsShunt(b.rt->type)) return true;
@@ -138,13 +138,13 @@ unsigned int routingpoint::GetMatchingRoutes(std::vector<gmr_routeitem> &routes,
 		if (a.rt->index < b.rt->index) return true;
 		return false;
 	};
-	if (!(gmr_flags & GMRF::DONTSORT)) {
+	if (!(gmr_flags & GMRF::DONT_SORT)) {
 		std::sort(routes.begin(), routes.end(), sortfunc);
 	}
 	return count;
 }
 
-void routingpoint::SetAspectNextTarget(routingpoint *target) {
+void routing_point::SetAspectNextTarget(routing_point *target) {
 	if (target == aspect_target) {
 		return;
 	}
@@ -157,11 +157,11 @@ void routingpoint::SetAspectNextTarget(routingpoint *target) {
 	aspect_target = target;
 }
 
-void routingpoint::SetAspectRouteTarget(routingpoint *target) {
+void routing_point::SetAspectRouteTarget(routing_point *target) {
 	aspect_route_target = target;
 }
 
-generictrack::edge_track_target trackroutingpoint::GetEdgeConnectingPiece(EDGETYPE edgeid) {
+generic_track::edge_track_target track_routing_point::GetEdgeConnectingPiece(EDGETYPE edgeid) {
 	switch (edgeid) {
 		case EDGE_FRONT:
 			return prev;
@@ -175,7 +175,7 @@ generictrack::edge_track_target trackroutingpoint::GetEdgeConnectingPiece(EDGETY
 	}
 }
 
-generictrack::edge_track_target trackroutingpoint::GetConnectingPiece(EDGETYPE direction) {
+generic_track::edge_track_target track_routing_point::GetConnectingPiece(EDGETYPE direction) {
 	switch (direction) {
 		case EDGE_FRONT:
 			return next;
@@ -189,7 +189,7 @@ generictrack::edge_track_target trackroutingpoint::GetConnectingPiece(EDGETYPE d
 	}
 }
 
-EDGETYPE trackroutingpoint::GetReverseDirection(EDGETYPE direction) const {
+EDGETYPE track_routing_point::GetReverseDirection(EDGETYPE direction) const {
 	switch (direction) {
 		case EDGE_FRONT:
 			return EDGE_BACK;
@@ -203,7 +203,7 @@ EDGETYPE trackroutingpoint::GetReverseDirection(EDGETYPE direction) const {
 	}
 }
 
-bool trackroutingpoint::IsEdgeValid(EDGETYPE edge) const {
+bool track_routing_point::IsEdgeValid(EDGETYPE edge) const {
 	switch (edge) {
 		case EDGE_FRONT:
 		case EDGE_BACK:
@@ -214,76 +214,76 @@ bool trackroutingpoint::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-unsigned int trackroutingpoint::GetMaxConnectingPieces(EDGETYPE direction) const {
+unsigned int track_routing_point::GetMaxConnectingPieces(EDGETYPE direction) const {
 	return 1;
 }
 
-generictrack::edge_track_target trackroutingpoint::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
+generic_track::edge_track_target track_routing_point::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
 	return GetConnectingPiece(direction);
 }
 
-EDGETYPE trackroutingpoint::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
-	if (forwardconnection && !next.IsValid()) {
+EDGETYPE track_routing_point::GetAvailableAutoConnectionDirection(bool forward_connection) const {
+	if (forward_connection && !next.IsValid()) {
 		return EDGE_BACK;
 	}
-	if (!forwardconnection && !prev.IsValid()) {
+	if (!forward_connection && !prev.IsValid()) {
 		return EDGE_FRONT;
 	}
 	return EDGE_NULL;
 }
 
-void trackroutingpoint::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
-	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_BACK, next), edgelistitem(EDGE_FRONT, prev) });
+void track_routing_point::GetListOfEdges(std::vector<edgelistitem> &output_list) const {
+	output_list.insert(output_list.end(), { edgelistitem(EDGE_BACK, next), edgelistitem(EDGE_FRONT, prev) });
 }
 
-RPRT trackroutingpoint::GetAvailableRouteTypes(EDGETYPE direction) const {
-	return (direction == EDGE_FRONT) ? availableroutetypes_forward : availableroutetypes_reverse;
+RPRT track_routing_point::GetAvailableRouteTypes(EDGETYPE direction) const {
+	return (direction == EDGE_FRONT) ? available_route_types_forward : available_route_types_reverse;
 }
 
-genericsignal::genericsignal(world &w_) : trackroutingpoint(w_), sflags(GSF::ZERO) {
-	availableroutetypes_reverse.through |= route_class::AllNonOverlaps();
+generic_signal::generic_signal(world &w_) : track_routing_point(w_), sflags(GSF::ZERO) {
+	available_route_types_reverse.through |= route_class::AllNonOverlaps();
 	w_.RegisterTickUpdate(this);
 	sighting_distances.emplace_back(EDGE_FRONT, SIGHTING_DISTANCE_SIG);
 	std::copy(route_class::default_approach_locking_timeouts.begin(), route_class::default_approach_locking_timeouts.end(),
-			approachlocking_default_timeouts.begin());
+			approach_locking_default_timeouts.begin());
 }
 
-genericsignal::~genericsignal() {
+generic_signal::~generic_signal() {
 	GetWorld().UnregisterTickUpdate(this);
 }
 
-GSF genericsignal::GetSignalFlags() const {
+GSF generic_signal::GetSignalFlags() const {
 	return sflags;
 }
 
-GSF genericsignal::SetSignalFlagsMasked(GSF set_flags, GSF mask_flags) {
+GSF generic_signal::SetSignalFlagsMasked(GSF set_flags, GSF mask_flags) {
 	sflags = (sflags & (~mask_flags)) | set_flags;
 	return sflags;
 }
 
-bool genericsignal::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
-	if (direction != EDGE_FRONT && rr_flags & (RRF::STARTPIECE | RRF::ENDPIECE)) {
+bool generic_signal::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+	if (direction != EDGE_FRONT && rr_flags & (RRF::START_PIECE | RRF::END_PIECE)) {
 		return false;
 	}
-	if (rr_flags & RRF::STARTPIECE) {
-		return start_trs.Reservation(direction, index, rr_flags, resroute);
-	} else if (rr_flags & RRF::ENDPIECE) {
-		bool result = end_trs.Reservation(direction, index, rr_flags, resroute);
+	if (rr_flags & RRF::START_PIECE) {
+		return start_trs.Reservation(direction, index, rr_flags, res_route);
+	} else if (rr_flags & RRF::END_PIECE) {
+		bool result = end_trs.Reservation(direction, index, rr_flags, res_route);
 		if (rr_flags & RRF::UNRESERVE) {
 			GetWorld().ExecuteIfActionScope([&]() {
 				const route* ovlp = GetCurrentForwardOverlap();
 				if (ovlp) {
-					GetWorld().SubmitAction(action_unreservetrackroute(GetWorld(), *ovlp));
+					GetWorld().SubmitAction(action_unreserve_track_route(GetWorld(), *ovlp));
 				}
 			});
 		}
 		return result;
 	} else {
-		return start_trs.Reservation(direction, index, rr_flags, resroute) && end_trs.Reservation(direction, index, rr_flags, resroute);
+		return start_trs.Reservation(direction, index, rr_flags, res_route) && end_trs.Reservation(direction, index, rr_flags, res_route);
 	}
 }
 
-RPRT genericsignal::GetSetRouteTypes(EDGETYPE direction) const {
+RPRT generic_signal::GetSetRouteTypes(EDGETYPE direction) const {
 	RPRT result;
 
 	auto result_flag_adds = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
@@ -301,7 +301,7 @@ RPRT genericsignal::GetSetRouteTypes(EDGETYPE direction) const {
 	return result;
 }
 
-void genericsignal::UpdateSignalState() {
+void generic_signal::UpdateSignalState() {
 	if (last_state_update == GetWorld().GetGameTime()) {
 		return;
 	}
@@ -309,8 +309,8 @@ void genericsignal::UpdateSignalState() {
 	last_state_update = GetWorld().GetGameTime();
 
 	unsigned int previous_aspect = aspect;
-	const routingpoint *previous_aspect_target = GetAspectNextTarget();
-	const routingpoint *previous_aspect_route_target = GetAspectRouteTarget();
+	const routing_point *previous_aspect_target = GetAspectNextTarget();
+	const routing_point *previous_aspect_route_target = GetAspectRouteTarget();
 
 	auto check_aspect_change = [&]() {
 		if (aspect != previous_aspect ||
@@ -370,8 +370,8 @@ void genericsignal::UpdateSignalState() {
 	if (own_overlap && own_overlap->overlap_timeout) {
 		bool can_timeout_overlap = false;
 		bool start_anchored = false;
-		if (own_overlap->overlaptimeout_trigger) {
-			if (own_overlap->overlaptimeout_trigger->Occupied()) {
+		if (own_overlap->overlap_timeout_trigger) {
+			if (own_overlap->overlap_timeout_trigger->Occupied()) {
 				can_timeout_overlap = true;
 			}
 		}
@@ -379,29 +379,29 @@ void genericsignal::UpdateSignalState() {
 			if (r->IsStartAnchored()) {
 				start_anchored = true;
 			}
-			if (!own_overlap->overlaptimeout_trigger && !r->trackcircuits.empty()) {
-				if (r->trackcircuits.back()->Occupied()) {
+			if (!own_overlap->overlap_timeout_trigger && !r->track_circuits.empty()) {
+				if (r->track_circuits.back()->Occupied()) {
 					can_timeout_overlap = true;
 				}
 			}
 		});
 		if (can_timeout_overlap && !start_anchored) {
-			if (GetSignalFlags() & GSF::OVERLAPTIMEOUTSTARTED) {
+			if (GetSignalFlags() & GSF::OVERLAP_TIMEOUT_STARTED) {
 				if (overlap_timeout_start + own_overlap->overlap_timeout <= GetWorld().GetGameTime()) {
 					//overlap has timed out
 					if (GetWorld().IsAuthoritative()) {
-						GetWorld().SubmitAction(action_unreservetrackroute(GetWorld(), *own_overlap));
+						GetWorld().SubmitAction(action_unreserve_track_route(GetWorld(), *own_overlap));
 					}
 				}
 			} else {
 				overlap_timeout_start = GetWorld().GetGameTime();
-				SetSignalFlagsMasked(GSF::OVERLAPTIMEOUTSTARTED, GSF::OVERLAPTIMEOUTSTARTED);
+				SetSignalFlagsMasked(GSF::OVERLAP_TIMEOUT_STARTED, GSF::OVERLAP_TIMEOUT_STARTED);
 			}
 			overlap_timeout_set = true;
 		}
 	}
 	if (!overlap_timeout_set) {
-		SetSignalFlagsMasked(GSF::ZERO, GSF::OVERLAPTIMEOUTSTARTED);
+		SetSignalFlagsMasked(GSF::ZERO, GSF::OVERLAP_TIMEOUT_STARTED);
 		overlap_timeout_start = 0;
 	}
 
@@ -415,25 +415,25 @@ void genericsignal::UpdateSignalState() {
 		last_route_set_time = last_state_update;
 	}
 
-	if (!(GetSignalFlags() & GSF::REPEATER) && !(sflags & GSF::APPROACHLOCKINGMODE)) {
-		for (auto &it : set_route->passtestlist) {
+	if (!(GetSignalFlags() & GSF::REPEATER) && !(sflags & GSF::APPROACH_LOCKING_MODE)) {
+		for (auto &it : set_route->pass_test_list) {
 			if (!it.location.track->IsTrackPassable(it.location.direction, it.connection_index)) {
 				clear_route_noprove();
 				return;
 			}
 		}
 		if (!route_class::AllowEntryWhilstOccupied(set_route->type)) {
-			for (auto &it : set_route->trackcircuits) {
+			for (auto &it : set_route->track_circuits) {
 				if (it->Occupied()) {
 					clear_route_occ();
 					return;
 				}
 			}
 			if (set_route->end.track->GetFlags(set_route->end.direction) & GTF::SIGNAL) {
-				genericsignal *gs = static_cast<genericsignal*>(set_route->end.track);
+				generic_signal *gs = static_cast<generic_signal*>(set_route->end.track);
 				const route *rt = gs->GetCurrentForwardOverlap();
 				if (rt) {
-					for (auto &it : rt->trackcircuits) {
+					for (auto &it : rt->track_circuits) {
 						if (it->Occupied()) {
 							clear_route_occ();
 							return;
@@ -444,12 +444,12 @@ void genericsignal::UpdateSignalState() {
 		}
 	}
 
-	if (set_route->routecommonflags & route::RCF::APCONTROL) {
+	if (set_route->route_common_flags & route::RCF::AP_CONTROL) {
 		bool do_ap_control = false;
 
-		if (set_route->routecommonflags & route::RCF::APCONTROL_IF_NOROUTE) {
+		if (set_route->route_common_flags & route::RCF::AP_CONTROL_IF_NOROUTE) {
 			// Approach control if route target has no route set
-			genericsignal *targ_sig = FastSignalCast(set_route->end.track, set_route->end.direction);
+			generic_signal *targ_sig = FastSignalCast(set_route->end.track, set_route->end.direction);
 			if (targ_sig) {
 				if (!targ_sig->GetCurrentForwardRoute()) {
 					do_ap_control = true; // This is a signal with no route set
@@ -467,19 +467,19 @@ void genericsignal::UpdateSignalState() {
 
 			auto test_ttcb = [&](track_train_counter_block *ttcb) {
 				if (ttcb && ttcb->Occupied() && ttcb->GetLastOccupationStateChangeTime() +
-						set_route->approachcontrol_triggerdelay <= GetWorld().GetGameTime()) {
+						set_route->approach_control_triggerdelay <= GetWorld().GetGameTime()) {
 					can_trigger = true;
 				}
 			};
 
-			if (set_route->approachcontrol_trigger) {
-				test_ttcb(set_route->approachcontrol_trigger);
+			if (set_route->approach_control_trigger) {
+				test_ttcb(set_route->approach_control_trigger);
 			} else {
 				EnumerateCurrentBackwardsRoutes([&](const route *rt) {
-					if (rt->trackcircuits.empty()) {
+					if (rt->track_circuits.empty()) {
 						return;
 					}
-					test_ttcb(rt->trackcircuits.back());
+					test_ttcb(rt->track_circuits.back());
 				});
 			}
 
@@ -491,21 +491,21 @@ void genericsignal::UpdateSignalState() {
 	}
 
 	aspect_type = set_route->type;
-	routingpoint *aspect_target = set_route->end.track;
-	routingpoint *aspect_route_target = set_route->end.track;
+	routing_point *aspect_target = set_route->end.track;
+	routing_point *aspect_route_target = set_route->end.track;
 
 	sig_list::const_iterator next_repeater;
 	if (set_route->start.track == this) {
-		next_repeater = set_route->repeatersignals.begin();
+		next_repeater = set_route->repeater_signals.begin();
 	} else {
-		sig_list::const_iterator check_current_repeater = std::find(set_route->repeatersignals.begin(), set_route->repeatersignals.end(), this);
-		if (check_current_repeater != set_route->repeatersignals.end()) {
+		sig_list::const_iterator check_current_repeater = std::find(set_route->repeater_signals.begin(), set_route->repeater_signals.end(), this);
+		if (check_current_repeater != set_route->repeater_signals.end()) {
 			next_repeater = std::next(check_current_repeater, 1);
 		} else {
-			next_repeater = set_route->repeatersignals.end();
+			next_repeater = set_route->repeater_signals.end();
 		}
 	}
-	if (next_repeater != set_route->repeatersignals.end()) {
+	if (next_repeater != set_route->repeater_signals.end()) {
 		aspect_target = *next_repeater;
 	}
 
@@ -540,16 +540,16 @@ void genericsignal::UpdateSignalState() {
 	set_clear_time();
 	set_prove_time();
 
-	if (sflags & GSF::APPROACHLOCKINGMODE) {
+	if (sflags & GSF::APPROACH_LOCKING_MODE) {
 		aspect = 0;
 	}
-	if (last_state_update - last_route_prove_time < set_route->routeprove_delay) {
+	if (last_state_update - last_route_prove_time < set_route->route_prove_delay) {
 		aspect = 0;
 	}
-	if (last_state_update - last_route_clear_time < set_route->routeclear_delay) {
+	if (last_state_update - last_route_clear_time < set_route->route_clear_delay) {
 		aspect = 0;
 	}
-	if (last_state_update - last_route_set_time < set_route->routeset_delay) {
+	if (last_state_update - last_route_set_time < set_route->route_set_delay) {
 		aspect = 0;
 	}
 
@@ -575,7 +575,7 @@ void genericsignal::UpdateSignalState() {
 }
 
 //this will not return the overlap, only the "real" route
-const route *genericsignal::GetCurrentForwardRoute() const {
+const route *generic_signal::GetCurrentForwardRoute() const {
 	const route *output = nullptr;
 
 	auto route_fetch = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
@@ -589,7 +589,7 @@ const route *genericsignal::GetCurrentForwardRoute() const {
 }
 
 //this will only return the overlap, not the "real" route
-const route *genericsignal::GetCurrentForwardOverlap() const {
+const route *generic_signal::GetCurrentForwardOverlap() const {
 	const route *output = nullptr;
 
 	auto route_fetch = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
@@ -602,21 +602,21 @@ const route *genericsignal::GetCurrentForwardOverlap() const {
 	return output;
 }
 
-void genericsignal::EnumerateCurrentBackwardsRoutes(std::function<void (const route *)> func) const {
+void generic_signal::EnumerateCurrentBackwardsRoutes(std::function<void (const route *)> func) const {
 	auto enumfunc = [&](const route *rt, EDGETYPE direction, unsigned int index, RRF rr_flags) {
-		if (rr_flags & RRF::ENDPIECE) {
+		if (rr_flags & RRF::END_PIECE) {
 			func(rt);
 		}
 	};
 	end_trs.ReservationEnumerationInDirection(EDGE_FRONT, enumfunc);
 }
 
-bool genericsignal::RepeaterAspectMeaningfulForRouteType(route_class::ID type) const {
+bool generic_signal::RepeaterAspectMeaningfulForRouteType(route_class::ID type) const {
 	if (route_class::IsShunt(type)) {
 		return true;
 	}
 	else if (route_class::IsRoute(type)) {
-		if (GetSignalFlags() & GSF::REPEATER && !(GetSignalFlags() & GSF::NONASPECTEDREPEATER)) {
+		if (GetSignalFlags() & GSF::REPEATER && !(GetSignalFlags() & GSF::NON_ASPECTED_REPEATER)) {
 			return true;
 		}
 	}
@@ -624,14 +624,14 @@ bool genericsignal::RepeaterAspectMeaningfulForRouteType(route_class::ID type) c
 }
 
 //function parameters: return true to continue, false to stop
-void genericsignal::BackwardsReservedTrackScan(std::function<bool(const genericsignal*)> checksignal, std::function<bool(const track_target_ptr&)> checkpiece) const {
-	const genericsignal *current = this;
-	const genericsignal *next = 0;
+void generic_signal::BackwardsReservedTrackScan(std::function<bool(const generic_signal*)> checksignal, std::function<bool(const track_target_ptr&)> check_piece) const {
+	const generic_signal *current = this;
+	const generic_signal *next = 0;
 	bool stop_tracing  = false;
 
 	auto routecheckfunc = [&](const route *rt) {
 		for (auto it = rt->pieces.rbegin(); it != rt->pieces.rend(); ++it) {
-			if (!(it->location.track->GetFlags(it->location.direction) & GTF::ROUTETHISDIR)) {
+			if (!(it->location.track->GetFlags(it->location.direction) & GTF::ROUTE_THIS_DIR)) {
 				stop_tracing = true;
 				return;    //route not reserved, stop tracing
 			}
@@ -643,7 +643,7 @@ void genericsignal::BackwardsReservedTrackScan(std::function<bool(const generics
 					stop_tracing = true;
 					return;
 				}
-			} else if (!checkpiece(it->location)) {
+			} else if (!check_piece(it->location)) {
 				return;
 			}
 		}
@@ -660,10 +660,10 @@ void genericsignal::BackwardsReservedTrackScan(std::function<bool(const generics
 	} while (current && !stop_tracing);
 }
 
-bool genericsignal::IsOverlapSwingPermitted(std::string *failreasonkey) const {
-	if (!(GetSignalFlags() & GSF::OVERLAPSWINGABLE)) {
-		if (failreasonkey) {
-			*failreasonkey = "track/reservation/overlapcantswing/notpermitted";
+bool generic_signal::IsOverlapSwingPermitted(std::string *fail_reason_key) const {
+	if (!(GetSignalFlags() & GSF::OVERLAP_SWINGABLE)) {
+		if (fail_reason_key) {
+			*fail_reason_key = "track/reservation/overlapcantswing/notpermitted";
 		}
 		return false;
 	}
@@ -671,12 +671,12 @@ bool genericsignal::IsOverlapSwingPermitted(std::string *failreasonkey) const {
 	bool occupied = false;
 	unsigned int signalcount = 0;
 
-	auto checksignal = [&](const genericsignal *targ) -> bool {
+	auto checksignal = [&](const generic_signal *targ) -> bool {
 		signalcount++;
 		return signalcount <= GetOverlapMinAspectDistance();
 	};
 
-	auto checkpiece = [&](const track_target_ptr &piece) -> bool {
+	auto check_piece = [&](const track_target_ptr &piece) -> bool {
 		track_circuit *tc = piece.track->GetTrackCircuit();
 		if (tc && tc->Occupied()) {
 			occupied = true;    //found an occupied piece, train is on approach
@@ -685,11 +685,11 @@ bool genericsignal::IsOverlapSwingPermitted(std::string *failreasonkey) const {
 			return true;
 		}
 	};
-	BackwardsReservedTrackScan(checksignal, checkpiece);
+	BackwardsReservedTrackScan(checksignal, check_piece);
 
 	if (occupied) {
-		if (failreasonkey) {
-			*failreasonkey = "track/reservation/overlapcantswing/trainapproaching";
+		if (fail_reason_key) {
+			*fail_reason_key = "track/reservation/overlapcantswing/trainapproaching";
 		}
 		return false;
 	}
@@ -697,26 +697,26 @@ bool genericsignal::IsOverlapSwingPermitted(std::string *failreasonkey) const {
 	return true;
 }
 
-unsigned int genericsignal::GetTRSList(std::vector<track_reservation_state *> &outputlist) {
-	outputlist.push_back(&start_trs);
-	outputlist.push_back(&end_trs);
+unsigned int generic_signal::GetTRSList(std::vector<track_reservation_state *> &output_list) {
+	output_list.push_back(&start_trs);
+	output_list.push_back(&end_trs);
 	return 2;
 }
 
-ASPECT_FLAGS genericsignal::GetAspectFlags() const {
-	return (sflags & GSF::NONASPECTEDREPEATER) ? ASPECT_FLAGS::MAXNOTBINDING : ASPECT_FLAGS::ZERO;
+ASPECT_FLAGS generic_signal::GetAspectFlags() const {
+	return (sflags & GSF::NON_ASPECTED_REPEATER) ? ASPECT_FLAGS::MAX_NOT_BINDING : ASPECT_FLAGS::ZERO;
 }
 
-trackberth *genericsignal::GetPriorBerth(EDGETYPE direction, routingpoint::GPBF flags) {
+track_berth *generic_signal::GetPriorBerth(EDGETYPE direction, routing_point::GPBF flags) {
 	if (direction != EDGE_FRONT)
 		return nullptr;
-	trackberth *berth = nullptr;
+	track_berth *berth = nullptr;
 	EnumerateCurrentBackwardsRoutes([&](const route *rt) {
 		if (route_class::IsOverlap(rt->type)) {
 			return;    // we don't want overlaps
 		}
 		if (!rt->berths.empty()) {
-			if (flags & routingpoint::GPBF::GETNONEMPTY) {
+			if (flags & routing_point::GPBF::GET_NON_EMPTY) {
 				for (auto &it : rt->berths) {
 					if (!it.berth->contents.empty()) {
 						berth = it.berth;    //find last non-empty berth on route
@@ -740,8 +740,8 @@ trackberth *genericsignal::GetPriorBerth(EDGETYPE direction, routingpoint::GPBF 
 			return true;    //this is a signal, stop here
 		}
 		if (piece.track->HasBerth(piece.track->GetReverseDirection(piece.direction))) {
-			trackberth *b = piece.track->GetBerth();
-			if (!(flags & routingpoint::GPBF::GETNONEMPTY) || !b->contents.empty()) {
+			track_berth *b = piece.track->GetBerth();
+			if (!(flags & routing_point::GPBF::GET_NON_EMPTY) || !b->contents.empty()) {
 				berth = b;
 				return true;
 			}
@@ -751,19 +751,19 @@ trackberth *genericsignal::GetPriorBerth(EDGETYPE direction, routingpoint::GPBF 
 	return berth;
 }
 
-GTF genericsignal::GetFlags(EDGETYPE direction) const {
-	GTF result = GTF::ROUTINGPOINT | start_trs.GetGTReservationFlags(direction);
+GTF generic_signal::GetFlags(EDGETYPE direction) const {
+	GTF result = GTF::ROUTING_POINT | start_trs.GetGTReservationFlags(direction);
 	if (direction == EDGE_FRONT) {
 		result |= GTF::SIGNAL;
 	}
 	return result;
 }
 
-stdsignal::stdsignal(world &w_) : genericsignal(w_) {
-	availableroutetypes_forward.start |= route_class::AllOverlaps();
+std_signal::std_signal(world &w_) : generic_signal(w_) {
+	available_route_types_forward.start |= route_class::AllOverlaps();
 }
 
-route *autosignal::GetRouteByIndex(unsigned int index) {
+route *auto_signal::GetRouteByIndex(unsigned int index) {
 	if (index == 0) {
 		return &signal_route;
 	} else if (index == 1) {
@@ -773,14 +773,14 @@ route *autosignal::GetRouteByIndex(unsigned int index) {
 	}
 }
 
-void autosignal::EnumerateRoutes(std::function<void (const route *)> func) const {
+void auto_signal::EnumerateRoutes(std::function<void (const route *)> func) const {
 	func(&signal_route);
 	if (overlap_route.type == route_class::RTC_OVERLAP) {
 		func(&overlap_route);
 	}
 };
 
-route *routesignal::GetRouteByIndex(unsigned int index) {
+route *route_signal::GetRouteByIndex(unsigned int index) {
 	for (auto &it : signal_routes) {
 		if (it.index == index) {
 			return &it;
@@ -789,7 +789,7 @@ route *routesignal::GetRouteByIndex(unsigned int index) {
 	return nullptr;
 }
 
-void routesignal::EnumerateRoutes(std::function<void (const route *)> func) const {
+void route_signal::EnumerateRoutes(std::function<void (const route *)> func) const {
 	for (auto &it : signal_routes) {
 		func(&it);
 	}
@@ -807,8 +807,8 @@ struct signal_route_recording_state : public generic_route_recording_state {
 	}
 };
 
-bool autosignal::PostLayoutInit(error_collection &ec) {
-	if (!(stdsignal::PostLayoutInit(ec))) return false;
+bool auto_signal::PostLayoutInit(error_collection &ec) {
+	if (!(std_signal::PostLayoutInit(ec))) return false;
 
 	auto mkroutefunc = [&](route_class::ID type, const track_target_ptr &piece) -> route* {
 		route *candidate = nullptr;
@@ -835,15 +835,15 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 	bool scanresult = PostLayoutInitTrackScan(ec, 100, 0, 0, mkroutefunc);
 
 	if (scanresult && signal_route.type == route_class::RTC_ROUTE) {
-		if (signal_route.RouteReservation(RRF::AUTOROUTE | RRF::TRYRESERVE)) {
-			signal_route.RouteReservation(RRF::AUTOROUTE | RRF::RESERVE);
+		if (signal_route.RouteReservation(RRF::AUTO_ROUTE | RRF::TRY_RESERVE)) {
+			signal_route.RouteReservation(RRF::AUTO_ROUTE | RRF::RESERVE);
 
-			genericsignal *end_signal = FastSignalCast(signal_route.end.track, signal_route.end.direction);
-			if (end_signal && ! (end_signal->GetSignalFlags() & GSF::NOOVERLAP)) {    //reserve an overlap beyond the end signal too if needed
+			generic_signal *end_signal = FastSignalCast(signal_route.end.track, signal_route.end.direction);
+			if (end_signal && ! (end_signal->GetSignalFlags() & GSF::NO_OVERLAP)) {    //reserve an overlap beyond the end signal too if needed
 				end_signal->PostLayoutInit(ec);    //make sure that the end piece is inited
 				const route *best_overlap = end_signal->FindBestOverlap(route_class::Flag(route_class::RTC_OVERLAP));
-				if (best_overlap && best_overlap->RouteReservation(RRF::AUTOROUTE | RRF::TRYRESERVE)) {
-					best_overlap->RouteReservation(RRF::AUTOROUTE | RRF::RESERVE);
+				if (best_overlap && best_overlap->RouteReservation(RRF::AUTO_ROUTE | RRF::TRY_RESERVE)) {
+					best_overlap->RouteReservation(RRF::AUTO_ROUTE | RRF::RESERVE);
 					signal_route.overlap_type = route_class::RTC_OVERLAP;
 				} else {
 					ec.RegisterNewError<error_signalinit>(*this, "Autosignal route cannot reserve overlap");
@@ -861,8 +861,8 @@ bool autosignal::PostLayoutInit(error_collection &ec) {
 	return true;
 }
 
-bool routesignal::PostLayoutInit(error_collection &ec) {
-	if (!(stdsignal::PostLayoutInit(ec))) return false;
+bool route_signal::PostLayoutInit(error_collection &ec) {
+	if (!(std_signal::PostLayoutInit(ec))) return false;
 
 	unsigned int route_index = 0;
 	return PostLayoutInitTrackScan(ec, 100, 10, &restrictions, [&](route_class::ID type, const track_target_ptr &piece) -> route* {
@@ -871,15 +871,15 @@ bool routesignal::PostLayoutInit(error_collection &ec) {
 		rt->index = route_index;
 		rt->type = type;
 		if (route_class::DefaultApproachControlOn(type)) {
-			rt->routecommonflags |= route::RCF::APCONTROL;
+			rt->route_common_flags |= route::RCF::AP_CONTROL;
 		}
 		route_index++;
 		return rt;
 	});
 }
 
-bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max,
-		route_restriction_set *restrictions, std::function<route*(route_class::ID type, const track_target_ptr &piece)> mkblankroute) {
+bool generic_signal::PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max,
+		route_restriction_set *restrictions, std::function<route*(route_class::ID type, const track_target_ptr &piece)> make_blank_route) {
 	bool continue_initing = true;
 
 	route_class::set foundoverlaps = 0;
@@ -888,11 +888,11 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 		signal_route_recording_state *rrrs = static_cast<signal_route_recording_state *>(grrs);
 
 		GTF pieceflags = piece.track->GetFlags(piece.direction);
-		if (pieceflags & GTF::ROUTINGPOINT) {
-			routingpoint *target_routing_piece = static_cast<routingpoint *>(piece.track);
+		if (pieceflags & GTF::ROUTING_POINT) {
+			routing_point *target_routing_piece = static_cast<routing_point *>(piece.track);
 
-			RPRT availableroutetypes = target_routing_piece->GetAvailableRouteTypes(piece.direction);
-			if (availableroutetypes.end) {
+			RPRT available_route_types = target_routing_piece->GetAvailableRouteTypes(piece.direction);
+			if (available_route_types.end) {
 				RPRT current = target_routing_piece->GetSetRouteTypes(piece.direction);
 				if (current.end || current.through) {
 					ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Signal route already reserved");
@@ -912,20 +912,20 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						route_pieces, track_target_ptr(this, EDGE_FRONT));
 
 				auto mk_route = [&](route_class::ID type) {
-					route *rt = mkblankroute(type, piece);
+					route *rt = make_blank_route(type, piece);
 					if (rt) {
-						rt->start = vartrack_target_ptr<routingpoint>(this, EDGE_FRONT);
+						rt->start = vartrack_target_ptr<routing_point>(this, EDGE_FRONT);
 						rt->pieces = route_pieces;
-						rt->end = vartrack_target_ptr<routingpoint>(target_routing_piece, piece.direction);
+						rt->end = vartrack_target_ptr<routing_point>(target_routing_piece, piece.direction);
 						route_defaults.ApplyTo(*rt);
-						rt->approachlocking_timeout = approachlocking_default_timeouts[type];
+						rt->approach_locking_timeout = approach_locking_default_timeouts[type];
 						rt->FillLists();
 						rt->parent = this;
 
-						genericsignal *rt_sig = FastSignalCast(target_routing_piece, piece.direction);
+						generic_signal *rt_sig = FastSignalCast(target_routing_piece, piece.direction);
 
 						if (route_class::NeedsOverlap(type)) {
-							if (rt_sig && !(rt_sig->GetSignalFlags()&GSF::NOOVERLAP)) {
+							if (rt_sig && !(rt_sig->GetSignalFlags()&GSF::NO_OVERLAP)) {
 								rt->overlap_type = route_class::ID::RTC_OVERLAP;
 							}
 						}
@@ -958,7 +958,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 						ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Unable to make new route of type: " + route_class::GetRouteTypeFriendlyName(type));
 					}
 				};
-				route_class::set found_types = rrrs->allowed_routeclasses & availableroutetypes.end & restriction_permitted_types;
+				route_class::set found_types = rrrs->allowed_routeclasses & available_route_types.end & restriction_permitted_types;
 				while (found_types) {
 					route_class::set bit = found_types & (found_types ^ (found_types - 1));
 					route_class::ID type = static_cast<route_class::ID>(__builtin_ffs(bit) - 1);
@@ -972,13 +972,13 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 					}
 				}
 			}
-			rrrs->allowed_routeclasses &= availableroutetypes.through;
+			rrrs->allowed_routeclasses &= available_route_types.through;
 
 			if (!rrrs->allowed_routeclasses) {
 				return true;    //nothing left to scan for
 			}
 		}
-		if (pieceflags & GTF::ROUTESET) {
+		if (pieceflags & GTF::ROUTE_SET) {
 			ec.RegisterNewError<error_signalinit_trackscan>(*this, piece, "Piece already reserved");
 			continue_initing = false;
 			return true;
@@ -1003,7 +1003,7 @@ bool genericsignal::PostLayoutInitTrackScan(error_collection &ec, unsigned int m
 	return continue_initing;
 }
 
-generictrack::edge_track_target startofline::GetEdgeConnectingPiece(EDGETYPE edgeid) {
+generic_track::edge_track_target start_of_line::GetEdgeConnectingPiece(EDGETYPE edgeid) {
 	switch (edgeid) {
 		case EDGE_FRONT:
 			return connection;
@@ -1014,7 +1014,7 @@ generictrack::edge_track_target startofline::GetEdgeConnectingPiece(EDGETYPE edg
 	}
 }
 
-generictrack::edge_track_target startofline::GetConnectingPiece(EDGETYPE direction) {
+generic_track::edge_track_target start_of_line::GetConnectingPiece(EDGETYPE direction) {
 	switch (direction) {
 		case EDGE_FRONT:
 			return empty_track_target;
@@ -1028,7 +1028,7 @@ generictrack::edge_track_target startofline::GetConnectingPiece(EDGETYPE directi
 	}
 }
 
-EDGETYPE startofline::GetReverseDirection(EDGETYPE direction) const {
+EDGETYPE start_of_line::GetReverseDirection(EDGETYPE direction) const {
 	switch (direction) {
 		case EDGE_FRONT:
 			return EDGE_BACK;
@@ -1042,15 +1042,15 @@ EDGETYPE startofline::GetReverseDirection(EDGETYPE direction) const {
 	}
 }
 
-unsigned int startofline::GetMaxConnectingPieces(EDGETYPE direction) const {
+unsigned int start_of_line::GetMaxConnectingPieces(EDGETYPE direction) const {
 	return 1;
 }
 
-generictrack::edge_track_target startofline::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
+generic_track::edge_track_target start_of_line::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
 	return GetConnectingPiece(direction);
 }
 
-bool startofline::IsEdgeValid(EDGETYPE edge) const {
+bool start_of_line::IsEdgeValid(EDGETYPE edge) const {
 	switch (edge) {
 		case EDGE_FRONT:
 			return true;
@@ -1060,36 +1060,36 @@ bool startofline::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-EDGETYPE startofline::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
-	if (forwardconnection && !connection.IsValid()) {
+EDGETYPE start_of_line::GetAvailableAutoConnectionDirection(bool forward_connection) const {
+	if (forward_connection && !connection.IsValid()) {
 		return EDGE_FRONT;
 	}
 	return EDGE_NULL;
 }
 
-void startofline::GetListOfEdges(std::vector<edgelistitem> &outputlist) const {
-	outputlist.insert(outputlist.end(), { edgelistitem(EDGE_FRONT, connection) });
+void start_of_line::GetListOfEdges(std::vector<edgelistitem> &output_list) const {
+	output_list.insert(output_list.end(), { edgelistitem(EDGE_FRONT, connection) });
 }
 
-bool startofline::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
-	if (rr_flags & RRF::STARTPIECE && direction == EDGE_BACK) {
-		return trs.Reservation(direction, index, rr_flags, resroute);
-	} else if (rr_flags & RRF::ENDPIECE && direction == EDGE_FRONT) {
-		return trs.Reservation(direction, index, rr_flags, resroute);
+bool start_of_line::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+	if (rr_flags & RRF::START_PIECE && direction == EDGE_BACK) {
+		return trs.Reservation(direction, index, rr_flags, res_route);
+	} else if (rr_flags & RRF::END_PIECE && direction == EDGE_FRONT) {
+		return trs.Reservation(direction, index, rr_flags, res_route);
 	} else {
 		return false;
 	}
 }
 
-GTF startofline::GetFlags(EDGETYPE direction) const {
-	return GTF::ROUTINGPOINT | trs.GetGTReservationFlags(direction);
+GTF start_of_line::GetFlags(EDGETYPE direction) const {
+	return GTF::ROUTING_POINT | trs.GetGTReservationFlags(direction);
 }
 
-RPRT startofline::GetAvailableRouteTypes(EDGETYPE direction) const {
-	return (direction == EDGE_FRONT) ? availableroutetypes : RPRT();
+RPRT start_of_line::GetAvailableRouteTypes(EDGETYPE direction) const {
+	return (direction == EDGE_FRONT) ? available_route_types : RPRT();
 }
 
-RPRT startofline::GetSetRouteTypes(EDGETYPE direction) const {
+RPRT start_of_line::GetSetRouteTypes(EDGETYPE direction) const {
 	RPRT result;
 
 	auto result_flag_adds = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
@@ -1104,28 +1104,28 @@ RPRT startofline::GetSetRouteTypes(EDGETYPE direction) const {
 	return result;
 }
 
-unsigned int startofline::GetTRSList(std::vector<track_reservation_state *> &outputlist) {
-	outputlist.push_back(&trs);
+unsigned int start_of_line::GetTRSList(std::vector<track_reservation_state *> &output_list) {
+	output_list.push_back(&trs);
 	return 1;
 }
 
-EDGETYPE endofline::GetAvailableAutoConnectionDirection(bool forwardconnection) const {
-	return startofline::GetAvailableAutoConnectionDirection(!forwardconnection);
+EDGETYPE end_of_line::GetAvailableAutoConnectionDirection(bool forward_connection) const {
+	return start_of_line::GetAvailableAutoConnectionDirection(!forward_connection);
 }
 
-GTF routingmarker::GetFlags(EDGETYPE direction) const {
-	return GTF::ROUTINGPOINT | trs.GetGTReservationFlags(direction);
+GTF routing_marker::GetFlags(EDGETYPE direction) const {
+	return GTF::ROUTING_POINT | trs.GetGTReservationFlags(direction);
 }
 
-bool routingmarker::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) {
-	return trs.Reservation(direction, index, rr_flags, resroute);
+bool routing_marker::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+	return trs.Reservation(direction, index, rr_flags, res_route);
 }
 
-RPRT routingmarker::GetAvailableRouteTypes(EDGETYPE direction) const {
-	return (direction == EDGE_FRONT) ? availableroutetypes_forward : availableroutetypes_reverse;
+RPRT routing_marker::GetAvailableRouteTypes(EDGETYPE direction) const {
+	return (direction == EDGE_FRONT) ? available_route_types_forward : available_route_types_reverse;
 }
 
-RPRT routingmarker::GetSetRouteTypes(EDGETYPE direction) const {
+RPRT routing_marker::GetSetRouteTypes(EDGETYPE direction) const {
 	RPRT result;
 
 	auto result_flag_adds = [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
@@ -1138,8 +1138,8 @@ RPRT routingmarker::GetSetRouteTypes(EDGETYPE direction) const {
 	return result;
 }
 
-unsigned int routingmarker::GetTRSList(std::vector<track_reservation_state *> &outputlist) {
-	outputlist.push_back(&trs);
+unsigned int routing_marker::GetTRSList(std::vector<track_reservation_state *> &output_list) {
+	output_list.push_back(&trs);
 	return 1;
 }
 

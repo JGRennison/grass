@@ -22,7 +22,7 @@
 #include "core/track.h"
 #include "core/trackreservation.h"
 
-class genericpoints : public genericzlentrack {
+class generic_points : public generic_zlen_track {
 	protected:
 	track_reservation_state trs;
 
@@ -33,13 +33,13 @@ class genericpoints : public genericzlentrack {
 		OOC              = 1<<1,
 		LOCKED           = 1<<2,
 		REMINDER         = 1<<3,
-		FAILEDNORM       = 1<<4,
-		FAILEDREV        = 1<<5,
+		FAILED_NORM      = 1<<4,
+		FAILED_REV       = 1<<5,
 		INVALID          = 1<<6,
 		FIXED            = 1<<7,
 		COUPLED          = 1<<8,
 		AUTO_NORMALISE   = 1<<9,
-		SERIALISABLE     = REV | OOC | LOCKED | REMINDER | FAILEDNORM | FAILEDREV,
+		SERIALISABLE     = REV | OOC | LOCKED | REMINDER | FAILED_NORM | FAILED_REV,
 		ALL              = SERIALISABLE | INVALID | FIXED | COUPLED | AUTO_NORMALISE,
 	};
 
@@ -47,12 +47,12 @@ class genericpoints : public genericzlentrack {
 	PTF fail_pflags = PTF::INVALID;
 
 	public:
-	genericpoints(world &w_) : genericzlentrack(w_) { }
+	generic_points(world &w_) : generic_zlen_track(w_) { }
 	virtual void TrainEnter(EDGETYPE direction, train *t) override;
 	virtual void TrainLeave(EDGETYPE direction, train *t) override;
 	virtual unsigned int GetPointsCount() const = 0;
 	virtual const PTF &GetPointsFlagsRef(unsigned int points_index) const = 0;
-	inline PTF &GetPointsFlagsRef(unsigned int points_index) { return const_cast<PTF &>(const_cast<const genericpoints*>(this)->GetPointsFlagsRef(points_index)); }
+	inline PTF &GetPointsFlagsRef(unsigned int points_index) { return const_cast<PTF &>(const_cast<const generic_points*>(this)->GetPointsFlagsRef(points_index)); }
 	inline PTF GetPointsFlags(unsigned int points_index) const { return GetPointsFlagsRef(points_index); }
 	PTF SetPointsFlagsMasked(unsigned int points_index, PTF set_flags, PTF mask_flags);
 	virtual unsigned int GetPointsIndexByEdge(EDGETYPE direction) const { return 0; }
@@ -60,9 +60,9 @@ class genericpoints : public genericzlentrack {
 	struct points_coupling {
 		PTF *pflags;
 		PTF xormask;
-		genericpoints *targ;
+		generic_points *targ;
 		unsigned int index;
-		points_coupling(PTF *p, PTF x, genericpoints *t, unsigned int i) : pflags(p), xormask(x), targ(t), index(i) { }
+		points_coupling(PTF *p, PTF x, generic_points *t, unsigned int i) : pflags(p), xormask(x), targ(t), index(i) { }
 	};
 	virtual void GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<points_coupling> &output) { }
 	virtual void CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) { }
@@ -73,7 +73,7 @@ class genericpoints : public genericzlentrack {
 
 	protected:
 	void CommonReservationAction(unsigned int points_index, EDGETYPE direction, unsigned int index,
-			RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction);
+			RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action);
 
 	public:
 	virtual std::string GetTypeName() const override { return "Generic Points"; }
@@ -88,23 +88,23 @@ class genericpoints : public genericzlentrack {
 		return IsFlagsImmovable(GetPointsFlags(points_index));
 	}
 
-	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override { outputlist.push_back(&trs); return 1; }
+	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &output_list) override { output_list.push_back(&trs); return 1; }
 	virtual GTF GetFlags(EDGETYPE direction) const override;
 };
-template<> struct enum_traits< genericpoints::PTF > { static constexpr bool flags = true; };
+template<> struct enum_traits< generic_points::PTF > { static constexpr bool flags = true; };
 
-inline bool genericpoints::IsFlagsOOC(PTF pflags) {
+inline bool generic_points::IsFlagsOOC(PTF pflags) {
 	if (pflags & PTF::OOC) return true;
-	if (pflags & PTF::REV && pflags & PTF::FAILEDREV) return true;
-	if (!(pflags & PTF::REV) && pflags & PTF::FAILEDNORM) return true;
+	if (pflags & PTF::REV && pflags & PTF::FAILED_REV) return true;
+	if (!(pflags & PTF::REV) && pflags & PTF::FAILED_NORM) return true;
 	return false;
 }
-inline bool genericpoints::IsFlagsImmovable(PTF pflags) {
+inline bool generic_points::IsFlagsImmovable(PTF pflags) {
 	if (pflags & (PTF::LOCKED | PTF::REMINDER)) return true;
 	return false;
 }
 
-class points : public genericpoints {
+class points : public generic_points {
 	track_target_ptr prev;
 	track_target_ptr normal;
 	track_target_ptr reverse;
@@ -114,7 +114,7 @@ class points : public genericpoints {
 	void InitSightingDistances();
 
 	public:
-	points(world &w_) : genericpoints(w_) { InitSightingDistances(); }
+	points(world &w_) : generic_points(w_) { InitSightingDistances(); }
 
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_PTS_FACE; }
@@ -144,13 +144,13 @@ class points : public genericpoints {
 	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) override { return &couplings; }
 
 	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) override;
-	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
+	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) override;
 };
 
-class catchpoints : public genericpoints {
+class catchpoints : public generic_points {
 	track_target_ptr prev;
 	track_target_ptr next;
 	PTF pflags;
@@ -158,7 +158,7 @@ class catchpoints : public genericpoints {
 	void InitSightingDistances();
 
 	public:
-	catchpoints(world &w_) : genericpoints(w_), pflags(PTF::AUTO_NORMALISE) { InitSightingDistances(); }
+	catchpoints(world &w_) : generic_points(w_), pflags(PTF::AUTO_NORMALISE) { InitSightingDistances(); }
 
 	EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
 	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
@@ -180,13 +180,13 @@ class catchpoints : public genericpoints {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) override;
-	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
+	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) override;
 };
 
-class springpoints : public genericzlentrack {
+class spring_points : public generic_zlen_track {
 	track_target_ptr prev;
 	track_target_ptr normal;
 	track_target_ptr reverse;
@@ -194,7 +194,7 @@ class springpoints : public genericzlentrack {
 	track_reservation_state trs;
 
 	public:
-	springpoints(world &w_) : genericzlentrack(w_), sendreverse(false) { }
+	spring_points(world &w_) : generic_zlen_track(w_), sendreverse(false) { }
 	virtual void TrainEnter(EDGETYPE direction, train *t) override { }
 	virtual void TrainLeave(EDGETYPE direction, train *t) override { }
 
@@ -210,7 +210,7 @@ class springpoints : public genericzlentrack {
 
 	virtual std::string GetTypeName() const override { return "Spring Points"; }
 
-	static std::string GetTypeSerialisationNameStatic() { return "springpoints"; }
+	static std::string GetTypeSerialisationNameStatic() { return "spring_points"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
@@ -219,19 +219,19 @@ class springpoints : public genericzlentrack {
 	void SetSendReverseFlag(bool sr) { sendreverse = sr; }
 
 	protected:
-	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &outputlist) override {
-		outputlist.push_back(&trs);
+	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &output_list) override {
+		output_list.push_back(&trs);
 		return 1;
 	}
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const override;
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
+	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
 };
 
-class test_doubleslip;
+class test_double_slip;
 
-class doubleslip : public genericpoints {
-	friend test_doubleslip;
+class double_slip : public generic_points {
+	friend test_double_slip;
 
 	track_target_ptr frontleft;
 	track_target_ptr frontright;
@@ -331,7 +331,7 @@ class doubleslip : public genericpoints {
 	public:
 	inline track_target_ptr *GetInputPiece(EDGETYPE direction) { return const_cast<track_target_ptr *>(GetInputPieceIntl(direction)); }
 
-	inline generictrack::edge_track_target GetInputPieceOrEmpty(EDGETYPE direction) {
+	inline generic_track::edge_track_target GetInputPieceOrEmpty(EDGETYPE direction) {
 		track_target_ptr *piece = GetInputPiece(direction);
 		if (piece) {
 			return *piece;
@@ -341,7 +341,7 @@ class doubleslip : public genericpoints {
 	}
 
 	public:
-	doubleslip(world &w_) : genericpoints(w_), dsflags(DSF::ZERO) { InitSightingDistances(); }
+	double_slip(world &w_) : generic_points(w_), dsflags(DSF::ZERO) { InitSightingDistances(); }
 
 	virtual const edge_track_target GetConnectingPiece(EDGETYPE direction) override;
 	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
@@ -357,7 +357,7 @@ class doubleslip : public genericpoints {
 	virtual unsigned int GetPointsCount() const override { return 4; }
 	virtual const PTF &GetPointsFlagsRef(unsigned int points_index) const override;
 
-	static std::string GetTypeSerialisationNameStatic() { return "doubleslip"; }
+	static std::string GetTypeSerialisationNameStatic() { return "double_slip"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
@@ -368,13 +368,13 @@ class doubleslip : public genericpoints {
 	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) override { return &couplings[index]; }
 
 	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forwardconnection) const  override{ return EDGE_NULL; }
-	virtual void GetListOfEdges(std::vector<edgelistitem> &outputlist) const override;
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::string* failreasonkey = nullptr) override;
-	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *resroute, std::function<void(action &&reservation_act)> submitaction) override;
+	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forward_connection) const  override{ return EDGE_NULL; }
+	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
+	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
+	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) override;
 };
 
-template<> struct enum_traits< doubleslip::DSF > { static constexpr bool flags = true; };
+template<> struct enum_traits< double_slip::DSF > { static constexpr bool flags = true; };
 
 void DeserialisePointsCoupling(const deserialiser_input &di, error_collection &ec);
 

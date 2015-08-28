@@ -123,10 +123,10 @@ void DeserialiseConditionalAspectProps(std::vector<route_common::conditional_asp
 
 void route_common::DeserialiseRouteCommon(const deserialiser_input &subdi, error_collection &ec, DeserialisationFlags flags) {
 	if (DeserialiseAspectProps(aspect_mask, subdi, ec)) {
-		routecommonflags |= route_restriction::RCF::ASPECTMASK_SET;
+		route_common_flags |= route_restriction::RCF::ASPECT_MASK_SET;
 	}
 	DeserialiseConditionalAspectProps(conditional_aspect_masks, subdi, ec);
-	if (flags & DeserialisationFlags::ASPECTMASK_ONLY) {
+	if (flags & DeserialisationFlags::ASPECT_MASK_ONLY) {
 		return;
 	}
 
@@ -152,59 +152,59 @@ void route_common::DeserialiseRouteCommon(const deserialiser_input &subdi, error
 	};
 
 	if (CheckTransJsonValue(priority, subdi, "priority", ec)) {
-		routecommonflags |= route_restriction::RCF::PRIORITYSET;
+		route_common_flags |= route_restriction::RCF::PRIORITY_SET;
 	}
 	if (!(flags & DeserialisationFlags::NO_APLOCK_TIMEOUT)) {
-		if (CheckTransJsonValueProc(approachlocking_timeout, subdi, "approachlockingtimeout", ec, dsconv::Time)) {
-			routecommonflags |= route_restriction::RCF::APLOCK_TIMEOUTSET;
+		if (CheckTransJsonValueProc(approach_locking_timeout, subdi, "approachlockingtimeout", ec, dsconv::Time)) {
+			route_common_flags |= route_restriction::RCF::AP_LOCKING_TIMEOUT_SET;
 		}
 	}
 	if (CheckTransJsonValueProc(overlap_timeout, subdi, "overlaptimeout", ec, dsconv::Time)) {
-		routecommonflags |= route_restriction::RCF::OVERLAPTIMEOUTSET;
+		route_common_flags |= route_restriction::RCF::OVERLAP_TIMEOUT_SET;
 	}
-	if (CheckTransJsonValueProc(routeprove_delay, subdi, "routeprovedelay", ec, dsconv::Time)) {
-		routecommonflags |= route_restriction::RCF::ROUTEPROVEDELAY_SET;
+	if (CheckTransJsonValueProc(route_prove_delay, subdi, "routeprovedelay", ec, dsconv::Time)) {
+		route_common_flags |= route_restriction::RCF::ROUTE_PROVE_DELAY_SET;
 	}
-	if (CheckTransJsonValueProc(routeclear_delay, subdi, "routecleardelay", ec, dsconv::Time)) {
-		routecommonflags |= route_restriction::RCF::ROUTECLEARDELAY_SET;
+	if (CheckTransJsonValueProc(route_clear_delay, subdi, "routecleardelay", ec, dsconv::Time)) {
+		route_common_flags |= route_restriction::RCF::ROUTE_CLEAR_DELAY_SET;
 	}
-	if (CheckTransJsonValueProc(routeset_delay, subdi, "routesetdelay", ec, dsconv::Time)) {
-		routecommonflags |= route_restriction::RCF::ROUTESETDELAY_SET;
+	if (CheckTransJsonValueProc(route_set_delay, subdi, "route_setdelay", ec, dsconv::Time)) {
+		route_common_flags |= route_restriction::RCF::ROUTE_SET_DELAY_SET;
 	}
 	deserialise_ttcb("overlaptimeouttrigger", [this](track_train_counter_block *ttcb) {
-		this->overlaptimeout_trigger = ttcb;
+		this->overlap_timeout_trigger = ttcb;
 	});
 
-	bool res = CheckTransJsonValueFlag(routecommonflags, route_restriction::RCF::APCONTROL, subdi, "approachcontrol", ec);
+	bool res = CheckTransJsonValueFlag(route_common_flags, route_restriction::RCF::AP_CONTROL, subdi, "approachcontrol", ec);
 	if (res) {
-		routecommonflags |= route_restriction::RCF::APCONTROL_SET;
+		route_common_flags |= route_restriction::RCF::AP_CONTROL_SET;
 	}
-	if (!res || routecommonflags & route_restriction::RCF::APCONTROL) {
-		if (CheckTransJsonValueProc(approachcontrol_triggerdelay, subdi, "approachcontroltriggerdelay", ec, dsconv::Time)) {
-			routecommonflags |= route_restriction::RCF::APCONTROLTRIGGERDELAY_SET | route_restriction::RCF::APCONTROL_SET | route_restriction::RCF::APCONTROL;
+	if (!res || route_common_flags & route_restriction::RCF::AP_CONTROL) {
+		if (CheckTransJsonValueProc(approach_control_triggerdelay, subdi, "approachcontroltriggerdelay", ec, dsconv::Time)) {
+			route_common_flags |= route_restriction::RCF::AP_CONTROL_TRIGGER_DELAY_SET | route_restriction::RCF::AP_CONTROL_SET | route_restriction::RCF::AP_CONTROL;
 		}
 		deserialise_ttcb("approachcontroltrigger", [this](track_train_counter_block *ttcb) {
-			this->approachcontrol_trigger = ttcb;
-			this->routecommonflags |= route_restriction::RCF::APCONTROL_SET | route_restriction::RCF::APCONTROL;
+			this->approach_control_trigger = ttcb;
+			this->route_common_flags |= route_restriction::RCF::AP_CONTROL_SET | route_restriction::RCF::AP_CONTROL;
 		});
 
 		// Approach control if no forward route
-		bool ap_control_if_route_res = CheckTransJsonValueFlag(routecommonflags, route_restriction::RCF::APCONTROL_IF_NOROUTE,
+		bool ap_control_if_route_res = CheckTransJsonValueFlag(route_common_flags, route_restriction::RCF::AP_CONTROL_IF_NOROUTE,
 				subdi, "approachcontrolifnoforwardroute", ec);
 		if (ap_control_if_route_res) {
-			routecommonflags |= route_restriction::RCF::APCONTROL_IF_NOROUTE_SET;
+			route_common_flags |= route_restriction::RCF::AP_CONTROL_IF_NOROUTE_SET;
 		}
 		// If user enabled it here, also enable approach control
-		if (ap_control_if_route_res && routecommonflags & route_restriction::RCF::APCONTROL_IF_NOROUTE) {
-			routecommonflags |= route_restriction::RCF::APCONTROL_SET | route_restriction::RCF::APCONTROL;
+		if (ap_control_if_route_res && route_common_flags & route_restriction::RCF::AP_CONTROL_IF_NOROUTE) {
+			route_common_flags |= route_restriction::RCF::AP_CONTROL_SET | route_restriction::RCF::AP_CONTROL;
 		}
 	}
 
-	if (CheckTransJsonValueFlag(routecommonflags, route_restriction::RCF::TORR, subdi, "torr", ec)) {
-		routecommonflags |= route_restriction::RCF::TORR_SET;
+	if (CheckTransJsonValueFlag(route_common_flags, route_restriction::RCF::TORR, subdi, "torr", ec)) {
+		route_common_flags |= route_restriction::RCF::TORR_SET;
 	}
-	if (CheckTransJsonValueFlag(routecommonflags, route_restriction::RCF::EXITSIGCONTROL, subdi, "exitsignalcontrol", ec)) {
-		routecommonflags |= route_restriction::RCF::EXITSIGCONTROL_SET;
+	if (CheckTransJsonValueFlag(route_common_flags, route_restriction::RCF::EXIT_SIGNAL_CONTROL, subdi, "exitsignalcontrol", ec)) {
+		route_common_flags |= route_restriction::RCF::EXIT_SIGNAL_CONTROL_SET;
 	}
 
 	deserialiser_input odi(subdi.json["overlap"], "overlap", "overlap", subdi);
@@ -224,7 +224,7 @@ void route_common::DeserialiseRouteCommon(const deserialiser_input &subdi, error
 			ec.RegisterNewError<error_deserialisation>(odi, "Invalid overlap type definition: wrong type");
 		}
 
-		routecommonflags |= RCF::OVERLAPTYPE_SET;
+		route_common_flags |= RCF::OVERLAP_TYPE_SET;
 	}
 }
 
@@ -239,21 +239,21 @@ void route_restriction_set::DeserialiseRestriction(const deserialiser_input &sub
 				CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "routeend", ec, rr.targets);
 	}
 	CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "via", ec, rr.via);
-	CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "notvia", ec, rr.notvia);
+	CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "not_via", ec, rr.not_via);
 
 	rr.DeserialiseRouteCommon(subdi, ec);
 
-	route_class::DeserialiseGroup(rr.allowedtypes, subdi, ec);
+	route_class::DeserialiseGroup(rr.allowed_types, subdi, ec);
 
 	flag_conflict_checker<route_class::set> conflictnegcheck;
 	route_class::set val = 0;
 	if (route_class::DeserialiseProp("applyonly", val, subdi, ec)) {
-		rr.applytotypes = val;
+		rr.apply_to_types = val;
 		conflictnegcheck.RegisterFlags(true, val, subdi, "applyonly", ec);
 		conflictnegcheck.RegisterFlags(false, ~val, subdi, "applyonly", ec);
 	}
 	if (route_class::DeserialiseProp("applydeny", val, subdi, ec)) {
-		rr.applytotypes &= ~val;
+		rr.apply_to_types &= ~val;
 		conflictnegcheck.RegisterFlags(false, val, subdi, "applydeny", ec);
 	}
 

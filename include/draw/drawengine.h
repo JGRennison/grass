@@ -60,17 +60,17 @@ namespace draw {
 	class draw_engine {
 		protected:
 		std::shared_ptr<draw_module> dmod;
-		unsigned int spritewidth;
-		unsigned int spriteheight;
+		unsigned int sprite_width;
+		unsigned int sprite_height;
 		std::shared_ptr<draw_options> dopt;
 
 		public:
 		draw_engine(std::shared_ptr<draw_module> dmod_, unsigned int sw, unsigned int sh, std::shared_ptr<draw_options> dopt_)
-				: dmod(dmod_), spritewidth(sw), spriteheight(sh), dopt(dopt_) { }
+				: dmod(dmod_), sprite_width(sw), sprite_height(sh), dopt(dopt_) { }
 
 		virtual std::string GetName() const = 0;
-		unsigned int GetSpriteWidth() const { return spritewidth; }
-		unsigned int GetSpriteHeight() const { return spriteheight; }
+		unsigned int GetSpriteWidth() const { return sprite_width; }
+		unsigned int GetSpriteHeight() const { return sprite_height; }
 		const std::shared_ptr<draw_options> &GetOptions() const { return dopt; }
 	};
 

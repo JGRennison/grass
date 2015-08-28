@@ -78,7 +78,7 @@ TEST_CASE( "deserialisation/error/notype", "Test missing object type" ) {
 TEST_CASE( "deserialisation/error/wrongtype", "Test wrong value type" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"trackseg\", \"traincount\" : \"foo\"}"
+		"{ \"type\" : \"track_seg\", \"train_count\" : \"foo\"}"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -89,7 +89,7 @@ TEST_CASE( "deserialisation/error/wrongtype", "Test wrong value type" ) {
 TEST_CASE( "deserialisation/error/wrongtypeobjectarray", "Test supplying a value instead of an object/array" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"trackseg\", \"speedlimits\" : 0, \"trs\" : 0}"
+		"{ \"type\" : \"track_seg\", \"speedlimits\" : 0, \"trs\" : 0}"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -100,8 +100,8 @@ TEST_CASE( "deserialisation/error/wrongtypeobjectarray", "Test supplying a value
 TEST_CASE( "deserialisation/error/arraytypemismatch", "Test supplying a value of the wrong type in a value array" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"routesignal\", \"routerestrictions\" : [ { \"targets\" : 0 } ] }, "
-		"{ \"type\" : \"routesignal\", \"routerestrictions\" : [ { \"targets\" : [ \"foo\", 0, \"bar\" ] } ] }"
+		"{ \"type\" : \"route_signal\", \"routerestrictions\" : [ { \"targets\" : 0 } ] }, "
+		"{ \"type\" : \"route_signal\", \"routerestrictions\" : [ { \"targets\" : [ \"foo\", 0, \"bar\" ] } ] }"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -112,7 +112,7 @@ TEST_CASE( "deserialisation/error/arraytypemismatch", "Test supplying a value of
 TEST_CASE( "deserialisation/error/extravalues", "Test unknown extra value detection" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"trackseg\", \"length\" : 0, \"foobar\" : \"baz\" }"
+		"{ \"type\" : \"track_seg\", \"length\" : 0, \"foobar\" : \"baz\" }"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -123,7 +123,7 @@ TEST_CASE( "deserialisation/error/extravalues", "Test unknown extra value detect
 TEST_CASE( "deserialisation/error/flagcontradiction", "Test contradictory flags" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"routingmarker\", \"through\" : { \"allow\" : \"all\", \"deny\" : \"route\" } }"
+		"{ \"type\" : \"routing_marker\", \"through\" : { \"allow\" : \"all\", \"deny\" : \"route\" } }"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -134,7 +134,7 @@ TEST_CASE( "deserialisation/error/flagcontradiction", "Test contradictory flags"
 TEST_CASE( "deserialisation/error/flagnoncontradiction", "Test non-contradictory flags" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"routingmarker\", \"through\" : { \"allowonly\" : \"all\", \"allow\" : \"route\" } }"
+		"{ \"type\" : \"routing_marker\", \"through\" : { \"allowonly\" : \"all\", \"allow\" : \"route\" } }"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -147,7 +147,7 @@ TEST_CASE( "deserialisation/error/flagnoncontradiction", "Test non-contradictory
 TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
-		R"({ "type" : "typedef", "newtype" : "base", "basetype" : "routingmarker", "content" : { "through" : { "deny" : "all" }, "through_rev" : { "deny" : "all" } } }, )"
+		R"({ "type" : "typedef", "newtype" : "base", "basetype" : "routing_marker", "content" : { "through" : { "deny" : "all" }, "through_rev" : { "deny" : "all" } } }, )"
 		R"({ "type" : "typedef", "newtype" : "derived", "basetype" : "base", "content" : { "through_rev" : { "allow" : "all" } } }, )"
 		R"({ "type" : "derived", "name" : "R1", "through_rev" : { "deny" : "overlap" } } )"
 	"] }";
@@ -158,7 +158,7 @@ TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	routingmarker *rm = dynamic_cast<routingmarker *>(env.w->FindTrackByName("R1"));
+	routing_marker *rm = dynamic_cast<routing_marker *>(env.w->FindTrackByName("R1"));
 	REQUIRE(rm != nullptr);
 	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == RPRT());
 	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::RTC_OVERLAP), 0));
@@ -202,11 +202,11 @@ TEST_CASE( "deserialisation/error/typedefextravalues", "Test typedef extra value
 TEST_CASE( "deserialisation/scalartypeconv/length", "Test scalar type conversion (length)" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
-		R"({ "type" : "trackseg", "length" : 1000 }, )"
-		R"({ "type" : "trackseg", "length" : "1000  m" }, )"
-		R"({ "type" : "trackseg", "length" : "2.4km" }, )"
-		R"({ "type" : "trackseg", "length" : "0.56 miles" }, )"
-		R"({ "type" : "trackseg", "length" : "4699088.432 yd" } )"
+		R"({ "type" : "track_seg", "length" : 1000 }, )"
+		R"({ "type" : "track_seg", "length" : "1000  m" }, )"
+		R"({ "type" : "track_seg", "length" : "2.4km" }, )"
+		R"({ "type" : "track_seg", "length" : "0.56 miles" }, )"
+		R"({ "type" : "track_seg", "length" : "4699088.432 yd" } )"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -230,22 +230,22 @@ TEST_CASE( "deserialisation/scalartypeconv/errors", "Test scalar type conversion
 	};
 
 	check_parse_err(R"({ "content" : [ )"
-		R"({ "type" : "trackseg", "length" : "1000 ergs" } )"
+		R"({ "type" : "track_seg", "length" : "1000 ergs" } )"
 	"] }");
 	check_parse_err(R"({ "content" : [ )"
-		R"({ "type" : "trackseg", "length" : "foobar 1000m" } )"
+		R"({ "type" : "track_seg", "length" : "foobar 1000m" } )"
 	"] }");
 	check_parse_err(R"({ "content" : [ )"
-		R"({ "type" : "trackseg", "length" : "." } )"
+		R"({ "type" : "track_seg", "length" : "." } )"
 	"] }");
 	check_parse_err(R"({ "content" : [ )"
-		R"({ "type" : "trackseg", "length" : "9999999999999999999999999999999999999999999999999" } )"
+		R"({ "type" : "track_seg", "length" : "9999999999999999999999999999999999999999999999999" } )"
 	"] }");
 	check_parse_err(R"({ "content" : [ )"
-		R"({ "type" : "trackseg", "length" : "3000 miles" } )"
+		R"({ "type" : "track_seg", "length" : "3000 miles" } )"
 	"] }");
 	check_parse_err(R"({ "content" : [ )"
-		R"({ "type" : "trackseg", "length" : "0x10 mm" } )"
+		R"({ "type" : "track_seg", "length" : "0x10 mm" } )"
 	"] }");
 }
 

@@ -43,7 +43,7 @@ static void BerthPushFront(const route *rt, std::string newvalue, unsigned int f
 			}
 		}
 		rt->berths.back().berth->contents = std::move(newvalue);
-		if (rt->berths.back().ownertrack) rt->berths.back().ownertrack->MarkUpdated();
+		if (rt->berths.back().owner_track) rt->berths.back().owner_track->MarkUpdated();
 	} else {
 		std::function<void(decltype(it) &)> advance = [&](decltype(it) &start) {
 			if ((*start).berth->contents.empty()) {
@@ -57,11 +57,11 @@ static void BerthPushFront(const route *rt, std::string newvalue, unsigned int f
 			if ((*next).berth->contents.empty()) {
 				(*next).berth->contents = std::move((*start).berth->contents);
 				(*start).berth->contents.clear();
-				if ((*next).ownertrack) {
-					(*next).ownertrack->MarkUpdated();
+				if ((*next).owner_track) {
+					(*next).owner_track->MarkUpdated();
 				}
-				if ((*start).ownertrack) {
-					(*start).ownertrack->MarkUpdated();
+				if ((*start).owner_track) {
+					(*start).owner_track->MarkUpdated();
 				}
 			}
 
@@ -72,8 +72,8 @@ static void BerthPushFront(const route *rt, std::string newvalue, unsigned int f
 			if ((*it).berth->contents.empty()) {
 				if (next == rt->berths.end() || !(*next).berth->contents.empty()) {
 					(*it).berth->contents = std::move(newvalue);
-					if ((*it).ownertrack) {
-						(*it).ownertrack->MarkUpdated();
+					if ((*it).owner_track) {
+						(*it).owner_track->MarkUpdated();
 					}
 					return;
 				}
@@ -82,15 +82,15 @@ static void BerthPushFront(const route *rt, std::string newvalue, unsigned int f
 
 		//berths all full, overwrite first
 		rt->berths.front().berth->contents = std::move(newvalue);
-		if (rt->berths.front().ownertrack) {
-			rt->berths.front().ownertrack->MarkUpdated();
+		if (rt->berths.front().owner_track) {
+			rt->berths.front().owner_track->MarkUpdated();
 		}
 	}
 }
 
 void track_train_counter_block::TrainEnter(train *t) {
 	bool prevoccupied = Occupied();
-	traincount++;
+	train_count++;
 
 	bool added = false;
 	for (auto &it : occupying_trains) {
@@ -112,7 +112,7 @@ void track_train_counter_block::TrainEnter(train *t) {
 }
 void track_train_counter_block::TrainLeave(train *t) {
 	bool prevoccupied = Occupied();
-	traincount--;
+	train_count--;
 	for (auto it = occupying_trains.begin(); it != occupying_trains.end(); ++it) {
 		if (it->t == t) {
 			it->count--;
@@ -133,14 +133,14 @@ void track_train_counter_block::TrainLeave(train *t) {
 void track_train_counter_block::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	world_obj::Deserialise(di, ec);
 
-	CheckTransJsonValueFlag(tc_flags, TCF::FORCEOCCUPIED, di, "forceoccupied", ec);
+	CheckTransJsonValueFlag(tc_flags, TCF::FORCE_OCCUPIED, di, "forceoccupied", ec);
 	CheckTransJsonValue(last_change, di, "last_change", ec);
 }
 
 void track_train_counter_block::Serialise(serialiser_output &so, error_collection &ec) const {
 	world_obj::Serialise(so, ec);
 
-	SerialiseFlagJson(tc_flags, TCF::FORCEOCCUPIED, so, "forceoccupied");
+	SerialiseFlagJson(tc_flags, TCF::FORCE_OCCUPIED, so, "forceoccupied");
 	SerialiseValueJson(last_change, so, "last_change");
 }
 
@@ -164,8 +164,8 @@ track_train_counter_block::TCF track_train_counter_block::SetTCFlagsMasked(TCF b
 }
 
 void CheckUnreserveTrackCircuit(track_circuit *tc) {
-	std::function<bool(generictrack *, generictrack *, const route *)> backtrack =
-			[&](generictrack *bt_piece, generictrack *next_piece, const route *reserved_route) -> bool {
+	std::function<bool(generic_track *, generic_track *, const route *)> backtrack =
+			[&](generic_track *bt_piece, generic_track *next_piece, const route *reserved_route) -> bool {
 		if (!bt_piece) {
 			return true;
 		}
@@ -188,13 +188,13 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 			RRF unresrrflags;
 			bt_piece->ReservationEnumeration([&](const route *chk_reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
 				if (reserved_route == chk_reserved_route) {
-					if (rr_flags & RRF::STARTPIECE) {
-						if (reserved_route->routecommonflags & route::RCF::TORR) {
+					if (rr_flags & RRF::START_PIECE) {
+						if (reserved_route->route_common_flags & route::RCF::TORR) {
 							//don't unreserve the start of the route unless TORR is enabled
 							unreserve = true;
 							unresdirection = direction;
 							unresidex = index;
-							unresrrflags = RRF::STARTPIECE | RRF::UNRESERVE;
+							unresrrflags = RRF::START_PIECE | RRF::UNRESERVE;
 						} else {
 							success = false;
 						}
@@ -218,7 +218,7 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 		}
 	};
 
-	std::function<bool(generictrack *, const route *)> forwardtrack = [&](generictrack *ft_piece, const route *reserved_route) -> bool {
+	std::function<bool(generic_track *, const route *)> forwardtrack = [&](generic_track *ft_piece, const route *reserved_route) -> bool {
 		if (!ft_piece) {
 			return true;
 		}
@@ -233,12 +233,12 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 			RRF unresrrflags;
 			ft_piece->ReservationEnumeration([&](const route *chk_reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
 				if (reserved_route == chk_reserved_route) {
-					if (rr_flags & RRF::ENDPIECE) {
+					if (rr_flags & RRF::END_PIECE) {
 						unreserve = true;
 						unresdirection = direction;
 						unresidex = index;
 						success = true;
-						unresrrflags = RRF::UNRESERVE | RRF::ENDPIECE;
+						unresrrflags = RRF::UNRESERVE | RRF::END_PIECE;
 					} else {
 						bool nextres = forwardtrack(ft_piece->GetConnectingPieceByIndex(direction, index).track, chk_reserved_route);
 						if (nextres) {
@@ -258,7 +258,7 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 		}
 	};
 
-	const std::vector<generictrack *> &pieces = tc->GetOwnedTrackSet();
+	const std::vector<generic_track *> &pieces = tc->GetOwnedTrackSet();
 	for (auto piece : pieces) {
 		std::vector<std::function<void()> > fixups;
 		piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
@@ -279,7 +279,7 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 }
 
 void track_train_counter_block::GetSetRoutes(std::vector<const route *> &routes) {
-	for (generictrack *it : owned_pieces) {
+	for (generic_track *it : owned_pieces) {
 		it->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
 			if (std::find(routes.begin(), routes.end(), reserved_route) == routes.end()) {
 				routes.push_back(reserved_route);
@@ -288,14 +288,14 @@ void track_train_counter_block::GetSetRoutes(std::vector<const route *> &routes)
 	}
 }
 
-void track_circuit::TrackReserved(generictrack *track) {
+void track_circuit::TrackReserved(generic_track *track) {
 	reserved_track_pieces++;
 	if (reserved_track_pieces == 1) {
 		OccupationStateChangeTrigger();
 	}
 }
 
-void track_circuit::TrackUnreserved(generictrack *track) {
+void track_circuit::TrackUnreserved(generic_track *track) {
 	reserved_track_pieces--;
 	if (reserved_track_pieces == 0) {
 		OccupationStateChangeTrigger();
@@ -318,14 +318,14 @@ void track_circuit::OccupationTrigger() {
 		if (route_class::IsOverlap(rt->type)) {
 			continue;    // we don't want overlaps
 		}
-		if (!rt->trackcircuits.empty() && rt->trackcircuits[0] == this) {
+		if (!rt->track_circuits.empty() && rt->track_circuits[0] == this) {
 			found = rt;
 			break;
 		}
 	}
 	if (found) {
 		//look backwards
-		trackberth *prev = found->start.track->GetPriorBerth(found->start.direction, routingpoint::GPBF::GETNONEMPTY);
+		track_berth *prev = found->start.track->GetPriorBerth(found->start.direction, routing_point::GPBF::GET_NON_EMPTY);
 		if (!prev) {
 			BerthPushFront(found, "????", BPFF_SOFT);
 		} else {

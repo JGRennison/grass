@@ -16,17 +16,17 @@
 //  2013 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#ifndef INC_DRAWMOD_UNITXT_ALREADY
-#define INC_DRAWMOD_UNITXT_ALREADY
+#ifndef INC_DRAWMOD_UKGENERIC_ALREADY
+#define INC_DRAWMOD_UKGENERIC_ALREADY
 
 #include "draw/drawmodule.h"
 
 namespace draw {
 
 	class draw_module_ukgeneric : public draw_module {
-		virtual draw_func_type GetDrawTrack(const std::shared_ptr<guilayout::layouttrack_obj> &obj, error_collection &ec) override;
-		virtual draw_func_type GetDrawBerth(const std::shared_ptr<guilayout::layoutberth_obj> &obj, error_collection &ec) override;
-		virtual draw_func_type GetDrawObj(const std::shared_ptr<guilayout::layoutgui_obj> &obj, error_collection &ec) override;
+		virtual draw_func_type GetDrawTrack(const std::shared_ptr<gui_layout::layout_track_obj> &obj, error_collection &ec) override;
+		virtual draw_func_type GetDrawBerth(const std::shared_ptr<gui_layout::layout_berth_obj> &obj, error_collection &ec) override;
+		virtual draw_func_type GetDrawObj(const std::shared_ptr<gui_layout::layout_gui_obj> &obj, error_collection &ec) override;
 		virtual void BuildSprite(sprite_ref sr, sprite_obj &sp, const draw_options &dopt) override;   // must be re-entrant
 	};
 

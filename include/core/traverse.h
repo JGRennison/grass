@@ -25,30 +25,30 @@
 
 enum class ADF {
 	ZERO                    = 0,
-	CHECKFORTRAINS          = 1<<0,
+	CHECK_FOR_TRAINS        = 1<<0,
 };
 template<> struct enum_traits<ADF> { static constexpr bool flags = true; };
 
 enum class ADRESULTF {
 	ZERO                    = 0,
-	RANOUTOFTRACK           = 1<<0,
-	TRACKINVALID            = 1<<1,
-	TRAININWAY              = 1<<2,
+	RAN_OUT_OF_TRACK        = 1<<0,
+	TRACK_INVALID           = 1<<1,
+	TRAIN_IN_WAY            = 1<<2,
 };
 template<> struct enum_traits<ADRESULTF> { static constexpr bool flags = true; };
 
 //return displacement length that could not be fulfilled
-unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, flagwrapper<ADF> adflags = 0,
-		flagwrapper<ADRESULTF> *adresultflags = nullptr);
-unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevationdelta /*optional, out*/,
-		std::function<void(track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADF> adflags = 0,
-		flagwrapper<ADRESULTF> *adresultflags = nullptr);
+unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, flagwrapper<ADF> ad_flags = 0,
+		flagwrapper<ADRESULTF> *ad_result_flags = nullptr);
+unsigned int AdvanceDisplacement(unsigned int displacement, track_location &track, int *elevation_delta /*optional, out*/,
+		std::function<void(track_location & /*old*/, track_location & /*new*/)> func, flagwrapper<ADF> ad_flags = 0,
+		flagwrapper<ADRESULTF> *ad_result_flags = nullptr);
 
 enum class TSEF {
-	ZERO                    = 0,
-	OUTOFTRACK              = 1<<0,
-	JUNCTIONLIMITREACHED    = 1<<1,
-	LENGTHLIMIT             = 1<<2,
+	ZERO                      = 0,
+	OUT_OF_TRACK              = 1<<0,
+	JUNCTION_LIMIT_REACHED    = 1<<1,
+	LENGTH_LIMIT              = 1<<2,
 };
 template<> struct enum_traits< TSEF > { static constexpr bool flags = true; };
 

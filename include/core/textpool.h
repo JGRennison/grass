@@ -23,20 +23,20 @@
 #include <string>
 #include <map>
 
-class textpool : public serialisable_obj {
+class text_pool : public serialisable_obj {
 	std::map<std::string, std::string> textmap;
 
 	public:
-	textpool();
+	text_pool();
 	void RegisterNewText(const std::string &key, const std::string &text);
 	std::string GetTextByName(const std::string &key) const;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const { }
 };
 
-class defaultusermessagepool : public textpool {
+class default_user_message_pool : public text_pool {
 	public:
-	defaultusermessagepool();
+	default_user_message_pool();
 };
 
 #endif

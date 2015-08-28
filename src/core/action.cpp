@@ -58,13 +58,13 @@ void action::Serialise(serialiser_output &so, error_collection &ec) const {
 }
 
 void action::RegisterAllActionTypes(action_deserialisation_type_factory &factory) {
-	MakeActionTypeWrapper<action_pointsaction>(factory);
+	MakeActionTypeWrapper<action_points_action>(factory);
 	MakeActionTypeWrapper<action_points_auto_normalise>(factory);
-	MakeActionTypeWrapper<action_reservetrack>(factory);
-	MakeActionTypeWrapper<action_reservepath>(factory);
-	MakeActionTypeWrapper<action_unreservetrackroute>(factory);
-	MakeActionTypeWrapper<action_unreservetrack>(factory);
-	MakeActionTypeWrapper<action_approachlockingtimeout>(factory);
+	MakeActionTypeWrapper<action_reserve_track>(factory);
+	MakeActionTypeWrapper<action_reserve_path>(factory);
+	MakeActionTypeWrapper<action_unreserve_track_route>(factory);
+	MakeActionTypeWrapper<action_unreserve_track>(factory);
+	MakeActionTypeWrapper<action_approach_locking_timeout>(factory);
 }
 
 void future_action_wrapper::ExecuteAction() {

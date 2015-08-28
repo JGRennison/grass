@@ -47,9 +47,9 @@ void world_obj::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(GetTypeSerialisationName(), so, "type");
 
 	bool serialise_name = false;
-	if (so.flags & SOUTPUT_FLAGS::OUTPUT_ALLNAMES) {
+	if (so.flags & SOUTPUT_FLAGS::OUTPUT_ALL_NAMES) {
 		serialise_name = true;
-	} else if (so.flags & SOUTPUT_FLAGS::OUTPUT_NONAUTONAMES && !IsAutoNamed()) {
+	} else if (so.flags & SOUTPUT_FLAGS::OUTPUT_NON_AUTO_NAMES && !IsAutoNamed()) {
 		serialise_name = true;
 	}
 

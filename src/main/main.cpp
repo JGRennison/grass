@@ -55,7 +55,7 @@ bool grassapp::LoadGame(const wxString &base, const wxString &save) {
 
 	error_collection ec;
 	w = std::make_shared<world>();
-	layout = std::make_shared<guilayout::world_layout>(*w, GetCurrentDrawModule());
+	layout = std::make_shared<gui_layout::world_layout>(*w, GetCurrentDrawModule());
 	layout->SetWorldSharedPtr(w);
 	world_deserialisation ws(*w);
 	layout->SetWorldSerialisationLayout(ws);
@@ -124,8 +124,8 @@ void gametimer::Notify() {
 	world_time newtime = app->w->GetGameTime();
 	if (app->eng && app->layout) {
 		app->layout->LayoutTimeStep(oldtime, newtime);
-		app->layout->IterateUpdateSet([&](guilayout::layout_obj *obj) {
-			obj->drawfunction(*(app->eng), *(app->layout));
+		app->layout->IterateUpdateSet([&](gui_layout::layout_obj *obj) {
+			obj->draw_function(*(app->eng), *(app->layout));
 		});
 		app->layout->IterateRedrawMap([&](int x, int y) {
 			for (auto &it : app->panelset->viewpanels) {
@@ -142,8 +142,8 @@ void grassapp::MakeNewViewWin() {
 
 void grassapp::InitialDrawAll() {
 	if (eng && layout) {
-		layout->IterateAllLayoutObjects([&](guilayout::layout_obj *obj) {
-			obj->drawfunction(*eng, *layout);
+		layout->IterateAllLayoutObjects([&](gui_layout::layout_obj *obj) {
+			obj->draw_function(*eng, *layout);
 		});
 	}
 }

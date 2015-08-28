@@ -27,83 +27,83 @@
 #include "core/points.h"
 #include "core/routetypes.h"
 
-class genericpoints;
-class generictrack;
-class genericsignal;
+class generic_points;
+class generic_track;
+class generic_signal;
 class route;
-class routingpoint;
+class routing_point;
 enum class GMRF : unsigned int;
 enum class GSF : unsigned int;
-typedef std::vector<routingpoint *> via_list;
+typedef std::vector<routing_point *> via_list;
 
-class action_pointsaction;
+class action_points_action;
 
-class future_pointsaction : public future {
-	friend action_pointsaction;
+class future_points_action : public future {
+	friend action_points_action;
 
 	unsigned int index;
-	genericpoints::PTF bits;
-	genericpoints::PTF mask;
+	generic_points::PTF bits;
+	generic_points::PTF mask;
 
 	public:
-	future_pointsaction(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id) { };
-	future_pointsaction(genericpoints &targ, world_time ft, unsigned int index_, genericpoints::PTF bits_, genericpoints::PTF mask_)
+	future_points_action(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id) { };
+	future_points_action(generic_points &targ, world_time ft, unsigned int index_, generic_points::PTF bits_, generic_points::PTF mask_)
 			: future(targ, ft, targ.GetWorld().MakeNewFutureID()), index(index_), bits(bits_), mask(mask_) { };
-	static std::string GetTypeSerialisationNameStatic() { return "future_pointsaction"; }
+	static std::string GetTypeSerialisationNameStatic() { return "future_points_action"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() override;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-class action_pointsaction : public action {
+class action_points_action : public action {
 	public:
 	enum class APAF {
 		ZERO                     = 0,
-		IGNORERESERVATION        = 1<<0,
-		NOOVERLAPSWING           = 1<<1,
-		NOPOINTSNORMALISE        = 1<<2,
-		ISPOINTSNORMALISE        = 1<<3,
+		IGNORE_RESERVATION       = 1<<0,
+		NO_OVERLAP_SWING         = 1<<1,
+		NO_POINTS_NORMALISE      = 1<<2,
+		IS_POINTS_NORMALISE      = 1<<3,
 	};
 
 	private:
-	genericpoints *target;
+	generic_points *target;
 	unsigned int index;
-	genericpoints::PTF bits;
-	genericpoints::PTF mask;
+	generic_points::PTF bits;
+	generic_points::PTF mask;
 	APAF aflags = APAF::ZERO;
 
 	private:
-	void CancelFutures(unsigned int index, genericpoints::PTF setmask, genericpoints::PTF clearmask) const;
+	void CancelFutures(unsigned int index, generic_points::PTF setmask, generic_points::PTF clearmask) const;
 	world_time GetPointsMovementCompletionTime() const;
-	bool TrySwingOverlap(std::function<void()> &overlap_callback, bool settingreverse, std::string *failreasonkey = nullptr) const;
+	bool TrySwingOverlap(std::function<void()> &overlap_callback, bool setting_reverse, std::string *fail_reason_key = nullptr) const;
 
 	public:
-	action_pointsaction(world &w_) : action(w_), target(nullptr) { }
-	action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, genericpoints::PTF bits_, genericpoints::PTF mask_, APAF aflags_ = APAF::ZERO)
+	action_points_action(world &w_) : action(w_), target(nullptr) { }
+	action_points_action(world &w_, generic_points &targ, unsigned int index_, generic_points::PTF bits_, generic_points::PTF mask_, APAF aflags_ = APAF::ZERO)
 			: action(w_), target(&targ), index(index_), bits(bits_), mask(mask_), aflags(aflags_) { }
-	action_pointsaction(world &w_, genericpoints &targ, unsigned int index_, bool reverse);
-	static std::string GetTypeSerialisationNameStatic() { return "action_pointsaction"; }
+	action_points_action(world &w_, generic_points &targ, unsigned int index_, bool reverse);
+	static std::string GetTypeSerialisationNameStatic() { return "action_points_action"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 	inline APAF SetFlagsMasked(APAF flags, APAF mask);
 
-	genericpoints *GetTarget() const { return target; }
+	generic_points *GetTarget() const { return target; }
 	unsigned int GetIndex() const { return index; }
 	APAF GetFlags() const { return aflags; }
 };
-template<> struct enum_traits< action_pointsaction::APAF > { static constexpr bool flags = true; };
+template<> struct enum_traits< action_points_action::APAF > { static constexpr bool flags = true; };
 
-inline action_pointsaction::APAF action_pointsaction::SetFlagsMasked(action_pointsaction::APAF flags, action_pointsaction::APAF mask) {
+inline action_points_action::APAF action_points_action::SetFlagsMasked(action_points_action::APAF flags, action_points_action::APAF mask) {
 	aflags = (aflags & (~mask)) | flags;
 	return aflags;
 }
 
 class action_points_auto_normalise : public action {
 	private:
-	genericpoints *target;
+	generic_points *target;
 	unsigned int index;
 
 	private:
@@ -111,7 +111,7 @@ class action_points_auto_normalise : public action {
 
 	public:
 	action_points_auto_normalise(world &w_) : action(w_), target(nullptr) { }
-	action_points_auto_normalise(world &w_, genericpoints &targ, unsigned int index_)
+	action_points_auto_normalise(world &w_, generic_points &targ, unsigned int index_)
 			: action(w_), target(&targ), index(index_) { }
 	static std::string GetTypeSerialisationNameStatic() { return "action_points_auto_normalise"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
@@ -119,109 +119,109 @@ class action_points_auto_normalise : public action {
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
-	static void CancelFutures(genericpoints *target, unsigned int index);
-	static bool HasFutures(genericpoints *target, unsigned int index);
+	static void CancelFutures(generic_points *target, unsigned int index);
+	static bool HasFutures(generic_points *target, unsigned int index);
 
 	private:
-	static bool HandleFuturesGeneric(genericpoints *target, unsigned int index, bool cancel);
+	static bool HandleFuturesGeneric(generic_points *target, unsigned int index, bool cancel);
 };
 
-class action_reservetrack_base;
+class action_reserve_track_base;
 
-class future_routeoperation_base : public future {
+class future_route_operation_base : public future {
 	protected:
 	const route *reserved_route;
 
 	public:
-	future_routeoperation_base(futurable_obj &targ, world_time ft, future_id_type id, const route *reserved_route_)
+	future_route_operation_base(futurable_obj &targ, world_time ft, future_id_type id, const route *reserved_route_)
 			: future(targ, ft, id), reserved_route(reserved_route_) { }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-class future_reservetrack_base : public future_routeoperation_base {
+class future_reserve_track_base : public future_route_operation_base {
 	RRF rflags = RRF::ZERO;
 
 	public:
-	future_reservetrack_base(futurable_obj &targ, world_time ft, future_id_type id) : future_routeoperation_base(targ, ft, id, nullptr) { };
-	future_reservetrack_base(generictrack &targ, world_time ft, const route *reserved_route_, RRF rflags_)
-			: future_routeoperation_base(targ, ft, targ.GetWorld().MakeNewFutureID(), reserved_route_), rflags(rflags_)  { };
-	static std::string GetTypeSerialisationNameStatic() { return "future_reservetrack_base"; }
+	future_reserve_track_base(futurable_obj &targ, world_time ft, future_id_type id) : future_route_operation_base(targ, ft, id, nullptr) { };
+	future_reserve_track_base(generic_track &targ, world_time ft, const route *reserved_route_, RRF rflags_)
+			: future_route_operation_base(targ, ft, targ.GetWorld().MakeNewFutureID(), reserved_route_), rflags(rflags_)  { };
+	static std::string GetTypeSerialisationNameStatic() { return "future_reserve_track_base"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() override;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-class future_reservetrack : public future_reservetrack_base {
+class future_reserve_track : public future_reserve_track_base {
 	public:
-	future_reservetrack(generictrack &targ, world_time ft, const route *reserved_route_, RRF rflags_ = RRF::ZERO)
-			: future_reservetrack_base(targ, ft, reserved_route_, rflags_ | RRF::RESERVE) { };
+	future_reserve_track(generic_track &targ, world_time ft, const route *reserved_route_, RRF rflags_ = RRF::ZERO)
+			: future_reserve_track_base(targ, ft, reserved_route_, rflags_ | RRF::RESERVE) { };
 };
-class future_unreservetrack : public future_reservetrack_base {
+class future_unreserve_track : public future_reserve_track_base {
 	public:
-	future_unreservetrack(generictrack &targ, world_time ft, const route *reserved_route_, RRF rflags_ = RRF::ZERO)
-			: future_reservetrack_base(targ, ft, reserved_route_, rflags_ | RRF::UNRESERVE) { };
+	future_unreserve_track(generic_track &targ, world_time ft, const route *reserved_route_, RRF rflags_ = RRF::ZERO)
+			: future_reserve_track_base(targ, ft, reserved_route_, rflags_ | RRF::UNRESERVE) { };
 };
 
-class action_reservetrack_base : public action {
+class action_reserve_track_base : public action {
 	private:
-	void CancelApproachLocking(genericsignal *sig) const;
+	void CancelApproachLocking(generic_signal *sig) const;
 
 	public:
-	action_reservetrack_base(world &w_) : action(w_) { }
+	action_reserve_track_base(world &w_) : action(w_) { }
 	bool TryReserveRoute(const route *rt, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
-	bool TryUnreserveRoute(routingpoint *startsig, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
-	bool GenericRouteUnreservation(const route *targrt, routingpoint *targsig, RRF extraflags) const;
-	const route *TestSwingOverlapAndReserve(const route *target_route, std::string *failreasonkey = nullptr) const;
+	bool TryUnreserveRoute(routing_point *startsig, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
+	bool GenericRouteUnreservation(const route *targrt, routing_point *targsig, RRF extra_flags) const;
+	const route *TestSwingOverlapAndReserve(const route *target_route, std::string *fail_reason_key = nullptr) const;
 };
 
-class action_reservetrack_routeop : public action_reservetrack_base {
+class action_reserve_track_routeop : public action_reserve_track_base {
 	protected:
 	const route *targetroute;
 
 	public:
-	action_reservetrack_routeop(world &w_, const route *targ) : action_reservetrack_base(w_), targetroute(targ) { }
+	action_reserve_track_routeop(world &w_, const route *targ) : action_reserve_track_base(w_), targetroute(targ) { }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-class action_reservetrack_sigop : public action_reservetrack_base {
+class action_reserve_track_sigop : public action_reserve_track_base {
 	protected:
-	genericsignal *target;
+	generic_signal *target;
 
 	public:
-	action_reservetrack_sigop(world &w_, genericsignal *targ) : action_reservetrack_base(w_), target(targ) { }
+	action_reserve_track_sigop(world &w_, generic_signal *targ) : action_reserve_track_base(w_), target(targ) { }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-class action_reservetrack : public action_reservetrack_routeop {
+class action_reserve_track : public action_reserve_track_routeop {
 	public:
-	action_reservetrack(world &w_) : action_reservetrack_routeop(w_, 0) { }
-	action_reservetrack(world &w_, const route &targ) : action_reservetrack_routeop(w_, &targ) { }
-	static std::string GetTypeSerialisationNameStatic() { return "action_reservetrack"; }
+	action_reserve_track(world &w_) : action_reserve_track_routeop(w_, 0) { }
+	action_reserve_track(world &w_, const route &targ) : action_reserve_track_routeop(w_, &targ) { }
+	static std::string GetTypeSerialisationNameStatic() { return "action_reserve_track"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;
 };
 
-class action_reservepath : public action_reservetrack_base {
-	const routingpoint *start;
-	const routingpoint *end;
+class action_reserve_path : public action_reserve_track_base {
+	const routing_point *start;
+	const routing_point *end;
 	route_class::set allowed_route_types;
 	GMRF gmr_flags;
-	RRF extraflags;
+	RRF extra_flags;
 	via_list vias;
 
 
 	public:
-	action_reservepath(world &w_) : action_reservetrack_base(w_) { }
-	action_reservepath(world &w_, const routingpoint *start_, const routingpoint *end_);
-	action_reservepath &SetAllowedRouteTypes(route_class::set s);
-	action_reservepath &SetGmrFlags(GMRF gmr_flags_);
-	action_reservepath &SetExtraFlags(RRF extraflags_);
-	action_reservepath &SetVias(via_list vias_);
-	static std::string GetTypeSerialisationNameStatic() { return "action_reservepath"; }
+	action_reserve_path(world &w_) : action_reserve_track_base(w_) { }
+	action_reserve_path(world &w_, const routing_point *start_, const routing_point *end_);
+	action_reserve_path &SetAllowedRouteTypes(route_class::set s);
+	action_reserve_path &SetGmrFlags(GMRF gmr_flags_);
+	action_reserve_path &SetExtraFlags(RRF extra_flags_);
+	action_reserve_path &SetVias(via_list vias_);
+	static std::string GetTypeSerialisationNameStatic() { return "action_reserve_path"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
@@ -229,43 +229,43 @@ class action_reservepath : public action_reservetrack_base {
 };
 
 //NB: this operation does no approach locking or other safety checks
-class action_unreservetrackroute : public action_reservetrack_routeop {
+class action_unreserve_track_route : public action_reserve_track_routeop {
 	public:
-	action_unreservetrackroute(world &w_) : action_reservetrack_routeop(w_, nullptr) { }
-	action_unreservetrackroute(world &w_, const route &targ) : action_reservetrack_routeop(w_, &targ) { }
-	static std::string GetTypeSerialisationNameStatic() { return "action_unreservetrackroute"; }
+	action_unreserve_track_route(world &w_) : action_reserve_track_routeop(w_, nullptr) { }
+	action_unreserve_track_route(world &w_, const route &targ) : action_reserve_track_routeop(w_, &targ) { }
+	static std::string GetTypeSerialisationNameStatic() { return "action_unreserve_track_route"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;
 };
 
-class action_unreservetrack : public action_reservetrack_sigop {
+class action_unreserve_track : public action_reserve_track_sigop {
 	public:
-	action_unreservetrack(world &w_) : action_reservetrack_sigop(w_, nullptr) { }
-	action_unreservetrack(world &w_, genericsignal &targ) : action_reservetrack_sigop(w_, &targ) { }
-	static std::string GetTypeSerialisationNameStatic() { return "action_unreservetrack"; }
+	action_unreserve_track(world &w_) : action_reserve_track_sigop(w_, nullptr) { }
+	action_unreserve_track(world &w_, generic_signal &targ) : action_reserve_track_sigop(w_, &targ) { }
+	static std::string GetTypeSerialisationNameStatic() { return "action_unreserve_track"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;
 };
 
-class future_signalflags : public future {
+class future_signal_flags : public future {
 	GSF bits;
 	GSF mask;
 
 	public:
-	future_signalflags(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id) { };
-	future_signalflags(genericsignal &targ, world_time ft, GSF bits_, GSF mask_);
-	static std::string GetTypeSerialisationNameStatic() { return "future_signalflags"; }
+	future_signal_flags(futurable_obj &targ, world_time ft, future_id_type id) : future(targ, ft, id) { };
+	future_signal_flags(generic_signal &targ, world_time ft, GSF bits_, GSF mask_);
+	static std::string GetTypeSerialisationNameStatic() { return "future_signal_flags"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() override;
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-class action_approachlockingtimeout : public action_reservetrack_sigop {
+class action_approach_locking_timeout : public action_reserve_track_sigop {
 	public:
-	action_approachlockingtimeout(world &w_) : action_reservetrack_sigop(w_, nullptr) { }
-	action_approachlockingtimeout(world &w_, genericsignal &targ) : action_reservetrack_sigop(w_, &targ) { }
-	static std::string GetTypeSerialisationNameStatic() { return "action_approachlockingtimeout"; }
+	action_approach_locking_timeout(world &w_) : action_reserve_track_sigop(w_, nullptr) { }
+	action_approach_locking_timeout(world &w_, generic_signal &targ) : action_reserve_track_sigop(w_, &targ) { }
+	static std::string GetTypeSerialisationNameStatic() { return "action_approach_locking_timeout"; }
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void ExecuteAction() const override;
 };

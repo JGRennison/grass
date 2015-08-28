@@ -162,14 +162,14 @@ void train::TrainMoveStep(unsigned int ms) {
 	la.CheckLookaheads(this, head_pos, lookaheadfunc, lookaheaderrorfunc);
 
 	if (waitingatredsig && current_speed == 0) {
-		if (!(tflags & TF::WAITINGREDSIG)) {
-			tflags |= TF::WAITINGREDSIG;
-			redsigwaitstarttime = GetWorld().GetGameTime();
+		if (!(tflags & TF::WAITING_AT_RED_SIG)) {
+			tflags |= TF::WAITING_AT_RED_SIG;
+			red_sig_wait_start_time = GetWorld().GetGameTime();
 		}
 
 		//TODO: do something if we've been waiting for a while
 	}
-	else tflags &= ~TF::WAITINGREDSIG;
+	else tflags &= ~TF::WAITING_AT_RED_SIG;
 
 	unsigned int prev_speed = current_speed;
 	current_speed = std::max(std::min(max_new_speed, target_speed), min_new_speed);
@@ -178,20 +178,20 @@ void train::TrainMoveStep(unsigned int ms) {
 	if (displacement > displacement_limit)
 		displacement = displacement_limit;
 
-	int head_elevationdelta, tail_elevationdelta;
+	int head_elevation_delta, tail_elevation_delta;
 
-	AdvanceDisplacement(displacement, head_pos, &head_elevationdelta, [this](track_location &old_track, track_location &new_track) {
+	AdvanceDisplacement(displacement, head_pos, &head_elevation_delta, [this](track_location &old_track, track_location &new_track) {
 		new_track.GetTrack()->TrainEnter(new_track.GetDirection(), this);
 	});
-	AdvanceDisplacement(displacement, tail_pos, &tail_elevationdelta, [this](track_location &old_track, track_location &new_track) {
+	AdvanceDisplacement(displacement, tail_pos, &tail_elevation_delta, [this](track_location &old_track, track_location &new_track) {
 		old_track.GetTrack()->TrainLeave(old_track.GetDirection(), this);
 	});
-	head_relative_height += head_elevationdelta;
-	tail_relative_height += tail_elevationdelta;
+	head_relative_height += head_elevation_delta;
+	tail_relative_height += tail_elevation_delta;
 	la.Advance(displacement);
 }
 
-void train::CalculateTrainMotionProperties(unsigned int weatherfactor_shl8) {
+void train::CalculateTrainMotionProperties(unsigned int weather_factor_shl8) {
 	total_length = 0;
 	total_drag_const = 0;
 	total_drag_v = 0;
@@ -206,29 +206,29 @@ void train::CalculateTrainMotionProperties(unsigned int weatherfactor_shl8) {
 	if (train_segments.begin() == train_segments.end()) return;    //train with no carriages
 
 	for (auto it = train_segments.begin(); it != train_segments.end(); ++it) {
-		total_length += it->vehtype->length * it->veh_multiplier;
-		total_drag_const += it->vehtype->cumul_drag_const * it->veh_multiplier;
-		total_drag_v += it->vehtype->cumul_drag_v * it->veh_multiplier;
-		total_drag_v2 += it->vehtype->cumul_drag_v2 * it->veh_multiplier;
+		total_length += it->veh_type->length * it->veh_multiplier;
+		total_drag_const += it->veh_type->cumul_drag_const * it->veh_multiplier;
+		total_drag_v += it->veh_type->cumul_drag_v * it->veh_multiplier;
+		total_drag_v2 += it->veh_type->cumul_drag_v2 * it->veh_multiplier;
 		total_mass += it->segment_total_mass;
 
-		unsigned int unit_tractive_force = it->vehtype->tractive_force;
-		unsigned int unit_braking_force = it->vehtype->braking_force;
-		unsigned int unit_traction_limit = (it->vehtype->nominal_rail_traction_limit * weatherfactor_shl8) >> 8;
+		unsigned int unit_tractive_force = it->veh_type->tractive_force;
+		unsigned int unit_braking_force = it->veh_type->braking_force;
+		unsigned int unit_traction_limit = (it->veh_type->nominal_rail_traction_limit * weather_factor_shl8) >> 8;
 
 		total_braking_force += std::min(unit_braking_force, unit_traction_limit) * it->veh_multiplier;
-		if (active_tractions.IsIntersecting(it->vehtype->tractiontypes))	{
+		if (active_tractions.IsIntersecting(it->veh_type->traction_types))	{
 			total_tractive_force += std::min(unit_tractive_force, unit_traction_limit) * it->veh_multiplier;
-			total_tractive_power += it->vehtype->tractive_power * it->veh_multiplier;
+			total_tractive_power += it->veh_type->tractive_power * it->veh_multiplier;
 		}
 
-		if (it == train_segments.begin() || veh_max_speed > it->vehtype->max_speed) {
-			veh_max_speed = it->vehtype->max_speed;
+		if (it == train_segments.begin() || veh_max_speed > it->veh_type->max_speed) {
+			veh_max_speed = it->veh_type->max_speed;
 		}
 
 	}
-	total_drag_v2 += train_segments.front().vehtype->face_drag_v2;
-	total_drag_v2 += train_segments.back().vehtype->face_drag_v2;
+	total_drag_v2 += train_segments.front().veh_type->face_drag_v2;
+	total_drag_v2 += train_segments.back().veh_type->face_drag_v2;
 }
 
 void train::AddCoveredTrackSpeedLimit(unsigned int speed) {
@@ -273,7 +273,7 @@ void train::CalculateCoveredTrackSpeedLimit() {
 }
 
 void train::ReverseDirection() {
-	tflags ^= TF::CONSISTREVDIR;
+	tflags ^= TF::CONSIST_REV_DIR;
 
 	track_location new_head = tail_pos;
 	tail_pos = head_pos;
@@ -297,7 +297,7 @@ void train::RefreshCoveredTrackSpeedLimits() {
 	local_backtrack_pos.ReverseDirection();
 
 	auto func = [this](track_location &old_track, track_location &new_track) {
-		const speedrestrictionset *speeds = new_track.GetTrack()->GetSpeedRestrictions();
+		const speed_restriction_set *speeds = new_track.GetTrack()->GetSpeedRestrictions();
 		if (speeds) {
 			this->AddCoveredTrackSpeedLimit(speeds->GetTrainTrackSpeedLimit(this));
 		}
@@ -330,8 +330,8 @@ void train::DropTrainIntoPosition(const track_location &position, error_collecti
 		old_track.GetTrack()->TrainEnter(old_track.GetTrack()->GetReverseDirection(old_track.GetDirection()), this);
 	};
 
-	flagwrapper<ADRESULTF> adresultflags;
-	unsigned int leftover = AdvanceDisplacement(total_length, tail_pos, &tail_relative_height, func, ADF::CHECKFORTRAINS, &adresultflags);
+	flagwrapper<ADRESULTF> ad_result_flags;
+	unsigned int leftover = AdvanceDisplacement(total_length, tail_pos, &tail_relative_height, func, ADF::CHECK_FOR_TRAINS, &ad_result_flags);
 
 	track_location temp;
 	func(tail_pos, temp);    //include the last track piece
@@ -364,10 +364,10 @@ void train::UprootTrain(error_collection &ec) {
 	la.Clear();
 }
 
-tractionset train::GetAllTractionTypes() const {
-	tractionset ts_union;
+traction_set train::GetAllTractionTypes() const {
+	traction_set ts_union;
 	for (auto &it : train_segments) {
-		ts_union.UnionWith(it.vehtype->tractiontypes);
+		ts_union.UnionWith(it.veh_type->traction_types);
 	}
 	return ts_union;
 }
@@ -387,8 +387,8 @@ void train::GenerateName() {
 }
 
 void train_unit::CalculateSegmentMass() {
-	if (vehtype) {
-		unsigned int unit_mass = (stflags & STF::FULL) ? vehtype->fullmass : vehtype->emptymass;
+	if (veh_type) {
+		unsigned int unit_mass = (stflags & STF::FULL) ? veh_type->full_mass : veh_type->empty_mass;
 		segment_total_mass = unit_mass * veh_multiplier;
 	} else {
 		segment_total_mass = 0;

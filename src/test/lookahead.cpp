@@ -30,39 +30,39 @@
 
 std::string lookahead_test_str_1 =
 R"({ "content" : [ )"
-	R"({ "type" : "startofline", "name" : "A" }, )"
-	R"({ "type" : "trackseg", "length" : 500000 }, )"
-	R"({ "type" : "autosignal", "name" : "S1", "sighting" : 200000, "maxaspect" : 3 }, )"
-	R"({ "type" : "trackseg", "length" : 500000, "name" : "TS1" }, )"
-	R"({ "type" : "autosignal", "name" : "S2", "overlapend" : true, "sighting" : 200000, "maxaspect" : 3 }, )"
-	R"({ "type" : "trackseg", "length" : 500000, "speedlimits" : [ { "speedclass" : "", "speed" : 200 } ], "name" : "TS2" }, )"
-	R"({ "type" : "routesignal", "name" : "S3", "routesignal" : true, "overlapend" : true, "sighting" : 200000, "maxaspect" : 3 }, )"
-	R"({ "type" : "trackseg", "length" : 500000, "name" : "TS3"  }, )"
-	R"({ "type" : "routingmarker", "overlapend" : true }, )"
+	R"({ "type" : "start_of_line", "name" : "A" }, )"
+	R"({ "type" : "track_seg", "length" : 500000 }, )"
+	R"({ "type" : "auto_signal", "name" : "S1", "sighting" : 200000, "maxaspect" : 3 }, )"
+	R"({ "type" : "track_seg", "length" : 500000, "name" : "TS1" }, )"
+	R"({ "type" : "auto_signal", "name" : "S2", "overlapend" : true, "sighting" : 200000, "maxaspect" : 3 }, )"
+	R"({ "type" : "track_seg", "length" : 500000, "speedlimits" : [ { "speed_class" : "", "speed" : 200 } ], "name" : "TS2" }, )"
+	R"({ "type" : "route_signal", "name" : "S3", "route_signal" : true, "overlapend" : true, "sighting" : 200000, "maxaspect" : 3 }, )"
+	R"({ "type" : "track_seg", "length" : 500000, "name" : "TS3"  }, )"
+	R"({ "type" : "routing_marker", "overlapend" : true }, )"
 	R"({ "type" : "points", "name" : "P1", "sighting" : 50000 }, )"
-	R"({ "type" : "trackseg", "length" : 500000, "speedlimits" : [ { "speedclass" : "", "speed" : 100 } ], "name" : "TS4" }, )"
-	R"({ "type" : "routesignal", "name" : "S4", "shuntsignal" : true, "sighting" : 200000, "end" : { "allow" : "route" } }, )"
-	R"({ "type" : "trackseg", "length" : 500000 }, )"
-	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "overlap" } }, )"
+	R"({ "type" : "track_seg", "length" : 500000, "speedlimits" : [ { "speed_class" : "", "speed" : 100 } ], "name" : "TS4" }, )"
+	R"({ "type" : "route_signal", "name" : "S4", "shuntsignal" : true, "sighting" : 200000, "end" : { "allow" : "route" } }, )"
+	R"({ "type" : "track_seg", "length" : 500000 }, )"
+	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "overlap" } }, )"
 
-	R"({ "type" : "trackseg", "length" : 400000, "connect" : { "to" : "P1", "fromdirection" : "front" } }, )"
-	R"({ "type" : "endofline", "name" : "C" } )"
+	R"({ "type" : "track_seg", "length" : 400000, "connect" : { "to" : "P1", "fromdirection" : "front" } }, )"
+	R"({ "type" : "end_of_line", "name" : "C" } )"
 "] }";
 
 std::string lookahead_test_str_2 =
 R"({ "content" : [ )"
 	R"({ "type" : "tractiontype", "name" : "AC" }, )"
-	R"({ "type" : "tractiontype", "name" : "diesel", "alwaysavailable" : true }, )"
-	R"({ "type" : "vehicleclass", "name" : "VC1", "tractiontypes" : [ "diesel", "AC" ], "length" : "25m", "mass" : "40t" },)"
-	R"({ "type" : "startofline", "name" : "A" }, )"
-	R"({ "type" : "trackseg", "name" : "TS1", "length" : 500000, "tractiontypes" : [ "AC" ] }, )"
-	R"({ "type" : "trackseg", "name" : "TS2", "length" : 500000 }, )"
-	R"({ "type" : "trackseg", "name" : "TS3", "length" : 500000, "tractiontypes" : [ "AC" ] }, )"
-	R"({ "type" : "autosignal", "name" : "S1" }, )"
-	R"({ "type" : "trackseg", "name" : "TS4", "length" : 500000, "tractiontypes" : [ "AC" ] }, )"
-	R"({ "type" : "trackseg", "name" : "TS5", "length" : 500000 }, )"
-	R"({ "type" : "trackseg", "name" : "TS6", "length" : 500000, "tractiontypes" : [ "AC" ] }, )"
-	R"({ "type" : "endofline", "name" : "B", "end" : { "allow" : "overlap" } } )"
+	R"({ "type" : "tractiontype", "name" : "diesel", "always_available" : true }, )"
+	R"({ "type" : "vehicleclass", "name" : "VC1", "traction_types" : [ "diesel", "AC" ], "length" : "25m", "mass" : "40t" },)"
+	R"({ "type" : "start_of_line", "name" : "A" }, )"
+	R"({ "type" : "track_seg", "name" : "TS1", "length" : 500000, "traction_types" : [ "AC" ] }, )"
+	R"({ "type" : "track_seg", "name" : "TS2", "length" : 500000 }, )"
+	R"({ "type" : "track_seg", "name" : "TS3", "length" : 500000, "traction_types" : [ "AC" ] }, )"
+	R"({ "type" : "auto_signal", "name" : "S1" }, )"
+	R"({ "type" : "track_seg", "name" : "TS4", "length" : 500000, "traction_types" : [ "AC" ] }, )"
+	R"({ "type" : "track_seg", "name" : "TS5", "length" : 500000 }, )"
+	R"({ "type" : "track_seg", "name" : "TS6", "length" : 500000, "traction_types" : [ "AC" ] }, )"
+	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "overlap" } } )"
 R"(], "gamestate" : [)"
 	R"({ "type" : "train", "vehicleclasses" : [ "VC1" ] })"
 "] }";
@@ -109,21 +109,21 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 
 	env.w->GameStep(1);
 
-	generictrack *ts1 = env.w->FindTrackByName("TS1");
+	generic_track *ts1 = env.w->FindTrackByName("TS1");
 	REQUIRE(ts1 != nullptr);
-	generictrack *ts2 = env.w->FindTrackByName("TS2");
+	generic_track *ts2 = env.w->FindTrackByName("TS2");
 	REQUIRE(ts2 != nullptr);
-	genericsignal *s1 = env.w->FindTrackByNameCast<genericsignal>("S1");
+	generic_signal *s1 = env.w->FindTrackByNameCast<generic_signal>("S1");
 	REQUIRE(s1 != nullptr);
-	genericsignal *s2 = env.w->FindTrackByNameCast<genericsignal>("S2");
+	generic_signal *s2 = env.w->FindTrackByNameCast<generic_signal>("S2");
 	REQUIRE(s2 != nullptr);
-	genericsignal *s3 = env.w->FindTrackByNameCast<genericsignal>("S3");
+	generic_signal *s3 = env.w->FindTrackByNameCast<generic_signal>("S3");
 	REQUIRE(s3 != nullptr);
-	genericsignal *s4 = env.w->FindTrackByNameCast<genericsignal>("S4");
+	generic_signal *s4 = env.w->FindTrackByNameCast<generic_signal>("S4");
 	REQUIRE(s4 != nullptr);
-	routingpoint *b = env.w->FindTrackByNameCast<routingpoint>("B");
+	routing_point *b = env.w->FindTrackByNameCast<routing_point>("B");
 	REQUIRE(b != nullptr);
-	routingpoint *c = env.w->FindTrackByNameCast<routingpoint>("C");
+	routing_point *c = env.w->FindTrackByNameCast<routing_point>("C");
 	REQUIRE(c != nullptr);
 	points *p1 = env.w->FindTrackByNameCast<points>("P1");
 	REQUIRE(p1 != nullptr);
@@ -147,7 +147,7 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	FinaliseLookaheadCheck(pos, map);
 
 	p1->SetPointsFlagsMasked(0, points::PTF::REV, points::PTF::REV);
-	env.w->SubmitAction(action_reservepath(*(env.w), s3, c));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s3, c));
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
 	CheckLookahead(nullptr, l, pos, map);
@@ -156,14 +156,14 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	FinaliseLookaheadCheck(pos, map);
 
 	CHECK(s3->GetCurrentForwardRoute() != 0);
-	env.w->SubmitAction(action_unreservetrackroute(*(env.w), *s3->GetCurrentForwardRoute()));
+	env.w->SubmitAction(action_unreserve_track_route(*(env.w), *s3->GetCurrentForwardRoute()));
 	env.w->GameStep(1);
 	CheckLookahead(nullptr, l, pos, map, lookahead::LA_ERROR::SIG_ASPECT_LESS_THAN_EXPECTED, track_target_ptr(s2, EDGE_FRONT));
 	CheckLookaheadResult(pos, map, 100000, 200);
 	CheckLookaheadResult(pos, map, 600000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
-	env.w->SubmitAction(action_reservepath(*(env.w), s3, c));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s3, c));
 	env.w->GameStep(1);
 
 	l.Advance(500000);
@@ -174,12 +174,12 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	FinaliseLookaheadCheck(pos, map);
 
 	CHECK(s3->GetCurrentForwardRoute() != 0);
-	env.w->SubmitAction(action_unreservetrackroute(*(env.w), *s3->GetCurrentForwardRoute()));
+	env.w->SubmitAction(action_unreserve_track_route(*(env.w), *s3->GetCurrentForwardRoute()));
 	env.w->GameStep(1);
 
 	p1->SetPointsFlagsMasked(0, points::PTF::ZERO, points::PTF::REV);
-	env.w->SubmitAction(action_reservepath(*(env.w), s3, s4));
-	env.w->SubmitAction(action_reservepath(*(env.w), s4, b));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s3, s4));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s4, b));
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
 
@@ -196,15 +196,15 @@ TEST_CASE( "lookahead/unrouted", "Test unrouted track lookahead" ) {
 
 	env.w->GameStep(1);
 
-	generictrack *ts3 = env.w->FindTrackByName("TS3");
+	generic_track *ts3 = env.w->FindTrackByName("TS3");
 	REQUIRE(ts3 != nullptr);
-	generictrack *ts4 = env.w->FindTrackByName("TS4");
+	generic_track *ts4 = env.w->FindTrackByName("TS4");
 	REQUIRE(ts4 != nullptr);
-	genericsignal *s3 = env.w->FindTrackByNameCast<genericsignal>("S3");
+	generic_signal *s3 = env.w->FindTrackByNameCast<generic_signal>("S3");
 	REQUIRE(s3 != nullptr);
-	genericsignal *s4 = env.w->FindTrackByNameCast<genericsignal>("S4");
+	generic_signal *s4 = env.w->FindTrackByNameCast<generic_signal>("S4");
 	REQUIRE(s4 != nullptr);
-	routingpoint *b = env.w->FindTrackByNameCast<routingpoint>("B");
+	routing_point *b = env.w->FindTrackByNameCast<routing_point>("B");
 	REQUIRE(b != nullptr);
 	points *p1 = env.w->FindTrackByNameCast<points>("P1");
 	REQUIRE(p1 != nullptr);
@@ -253,7 +253,7 @@ TEST_CASE( "lookahead/unrouted", "Test unrouted track lookahead" ) {
 	CheckLookaheadResult(pos, map, 0, 0);
 	FinaliseLookaheadCheck(pos, map);
 
-	env.w->SubmitAction(action_reservepath(*(env.w), s4, b));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s4, b));
 	env.w->GameStep(1);
 	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 0, 100);
@@ -265,9 +265,9 @@ TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 
 	test_fixture_world_init_checked env(lookahead_test_str_2, true, true);
 
-	generictrack *ts1 = env.w->FindTrackByName("TS1");
+	generic_track *ts1 = env.w->FindTrackByName("TS1");
 	REQUIRE(ts1 != nullptr);
-	generictrack *s1 = env.w->FindTrackByName("S1");
+	generic_track *s1 = env.w->FindTrackByName("S1");
 	REQUIRE(s1 != nullptr);
 	traction_type *ac = env.w->GetTractionTypeByName("AC");
 	REQUIRE(ac != nullptr);
@@ -277,10 +277,10 @@ TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 	env.w->GameStep(1);
 
 	train *t = nullptr;
-	unsigned int traincount = env.w->EnumerateTrains([&](train &t_) {
+	unsigned int train_count = env.w->EnumerateTrains([&](train &t_) {
 		t = &t_;
 	});
-	REQUIRE(traincount == 1);
+	REQUIRE(train_count == 1);
 	REQUIRE(t != nullptr);
 
 	auto checklookahead = [&](const track_location &pos, bool iserror, unsigned int distance) {
@@ -299,7 +299,7 @@ TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 	INFO("Check 1");
 	checklookahead(track_location(ts1, EDGE_FRONT, 0), true, 0);
 
-	tractionset trs1;
+	traction_set trs1;
 	trs1.AddTractionType(ac);
 	t->SetActiveTractionSet(trs1);
 	INFO("Check 2");
@@ -307,7 +307,7 @@ TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 	INFO("Check 3");
 	checklookahead(track_location(s1, EDGE_FRONT, 0), true, 0);
 
-	tractionset trs2;
+	traction_set trs2;
 	trs2.AddTractionType(diesel);
 	t->SetActiveTractionSet(trs2);
 	INFO("Check 4");
@@ -321,13 +321,13 @@ TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserial
 
 	env.w->GameStep(1);
 
-	routingpoint *a = env.w->FindTrackByNameCast<routingpoint>("A");
+	routing_point *a = env.w->FindTrackByNameCast<routing_point>("A");
 	REQUIRE(a != nullptr);
-	genericsignal *s3 = env.w->FindTrackByNameCast<genericsignal>("S3");
+	generic_signal *s3 = env.w->FindTrackByNameCast<generic_signal>("S3");
 	REQUIRE(s3 != nullptr);
-	genericsignal *s4 = env.w->FindTrackByNameCast<genericsignal>("S4");
+	generic_signal *s4 = env.w->FindTrackByNameCast<generic_signal>("S4");
 	REQUIRE(s4 != nullptr);
-	env.w->SubmitAction(action_reservepath(*(env.w), s3, s4));
+	env.w->SubmitAction(action_reserve_path(*(env.w), s3, s4));
 
 	env.w->GameStep(1);
 

@@ -42,7 +42,7 @@ TEST_CASE( "logging/basic", "Test basic text logging" ) {
 	REQUIRE(env.w.GetLastLogCategory() == LOG_MESSAGE);
 }
 
-TEST_CASE( "textpool/lookup", "Test basic text lookup" ) {
+TEST_CASE( "text_pool/lookup", "Test basic text lookup" ) {
 	test_fixture_world_ops_1 env;
 
 	env.w.GetUserMessageTextpool().RegisterNewText("test", "foobar");
@@ -51,16 +51,16 @@ TEST_CASE( "textpool/lookup", "Test basic text lookup" ) {
 	REQUIRE(env.w.GetLogText() == "foobar\n");
 }
 
-TEST_CASE( "textpool/missing", "Test handling of nonexistent key text lookup" ) {
+TEST_CASE( "text_pool/missing", "Test handling of nonexistent key text lookup" ) {
 	test_fixture_world_ops_1 env;
 
 	env.w.GetUserMessageTextpool().RegisterNewText("test", "foobar");
 	env.w.LogUserMessageLocal(LOG_MESSAGE, env.w.GetUserMessageTextpool().GetTextByName("test1"));
 
-	REQUIRE(env.w.GetLogText() == "textpool: No such key: test1\n");
+	REQUIRE(env.w.GetLogText() == "text_pool: No such key: test1\n");
 }
 
-TEST_CASE( "textpool/variables", "Test variable expansion" ) {
+TEST_CASE( "text_pool/variables", "Test variable expansion" ) {
 	test_fixture_world_ops_1 env;
 
 	env.w.GetUserMessageTextpool().RegisterNewText("test", "foobar $bar $foo() $bar(test) \\$bar");
@@ -72,7 +72,7 @@ TEST_CASE( "textpool/variables", "Test variable expansion" ) {
 	REQUIRE(env.w.GetLogText() == "foobar [baz]() [zab]() [baz](test) $bar\n");
 }
 
-TEST_CASE( "textpool/variables/badinput", "Test variable expansion input error" ) {
+TEST_CASE( "text_pool/variables/badinput", "Test variable expansion input error" ) {
 	test_fixture_world_ops_1 env;
 
 	env.w.GetUserMessageTextpool().RegisterNewText("test", "foobar $bar $foo() $bar(test) $() $@ $");
@@ -86,9 +86,9 @@ TEST_CASE( "logging/future/generic", "Test generic future log messages" ) {
 	test_fixture_world_ops_1 env;
 
 	env.w.GetUserMessageTextpool().RegisterNewText("test", "foo $gametime bar");
-	env.w.futures.RegisterFuture(std::make_shared<future_genericusermessage>(env.w, 150, &env.w, "test"));
-	env.w.futures.RegisterFuture(std::make_shared<future_genericusermessage>(env.w, 300, &env.w, "test"));
-	env.w.futures.RegisterFuture(std::make_shared<future_genericusermessage>(env.w, 500, &env.w, "test"));
+	env.w.futures.RegisterFuture(std::make_shared<future_generic_user_message>(env.w, 150, &env.w, "test"));
+	env.w.futures.RegisterFuture(std::make_shared<future_generic_user_message>(env.w, 300, &env.w, "test"));
+	env.w.futures.RegisterFuture(std::make_shared<future_generic_user_message>(env.w, 500, &env.w, "test"));
 
 	std::string expected1 = "foo 00:00:00.200 bar\n";
 	std::string expected2 = "foo 00:00:00.300 bar\n";

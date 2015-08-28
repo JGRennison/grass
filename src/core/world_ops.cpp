@@ -23,43 +23,43 @@
 #include "core/serialisable_impl.h"
 #include "core/textpool.h"
 
-void future_usermessage::InitVariables(message_formatter &mf, world &w) {
+void future_user_message::InitVariables(message_formatter &mf, world &w) {
 	mf.RegisterVariable("gametime", [&](std::string) -> std::string {
 		return w.FormatGameTime(w.GetGameTime());
 	});
 }
 
-void future_usermessage::Deserialise(const deserialiser_input &di, error_collection &ec) {
+void future_user_message::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	future::Deserialise(di, ec);
 	w = di.w;
 }
 
-void future_genericusermessage::PrepareVariables(message_formatter &mf, world &w) {
+void future_generic_user_message::PrepareVariables(message_formatter &mf, world &w) {
 
 }
 
-void future_genericusermessage::ExecuteAction() {
+void future_generic_user_message::ExecuteAction() {
 	world *w = GetWorld();
 	if (w) {
 		message_formatter mf;
 		InitVariables(mf, *w);
 		PrepareVariables(mf, *w);
-		w->LogUserMessageLocal(LOG_MESSAGE, mf.FormatMessage(w->GetUserMessageTextpool().GetTextByName(textkey)));
+		w->LogUserMessageLocal(LOG_MESSAGE, mf.FormatMessage(w->GetUserMessageTextpool().GetTextByName(text_key)));
 	}
 }
 
-void future_genericusermessage::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	future_usermessage::Deserialise(di, ec);
-	CheckTransJsonValue(textkey, di, "textkey", ec);
+void future_generic_user_message::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	future_user_message::Deserialise(di, ec);
+	CheckTransJsonValue(text_key, di, "text_key", ec);
 }
 
-void future_genericusermessage::Serialise(serialiser_output &so, error_collection &ec) const {
-	future_usermessage::Serialise(so, ec);
-	SerialiseValueJson(textkey, so, "textkey");
+void future_generic_user_message::Serialise(serialiser_output &so, error_collection &ec) const {
+	future_user_message::Serialise(so, ec);
+	SerialiseValueJson(text_key, so, "text_key");
 }
 
-void future_genericusermessage_reason::PrepareVariables(message_formatter &mf, world &w) {
-	mf.RegisterVariable("reason", [&](const std::string &in) { return w.GetUserMessageTextpool().GetTextByName(this->reasonkey); });
+void future_generic_user_message_reason::PrepareVariables(message_formatter &mf, world &w) {
+	mf.RegisterVariable("reason", [&](const std::string &in) { return w.GetUserMessageTextpool().GetTextByName(this->reason_key); });
 
 	world_obj *gt = dynamic_cast<world_obj*>(&GetTarget());
 	if (gt) {
@@ -67,12 +67,12 @@ void future_genericusermessage_reason::PrepareVariables(message_formatter &mf, w
 	}
 }
 
-void future_genericusermessage_reason::Deserialise(const deserialiser_input &di, error_collection &ec) {
-	future_genericusermessage::Deserialise(di, ec);
-	CheckTransJsonValue(reasonkey, di, "reasonkey", ec);
+void future_generic_user_message_reason::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	future_generic_user_message::Deserialise(di, ec);
+	CheckTransJsonValue(reason_key, di, "reason_key", ec);
 }
 
-void future_genericusermessage_reason::Serialise(serialiser_output &so, error_collection &ec) const {
-	future_genericusermessage::Serialise(so, ec);
-	SerialiseValueJson(reasonkey, so, "reasonkey");
+void future_generic_user_message_reason::Serialise(serialiser_output &so, error_collection &ec) const {
+	future_generic_user_message::Serialise(so, ec);
+	SerialiseValueJson(reason_key, so, "reason_key");
 }

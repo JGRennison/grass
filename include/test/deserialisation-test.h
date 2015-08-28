@@ -49,8 +49,8 @@ struct test_fixture_world {
 
 	test_fixture_world(std::string input, std::string input_gamestate)
 			: test_fixture_world() {
-		ws->ParseInputString(input, ec, world_deserialisation::WSLOADGAME_FLAGS::NOGAMESTATE);
-		ws->ParseInputString(input_gamestate, ec, world_deserialisation::WSLOADGAME_FLAGS::NOCONTENT);
+		ws->ParseInputString(input, ec, world_deserialisation::WS_LOAD_GAME_FLAGS::NO_GAME_STATE);
+		ws->ParseInputString(input_gamestate, ec, world_deserialisation::WS_LOAD_GAME_FLAGS::NO_CONTENT);
 		orig_input = std::move(input);
 		orig_input_gamstate = std::move(input_gamestate);
 	}
@@ -88,7 +88,7 @@ struct test_fixture_world_init_checked : public test_fixture_world {
 inline std::string SerialiseGameState(const test_fixture_world &tfw) {
 	error_collection ec;
 	world_serialisation ws(*(tfw.w));
-	std::string gamestate = ws.SaveGameToString(ec, world_serialisation::WSSAVEGAME_FLAGS::PRETTYMODE);
+	std::string gamestate = ws.SaveGameToString(ec, world_serialisation::WS_SAVE_GAME_FLAGS::PRETTY_MODE);
 	if (ec.GetErrorCount()) {
 		FAIL("Error Collection: " << ec);
 	}
@@ -108,7 +108,7 @@ inline test_fixture_world_init_checked RoundTripCloneTestFixtureWorld(const test
 
 	INFO_RESCOPED(*msgtarg, "gamestate:\n" + gamestate);
 	test_fixture_world_init_checked rt_tfw(tfw.orig_input, gamestate);
-	rt_tfw.Init(wflags & world::WFLAGS::DONE_POSTLAYOUTINIT, true, wflags & world::WFLAGS::DONE_LAYOUTINIT);
+	rt_tfw.Init(wflags & world::WFLAGS::DONE_POST_LAYOUT_INIT, true, wflags & world::WFLAGS::DONE_LAYOUT_INIT);
 	rt_tfw.w->round_trip_actions = tfw.w->round_trip_actions;
 
 	return std::move(rt_tfw);

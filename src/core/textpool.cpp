@@ -19,29 +19,29 @@
 #include "common.h"
 #include "core/textpool.h"
 
-textpool::textpool() {
-	RegisterNewText("textpool/keynotfound", "textpool: No such key: ");
+text_pool::text_pool() {
+	RegisterNewText("text_pool/keynotfound", "text_pool: No such key: ");
 }
 
-void textpool::RegisterNewText(const std::string &key, const std::string &text) {
+void text_pool::RegisterNewText(const std::string &key, const std::string &text) {
 	textmap[key] = text;
 }
 
-std::string textpool::GetTextByName(const std::string &key) const {
+std::string text_pool::GetTextByName(const std::string &key) const {
 	auto text = textmap.find(key);
 	if (text != textmap.end()) {
 		return text->second;
 	} else {
-		return textmap.at("textpool/keynotfound") + key;
+		return textmap.at("text_pool/keynotfound") + key;
 	}
 }
 
-void textpool::Deserialise(const deserialiser_input &di, error_collection &ec) {
+void text_pool::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	//code goes here
 }
 
 
-defaultusermessagepool::defaultusermessagepool() {
+default_user_message_pool::default_user_message_pool() {
 	RegisterNewText("track_ops/pointsunmovable", "Points $target not movable: $reason");
 	RegisterNewText("points/locked", "Locked");
 	RegisterNewText("points/reminderset", "Reminder set");

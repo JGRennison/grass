@@ -33,8 +33,8 @@
 class world_deserialisation;
 class world_serialisation;
 class action;
-class generictrack;
-class textpool;
+class generic_track;
+class text_pool;
 class track_circuit;
 class track_train_counter_block;
 class vehicle_class;
@@ -42,14 +42,14 @@ class world;
 class updatable_obj;
 
 struct connection_forward_declaration {
-	generictrack *track1;
+	generic_track *track1;
 	EDGETYPE dir1;
 	std::string name2;
 	EDGETYPE dir2;
-	connection_forward_declaration(generictrack *t1, EDGETYPE d1, const std::string &n2, EDGETYPE d2) : track1(t1), dir1(d1), name2(n2), dir2(d2) { }
+	connection_forward_declaration(generic_track *t1, EDGETYPE d1, const std::string &n2, EDGETYPE d2) : track1(t1), dir1(d1), name2(n2), dir2(d2) { }
 };
 
-enum class GAMEMODE {
+enum class GAME_MODE {
 	SINGLE,
 	SERVER,
 	CLIENT,
@@ -60,7 +60,7 @@ typedef enum {
 	LOG_DENIED,
 	LOG_MESSAGE,
 	LOG_FAILED,
-} LOGCATEGORY;
+} LOG_CATEGORY;
 
 class fixup_list {
 	std::deque<std::function<void(error_collection &ec)> > fixups;
@@ -126,14 +126,14 @@ class track_train_counter_block_container {
 class world : public serialisable_futurable_obj {
 	friend world_deserialisation;
 	friend world_serialisation;
-	std::unordered_map<std::string, std::unique_ptr<generictrack> > all_pieces;
+	std::unordered_map<std::string, std::unique_ptr<generic_track> > all_pieces;
 	std::unordered_map<std::string, std::unique_ptr<vehicle_class> > all_vehicle_classes;
 	std::forward_list<train> all_trains;
 	std::deque<connection_forward_declaration> connection_forward_declarations;
 	std::unordered_map<std::string, traction_type> traction_types;
-	std::deque<generictrack *> tick_update_list;
+	std::deque<generic_track *> tick_update_list;
 	world_time gametime = 0;
-	GAMEMODE mode = GAMEMODE::SINGLE;
+	GAME_MODE mode = GAME_MODE::SINGLE;
 	error_collection ec;
 	unsigned int auto_seq_item = 0;
 	uint64_t load_count = 0;    // incremented on each save/load cycle
@@ -141,8 +141,8 @@ class world : public serialisable_futurable_obj {
 
 	public:
 	enum class WFLAGS {
-		DONE_LAYOUTINIT      = 1<<0,
-		DONE_POSTLAYOUTINIT  = 1<<1,
+		DONE_LAYOUT_INIT       = 1<<0,
+		DONE_POST_LAYOUT_INIT  = 1<<1,
 	};
 
 	private:
@@ -160,13 +160,13 @@ class world : public serialisable_futurable_obj {
 
 	world();
 	virtual ~world();
-	void AddTrack(std::unique_ptr<generictrack> &&piece, error_collection &ec);
-	void AddTractionType(std::string name, bool alwaysavailable);
+	void AddTrack(std::unique_ptr<generic_track> &&piece, error_collection &ec);
+	void AddTractionType(std::string name, bool always_available);
 	traction_type *GetTractionTypeByName(std::string name) const;
-	void ConnectTrack(generictrack *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec);
+	void ConnectTrack(generic_track *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec);
 	void LayoutInit(error_collection &ec);
 	void PostLayoutInit(error_collection &ec);
-	generictrack *FindTrackByName(const std::string &name) const;
+	generic_track *FindTrackByName(const std::string &name) const;
 
 	template <typename C> C *FindTrackByNameCast(const std::string &name) const {
 		return dynamic_cast<C*>(FindTrackByName(name));
@@ -183,14 +183,14 @@ class world : public serialisable_futurable_obj {
 	named_futurable_obj *FindFuturableByName(const std::string &name);
 	virtual std::string GetTypeSerialisationClassName() const override { return "world"; }
 	virtual std::string GetSerialisationName() const override { return ""; }
-	virtual textpool &GetUserMessageTextpool();
-	virtual void LogUserMessageLocal(LOGCATEGORY lc, const std::string &message);
+	virtual text_pool &GetUserMessageTextpool();
+	virtual void LogUserMessageLocal(LOG_CATEGORY lc, const std::string &message);
 	virtual void GameStep(world_time delta);
-	void RegisterTickUpdate(generictrack *targ);
-	void UnregisterTickUpdate(generictrack *targ);
+	void RegisterTickUpdate(generic_track *targ);
+	void UnregisterTickUpdate(generic_track *targ);
 
 	inline bool IsAuthoritative() const {
-		return mode == GAMEMODE::SINGLE || mode == GAMEMODE::SERVER;
+		return mode == GAME_MODE::SINGLE || mode == GAME_MODE::SERVER;
 	}
 
 	error_collection &GetEC() { return ec; }

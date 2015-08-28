@@ -24,12 +24,12 @@
 
 #include "track.h"
 
-class generictrack;
-class routingpoint;
+class generic_track;
+class routing_point;
 class train;
 
 class lookahead  : public serialisable_obj {
-	struct lookaheaditem {
+	struct lookahead_item {
 		enum class LAI_FLAGS {
 			ZERO                                = 0,
 			HALT_UNLESS_VISIBLE                 = 1<<0,
@@ -46,17 +46,17 @@ class lookahead  : public serialisable_obj {
 		unsigned int connection_index = 0;
 		LAI_FLAGS flags = LAI_FLAGS::ZERO;
 	};
-	struct lookaheadroutingpoint {
+	struct lookahead_routing_point {
 		uint64_t offset;
 		uint64_t sighting_offset;
-		vartrack_target_ptr<routingpoint> gs;
+		vartrack_target_ptr<routing_point> gs;
 		unsigned int last_aspect;
-		std::deque<lookaheaditem> l2_list;
+		std::deque<lookahead_item> l2_list;
 	};
 
 
 	uint64_t current_offset = 0;
-	std::deque<lookaheadroutingpoint> l1_list;
+	std::deque<lookahead_routing_point> l1_list;
 
 	public:
 	enum class LA_ERROR {
@@ -78,6 +78,6 @@ class lookahead  : public serialisable_obj {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-template<> struct enum_traits< lookahead::lookaheaditem::LAI_FLAGS > { static constexpr bool flags = true; };
+template<> struct enum_traits< lookahead::lookahead_item::LAI_FLAGS > { static constexpr bool flags = true; };
 
 #endif

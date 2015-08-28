@@ -26,13 +26,13 @@
 BEGIN_EVENT_TABLE(maingui::grviewpanel, wxScrolledWindow)
 END_EVENT_TABLE()
 
-maingui::grviewpanel::grviewpanel(wxWindow *parent, std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_)
+maingui::grviewpanel::grviewpanel(wxWindow *parent, std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_)
 		: wxScrolledWindow(parent), layout(layout_), eng(eng_) {
 	SetBackgroundColour(*wxBLACK);
 }
 
 void maingui::grviewpanel::OnDraw(wxDC& dc) {
-	std::map<std::pair<int, int>, const guilayout::pos_sprite_desc *> redrawsprites;
+	std::map<std::pair<int, int>, const gui_layout::pos_sprite_desc *> redrawsprites;
 
 	wxRegionIterator upd(GetUpdateRegion());
 	while (upd) {
@@ -84,7 +84,7 @@ void maingui::grviewpanel::RefreshSprites(int x, int y, int w, int h) {
 	RefreshRect(wxRect(wx, wy, dx, dy));
 }
 
-maingui::grviewwin::grviewwin(std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_, std::shared_ptr<maingui::grviewwinlist> winlist_)
+maingui::grviewwin::grviewwin(std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_, std::shared_ptr<maingui::grviewwinlist> winlist_)
 	: wxFrame(0, wxID_ANY, wxT("GRASS")), winlist(std::move(winlist_)) {
 	panel = new grviewpanel(this, std::move(layout_), std::move(eng_));
 	panel->InitLayout();

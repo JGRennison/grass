@@ -38,13 +38,13 @@
 #include "draw/drawtypes.h"
 
 class world_deserialisation;
-class generictrack;
-class trackberth;
+class generic_track;
+class track_berth;
 class error_collection;
 class deserialiser_input;
 class world;
 
-namespace guilayout {
+namespace gui_layout {
 	struct layout_obj;
 	class world_layout;
 
@@ -109,8 +109,8 @@ namespace guilayout {
 	//This reduces the input set by half
 	//In that if two directions are reverse, they will fold to the same value
 	inline LAYOUT_DIR FoldLayoutDirection(LAYOUT_DIR dir) {
-		if (static_cast<std::underlying_type<guilayout::LAYOUT_DIR>::type>(dir) >=
-				static_cast<std::underlying_type<guilayout::LAYOUT_DIR>::type>(LAYOUT_DIR::D)) {
+		if (static_cast<std::underlying_type<gui_layout::LAYOUT_DIR>::type>(dir) >=
+				static_cast<std::underlying_type<gui_layout::LAYOUT_DIR>::type>(LAYOUT_DIR::D)) {
 			return ReverseLayoutDirection(dir);
 		} else {
 			return dir;
@@ -128,7 +128,7 @@ namespace guilayout {
 			LOSM_X      = 1<<0,
 			LOSM_Y      = 1<<1,
 		};
-		unsigned int setmembers = 0;
+		unsigned int set_members = 0;
 
 		public:
 		virtual ~layout_obj() { }
@@ -141,14 +141,14 @@ namespace guilayout {
 		virtual std::string GetFriendlyName() const = 0;
 		virtual void Process(world_layout &wl, error_collection &ec) = 0;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
-		draw::draw_func_type drawfunction;
+		draw::draw_func_type draw_function;
 	};
 
-	class layouttrack_obj : public layout_obj {
+	class layout_track_obj : public layout_obj {
 		protected:
-		const generictrack *gt;
+		const generic_track *gt;
 		int length = 1;
-		LAYOUT_DIR layoutdirection = LAYOUT_DIR::NULLDIR;
+		LAYOUT_DIR layout_direction = LAYOUT_DIR::NULLDIR;
 		std::string track_type;
 
 		enum {
@@ -172,20 +172,20 @@ namespace guilayout {
 		std::unique_ptr<points_layout_info> points_layout;
 
 		public:
-		layouttrack_obj(const generictrack *gt_) : gt(gt_) { }
+		layout_track_obj(const generic_track *gt_) : gt(gt_) { }
 		inline int GetLength() const { return length; }
-		inline const generictrack * GetTrack() const { return gt; }
-		inline LAYOUT_DIR GetLayoutDirection() const { return layoutdirection; }
+		inline const generic_track * GetTrack() const { return gt; }
+		inline LAYOUT_DIR GetLayoutDirection() const { return layout_direction; }
 		inline const points_layout_info* GetPointsLayoutInfo() const { return points_layout.get(); }
 		virtual std::string GetFriendlyName() const override;
 		virtual void Process(world_layout &wl, error_collection &ec) override;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	};
 
-	class layoutberth_obj : public layout_obj {
+	class layout_berth_obj : public layout_obj {
 		protected:
-		const generictrack *gt = nullptr;
-		const trackberth *b = nullptr;
+		const generic_track *gt = nullptr;
+		const track_berth *b = nullptr;
 		int length = 4;
 
 		enum {
@@ -193,16 +193,16 @@ namespace guilayout {
 		};
 
 		public:
-		layoutberth_obj(const generictrack *gt_, const trackberth *b_) : gt(gt_), b(b_) { }
+		layout_berth_obj(const generic_track *gt_, const track_berth *b_) : gt(gt_), b(b_) { }
 		inline int GetLength() const { return length; }
-		inline const generictrack * GetTrack() const { return gt; }
-		inline const trackberth * GetBerth() const { return b; }
+		inline const generic_track * GetTrack() const { return gt; }
+		inline const track_berth * GetBerth() const { return b; }
 		virtual std::string GetFriendlyName() const override;
 		virtual void Process(world_layout &wl, error_collection &ec) override;
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	};
 
-	class layoutgui_obj : public layout_obj {
+	class layout_gui_obj : public layout_obj {
 		protected:
 		int dx = 0;
 		int dy = 0;
@@ -220,15 +220,15 @@ namespace guilayout {
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	};
 
-	struct layoutoffsetdirectionresult {
+	struct layout_offset_direction_result {
 		int endx;
 		int endy;
 		int nextx;
 		int nexty;
-		LAYOUT_DIR nextdir;
+		LAYOUT_DIR next_dir;
 	};
 
-	layoutoffsetdirectionresult LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length,
+	layout_offset_direction_result LayoutOffsetDirection(int startx, int starty, LAYOUT_DIR ld, unsigned int length,
 			std::function<void(int, int, LAYOUT_DIR)> stepfunc = std::function<void(int, int, LAYOUT_DIR)>());
 
 	struct pos_sprite_desc_opts {
@@ -245,8 +245,8 @@ namespace guilayout {
 
 	class world_layout : public std::enable_shared_from_this<world_layout> {
 		std::deque<std::shared_ptr<layout_obj> > objs;
-		std::multimap<const generictrack *, std::shared_ptr<layouttrack_obj> > tracktolayoutmap;
-		std::multimap<const generictrack *, std::shared_ptr<layoutberth_obj> > berthtolayoutmap;
+		std::multimap<const generic_track *, std::shared_ptr<layout_track_obj> > track_to_layout_map;
+		std::multimap<const generic_track *, std::shared_ptr<layout_berth_obj> > berth_to_layout_map;
 		const world &w;
 		std::shared_ptr<draw::draw_module> eng;
 
@@ -275,14 +275,14 @@ namespace guilayout {
 		void AddLayoutObj(const std::shared_ptr<layout_obj> &obj);
 		void SetWorldSerialisationLayout(world_deserialisation &ws);
 		void ProcessLayoutObjSet(error_collection &ec);
-		void GetTrackLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec,
-				std::vector<std::shared_ptr<layouttrack_obj> > &output);
-		void GetTrackBerthLayoutObjs(const layout_obj &src, const generictrack *targetgt, error_collection &ec,
-				std::vector<std::shared_ptr<layoutberth_obj> > &output);
+		void GetTrackLayoutObjs(const layout_obj &src, const generic_track *targetgt, error_collection &ec,
+				std::vector<std::shared_ptr<layout_track_obj> > &output);
+		void GetTrackBerthLayoutObjs(const layout_obj &src, const generic_track *targetgt, error_collection &ec,
+				std::vector<std::shared_ptr<layout_berth_obj> > &output);
 		inline std::shared_ptr<draw::draw_module> GetDrawModule() const { return eng; }
 
-		inline void AddTrackLayoutObj(const generictrack *gt, std::shared_ptr<layouttrack_obj> &&obj) {
-			tracktolayoutmap.emplace(gt, std::move(obj));
+		inline void AddTrackLayoutObj(const generic_track *gt, std::shared_ptr<layout_track_obj> &&obj) {
+			track_to_layout_map.emplace(gt, std::move(obj));
 		}
 
 		void SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<layout_obj> &owner,
@@ -342,6 +342,6 @@ namespace guilayout {
 		void LayoutTimeStep(world_time oldtime, world_time newtime);
 	};
 };
-template<> struct enum_traits< guilayout::layouttrack_obj::points_layout_info::PLI_FLAGS > { static constexpr bool flags = true; };
+template<> struct enum_traits< gui_layout::layout_track_obj::points_layout_info::PLI_FLAGS > { static constexpr bool flags = true; };
 
 #endif

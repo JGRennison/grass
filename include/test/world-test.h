@@ -24,19 +24,19 @@
 
 class world_test : public world {
 	std::stringstream logtext;
-	LOGCATEGORY lastlc = LOG_NULL;
+	LOG_CATEGORY last_logcat = LOG_NULL;
 
 	public:
 	bool round_trip_actions = false;
 
-	virtual void LogUserMessageLocal(LOGCATEGORY lc, const std::string &message) override {
-		lastlc = lc;
+	virtual void LogUserMessageLocal(LOG_CATEGORY lc, const std::string &message) override {
+		last_logcat = lc;
 		logtext << message << "\n";
 		//world::LogUserMessageLocal(lc, message);
 	}
 
 	std::string GetLogText() const { return logtext.str(); }
-	LOGCATEGORY GetLastLogCategory() const { return lastlc; }
+	LOG_CATEGORY GetLastLogCategory() const { return last_logcat; }
 	void ResetLogText() { logtext.str(""); }
 
 	virtual void SubmitAction(const action &request) override;

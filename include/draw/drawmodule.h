@@ -23,10 +23,10 @@
 #include "util/error.h"
 #include "draw/drawtypes.h"
 
-namespace guilayout {
-	class layouttrack_obj;
-	class layoutberth_obj;
-	class layoutgui_obj;
+namespace gui_layout {
+	class layout_track_obj;
+	class layout_berth_obj;
+	class layout_gui_obj;
 };
 
 namespace draw {
@@ -35,9 +35,9 @@ namespace draw {
 	class draw_module : public std::enable_shared_from_this<draw_module> {
 
 		public:
-		virtual draw_func_type GetDrawTrack(const std::shared_ptr<guilayout::layouttrack_obj> &obj, error_collection &ec) = 0;
-		virtual draw_func_type GetDrawBerth(const std::shared_ptr<guilayout::layoutberth_obj> &obj, error_collection &ec) = 0;
-		virtual draw_func_type GetDrawObj(const std::shared_ptr<guilayout::layoutgui_obj> &obj, error_collection &ec) = 0;
+		virtual draw_func_type GetDrawTrack(const std::shared_ptr<gui_layout::layout_track_obj> &obj, error_collection &ec) = 0;
+		virtual draw_func_type GetDrawBerth(const std::shared_ptr<gui_layout::layout_berth_obj> &obj, error_collection &ec) = 0;
+		virtual draw_func_type GetDrawObj(const std::shared_ptr<gui_layout::layout_gui_obj> &obj, error_collection &ec) = 0;
 		virtual void BuildSprite(sprite_ref sr, sprite_obj &sp, const draw_options &dopt) = 0;   // must be re-entrant
 	};
 

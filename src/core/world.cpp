@@ -58,7 +58,7 @@ void world::GameStep(world_time delta) {
 	}
 }
 
-void world::ConnectTrack(generictrack *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec) {
+void world::ConnectTrack(generic_track *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec) {
 	auto target_it = all_pieces.find(name2);
 	if (target_it == all_pieces.end()) {
 		connection_forward_declarations.emplace_back(track1, dir1, name2, dir2);
@@ -71,7 +71,7 @@ void world::LayoutInit(error_collection &ec) {
 	for (auto &it : connection_forward_declarations) {
 		auto target_it = all_pieces.find(it.name2);
 		if (target_it == all_pieces.end()) {
-			ec.RegisterNewError<error_trackconnection_notfound>(track_target_ptr(it.track1, it.dir1), it.name2);
+			ec.RegisterNewError<error_track_connection_notfound>(track_target_ptr(it.track1, it.dir1), it.name2);
 		} else {
 			it.track1->FullConnect(it.dir1, track_target_ptr(target_it->second.get(), it.dir2), ec);
 		}
@@ -83,7 +83,7 @@ void world::LayoutInit(error_collection &ec) {
 	for (auto &it : all_pieces) {
 		it.second->CheckUnconnectedEdges(ec);
 	}
-	wflags |= WFLAGS::DONE_LAYOUTINIT;
+	wflags |= WFLAGS::DONE_LAYOUT_INIT;
 }
 
 void world::PostLayoutInit(error_collection &ec) {
@@ -91,7 +91,7 @@ void world::PostLayoutInit(error_collection &ec) {
 		it.second->PostLayoutInit(ec);
 	}
 	post_layout_init_final_fixups.Execute(ec);
-	wflags |= WFLAGS::DONE_POSTLAYOUTINIT;
+	wflags |= WFLAGS::DONE_POST_LAYOUT_INIT;
 }
 
 named_futurable_obj *world::FindFuturableByName(const std::string &name) {
@@ -99,7 +99,7 @@ named_futurable_obj *world::FindFuturableByName(const std::string &name) {
 	if (offset == std::string::npos) {
 		return nullptr;
 	}
-	if (name.compare(0, offset, generictrack::GetTypeSerialisationClassNameStatic())) {
+	if (name.compare(0, offset, generic_track::GetTypeSerialisationClassNameStatic())) {
 		return FindTrackByName(name.substr(offset + 1));
 	} else if (name.compare(0, offset, track_circuit::GetTypeSerialisationClassNameStatic())) {
 		return track_circuits.FindOrMakeByName(name.substr(offset + 1));
@@ -120,21 +120,21 @@ std::string world::FormatGameTime(world_time wt) const {
 	return string_format("%02d:%02d:%02d.%03d", h, m % 60, s % 60, wt % 1000);
 }
 
-textpool &world::GetUserMessageTextpool() {
-	static defaultusermessagepool umtp;
+text_pool &world::GetUserMessageTextpool() {
+	static default_user_message_pool umtp;
 	return umtp;
 }
 
-void world::LogUserMessageLocal(LOGCATEGORY lc, const std::string &message) {
+void world::LogUserMessageLocal(LOG_CATEGORY lc, const std::string &message) {
 	std::cout << message << "\n";
 }
 
 void world::InitFutureTypes() {
-	MakeFutureTypeWrapper<future_pointsaction>(future_types);
-	MakeFutureTypeWrapper<future_genericusermessage_reason>(future_types);
-	MakeFutureTypeWrapper<future_genericusermessage>(future_types);
-	MakeFutureTypeWrapper<future_reservetrack_base>(future_types);
-	MakeFutureTypeWrapper<future_signalflags>(future_types);
+	MakeFutureTypeWrapper<future_points_action>(future_types);
+	MakeFutureTypeWrapper<future_generic_user_message_reason>(future_types);
+	MakeFutureTypeWrapper<future_generic_user_message>(future_types);
+	MakeFutureTypeWrapper<future_reserve_track_base>(future_types);
+	MakeFutureTypeWrapper<future_signal_flags>(future_types);
 	MakeFutureTypeWrapper<future_action_wrapper>(future_types);
 }
 
@@ -166,9 +166,9 @@ void world::SubmitAction(const action &request) {
 	request.Execute();
 }
 
-void world::AddTractionType(std::string name, bool alwaysavailable) {
+void world::AddTractionType(std::string name, bool always_available) {
 	traction_types[name].name=name;
-	traction_types[name].alwaysavailable=alwaysavailable;
+	traction_types[name].always_available=always_available;
 }
 
 traction_type *world::GetTractionTypeByName(std::string name) const {
@@ -180,7 +180,7 @@ traction_type *world::GetTractionTypeByName(std::string name) const {
 	}
 }
 
-generictrack *world::FindTrackByName(const std::string &name) const {
+generic_track *world::FindTrackByName(const std::string &name) const {
 	auto it = all_pieces.find(name);
 	if (it != all_pieces.end()) {
 		if (it->second) {
@@ -199,11 +199,11 @@ track_train_counter_block *world::FindTrackTrainBlockOrTrackCircuitByName(const 
 	}
 }
 
-void world::RegisterTickUpdate(generictrack *targ) {
+void world::RegisterTickUpdate(generic_track *targ) {
 	tick_update_list.push_back(targ);
 }
 
-void world::UnregisterTickUpdate(generictrack *targ) {
+void world::UnregisterTickUpdate(generic_track *targ) {
 	//this does not need to do anything, for now
 }
 
@@ -215,15 +215,15 @@ void world::ExecuteIfActionScope(std::function<void()> func) {
 
 void world::CapAllTrackPieceUnconnectedEdges() {
 	layout_init_final_fixups.AddFixup([this](error_collection &ec) {
-		std::deque<startofline *> newpieces;
+		std::deque<start_of_line *> newpieces;
 		for (auto &it : all_pieces) {
-			std::vector<generictrack::edgelistitem> edgelist;
+			std::vector<generic_track::edgelistitem> edgelist;
 			it.second->GetListOfEdges(edgelist);
 			for (auto &jt : edgelist) {
 				if (!jt.target->IsValid()) {
 					std::string name = string_format("#edge%d", this->auto_seq_item);
 					this->auto_seq_item++;
-					startofline *sol = new startofline(*this);
+					start_of_line *sol = new start_of_line(*this);
 					sol->SetName(name);
 					newpieces.push_back(sol);
 					sol->FullConnect(EDGE_FRONT, track_target_ptr(it.second.get(), jt.edge), ec);

@@ -35,55 +35,55 @@
 #include "rapidjson/document.h"
 #pragma GCC diagnostic pop
 
-class generictrack;
-class trackberth;
+class generic_track;
+class track_berth;
 
 struct template_def {
 	const rapidjson::Value *json = nullptr;
-	bool beingexpanded = false;
+	bool being_expanded = false;
 };
 
 class world_deserialisation {
 	world &w;
 	std::forward_list<rapidjson::Document> parsed_inputs;
-	generictrack *previoustrackpiece;
+	generic_track *previous_track_piece;
 	unsigned int current_content_index;
 
 	public:
 	struct ws_dtf_params {
 		enum class WSDTFP_FLAGS {
-			ZERO          = 0,
-			NONEWTRACK    = 1<<0,
+			ZERO            = 0,
+			NO_NEW_TRACK    = 1<<0,
 		};
 		WSDTFP_FLAGS flags;
 		ws_dtf_params(WSDTFP_FLAGS flags_ = WSDTFP_FLAGS::ZERO) : flags(flags_) { }
 	};
 	typedef deserialisation_type_factory<const ws_dtf_params &> ws_deserialisation_type_factory;
 	ws_deserialisation_type_factory content_object_types;
-	ws_deserialisation_type_factory gamestate_object_types;
+	ws_deserialisation_type_factory game_state_object_types;
 
-	fixup_list gamestate_init;
+	fixup_list game_state_init;
 
-	std::function<void(const generictrack *, const deserialiser_input &, error_collection &)> gui_layout_generictrack;
-	std::function<void(const trackberth *, const generictrack *, const deserialiser_input &, error_collection &)> gui_layout_trackberth;
+	std::function<void(const generic_track *, const deserialiser_input &, error_collection &)> gui_layout_generic_track;
+	std::function<void(const track_berth *, const generic_track *, const deserialiser_input &, error_collection &)> gui_layout_track_berth;
 	std::function<void(const deserialiser_input &, error_collection &)> gui_layout_guiobject;
 
-	enum class WSLOADGAME_FLAGS {
-		ZERO                 = 0,
-		NOCONTENT            = 1<<0,
-		NOGAMESTATE          = 1<<1,
-		TRYREPLACEGAMESTATE  = 1<<2,
+	enum class WS_LOAD_GAME_FLAGS {
+		ZERO                    = 0,
+		NO_CONTENT              = 1<<0,
+		NO_GAME_STATE           = 1<<1,
+		TRY_REPLACE_GAME_STATE  = 1<<2,
 	};
 
 	void InitObjectTypes();
 
 	world_deserialisation(world &w_)
-			: w(w_), previoustrackpiece(nullptr) {
+			: w(w_), previous_track_piece(nullptr) {
 		InitObjectTypes();
 	}
 
-	void ParseInputString(const std::string &input, error_collection &ec, WSLOADGAME_FLAGS flags = WSLOADGAME_FLAGS::ZERO);
-	void LoadGame(const deserialiser_input &di, error_collection &ec, WSLOADGAME_FLAGS flags = WSLOADGAME_FLAGS::ZERO);
+	void ParseInputString(const std::string &input, error_collection &ec, WS_LOAD_GAME_FLAGS flags = WS_LOAD_GAME_FLAGS::ZERO);
+	void LoadGame(const deserialiser_input &di, error_collection &ec, WS_LOAD_GAME_FLAGS flags = WS_LOAD_GAME_FLAGS::ZERO);
 	void DeserialiseRootObjArray(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &contentdi, error_collection &ec);
 	void DeserialiseObject(const ws_deserialisation_type_factory &wdtf, const ws_dtf_params &wdtf_params, const deserialiser_input &di, error_collection &ec);
 	void DeserialiseTypeDefinition(const deserialiser_input &di, error_collection &ec);
@@ -100,7 +100,7 @@ class world_deserialisation {
 	void LoadGameFromFiles(const std::string &basefile, const std::string &savefile, error_collection &ec);
 };
 template<> struct enum_traits< world_deserialisation::ws_dtf_params::WSDTFP_FLAGS > { static constexpr bool flags = true; };
-template<> struct enum_traits< world_deserialisation::WSLOADGAME_FLAGS > { static constexpr bool flags = true; };
+template<> struct enum_traits< world_deserialisation::WS_LOAD_GAME_FLAGS > { static constexpr bool flags = true; };
 
 
 class world_serialisation {
@@ -109,11 +109,11 @@ class world_serialisation {
 	public:
 	world_serialisation(const world &w_) : w(w_) { }
 
-	enum class WSSAVEGAME_FLAGS {
-		PRETTYMODE           = 1<<0,
+	enum class WS_SAVE_GAME_FLAGS {
+		PRETTY_MODE           = 1<<0,
 	};
-	std::string SaveGameToString(error_collection &ec, flagwrapper<WSSAVEGAME_FLAGS> ws_flags = 0);
+	std::string SaveGameToString(error_collection &ec, flagwrapper<WS_SAVE_GAME_FLAGS> ws_flags = 0);
 };
-template<> struct enum_traits< world_serialisation::WSSAVEGAME_FLAGS > { static constexpr bool flags = true; };
+template<> struct enum_traits< world_serialisation::WS_SAVE_GAME_FLAGS > { static constexpr bool flags = true; };
 
 #endif

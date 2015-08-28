@@ -29,14 +29,14 @@
 #include "core/trackreservation.h"
 
 class route;
-class routingpoint;
+class routing_point;
 class track_circuit;
-class genericsignal;
-class trackberth;
+class generic_signal;
+class track_berth;
 class route_restriction_set;
-typedef std::vector<routingpoint *> via_list;
+typedef std::vector<routing_point *> via_list;
 typedef std::vector<track_circuit *> tc_list;
-typedef std::vector<genericsignal *> sig_list;
+typedef std::vector<generic_signal *> sig_list;
 typedef std::vector<route_recording_item> passable_test_list;
 
 
@@ -60,9 +60,9 @@ inline bool is_higher_aspect_in_mask(aspect_mask_type mask, unsigned int aspect)
 }
 
 struct berth_record {
-	trackberth *berth = nullptr;
-	generictrack *ownertrack = nullptr;
-	berth_record(trackberth *b, generictrack *o = nullptr) : berth(b), ownertrack(o) {}
+	track_berth *berth = nullptr;
+	generic_track *owner_track = nullptr;
+	berth_record(track_berth *b, generic_track *o = nullptr) : berth(b), owner_track(o) {}
 };
 typedef std::vector<berth_record> berth_list;
 
@@ -70,13 +70,13 @@ bool DeserialiseAspectProps(unsigned int &aspect_mask, const deserialiser_input 
 
 struct route_common {
 	int priority = 0;
-	unsigned int approachlocking_timeout = 0;
+	unsigned int approach_locking_timeout = 0;
 	unsigned int overlap_timeout = 0;
-	unsigned int approachcontrol_triggerdelay = 0;
+	unsigned int approach_control_triggerdelay = 0;
 	route_class::ID overlap_type = route_class::ID::RTC_NULL;
-	unsigned int routeprove_delay = 0;
-	unsigned int routeclear_delay = 0;
-	unsigned int routeset_delay = 0;
+	unsigned int route_prove_delay = 0;
+	unsigned int route_clear_delay = 0;
+	unsigned int route_set_delay = 0;
 	aspect_mask_type aspect_mask = 3;
 
 	struct conditional_aspect_mask {
@@ -85,35 +85,35 @@ struct route_common {
 	};
 	std::vector<conditional_aspect_mask> conditional_aspect_masks;
 
-	track_train_counter_block *approachcontrol_trigger = nullptr;
-	track_train_counter_block *overlaptimeout_trigger = nullptr;
+	track_train_counter_block *approach_control_trigger = nullptr;
+	track_train_counter_block *overlap_timeout_trigger = nullptr;
 
 	enum class RCF {
-		ZERO                        = 0,
-		PRIORITYSET                 = 1<<0,
-		APLOCK_TIMEOUTSET           = 1<<1,
-		OVERLAPTIMEOUTSET           = 1<<2,
-		APCONTROL                   = 1<<3,
-		APCONTROL_SET               = 1<<4,
-		APCONTROLTRIGGERDELAY_SET   = 1<<5,
-		TORR                        = 1<<6,
-		TORR_SET                    = 1<<7,
-		EXITSIGCONTROL              = 1<<8,
-		EXITSIGCONTROL_SET          = 1<<9,
-		OVERLAPTYPE_SET             = 1<<10,
-		ROUTEPROVEDELAY_SET         = 1<<11,
-		ROUTECLEARDELAY_SET         = 1<<12,
-		ROUTESETDELAY_SET           = 1<<13,
-		ASPECTMASK_SET              = 1<<14,
-		APCONTROL_IF_NOROUTE        = 1<<15, // Conditional aspects: apply approach control if route target has no forward route set
-		APCONTROL_IF_NOROUTE_SET    = 1<<16, // "
+		ZERO                         = 0,
+		PRIORITY_SET                 = 1<<0,
+		AP_LOCKING_TIMEOUT_SET       = 1<<1,
+		OVERLAP_TIMEOUT_SET          = 1<<2,
+		AP_CONTROL                   = 1<<3,
+		AP_CONTROL_SET               = 1<<4,
+		AP_CONTROL_TRIGGER_DELAY_SET = 1<<5,
+		TORR                         = 1<<6,
+		TORR_SET                     = 1<<7,
+		EXIT_SIGNAL_CONTROL          = 1<<8,
+		EXIT_SIGNAL_CONTROL_SET      = 1<<9,
+		OVERLAP_TYPE_SET             = 1<<10,
+		ROUTE_PROVE_DELAY_SET        = 1<<11,
+		ROUTE_CLEAR_DELAY_SET        = 1<<12,
+		ROUTE_SET_DELAY_SET          = 1<<13,
+		ASPECT_MASK_SET              = 1<<14,
+		AP_CONTROL_IF_NOROUTE        = 1<<15, // Conditional aspects: apply approach control if route target has no forward route set
+		AP_CONTROL_IF_NOROUTE_SET    = 1<<16, // "
 	};
-	RCF routecommonflags = RCF::ZERO;
+	RCF route_common_flags = RCF::ZERO;
 
 	enum class DeserialisationFlags {
 		ZERO                        = 0,
 		NO_APLOCK_TIMEOUT           = 1<<0,
-		ASPECTMASK_ONLY             = 1<<1,
+		ASPECT_MASK_ONLY            = 1<<1,
 	};
 
 	void DeserialiseRouteCommon(const deserialiser_input &subdi, error_collection &ec, DeserialisationFlags flags = DeserialisationFlags::ZERO);
@@ -127,49 +127,51 @@ class route_restriction : public route_common {
 
 	std::vector<std::string> targets;
 	std::vector<std::string> via;
-	std::vector<std::string> notvia;
+	std::vector<std::string> not_via;
 
-	route_class::set allowedtypes = route_class::All();
-	route_class::set applytotypes = route_class::All();
+	route_class::set allowed_types = route_class::All();
+	route_class::set apply_to_types = route_class::All();
 
 	public:
 	bool CheckRestriction(route_class::set &allowed_routes, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
 	void ApplyRestriction(route &rt) const;
-	route_class::set GetApplyRouteTypes() const { return applytotypes; }
+	route_class::set GetApplyRouteTypes() const { return apply_to_types; }
 };
 
 class route_restriction_set {
 	std::vector<route_restriction> restrictions;
 
 	public:
-	route_class::set CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces, const track_target_ptr &piece) const;
+	route_class::set CheckAllRestrictions(std::vector<const route_restriction*> &matching_restrictions, const route_recording_list &route_pieces,
+			const track_target_ptr &piece) const;
 	void DeserialiseRestriction(const deserialiser_input &subdi, error_collection &ec, bool isendtype);
 
 	unsigned int GetRestrictionCount() const { return restrictions.size(); }
 };
 
 struct route  : public route_common {
-	vartrack_target_ptr<routingpoint> start;
+	vartrack_target_ptr<routing_point> start;
 	route_recording_list pieces;
-	vartrack_target_ptr<routingpoint> end;
+	vartrack_target_ptr<routing_point> end;
 	via_list vias;
-	tc_list trackcircuits;
-	sig_list repeatersignals;
-	passable_test_list passtestlist;
+	tc_list track_circuits;
+	sig_list repeater_signals;
+	passable_test_list pass_test_list;
 	berth_list berths;
 	route_class::ID type;
 
-	routingpoint *parent = nullptr;
+	routing_point *parent = nullptr;
 	unsigned int index  = 0;
 
 	route() : type(route_class::RTC_NULL) { }
 	void FillLists();
-	bool TestRouteForMatch(const routingpoint *checkend, const via_list &checkvias) const;
-	bool RouteReservation(RRF reserve_flags, std::string *failreasonkey = nullptr) const;
-	bool PartialRouteReservationWithActions(RRF reserve_flags, std::string *failreasonkey, RRF action_reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const;
-	void RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> actioncallback) const;
+	bool TestRouteForMatch(const routing_point *check_end, const via_list &check_vias) const;
+	bool RouteReservation(RRF reserve_flags, std::string *fail_reason_key = nullptr) const;
+	bool PartialRouteReservationWithActions(RRF reserve_flags, std::string *fail_reason_key, RRF action_reserve_flags,
+			std::function<void(action &&reservation_act)> action_callback) const;
+	void RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> action_callback) const;
 	bool IsRouteSubSet(const route *subset) const;
-	bool IsStartAnchored(RRF checkmask = RRF::RESERVE) const;
+	bool IsStartAnchored(RRF check_mask = RRF::RESERVE) const;
 	bool IsRouteTractionSuitable(const train* t) const;
 };
 

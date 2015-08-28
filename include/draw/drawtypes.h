@@ -22,7 +22,7 @@
 #include <functional>
 #include <cstdint>
 
-namespace guilayout {
+namespace gui_layout {
 	class world_layout;
 };
 
@@ -32,7 +32,7 @@ namespace draw {
 	class draw_engine;
 
 	typedef uint32_t sprite_ref;
-	typedef std::function<void(const draw_engine &, guilayout::world_layout &)> draw_func_type;
+	typedef std::function<void(const draw_engine &, gui_layout::world_layout &)> draw_func_type;
 
 	struct drawtextchar {
 		std::string text;

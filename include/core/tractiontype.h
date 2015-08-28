@@ -27,12 +27,12 @@ class train;
 
 struct traction_type {
 	std::string name;
-	bool alwaysavailable;
-	traction_type(std::string n, bool a) : name(n), alwaysavailable(a) { }
-	traction_type() : alwaysavailable(false) { }
+	bool always_available;
+	traction_type(std::string n, bool a) : name(n), always_available(a) { }
+	traction_type() : always_available(false) { }
 };
 
-class tractionset : public serialisable_obj {
+class traction_set : public serialisable_obj {
 	std::vector<traction_type *> tractions;
 
 	public:
@@ -44,9 +44,9 @@ class tractionset : public serialisable_obj {
 
 	bool CanTrainPass(const train *t) const;
 	bool HasTraction(const traction_type *tt) const;
-	bool IsIntersecting(const tractionset &ts) const;
-	void IntersectWith(const tractionset &ts);
-	void UnionWith(const tractionset &ts);
+	bool IsIntersecting(const traction_set &ts) const;
+	void IntersectWith(const traction_set &ts);
+	void UnionWith(const traction_set &ts);
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 

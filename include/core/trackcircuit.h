@@ -35,15 +35,15 @@ struct train_ref {
 };
 
 class track_train_counter_block : public world_obj {
-	unsigned int traincount = 0;
+	unsigned int train_count = 0;
 	std::vector<train_ref> occupying_trains;
-	std::vector<generictrack *> owned_pieces;
+	std::vector<generic_track *> owned_pieces;
 	world_time last_change;
 
 	public:
 	enum class TCF {
 		ZERO              = 0,
-		FORCEOCCUPIED     = 1<<0,
+		FORCE_OCCUPIED    = 1<<0,
 	};
 
 	private:
@@ -60,12 +60,12 @@ class track_train_counter_block : public world_obj {
 	TCF SetTCFlagsMasked(TCF bits, TCF mask);
 	unsigned int GetTrainOccupationCount() const { return occupying_trains.size(); }
 	world_time GetLastOccupationStateChangeTime() const { return last_change; }
-	void RegisterTrack(generictrack *piece) { owned_pieces.push_back(piece); }
-	const std::vector<generictrack *> &GetOwnedTrackSet() const { return owned_pieces; }
+	void RegisterTrack(generic_track *piece) { owned_pieces.push_back(piece); }
+	const std::vector<generic_track *> &GetOwnedTrackSet() const { return owned_pieces; }
 	void GetSetRoutes(std::vector<const route *> &routes);
 
 	virtual std::string GetTypeName() const override { return "Track Train Counter Block"; }
-	static std::string GetTypeSerialisationClassNameStatic() { return "tracktraincounterblock"; }
+	static std::string GetTypeSerialisationClassNameStatic() { return "track_train_counter_block"; }
 	virtual std::string GetTypeSerialisationClassName() const override { return GetTypeSerialisationClassNameStatic(); }
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
@@ -79,7 +79,7 @@ class track_train_counter_block : public world_obj {
 template<> struct enum_traits< track_train_counter_block::TCF > { static constexpr bool flags = true; };
 
 inline bool track_train_counter_block::Occupied() const {
-	return traincount > 0 || tc_flags & TCF::FORCEOCCUPIED;
+	return train_count > 0 || tc_flags & TCF::FORCE_OCCUPIED;
 }
 
 class track_circuit : public track_train_counter_block {
@@ -93,11 +93,11 @@ class track_circuit : public track_train_counter_block {
 		return reserved_track_pieces > 0;
 	}
 
-	void TrackReserved(generictrack *track);
-	void TrackUnreserved(generictrack *track);
+	void TrackReserved(generic_track *track);
+	void TrackUnreserved(generic_track *track);
 
 	virtual std::string GetTypeName() const override { return "Track Circuit"; }
-	static std::string GetTypeSerialisationClassNameStatic() { return "trackcircuit"; }
+	static std::string GetTypeSerialisationClassNameStatic() { return "track_circuit"; }
 	virtual std::string GetTypeSerialisationClassName() const override { return GetTypeSerialisationClassNameStatic(); }
 
 	protected:

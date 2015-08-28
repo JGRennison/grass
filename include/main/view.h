@@ -30,13 +30,13 @@
 namespace maingui {
 
 	class grviewpanel : public wxScrolledWindow {
-		std::shared_ptr<guilayout::world_layout> layout;
+		std::shared_ptr<gui_layout::world_layout> layout;
 		std::shared_ptr<draw::wx_draw_engine> eng;
 		int layout_origin_x = 0;
 		int layout_origin_y = 0;
 
 		public:
-		grviewpanel(wxWindow *parent, std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_);
+		grviewpanel(wxWindow *parent, std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_);
 		void OnDraw(wxDC& dc);
 		void InitLayout();
 		void RefreshSprites(int x, int y, int w = 1, int h = 1);
@@ -49,7 +49,7 @@ namespace maingui {
 		std::shared_ptr<grviewwinlist> winlist;
 
 		public:
-		grviewwin(std::shared_ptr<guilayout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_, std::shared_ptr<grviewwinlist> winlist_);
+		grviewwin(std::shared_ptr<gui_layout::world_layout> layout_, std::shared_ptr<draw::wx_draw_engine> eng_, std::shared_ptr<grviewwinlist> winlist_);
 		~grviewwin();
 	};
 

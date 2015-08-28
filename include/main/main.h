@@ -27,7 +27,7 @@
 class error_collection;
 class world;
 class grassapp;
-namespace guilayout {
+namespace gui_layout {
 	class world_layout;
 }
 namespace draw {
@@ -55,7 +55,7 @@ class grassapp: public wxApp {
 	virtual int OnExit();
 
 	std::shared_ptr<world> w;
-	std::shared_ptr<guilayout::world_layout> layout;
+	std::shared_ptr<gui_layout::world_layout> layout;
 	std::shared_ptr<draw::wx_draw_engine> eng;
 	std::shared_ptr<draw::draw_options> opts;
 	unsigned int timestepms = 50;

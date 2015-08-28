@@ -28,7 +28,7 @@
 
 static void checkvc(world &w, const std::string &name, unsigned int length, unsigned int max_speed, unsigned int tractive_force, unsigned int tractive_power,
 	unsigned int braking_force, unsigned int nominal_rail_traction_limit, unsigned int cumul_drag_const, unsigned int cumul_drag_v, unsigned int cumul_drag_v2,
-	unsigned int face_drag_v2, unsigned int fullmass, unsigned int emptymass, const std::string &traction_str) {
+	unsigned int face_drag_v2, unsigned int full_mass, unsigned int empty_mass, const std::string &traction_str) {
 	INFO("checkvc for: " + name);
 	vehicle_class *vc = w.FindVehicleClassByName(name);
 	REQUIRE(vc != 0);
@@ -44,9 +44,9 @@ static void checkvc(world &w, const std::string &name, unsigned int length, unsi
 	CHECK(vc->cumul_drag_v == cumul_drag_v);
 	CHECK(vc->cumul_drag_v2 == cumul_drag_v2);
 	CHECK(vc->face_drag_v2 == face_drag_v2);
-	CHECK(vc->fullmass == fullmass);
-	CHECK(vc->emptymass == emptymass);
-	CHECK(vc->tractiontypes.DumpString() == traction_str);
+	CHECK(vc->full_mass == full_mass);
+	CHECK(vc->empty_mass == empty_mass);
+	CHECK(vc->traction_types.DumpString() == traction_str);
 }
 
 static void checktd(const train_dynamics &td, unsigned int length, unsigned int maxspeed, unsigned int tractive_force, unsigned int tractive_power, unsigned int braking_force, unsigned int dragc, unsigned int dragv, unsigned int dragv2, unsigned int mass) {
@@ -64,14 +64,14 @@ static void checktd(const train_dynamics &td, unsigned int length, unsigned int 
 TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialisation" ) {
 	std::string test_vc_deserialisation_1 =
 	R"({ "content" : [ )"
-		R"({ "type" : "tractiontype", "name" : "diesel", "alwaysavailable" : true }, )"
+		R"({ "type" : "tractiontype", "name" : "diesel", "always_available" : true }, )"
 		R"({ "type" : "tractiontype", "name" : "AC" }, )"
 		R"({ "type" : "vehicleclass", "name" : "VC1", "length" : "25m", "maxspeed" : "125.50mph", "tractiveforce" : "500kN", "tractivepower" : "1000hp", "brakingforce" : "1MN",)"
-			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "dragv2" : 200, "facedragv2" : 50, "fullmass" : "15t", "emptymass" : "10t",)"
-			R"( "tractiontypes" : [ "diesel", "AC" ] }, )"
+			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "dragv2" : 200, "facedragv2" : 50, "full_mass" : "15t", "empty_mass" : "10t",)"
+			R"( "traction_types" : [ "diesel", "AC" ] }, )"
 		R"({ "type" : "vehicleclass", "name" : "VC2", "length" : "30yd", "maxspeed" : "170km/h", "tractiveforce" : "500kN", "tractivepower" : "1000hp", "brakingforce" : "1MN",)"
 			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "mass" : "15t",)"
-			R"( "tractiontypes" : [ "AC", "AC" ] }, )"
+			R"( "traction_types" : [ "AC", "AC" ] }, )"
 		R"({ "type" : "vehicleclass", "name" : "VC3", "length" : "120ft", "tractiveforce" : "1024lbf", "tractivepower" : "512 ft lbf/s", "brakingforce" : "1MN",)"
 			R"( "mass" : "15t" } )"
 	"] }";
@@ -94,12 +94,12 @@ TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialis
 
 	parsecheckerr(
 		R"({ "content" : [ )"
-		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "25m", "fullmass" : "15t", "emptymass" : "20t" } )"
+		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "25m", "full_mass" : "15t", "empty_mass" : "20t" } )"
 		"] }"
 		, "full mass < empty mass");
 	parsecheckerr(
 		R"({ "content" : [ )"
-		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "25m", "mass" : "15t", "emptymass" : "20t" } )"
+		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "25m", "mass" : "15t", "empty_mass" : "20t" } )"
 		"] }"
 		, "Unknown object property");
 	parsecheckerr(
@@ -139,14 +139,14 @@ TEST_CASE("/train/train/deserialisation/typeerror", "Check that trains cannot ap
 TEST_CASE("/train/train/deserialisation/dynamics", "Train deserialisation and dynamics") {
 	std::string test_train_deserialisation_dynamics =
 	R"({ "content" : [ )"
-		R"({ "type" : "tractiontype", "name" : "diesel", "alwaysavailable" : true }, )"
+		R"({ "type" : "tractiontype", "name" : "diesel", "always_available" : true }, )"
 		R"({ "type" : "tractiontype", "name" : "AC" }, )"
 		R"({ "type" : "vehicleclass", "name" : "VC1", "length" : "25m", "maxspeed" : "30m/s", "tractiveforce" : "500kN", "tractivepower" : "1000hp", "brakingforce" : "1MN",)"
-			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "dragv2" : 200, "facedragv2" : 50, "fullmass" : "15t", "emptymass" : "10t",)"
-			R"( "tractiontypes" : [ "diesel", "AC" ] }, )"
+			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "dragv2" : 200, "facedragv2" : 50, "full_mass" : "15t", "empty_mass" : "10t",)"
+			R"( "traction_types" : [ "diesel", "AC" ] }, )"
 		R"({ "type" : "vehicleclass", "name" : "VC2", "length" : "30m", "maxspeed" : "170km/h", "tractiveforce" : "500kN", "tractivepower" : "1000hp", "brakingforce" : "1MN",)"
 			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "mass" : "15t",)"
-			R"( "tractiontypes" : [ "AC" ] } )"
+			R"( "traction_types" : [ "AC" ] } )"
 	R"( ], )"
 	R"( "gamestate" : [ )"
 		"%s"
@@ -173,12 +173,12 @@ TEST_CASE("/train/train/deserialisation/dynamics", "Train deserialisation and dy
 		REQUIRE(env.ec.GetErrorCount() == 0);
 
 		unsigned int count = 0;
-		unsigned int traincount = env.w->EnumerateTrains([&](train &t) {
+		unsigned int train_count = env.w->EnumerateTrains([&](train &t) {
 			count++;
 			f(t);
 		});
 		CHECK(count == 1);
-		CHECK(traincount == 1);
+		CHECK(train_count == 1);
 		delete &env;
 	};
 
@@ -284,20 +284,20 @@ static void check_uproot_train(train *t) {
 TEST_CASE("/train/train/dropanduproot", "Drop train into position and train uprooting tests") {
 	std::string test_train_drop_into_position =
 	R"({ "content" : [ )"
-		R"({ "type" : "startofline", "name" : "A"}, )"
-		R"({ "type" : "trackseg", "name" : "T0", "length" : "50m", "trackcircuit" : "TC0", "tracktriggers" : "TT0" }, )"
+		R"({ "type" : "start_of_line", "name" : "A"}, )"
+		R"({ "type" : "track_seg", "name" : "T0", "length" : "50m", "track_circuit" : "TC0", "tracktriggers" : "TT0" }, )"
 		R"({ "type" : "points", "name" : "P0", "connect" : { "to" : "C" } }, )"
-		R"({ "type" : "trackseg", "name" : "T1", "length" : "50m" }, )"
-		R"({ "type" : "routesignal", "name" : "S0", "shuntsignal" : true }, )"
-		R"({ "type" : "trackseg", "name" : "T3", "length" : "200m" }, )"
-		R"({ "type" : "endofline", "name" : "B" }, )"
+		R"({ "type" : "track_seg", "name" : "T1", "length" : "50m" }, )"
+		R"({ "type" : "route_signal", "name" : "S0", "shuntsignal" : true }, )"
+		R"({ "type" : "track_seg", "name" : "T3", "length" : "200m" }, )"
+		R"({ "type" : "end_of_line", "name" : "B" }, )"
 
-		R"({ "type" : "endofline", "name" : "C" }, )"
+		R"({ "type" : "end_of_line", "name" : "C" }, )"
 
-		R"({ "type" : "tractiontype", "name" : "diesel", "alwaysavailable" : true }, )"
+		R"({ "type" : "tractiontype", "name" : "diesel", "always_available" : true }, )"
 		R"({ "type" : "tractiontype", "name" : "AC" }, )"
-		R"({ "type" : "vehicleclass", "name" : "VC1", "length" : "30m", "mass" : "15t", "tractiontypes" : [ "diesel" ] }, )"
-		R"({ "type" : "vehicleclass", "name" : "VC2", "length" : "30m", "mass" : "15t", "tractiontypes" : [ "AC" ] } )"
+		R"({ "type" : "vehicleclass", "name" : "VC1", "length" : "30m", "mass" : "15t", "traction_types" : [ "diesel" ] }, )"
+		R"({ "type" : "vehicleclass", "name" : "VC2", "length" : "30m", "mass" : "15t", "traction_types" : [ "AC" ] } )"
 	R"( ], )"
 	R"( "gamestate" : [ )"
 		"%s"

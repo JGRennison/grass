@@ -23,10 +23,10 @@
 #include "core/serialisable_impl.h"
 #include "core/train.h"
 
-bool tractionset::CanTrainPass(const train *t) const {
-	const tractionset &ts = t->GetActiveTractionTypes();
+bool traction_set::CanTrainPass(const train *t) const {
+	const traction_set &ts = t->GetActiveTractionTypes();
 	for (auto &it : ts.tractions) {
-		if (it->alwaysavailable) {
+		if (it->always_available) {
 			return true;
 		}
 		if (HasTraction(it)) {
@@ -36,11 +36,11 @@ bool tractionset::CanTrainPass(const train *t) const {
 	return false;
 }
 
-bool tractionset::HasTraction(const traction_type *tt) const {
+bool traction_set::HasTraction(const traction_type *tt) const {
 	return std::find(tractions.begin(), tractions.end(), tt) != tractions.end();
 }
 
-bool tractionset::IsIntersecting(const tractionset &ts) const {
+bool traction_set::IsIntersecting(const traction_set &ts) const {
 	for (auto &it : tractions) {
 		if (ts.HasTraction(it)) {
 			return true;
@@ -49,19 +49,19 @@ bool tractionset::IsIntersecting(const tractionset &ts) const {
 	return false;
 }
 
-void tractionset::IntersectWith(const tractionset &ts) {
+void traction_set::IntersectWith(const traction_set &ts) {
 	container_unordered_remove_if(tractions, [&](traction_type *tt) {
 		return !ts.HasTraction(tt);
 	});
 }
 
-void tractionset::UnionWith(const tractionset &ts) {
+void traction_set::UnionWith(const traction_set &ts) {
 	for (auto &it : ts.tractions) {
 		AddTractionType(it);
 	}
 }
 
-void tractionset::Deserialise(const deserialiser_input &di, error_collection &ec) {
+void traction_set::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	if (!di.json.IsArray()) {
 		ec.RegisterNewError<error_deserialisation>(di, "Invalid traction set definition");
 		return;
@@ -83,14 +83,14 @@ void tractionset::Deserialise(const deserialiser_input &di, error_collection &ec
 	}
 }
 
-void tractionset::Serialise(serialiser_output &so, error_collection &ec) const {
+void traction_set::Serialise(serialiser_output &so, error_collection &ec) const {
 	for (auto &it : tractions) {
 		so.json_out.String(it->name);
 	}
 	return;
 }
 
-std::string tractionset::DumpString() const {
+std::string traction_set::DumpString() const {
 	std::vector<std::string> strs;
 	for (auto &it : tractions) {
 		strs.push_back(it->name);

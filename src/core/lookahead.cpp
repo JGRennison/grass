@@ -69,14 +69,14 @@ void lookahead::CheckLookaheads(const train *t /* optional */, const track_locat
 		for (auto jt = it->l2_list.begin(); jt != it->l2_list.end(); ++jt) {
 			if (current_offset >= jt->start_offset && current_offset <= jt->end_offset) {
 				sendresponse(0, jt->speed);
-				if (jt->flags & lookaheaditem::LAI_FLAGS::TRACTION_UNSUITABLE) {
+				if (jt->flags & lookahead_item::LAI_FLAGS::TRACTION_UNSUITABLE) {
 					errfunc(LA_ERROR::TRACTION_UNSUITABLE, jt->piece);
 				}
 			} else if (current_offset < jt->start_offset) {
-				if (current_offset < jt->sighting_offset && jt->flags & lookaheaditem::LAI_FLAGS::HALT_UNLESS_VISIBLE) {
+				if (current_offset < jt->sighting_offset && jt->flags & lookahead_item::LAI_FLAGS::HALT_UNLESS_VISIBLE) {
 					sendresponse(jt->start_offset - current_offset, 0);
-				} else if (jt->flags & lookaheaditem::LAI_FLAGS::NOT_ALWAYS_PASSABLE && current_offset >= jt->sighting_offset) {
-					if (jt->flags & lookaheaditem::LAI_FLAGS::ALLOW_DIFFERENT_CONNECTION_INDEX &&
+				} else if (jt->flags & lookahead_item::LAI_FLAGS::NOT_ALWAYS_PASSABLE && current_offset >= jt->sighting_offset) {
+					if (jt->flags & lookahead_item::LAI_FLAGS::ALLOW_DIFFERENT_CONNECTION_INDEX &&
 							jt->connection_index != jt->piece.track->GetCurrentNominalConnectionIndex(jt->piece.direction)) {
 						//points have moved, rescan
 						Init(t, pos, 0);
@@ -84,9 +84,9 @@ void lookahead::CheckLookaheads(const train *t /* optional */, const track_locat
 						return;
 					}
 					if (jt->piece.track->IsTrackPassable(jt->piece.direction, jt->connection_index)) {
-						if (jt->flags & lookaheaditem::LAI_FLAGS::SCAN_BEYOND_IF_PASSABLE) {
+						if (jt->flags & lookahead_item::LAI_FLAGS::SCAN_BEYOND_IF_PASSABLE) {
 							ScanAppend(t, track_location(jt->piece.track->GetConnectingPiece(jt->piece.direction)), 1, 0);
-							jt->flags &= ~lookaheaditem::LAI_FLAGS::SCAN_BEYOND_IF_PASSABLE;
+							jt->flags &= ~lookahead_item::LAI_FLAGS::SCAN_BEYOND_IF_PASSABLE;
 						}
 						sendresponse(jt->start_offset - current_offset, jt->speed);
 					} else {
@@ -121,7 +121,7 @@ void lookahead::CheckLookaheads(const train *t /* optional */, const track_locat
 				while (std::next(it) != l1_list.end())
 					l1_list.pop_back();
 				const route *rt = nullptr;
-				genericsignal *gs = FastSignalCast(l1_list.back().gs.track, l1_list.back().gs.direction);
+				generic_signal *gs = FastSignalCast(l1_list.back().gs.track, l1_list.back().gs.direction);
 				if (gs) {
 					rt = gs->GetCurrentForwardRoute();
 				}
@@ -134,7 +134,7 @@ void lookahead::CheckLookaheads(const train *t /* optional */, const track_locat
 					}
 				}
 				const route *rt = nullptr;
-				genericsignal *gs = FastSignalCast(l1_list.back().gs.track, l1_list.back().gs.direction);
+				generic_signal *gs = FastSignalCast(l1_list.back().gs.track, l1_list.back().gs.direction);
 				if (gs) {
 					rt = gs->GetCurrentForwardRoute();
 				}
@@ -163,8 +163,8 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 	}
 
 	l1_list.emplace_back();
-	lookaheadroutingpoint *l = &l1_list.back();
-	auto newsignal = [&](const vartrack_target_ptr<routingpoint> &sig) {
+	lookahead_routing_point *l = &l1_list.back();
+	auto newsignal = [&](const vartrack_target_ptr<routing_point> &sig) {
 		l->offset = offset;
 		l->gs = sig;
 		l->sighting_offset = offset - sig.track->GetSightingDistance(sig.direction);
@@ -173,7 +173,7 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 	};
 	auto newpiece = [&](const track_target_ptr &piece, unsigned int connection_index) {
 		l->l2_list.emplace_back();
-		lookaheaditem &l2 = l->l2_list.back();
+		lookahead_item &l2 = l->l2_list.back();
 		l2.connection_index = connection_index;
 		l2.start_offset = offset;
 		l2.sighting_offset = offset - piece.track->GetSightingDistance(piece.direction);
@@ -182,33 +182,33 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 		l2.piece = piece;
 
 		if (t) {
-			const tractionset *ts = piece.track->GetTractionTypes();
+			const traction_set *ts = piece.track->GetTractionTypes();
 			if (ts && !ts->CanTrainPass(t)) {
 				l2.speed = 0;
-				l2.flags |= lookaheaditem::LAI_FLAGS::TRACTION_UNSUITABLE;
+				l2.flags |= lookahead_item::LAI_FLAGS::TRACTION_UNSUITABLE;
 				return;
 			}
 		}
 
-		const speedrestrictionset *srs = piece.track->GetSpeedRestrictions();
+		const speed_restriction_set *srs = piece.track->GetSpeedRestrictions();
 		if (srs) {
 			l2.speed = srs->GetTrainTrackSpeedLimit(t);
 		} else {
 			l2.speed = UINT_MAX;
 		}
 		if (!piece.track->IsTrackAlwaysPassable()) {
-			l2.flags |= lookaheaditem::LAI_FLAGS::NOT_ALWAYS_PASSABLE;
+			l2.flags |= lookahead_item::LAI_FLAGS::NOT_ALWAYS_PASSABLE;
 		}
 	};
 	if (rt) {
 		if (t && !rt->IsRouteTractionSuitable(t)) {
 			l->l2_list.emplace_back();
-			lookaheaditem &l2 = l->l2_list.back();
+			lookahead_item &l2 = l->l2_list.back();
 			l2.start_offset = offset;
 			l2.end_offset = offset;
 			l2.sighting_offset = 0;
 			l2.speed = 0;
-			l2.flags |= lookaheaditem::LAI_FLAGS::TRACTION_UNSUITABLE;
+			l2.flags |= lookahead_item::LAI_FLAGS::TRACTION_UNSUITABLE;
 			l2.piece = rt->start;
 		}
 
@@ -222,9 +222,9 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 			}
 		}
 		for (;it != rt->pieces.end(); ++it) {
-			genericsignal *gs = FastSignalCast(it->location.track, it->location.direction);
+			generic_signal *gs = FastSignalCast(it->location.track, it->location.direction);
 			if (gs) {
-				newsignal(vartrack_target_ptr<routingpoint>(gs, it->location.direction));
+				newsignal(vartrack_target_ptr<routing_point>(gs, it->location.direction));
 				if (blocklimit) {
 					l1_list.emplace_back();
 					l = &l1_list.back();
@@ -238,7 +238,7 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 		newsignal(rt->end);
 		if (blocklimit) {
 			const route *next_rt = nullptr;
-			genericsignal *gs = FastSignalCast(rt->end.track, rt->end.direction);
+			generic_signal *gs = FastSignalCast(rt->end.track, rt->end.direction);
 			if (gs) {
 				next_rt = gs->GetCurrentForwardRoute();
 			}
@@ -248,18 +248,18 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 		offset -= pos.GetTrack()->GetLength(pos.GetDirection()) - pos.GetTrack()->GetRemainingLength(pos.GetDirection(), pos.GetOffset());
 		track_target_ptr current(pos.GetTrack(), pos.GetDirection());
 		while (true) {
-			genericsignal *gs = FastSignalCast(current.track, current.direction);
+			generic_signal *gs = FastSignalCast(current.track, current.direction);
 			if (gs) {
-				newsignal(vartrack_target_ptr<routingpoint>(gs, current.direction));
+				newsignal(vartrack_target_ptr<routing_point>(gs, current.direction));
 				l->last_aspect = 0;
 				return;
 			}
 			if (!current.track->IsTrackAlwaysPassable()) {
 				unsigned int connection_index = current.track->GetCurrentNominalConnectionIndex(current.direction);
 				newpiece(current, connection_index);
-				l->l2_list.back().flags |= lookaheaditem::LAI_FLAGS::ALLOW_DIFFERENT_CONNECTION_INDEX | lookaheaditem::LAI_FLAGS::HALT_UNLESS_VISIBLE;
+				l->l2_list.back().flags |= lookahead_item::LAI_FLAGS::ALLOW_DIFFERENT_CONNECTION_INDEX | lookahead_item::LAI_FLAGS::HALT_UNLESS_VISIBLE;
 				if (current_offset < l->l2_list.back().sighting_offset) {    //can't see beyond this
-					l->l2_list.back().flags |= lookaheaditem::LAI_FLAGS::SCAN_BEYOND_IF_PASSABLE;
+					l->l2_list.back().flags |= lookahead_item::LAI_FLAGS::SCAN_BEYOND_IF_PASSABLE;
 					break;
 				}
 			} else {
@@ -270,9 +270,9 @@ void lookahead::ScanAppend(const train *t /* optional */, const track_location &
 			if (next.IsValid()) {
 				current = next;
 			} else {
-				routingpoint *rp = FastRoutingpointCast(current.track, current.direction);
+				routing_point *rp = FastRoutingpointCast(current.track, current.direction);
 				if (rp) {
-					newsignal(vartrack_target_ptr<routingpoint>(rp, current.direction));
+					newsignal(vartrack_target_ptr<routing_point>(rp, current.direction));
 				}
 				break;
 			}
@@ -300,35 +300,35 @@ void lookahead::Deserialise(const deserialiser_input &di, error_collection &ec) 
 	CheckTransJsonValueDef(current_offset, di, "current_offset", 0, ec);
 	CheckIterateJsonArrayOrType<json_object>(di, "l1", "l1", ec, [&](const deserialiser_input &edi, error_collection &ec) {
 		l1_list.emplace_back();
-		lookaheadroutingpoint &l1 = l1_list.back();
+		lookahead_routing_point &l1 = l1_list.back();
 		CheckTransJsonValueDef(l1.offset, edi, "offset", 0, ec);
 		CheckTransJsonValueDef(l1.sighting_offset, edi, "sighting_offset", 0, ec);
 		track_target_ptr ttp;
 		ttp.Deserialise("gs", edi, ec);
-		l1.gs = vartrack_target_ptr<routingpoint>(FastRoutingpointCast(ttp.track, ttp.direction), ttp.direction);
+		l1.gs = vartrack_target_ptr<routing_point>(FastRoutingpointCast(ttp.track, ttp.direction), ttp.direction);
 		CheckTransJsonValueDef(l1.last_aspect, edi, "last_aspect", 0, ec);
 		CheckIterateJsonArrayOrType<json_object>(edi, "l2", "l2", ec, [&](const deserialiser_input &fdi, error_collection &ec) {
 			l1.l2_list.emplace_back();
-			lookaheaditem &l2 = l1.l2_list.back();
+			lookahead_item &l2 = l1.l2_list.back();
 			CheckTransJsonValueDef(l2.start_offset, fdi, "start_offset", 0, ec);
 			CheckTransJsonValueDef(l2.end_offset, fdi, "end_offset", 0, ec);
 			CheckTransJsonValueDef(l2.sighting_offset, fdi, "sighting_offset", 0, ec);
 			l2.piece.Deserialise("piece", fdi, ec);
 			CheckTransJsonValueDef(l2.connection_index, fdi, "connection_index", 0, ec);
-			CheckTransJsonValueDef(l2.flags, fdi, "flags", lookaheaditem::LAI_FLAGS::ZERO, ec);
+			CheckTransJsonValueDef(l2.flags, fdi, "flags", lookahead_item::LAI_FLAGS::ZERO, ec);
 		}, true);
 	}, true);
 }
 
 void lookahead::Serialise(serialiser_output &so, error_collection &ec) const {
 	SerialiseValueJson(current_offset, so, "current_offset");
-	SerialiseObjectArrayContainer(l1_list, so, "l1", [&](serialiser_output &so, const lookaheadroutingpoint &l1) {
+	SerialiseObjectArrayContainer(l1_list, so, "l1", [&](serialiser_output &so, const lookahead_routing_point &l1) {
 		SerialiseValueJson(l1.offset, so, "offset");
 		SerialiseValueJson(l1.sighting_offset, so, "sighting_offset");
 		track_target_ptr ttp = l1.gs;
 		ttp.Serialise("gs", so, ec);
 		SerialiseValueJson(l1.last_aspect, so, "last_aspect");
-		SerialiseObjectArrayContainer(l1.l2_list, so, "l2", [&](serialiser_output &so, const lookaheaditem &l2) {
+		SerialiseObjectArrayContainer(l1.l2_list, so, "l2", [&](serialiser_output &so, const lookahead_item &l2) {
 			SerialiseValueJson(l2.start_offset, so, "start_offset");
 			SerialiseValueJson(l2.end_offset, so, "end_offset");
 			SerialiseValueJson(l2.sighting_offset, so, "sighting_offset");

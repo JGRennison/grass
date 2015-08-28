@@ -32,7 +32,7 @@
 
 struct test_fixture_track_1 {
 	world_test w;
-	trackseg track1, track2;
+	track_seg track1, track2;
 	error_collection ec;
 	test_fixture_track_1() : track1(w), track2(w) {
 		track1.SetLength(50000);
@@ -47,7 +47,7 @@ struct test_fixture_track_1 {
 
 struct test_fixture_track_2 {
 	world_test w;
-	trackseg track1, track2, track3;
+	track_seg track1, track2, track3;
 	points pt1;
 	error_collection ec;
 	test_fixture_track_2() : track1(w), track2(w), track3(w), pt1(w) {
@@ -69,9 +69,9 @@ struct test_fixture_track_2 {
 
 struct test_fixture_track_3 {
 	world_test w;
-	trackseg track1, track2, track3, track4;
+	track_seg track1, track2, track3, track4;
 	catchpoints cp1;
-	springpoints sp1;
+	spring_points sp1;
 	error_collection ec;
 	test_fixture_track_3() : track1(w), track2(w), track3(w), track4(w), cp1(w), sp1(w) {
 		track1.FullConnect(EDGE_BACK, track_target_ptr(&sp1, EDGE_PTS_FACE), ec);
@@ -94,7 +94,7 @@ TEST_CASE( "track/conn/track", "Test basic track segment connectivity" ) {
 TEST_CASE( "track/conn/points", "Test basic points connectivity" ) {
 	test_fixture_track_2 env;
 
-	REQUIRE(env.pt1.GetPointsFlags(0) == genericpoints::PTF::ZERO);
+	REQUIRE(env.pt1.GetPointsFlags(0) == generic_points::PTF::ZERO);
 	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT) == track_target_ptr(&env.pt1, EDGE_PTS_FACE));
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.pt1, EDGE_PTS_NORMAL));
 	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.pt1, EDGE_PTS_REVERSE));
@@ -124,7 +124,7 @@ TEST_CASE( "track/conn/catchpoints", "Test basic catchpoints connectivity" ) {
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr());
 	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
 	//normal
-	env.cp1.SetPointsFlagsMasked(0, genericpoints::PTF::REV, points::PTF::REV);
+	env.cp1.SetPointsFlagsMasked(0, generic_points::PTF::REV, points::PTF::REV);
 	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr(&env.track4, EDGE_FRONT));
 	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track2, EDGE_BACK));
 	//OOC
@@ -133,7 +133,7 @@ TEST_CASE( "track/conn/catchpoints", "Test basic catchpoints connectivity" ) {
 	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
 }
 
-TEST_CASE( "track/conn/springpoints", "Test basic springpoints connectivity" ) {
+TEST_CASE( "track/conn/spring_points", "Test basic spring_points connectivity" ) {
 	test_fixture_track_3 env;
 
 	REQUIRE(env.sp1.GetSendReverseFlag() == false);
@@ -237,20 +237,20 @@ TEST_CASE( "track/traverse/points", "Test basic points traversal" ) {
 TEST_CASE( "track/deserialisation/track", "Test basic track segment deserialisation" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"trackseg\", \"name\" : \"T1\", \"length\" : 50000, \"elevationdelta\" : -1000, \"traincount\" : 1, "
-			"\"speedlimits\" : [ { \"speedclass\" : \"foo\", \"speed\" : 27778 } ] }"
+		"{ \"type\" : \"track_seg\", \"name\" : \"T1\", \"length\" : 50000, \"elevation_delta\" : -1000, \"train_count\" : 1, "
+			"\"speedlimits\" : [ { \"speed_class\" : \"foo\", \"speed\" : 27778 } ] }"
 	"] }";
 	test_fixture_world env(track_test_str);
 
 	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	trackseg *t = dynamic_cast<trackseg *>(env.w->FindTrackByName("T1"));
+	track_seg *t = dynamic_cast<track_seg *>(env.w->FindTrackByName("T1"));
 	REQUIRE(t != nullptr);
 	REQUIRE(t->GetLength(EDGE_FRONT) == 50000);
 	REQUIRE(t->GetElevationDelta(EDGE_FRONT) == -1000);
 
-	const speedrestrictionset *sr = t->GetSpeedRestrictions();
+	const speed_restriction_set *sr = t->GetSpeedRestrictions();
 	REQUIRE(sr != nullptr);
 	REQUIRE(sr->GetTrackSpeedLimitByClass("foo", UINT_MAX) == 27778);
 	REQUIRE(sr->GetTrackSpeedLimitByClass("bar", UINT_MAX) == UINT_MAX);
@@ -275,45 +275,45 @@ TEST_CASE( "track/deserialisation/autoname", "Test deserialisation automatic nam
 	std::string track_test_str =
 	"{ \"content\" : [ "
 		"{ \"type\" : \"points\"}, "
-		"{ \"type\" : \"trackseg\"}"
+		"{ \"type\" : \"track_seg\"}"
 	"] }";
 	test_fixture_world env(track_test_str);
 
 	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	trackseg *p = dynamic_cast<trackseg *>(env.w->FindTrackByName("#1"));
+	track_seg *p = dynamic_cast<track_seg *>(env.w->FindTrackByName("#1"));
 	REQUIRE(p != nullptr);
 }
 
 std::string track_test_str_ds =
 R"({ "content" : [ )"
-	R"({ "type" : "doubleslip", "name" : "DS1" }, )"
-	R"({ "type" : "doubleslip", "name" : "DS2", "degreesoffreedom" : 1 }, )"
-	R"({ "type" : "doubleslip", "name" : "DS3", "degreesoffreedom" : 2 }, )"
-	R"({ "type" : "doubleslip", "name" : "DS4", "degreesoffreedom" : 4 }, )"
-	R"({ "type" : "doubleslip", "name" : "DS5", "notrack_fl_bl" : true }, )"
-	R"({ "type" : "doubleslip", "name" : "DS6", "notrack_fl_br" : true, "rightfrontpoints" : { "reverse" : true } }, )"
-	R"({ "type" : "doubleslip", "name" : "DS7", "notrack_fr_br" : true, "degreesoffreedom" : 1, "leftfrontpoints" : { "reverse" : true } }, )"
-	R"({ "type" : "doubleslip", "name" : "DS8", "notrack_fr_bl" : true, "degreesoffreedom" : 4 }, )"
-	R"({ "type" : "doubleslip", "name" : "DS9", "degreesoffreedom" : 1, "leftbackpoints" : { "locked" : true, "reverse" : true } }, )"
-	R"({ "type" : "doubleslip", "name" : "DS10", "degreesoffreedom" : 2, "leftbackpoints" : { "failedrev" : true, "reverse" : true } }, )"
-	R"({ "type" : "endofline", "name" : "FL" }, )"
-	R"({ "type" : "endofline", "name" : "FR" }, )"
-	R"({ "type" : "endofline", "name" : "BL" }, )"
-	R"({ "type" : "endofline", "name" : "BR" } )"
+	R"({ "type" : "double_slip", "name" : "DS1" }, )"
+	R"({ "type" : "double_slip", "name" : "DS2", "degreesoffreedom" : 1 }, )"
+	R"({ "type" : "double_slip", "name" : "DS3", "degreesoffreedom" : 2 }, )"
+	R"({ "type" : "double_slip", "name" : "DS4", "degreesoffreedom" : 4 }, )"
+	R"({ "type" : "double_slip", "name" : "DS5", "notrack_fl_bl" : true }, )"
+	R"({ "type" : "double_slip", "name" : "DS6", "notrack_fl_br" : true, "rightfrontpoints" : { "reverse" : true } }, )"
+	R"({ "type" : "double_slip", "name" : "DS7", "notrack_fr_br" : true, "degreesoffreedom" : 1, "leftfrontpoints" : { "reverse" : true } }, )"
+	R"({ "type" : "double_slip", "name" : "DS8", "notrack_fr_bl" : true, "degreesoffreedom" : 4 }, )"
+	R"({ "type" : "double_slip", "name" : "DS9", "degreesoffreedom" : 1, "leftbackpoints" : { "locked" : true, "reverse" : true } }, )"
+	R"({ "type" : "double_slip", "name" : "DS10", "degreesoffreedom" : 2, "leftbackpoints" : { "failedrev" : true, "reverse" : true } }, )"
+	R"({ "type" : "end_of_line", "name" : "FL" }, )"
+	R"({ "type" : "end_of_line", "name" : "FR" }, )"
+	R"({ "type" : "end_of_line", "name" : "BL" }, )"
+	R"({ "type" : "end_of_line", "name" : "BR" } )"
 "] }";
 
-TEST_CASE( "track/deserialisation/doubleslip", "Test basic doubleslip deserialisation" ) {
+TEST_CASE( "track/deserialisation/double_slip", "Test basic double_slip deserialisation" ) {
 	test_fixture_world env(track_test_str_ds);
 
 	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	auto checkds = [&](const char *name, genericpoints::PTF pffl, genericpoints::PTF pffr, genericpoints::PTF pfbl, genericpoints::PTF pfbr) {
+	auto checkds = [&](const char *name, generic_points::PTF pffl, generic_points::PTF pffr, generic_points::PTF pfbl, generic_points::PTF pfbr) {
 		INFO("Double-slip check for: " << name);
 
-		doubleslip *ds = dynamic_cast<doubleslip *>(env.w->FindTrackByName(name));
+		double_slip *ds = dynamic_cast<double_slip *>(env.w->FindTrackByName(name));
 		REQUIRE(ds != nullptr);
 		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_FL) == pffl);
 		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_FR) == pffr);
@@ -321,49 +321,49 @@ TEST_CASE( "track/deserialisation/doubleslip", "Test basic doubleslip deserialis
 		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_BR) == pfbr);
 	};
 
-	checkds("DS1", genericpoints::PTF::ZERO, points::PTF::REV, points::PTF::REV, genericpoints::PTF::ZERO);
-	checkds("DS2", genericpoints::PTF::ZERO, genericpoints::PTF::ZERO, genericpoints::PTF::ZERO, genericpoints::PTF::ZERO);
-	checkds("DS3", genericpoints::PTF::ZERO, points::PTF::REV, points::PTF::REV, genericpoints::PTF::ZERO);
-	checkds("DS4", genericpoints::PTF::ZERO, genericpoints::PTF::ZERO, genericpoints::PTF::ZERO, genericpoints::PTF::ZERO);
-	checkds("DS5", points::PTF::FIXED, genericpoints::PTF::ZERO, points::PTF::FIXED, genericpoints::PTF::ZERO);
-	checkds("DS6", points::PTF::FIXED | points::PTF::REV, points::PTF::REV, genericpoints::PTF::ZERO, points::PTF::FIXED | points::PTF::REV);
+	checkds("DS1", generic_points::PTF::ZERO, points::PTF::REV, points::PTF::REV, generic_points::PTF::ZERO);
+	checkds("DS2", generic_points::PTF::ZERO, generic_points::PTF::ZERO, generic_points::PTF::ZERO, generic_points::PTF::ZERO);
+	checkds("DS3", generic_points::PTF::ZERO, points::PTF::REV, points::PTF::REV, generic_points::PTF::ZERO);
+	checkds("DS4", generic_points::PTF::ZERO, generic_points::PTF::ZERO, generic_points::PTF::ZERO, generic_points::PTF::ZERO);
+	checkds("DS5", points::PTF::FIXED, generic_points::PTF::ZERO, points::PTF::FIXED, generic_points::PTF::ZERO);
+	checkds("DS6", points::PTF::FIXED | points::PTF::REV, points::PTF::REV, generic_points::PTF::ZERO, points::PTF::FIXED | points::PTF::REV);
 	checkds("DS7", points::PTF::REV, points::PTF::FIXED, points::PTF::REV, points::PTF::FIXED);
-	checkds("DS8", genericpoints::PTF::ZERO, points::PTF::FIXED | points::PTF::REV, points::PTF::FIXED | points::PTF::REV, genericpoints::PTF::ZERO);
+	checkds("DS8", generic_points::PTF::ZERO, points::PTF::FIXED | points::PTF::REV, points::PTF::FIXED | points::PTF::REV, generic_points::PTF::ZERO);
 	checkds("DS9", points::PTF::LOCKED | points::PTF::REV, points::PTF::LOCKED | points::PTF::REV, points::PTF::LOCKED | points::PTF::REV, points::PTF::LOCKED | points::PTF::REV);
-	checkds("DS10", points::PTF::ZERO, points::PTF::REV, points::PTF::FAILEDREV | points::PTF::REV, points::PTF::FAILEDNORM);
+	checkds("DS10", points::PTF::ZERO, points::PTF::REV, points::PTF::FAILED_REV | points::PTF::REV, points::PTF::FAILED_NORM);
 }
 
-class test_doubleslip {
+class test_double_slip {
 	public:
-	static inline bool HalfConnect(doubleslip *ds, EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+	static inline bool HalfConnect(double_slip *ds, EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
 		return ds->HalfConnect(this_entrance_direction, target_entrance);
 	}
-	static inline unsigned int GetCurrentPointIndex(doubleslip *ds, EDGETYPE direction) {
+	static inline unsigned int GetCurrentPointIndex(double_slip *ds, EDGETYPE direction) {
 		return ds->GetPointsIndexByEdge(direction);
 	}
 };
 
-TEST_CASE( "track/conn/doubleslip", "Test basic doubleslip connectivity" ) {
+TEST_CASE( "track/conn/double_slip", "Test basic double_slip connectivity" ) {
 	test_fixture_world env(track_test_str_ds);
 
 	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	generictrack *fl = env.w->FindTrackByName("FL");
-	generictrack *fr = env.w->FindTrackByName("FR");
-	generictrack *bl = env.w->FindTrackByName("BL");
-	generictrack *br = env.w->FindTrackByName("BR");
+	generic_track *fl = env.w->FindTrackByName("FL");
+	generic_track *fr = env.w->FindTrackByName("FR");
+	generic_track *bl = env.w->FindTrackByName("BL");
+	generic_track *br = env.w->FindTrackByName("BR");
 
-	auto checkdstraverse = [&](const char *name, generictrack *flt, generictrack *frt, generictrack *blt, generictrack *brt) {
+	auto checkdstraverse = [&](const char *name, generic_track *flt, generic_track *frt, generic_track *blt, generic_track *brt) {
 		INFO("Double-slip check for: " << name);
 
-		doubleslip *ds = dynamic_cast<doubleslip *>(env.w->FindTrackByName(name));
+		double_slip *ds = dynamic_cast<double_slip *>(env.w->FindTrackByName(name));
 		REQUIRE(ds != nullptr);
 
-		REQUIRE(test_doubleslip::HalfConnect(ds, EDGE_DS_FL, track_target_ptr(fl, EDGE_FRONT)) == true);
-		REQUIRE(test_doubleslip::HalfConnect(ds, EDGE_DS_FR, track_target_ptr(fr, EDGE_FRONT)) == true);
-		REQUIRE(test_doubleslip::HalfConnect(ds, EDGE_DS_BL, track_target_ptr(bl, EDGE_FRONT)) == true);
-		REQUIRE(test_doubleslip::HalfConnect(ds, EDGE_DS_BR, track_target_ptr(br, EDGE_FRONT)) == true);
+		REQUIRE(test_double_slip::HalfConnect(ds, EDGE_DS_FL, track_target_ptr(fl, EDGE_FRONT)) == true);
+		REQUIRE(test_double_slip::HalfConnect(ds, EDGE_DS_FR, track_target_ptr(fr, EDGE_FRONT)) == true);
+		REQUIRE(test_double_slip::HalfConnect(ds, EDGE_DS_BL, track_target_ptr(bl, EDGE_FRONT)) == true);
+		REQUIRE(test_double_slip::HalfConnect(ds, EDGE_DS_BR, track_target_ptr(br, EDGE_FRONT)) == true);
 		REQUIRE(ds->GetConnectingPiece(EDGE_DS_FL).track == flt);
 		REQUIRE(ds->GetConnectingPiece(EDGE_DS_FR).track == frt);
 		REQUIRE(ds->GetConnectingPiece(EDGE_DS_BL).track == blt);
@@ -373,10 +373,10 @@ TEST_CASE( "track/conn/doubleslip", "Test basic doubleslip connectivity" ) {
 	auto dsmovepoints = [&](const char *name, EDGETYPE direction, bool rev) {
 		INFO("Double-slip check for: " << name);
 
-		doubleslip *ds = dynamic_cast<doubleslip *>(env.w->FindTrackByName(name));
+		double_slip *ds = dynamic_cast<double_slip *>(env.w->FindTrackByName(name));
 		REQUIRE(ds != nullptr);
 
-		ds->SetPointsFlagsMasked(test_doubleslip::GetCurrentPointIndex(ds, direction), rev ? genericpoints::PTF::REV : genericpoints::PTF::ZERO, genericpoints::PTF::REV);
+		ds->SetPointsFlagsMasked(test_double_slip::GetCurrentPointIndex(ds, direction), rev ? generic_points::PTF::REV : generic_points::PTF::ZERO, generic_points::PTF::REV);
 	};
 
 	checkdstraverse("DS1", br, 0, 0, fl);
@@ -401,15 +401,15 @@ TEST_CASE( "track/conn/doubleslip", "Test basic doubleslip connectivity" ) {
 TEST_CASE( "track/deserialisation/partialconnection", "Test partial track connection declaration deserialisation" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
-		R"({ "type" : "startofline", "name" : "A"}, )"
+		R"({ "type" : "start_of_line", "name" : "A"}, )"
 		R"({ "type" : "points", "name" : "P1", "connect" : { "to" : "T2" } }, )"
 		R"({ "type" : "points", "name" : "P2" }, )"
-		R"({ "type" : "trackseg", "name" : "T1" }, )"
-		R"({ "type" : "endofline", "name" : "B" }, )"
-		R"({ "type" : "trackseg", "name" : "T2" }, )"
-		R"({ "type" : "endofline", "name" : "C" }, )"
-		R"({ "type" : "trackseg", "name" : "T3", "connect" : { "to" : "P2" } }, )"
-		R"({ "type" : "endofline", "name" : "D" } )"
+		R"({ "type" : "track_seg", "name" : "T1" }, )"
+		R"({ "type" : "end_of_line", "name" : "B" }, )"
+		R"({ "type" : "track_seg", "name" : "T2" }, )"
+		R"({ "type" : "end_of_line", "name" : "C" }, )"
+		R"({ "type" : "track_seg", "name" : "T3", "connect" : { "to" : "P2" } }, )"
+		R"({ "type" : "end_of_line", "name" : "D" } )"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -422,9 +422,9 @@ TEST_CASE( "track/deserialisation/partialconnection", "Test partial track connec
 	REQUIRE(p1 != nullptr);
 	points *p2 = dynamic_cast<points *>(env.w->FindTrackByName("P2"));
 	REQUIRE(p2 != nullptr);
-	trackseg *t2 = dynamic_cast<trackseg *>(env.w->FindTrackByName("T2"));
+	track_seg *t2 = dynamic_cast<track_seg *>(env.w->FindTrackByName("T2"));
 	REQUIRE(t2 != nullptr);
-	trackseg *t3 = dynamic_cast<trackseg *>(env.w->FindTrackByName("T3"));
+	track_seg *t3 = dynamic_cast<track_seg *>(env.w->FindTrackByName("T3"));
 	REQUIRE(t3 != nullptr);
 
 	REQUIRE(p1->GetEdgeConnectingPiece(EDGE_PTS_REVERSE) == track_target_ptr(t2, EDGE_FRONT));
@@ -434,10 +434,10 @@ TEST_CASE( "track/deserialisation/partialconnection", "Test partial track connec
 TEST_CASE( "track/deserialisation/ambiguouspartialconnection/1", "Test handling of ambiguous partial track connection declaration deserialisation" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
-		R"({ "type" : "startofline", "name" : "A"}, )"
+		R"({ "type" : "start_of_line", "name" : "A"}, )"
 		R"({ "type" : "points", "name" : "P1", "connect" : { "to" : "T2" } }, )"
-		R"({ "type" : "endofline", "name" : "B" }, )"
-		R"({ "type" : "trackseg", "name" : "T2" } )"
+		R"({ "type" : "end_of_line", "name" : "B" }, )"
+		R"({ "type" : "track_seg", "name" : "T2" } )"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -450,10 +450,10 @@ TEST_CASE( "track/deserialisation/ambiguouspartialconnection/1", "Test handling 
 TEST_CASE( "track/deserialisation/ambiguouspartialconnection/2", "Test handling of ambiguous partial track connection declaration deserialisation" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
-		R"({ "type" : "startofline", "name" : "A"}, )"
+		R"({ "type" : "start_of_line", "name" : "A"}, )"
 		R"({ "type" : "points", "name" : "P1" }, )"
-		R"({ "type" : "endofline", "name" : "B" }, )"
-		R"({ "type" : "trackseg", "name" : "T2" , "connect" : { "to" : "P1" } } )"
+		R"({ "type" : "end_of_line", "name" : "B" }, )"
+		R"({ "type" : "track_seg", "name" : "T2" , "connect" : { "to" : "P1" } } )"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -466,10 +466,10 @@ TEST_CASE( "track/deserialisation/ambiguouspartialconnection/2", "Test handling 
 TEST_CASE( "track/deserialisation/ambiguouspartialconnection/3", "Test handling of ambiguous partial track connection declaration deserialisation" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
-		R"({ "type" : "startofline", "name" : "A"}, )"
-		R"({ "type" : "trackseg", "name" : "T1" }, )"
-		R"({ "type" : "endofline", "name" : "B" }, )"
-		R"({ "type" : "trackseg", "name" : "T2" , "connect" : { "to" : "T1" } } )"
+		R"({ "type" : "start_of_line", "name" : "A"}, )"
+		R"({ "type" : "track_seg", "name" : "T1" }, )"
+		R"({ "type" : "end_of_line", "name" : "B" }, )"
+		R"({ "type" : "track_seg", "name" : "T2" , "connect" : { "to" : "T1" } } )"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -484,8 +484,8 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 	R"({ "content" : [ )"
 		R"({ "type" : "couplepoints", "points" : [ { "name" : "P1", "edge" : "reverse"}, { "name" : "P2", "edge" : "normal"}, { "name" : "DS1", "edge" : "rightfront"} ] }, )"
 		R"({ "type" : "couplepoints", "points" : [ { "name" : "DS2", "edge" : "rightfront"}, { "name" : "DS1", "edge" : "rightback"} ] }, )"
-		R"({ "type" : "doubleslip", "name" : "DS1", "degreesoffreedom" : 2 }, )"
-		R"({ "type" : "doubleslip", "name" : "DS2", "notrack_fl_bl" : true, "rightfrontpoints" : { "reverse" : true } }, )"
+		R"({ "type" : "double_slip", "name" : "DS1", "degreesoffreedom" : 2 }, )"
+		R"({ "type" : "double_slip", "name" : "DS2", "notrack_fl_bl" : true, "rightfrontpoints" : { "reverse" : true } }, )"
 		R"({ "type" : "points", "name" : "P1" }, )"
 		R"({ "type" : "points", "name" : "P2" } )"
 	"] }";
@@ -498,61 +498,61 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	auto checkds = [&](const char *name, genericpoints::PTF pffl, genericpoints::PTF pffr, genericpoints::PTF pfbl, genericpoints::PTF pfbr) {
+	auto checkds = [&](const char *name, generic_points::PTF pffl, generic_points::PTF pffr, generic_points::PTF pfbl, generic_points::PTF pfbr) {
 		INFO("Double-slip check for: " << name << ", at time: " << env.w->GetGameTime());
 
-		doubleslip *ds = dynamic_cast<doubleslip *>(env.w->FindTrackByName(name));
+		double_slip *ds = dynamic_cast<double_slip *>(env.w->FindTrackByName(name));
 		REQUIRE(ds != nullptr);
 		CHECK(ds->GetCurrentPointFlags(EDGE_DS_FL) == pffl);
 		CHECK(ds->GetCurrentPointFlags(EDGE_DS_FR) == pffr);
 		CHECK(ds->GetCurrentPointFlags(EDGE_DS_BL) == pfbl);
 		CHECK(ds->GetCurrentPointFlags(EDGE_DS_BR) == pfbr);
 	};
-	auto checkp = [&](const char *name, genericpoints::PTF pflags) {
+	auto checkp = [&](const char *name, generic_points::PTF pflags) {
 		INFO("Points check for: " << name << ", at time: " << env.w->GetGameTime());
 
 		points *p = dynamic_cast<points *>(env.w->FindTrackByName(name));
 		REQUIRE(p != nullptr);
 		CHECK(p->GetPointsFlags(0) == pflags);
 	};
-	checkp("P1", genericpoints::PTF::ZERO);
-	checkp("P2", genericpoints::PTF::REV);
-	checkds("DS1", genericpoints::PTF::REV, genericpoints::PTF::ZERO, genericpoints::PTF::REV, genericpoints::PTF::ZERO);
-	checkds("DS2", genericpoints::PTF::FIXED, genericpoints::PTF::REV, genericpoints::PTF::FIXED, genericpoints::PTF::ZERO);
+	checkp("P1", generic_points::PTF::ZERO);
+	checkp("P2", generic_points::PTF::REV);
+	checkds("DS1", generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::REV, generic_points::PTF::ZERO);
+	checkds("DS2", generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
 
 	points *p1 = dynamic_cast<points *>(env.w->FindTrackByName("P1"));
 	points *p2 = dynamic_cast<points *>(env.w->FindTrackByName("P2"));
 
-	env.w->SubmitAction(action_pointsaction(*(env.w), *p1, 0, points::PTF::REV, points::PTF::REV));
+	env.w->SubmitAction(action_points_action(*(env.w), *p1, 0, points::PTF::REV, points::PTF::REV));
 	env.w->GameStep(1);
 
-	p1->SetPointsFlagsMasked(0, points::PTF::FAILEDNORM, points::PTF::FAILEDNORM);
+	p1->SetPointsFlagsMasked(0, points::PTF::FAILED_NORM, points::PTF::FAILED_NORM);
 
-	checkp("P1", genericpoints::PTF::REV | genericpoints::PTF::OOC | genericpoints::PTF::FAILEDNORM);
-	checkp("P2",  genericpoints::PTF::OOC | genericpoints::PTF::FAILEDREV);
-	checkds("DS1", genericpoints::PTF::REV, genericpoints::PTF::ZERO, genericpoints::PTF::OOC | genericpoints::PTF::FAILEDREV, genericpoints::PTF::REV | genericpoints::PTF::OOC | genericpoints::PTF::FAILEDNORM);
-	checkds("DS2", genericpoints::PTF::FIXED, genericpoints::PTF::REV, genericpoints::PTF::FIXED, genericpoints::PTF::ZERO);
+	checkp("P1", generic_points::PTF::REV | generic_points::PTF::OOC | generic_points::PTF::FAILED_NORM);
+	checkp("P2",  generic_points::PTF::OOC | generic_points::PTF::FAILED_REV);
+	checkds("DS1", generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::OOC | generic_points::PTF::FAILED_REV, generic_points::PTF::REV | generic_points::PTF::OOC | generic_points::PTF::FAILED_NORM);
+	checkds("DS2", generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
 
 	env.w->GameStep(4000);
 
 	CHECK(p1->HaveFutures() == true);
-	env.w->SubmitAction(action_pointsaction(*(env.w), *p2, 0, points::PTF::REV, points::PTF::REV));
+	env.w->SubmitAction(action_points_action(*(env.w), *p2, 0, points::PTF::REV, points::PTF::REV));
 	env.w->GameStep(1);
 	CHECK(p1->HaveFutures() == false);
 
 	env.w->GameStep(4000);
 
-	checkp("P1", genericpoints::PTF::OOC | genericpoints::PTF::FAILEDNORM);
-	checkp("P2",  genericpoints::PTF::REV | genericpoints::PTF::OOC | genericpoints::PTF::FAILEDREV);
-	checkds("DS1", genericpoints::PTF::REV, genericpoints::PTF::ZERO, genericpoints::PTF::REV | genericpoints::PTF::OOC | genericpoints::PTF::FAILEDREV, genericpoints::PTF::OOC | genericpoints::PTF::FAILEDNORM);
-	checkds("DS2", genericpoints::PTF::FIXED, genericpoints::PTF::REV, genericpoints::PTF::FIXED, genericpoints::PTF::ZERO);
+	checkp("P1", generic_points::PTF::OOC | generic_points::PTF::FAILED_NORM);
+	checkp("P2",  generic_points::PTF::REV | generic_points::PTF::OOC | generic_points::PTF::FAILED_REV);
+	checkds("DS1", generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::REV | generic_points::PTF::OOC | generic_points::PTF::FAILED_REV, generic_points::PTF::OOC | generic_points::PTF::FAILED_NORM);
+	checkds("DS2", generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
 
 	env.w->GameStep(2000);
 
-	checkp("P1", genericpoints::PTF::FAILEDNORM);
-	checkp("P2",  genericpoints::PTF::REV | genericpoints::PTF::FAILEDREV);
-	checkds("DS1", genericpoints::PTF::REV, genericpoints::PTF::ZERO, genericpoints::PTF::REV | genericpoints::PTF::FAILEDREV, genericpoints::PTF::FAILEDNORM);
-	checkds("DS2", genericpoints::PTF::FIXED, genericpoints::PTF::REV, genericpoints::PTF::FIXED, genericpoints::PTF::ZERO);
+	checkp("P1", generic_points::PTF::FAILED_NORM);
+	checkp("P2",  generic_points::PTF::REV | generic_points::PTF::FAILED_REV);
+	checkds("DS1", generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::REV | generic_points::PTF::FAILED_REV, generic_points::PTF::FAILED_NORM);
+	checkds("DS2", generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
 
 }
 
@@ -562,9 +562,9 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 		R"({ "type" : "points", "name" : "P1", "sighting" : 40000 }, )"
 		R"({ "type" : "points", "name" : "P2", "sighting" : { "direction" : "normal", "distance" : 40000 } }, )"
 		R"({ "type" : "points", "name" : "P3", "sighting" : [ { "direction" : "normal", "distance" : 40000 }, { "direction" : "reverse", "distance" : 30000 } ] }, )"
-		R"({ "type" : "routesignal", "name" : "S1", "sighting" : 50000 }, )"
-		R"({ "type" : "routesignal", "name" : "S2", "sighting" : { "direction" : "front", "distance" : 50000 } }, )"
-		R"({ "type" : "routesignal", "name" : "S3" } )"
+		R"({ "type" : "route_signal", "name" : "S1", "sighting" : 50000 }, )"
+		R"({ "type" : "route_signal", "name" : "S2", "sighting" : { "direction" : "front", "distance" : 50000 } }, )"
+		R"({ "type" : "route_signal", "name" : "S3" } )"
 	"] }";
 
 	test_fixture_world env(track_test_str_sighting);
@@ -574,7 +574,7 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 
 	auto checkpoints = [&](const std::string &name, unsigned int norm_dist, unsigned int rev_dist, unsigned int face_dist) {
 		INFO("Points check for: " << name);
-		generictrack *p = env.w->FindTrackByName(name);
+		generic_track *p = env.w->FindTrackByName(name);
 		REQUIRE(p != nullptr);
 		CHECK(p->GetSightingDistance(EDGE_PTS_NORMAL) == norm_dist);
 		CHECK(p->GetSightingDistance(EDGE_PTS_REVERSE) == rev_dist);
@@ -583,7 +583,7 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 	};
 	auto checksig = [&](const std::string &name, unsigned int dist) {
 		INFO("Signal check for: " << name);
-		generictrack *s = env.w->FindTrackByName(name);
+		generic_track *s = env.w->FindTrackByName(name);
 		REQUIRE(s != nullptr);
 		CHECK(s->GetSightingDistance(EDGE_FRONT) == dist);
 		CHECK(s->GetSightingDistance(EDGE_BACK) == 0);
@@ -649,7 +649,7 @@ TEST_CASE( "track/points/updates", "Test basic points updates" ) {
 	env.w.GameStep(1);
 	CHECK(env.w.GetLastUpdateSet().size() == 0);
 
-	env.w.SubmitAction(action_pointsaction(env.w, env.pt1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	env.w.SubmitAction(action_points_action(env.w, env.pt1, 0, generic_points::PTF::REV, generic_points::PTF::REV));
 
 	CHECK(env.w.GetLastUpdateSet().size() == 0);
 	env.w.GameStep(1);
@@ -657,7 +657,7 @@ TEST_CASE( "track/points/updates", "Test basic points updates" ) {
 	env.w.GameStep(10000);
 	CHECK(env.w.GetLastUpdateSet().size() == 1);
 
-	env.w.SubmitAction(action_pointsaction(env.w, env.pt1, 0, genericpoints::PTF::REV, genericpoints::PTF::REV));
+	env.w.SubmitAction(action_points_action(env.w, env.pt1, 0, generic_points::PTF::REV, generic_points::PTF::REV));
 	env.w.GameStep(1);
 	CHECK(env.w.GetLastUpdateSet().size() == 0);
 }

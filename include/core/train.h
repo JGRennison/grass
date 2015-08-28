@@ -29,19 +29,19 @@
 
 struct vehicle_class : public serialisable_obj {
 	const std::string name;
-	unsigned int length = 0;                        // mm
-	unsigned int max_speed = 0;                     // mm/s (μm/ms)
-	unsigned int tractive_force = 0;                // kg μm/(ms^2) --> N
-	unsigned int tractive_power = 0;                // 1000 * N mm/s --> W
-	unsigned int braking_force = 0;                 // N
-	unsigned int nominal_rail_traction_limit = 0;   // N
-	unsigned int cumul_drag_const = 0;              // N
-	unsigned int cumul_drag_v = 0;                  // N/(m/s)
-	unsigned int cumul_drag_v2 = 0;                 // N/(m/s)^2
-	unsigned int face_drag_v2 = 0;                  // N/(m/s)^2
-	unsigned int fullmass = 0;                      // kg
-	unsigned int emptymass = 0;                     // kg
-	tractionset tractiontypes;
+	unsigned int length = 0;                        ///< mm
+	unsigned int max_speed = 0;                     ///< mm/s (μm/ms)
+	unsigned int tractive_force = 0;                ///< kg μm/(ms^2) --> N
+	unsigned int tractive_power = 0;                ///< 1000 * N mm/s --> W
+	unsigned int braking_force = 0;                 ///< N
+	unsigned int nominal_rail_traction_limit = 0;   ///< N
+	unsigned int cumul_drag_const = 0;              ///< N
+	unsigned int cumul_drag_v = 0;                  ///< N/(m/s)
+	unsigned int cumul_drag_v2 = 0;                 ///< N/(m/s)^2
+	unsigned int face_drag_v2 = 0;                  ///< N/(m/s)^2
+	unsigned int full_mass = 0;                     ///< kg
+	unsigned int empty_mass = 0;                    ///< kg
+	traction_set traction_types;
 
 	vehicle_class(const std::string &name_) : name(name_) { }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
@@ -56,7 +56,7 @@ struct vehicle_class : public serialisable_obj {
  */
 
 struct train_unit {
-	vehicle_class *vehtype = nullptr;
+	vehicle_class *veh_type = nullptr;
 	unsigned int veh_multiplier = 0;
 	unsigned int segment_total_mass = 0;
 	enum class STF {
@@ -99,29 +99,29 @@ struct train_motion_state {
 
 class train : public world_obj, protected train_dynamics, protected train_motion_state {
 	enum class TF {
-		ZERO            = 0,
-		CONSISTREVDIR   = 1<<0,
-		WAITINGREDSIG   = 1<<1,
+		ZERO                 = 0,
+		CONSIST_REV_DIR      = 1<<0,
+		WAITING_AT_RED_SIG   = 1<<1,
 	};
 	TF tflags = TF::ZERO;
 
 	std::list<train_unit> train_segments;
-	tractionset active_tractions;
-	std::string vehspeedclass;
+	traction_set active_tractions;
+	std::string veh_speed_class;
 	std::forward_list<train_track_speed_limit_item> covered_track_speed_limits;
 
 	lookahead la;
-	world_time redsigwaitstarttime = 0;
+	world_time red_sig_wait_start_time = 0;
 
 	std::string headcode;
-	timetable currenttimetable;
+	timetable current_timetable;
 
 	void TrainMoveStep(unsigned int ms);
 
 	public:
 	train(world &w_);
 	void TrainTimeStep(unsigned int ms);
-	void CalculateTrainMotionProperties(unsigned int weatherfactor_shl8);
+	void CalculateTrainMotionProperties(unsigned int weather_factor_shl8);
 	void AddCoveredTrackSpeedLimit(unsigned int speed);
 	void RemoveCoveredTrackSpeedLimit(unsigned int speed);
 	void CalculateCoveredTrackSpeedLimit();
@@ -132,10 +132,10 @@ class train : public world_obj, protected train_dynamics, protected train_motion
 	inline const train_dynamics &GetTrainDynamics() const { return *this; }
 	inline const train_motion_state &GetTrainMotionState() const { return *this; }
 	inline unsigned int GetMaxVehSpeed() const { return veh_max_speed; }
-	inline std::string GetVehSpeedClass() const { return vehspeedclass; }
-	const tractionset &GetActiveTractionTypes() const { return active_tractions; }
-	tractionset GetAllTractionTypes() const;
-	void SetActiveTractionSet(tractionset ts) { active_tractions = std::move(ts); }
+	inline std::string GetVehSpeedClass() const { return veh_speed_class; }
+	const traction_set &GetActiveTractionTypes() const { return active_tractions; }
+	traction_set GetAllTractionTypes() const;
+	void SetActiveTractionSet(traction_set ts) { active_tractions = std::move(ts); }
 	void ValidateActiveTractionSet();
 
 	virtual std::string GetTypeName() const { return "Train"; }
