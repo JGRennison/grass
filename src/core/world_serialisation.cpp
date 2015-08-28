@@ -50,7 +50,7 @@ void world_deserialisation::LoadGame(const deserialiser_input &di, error_collect
 	}
 
 	if (!(flags & WS_LOAD_GAME_FLAGS::NO_GAME_STATE)) {
-		deserialiser_input gamestatetdi(di.json["gamestate"], "gamestate", "gamestate", di);
+		deserialiser_input gamestatetdi(di.json["game_state"], "game_state", "game_state", di);
 		if (!gamestatetdi.json.IsNull()) {
 			if (flags & WS_LOAD_GAME_FLAGS::TRY_REPLACE_GAME_STATE) {
 				game_state_init.Clear();
@@ -135,7 +135,7 @@ template <typename T> T* world_deserialisation::DeserialiseGenericTrack(const de
 void world_deserialisation::DeserialiseTypeDefinition(const deserialiser_input &di, error_collection &ec) {
 	std::string newtype;
 	std::string basetype;
-	if (CheckTransJsonValue(newtype, di, "newtype", ec) && CheckTransJsonValue(basetype, di, "basetype", ec)) {
+	if (CheckTransJsonValue(newtype, di, "new_type", ec) && CheckTransJsonValue(basetype, di, "base_type", ec)) {
 		const rapidjson::Value *content;
 		CheckTransRapidjsonValueDef<json_object>(content, di, "content", ec);
 
@@ -305,19 +305,19 @@ void world_deserialisation::InitObjectTypes() {
 	content_object_types.RegisterType("typedef", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseTypeDefinition(di, ec);
 	});
-	content_object_types.RegisterType("tractiontype", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+	content_object_types.RegisterType("traction_type", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseTractionType(di, ec);
 	});
 	wd_RegisterBothTypes(*this, "track_circuit", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseTrackTrainCounterBlockCommon<track_circuit>(di, ec, wdp, w.track_circuits);
 	});
-	wd_RegisterBothTypes(*this, "tracktraincounterblock", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+	wd_RegisterBothTypes(*this, "track_train_counter_block", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseTrackTrainCounterBlockCommon<track_train_counter_block>(di, ec, wdp, w.track_triggers);
 	});
-	content_object_types.RegisterType("couplepoints", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+	content_object_types.RegisterType("couple_points", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialisePointsCoupling(di, ec);
 	});
-	content_object_types.RegisterType("vehicleclass", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+	content_object_types.RegisterType("vehicle_class", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		DeserialiseVehicleClass(di, ec);
 	});
 	game_state_object_types.RegisterType("train", [&](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
@@ -330,7 +330,7 @@ void world_deserialisation::InitObjectTypes() {
 	gui_layout_generic_track = [](const generic_track *t, const deserialiser_input &di, error_collection &ec) { };
 	gui_layout_track_berth = [](const track_berth *b, const generic_track *t, const deserialiser_input &di, error_collection &ec) { };
 	gui_layout_guiobject = [](const deserialiser_input &di, error_collection &ec) { };
-	content_object_types.RegisterType("layoutobj", [this](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+	content_object_types.RegisterType("layout_obj", [this](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
 		this->gui_layout_guiobject(di, ec);
 	});
 }
@@ -391,7 +391,7 @@ std::string world_serialisation::SaveGameToString(error_collection &ec, flagwrap
 		so.flags |= SOUTPUT_FLAGS::OUTPUT_ALL_NAMES;
 
 		hndl.StartObject();
-		hndl.String("gamestate");
+		hndl.String("game_state");
 		hndl.StartArray();
 
 		hndl.StartObject();

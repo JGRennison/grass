@@ -27,10 +27,10 @@ namespace route_class {
 		{ "shunt", "Shunt route" },
 		{ "route", "Main route" },
 		{ "overlap", "Overlap" },
-		{ "altoverlap1", "Alternative Overlap 1" },
-		{ "altoverlap2", "Alternative Overlap 2" },
-		{ "altoverlap3", "Alternative Overlap 3" },
-		{ "callon", "Call On" },
+		{ "alt_overlap_1", "Alternative Overlap 1" },
+		{ "alt_overlap_2", "Alternative Overlap 2" },
+		{ "alt_overlap_3", "Alternative Overlap 3" },
+		{ "call_on", "Call On" },
 	}};
 
 	std::array<unsigned int, LAST_RTC> default_approach_locking_timeouts {{
@@ -45,7 +45,7 @@ namespace route_class {
 
 		if (subval.IsObject()) {
 			di.RegisterProp(prop);
-			deserialiser_input subdi(subval, "routeclassgroup", prop, di);
+			deserialiser_input subdi(subval, "route_class_group", prop, di);
 			DeserialiseGroup(s, subdi, ec, conflictcheck);
 			subdi.PostDeserialisePropCheck(ec);
 		} else {
@@ -59,10 +59,10 @@ namespace route_class {
 			s |= val;
 			conflictcheck.RegisterFlags(true, val, di, "allow", ec);
 		}
-		if (DeserialiseProp("allowonly", val, di, ec)) {
+		if (DeserialiseProp("allow_only", val, di, ec)) {
 			s = val;
-			conflictcheck.RegisterFlags(true, val, di, "allowonly", ec);
-			conflictcheck.RegisterFlags(false, ~val, di, "allowonly", ec);
+			conflictcheck.RegisterFlags(true, val, di, "allow_only", ec);
+			conflictcheck.RegisterFlags(false, ~val, di, "allow_only", ec);
 		}
 		if (DeserialiseProp("deny", val, di, ec)) {
 			s &= ~val;
@@ -71,7 +71,7 @@ namespace route_class {
 	}
 
 	bool DeserialiseProp(const char *prop, set &value, const deserialiser_input &di, error_collection &ec) {
-		deserialiser_input subdi(di.json[prop], "routeclassset", prop, di);
+		deserialiser_input subdi(di.json[prop], "route_class_set", prop, di);
 		if (subdi.json.IsArray()) {
 			di.RegisterProp(prop);
 			value = Deserialise(subdi, ec);
@@ -93,15 +93,15 @@ namespace route_class {
 			if (item.IsString()) {
 				if (strcmp(item.GetString(), "all") == 0) {
 					current |= route_class::All();
-				} else if (strcmp(item.GetString(), "alloverlaps") == 0) {
+				} else if (strcmp(item.GetString(), "all_overlaps") == 0) {
 					current |= route_class::AllOverlaps();
-				} else if (strcmp(item.GetString(), "allnonoverlaps") == 0) {
+				} else if (strcmp(item.GetString(), "all_non_overlaps") == 0) {
 					current |= route_class::AllNonOverlaps();
-				} else if (strcmp(item.GetString(), "allroutes") == 0) {
+				} else if (strcmp(item.GetString(), "all_routes") == 0) {
 					current |= route_class::AllRoutes();
-				} else if (strcmp(item.GetString(), "allshunts") == 0) {
+				} else if (strcmp(item.GetString(), "all_shunts") == 0) {
 					current |= route_class::AllShunts();
-				} else if (strcmp(item.GetString(), "allneedingoverlaps") == 0) {
+				} else if (strcmp(item.GetString(), "all_needing_overlaps") == 0) {
 					current |= route_class::AllNeedingOverlap();
 				} else {
 					auto res = DeserialiseName(item.GetString());

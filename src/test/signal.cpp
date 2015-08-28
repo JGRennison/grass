@@ -33,28 +33,28 @@ R"({ "content" : [ )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
 	R"({ "type" : "route_signal", "name" : "S1", "routeshuntsignal" : true }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true, "connect" : { "fromdirection" : "back", "to" : "DS1", "todirection" : "leftfront" } }, )"
-	R"({ "type" : "double_slip", "name" : "DS1", "notrack_fl_bl" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true, "connect" : { "from_direction" : "back", "to" : "DS1", "to_direction" : "leftfront" } }, )"
+	R"({ "type" : "double_slip", "name" : "DS1", "no_track_fl_bl" : true }, )"
 	R"({ "type" : "start_of_line", "name" : "C" }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
-	R"({ "type" : "route_signal", "name" : "S3", "shuntsignal" : true, "connect" : { "fromdirection" : "back", "to" : "DS1", "todirection" : "leftback" } }, )"
+	R"({ "type" : "route_signal", "name" : "S3", "shunt_signal" : true, "connect" : { "from_direction" : "back", "to" : "DS1", "to_direction" : "leftback" } }, )"
 	R"({ "type" : "start_of_line", "name" : "D" }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
 	R"({ "type" : "route_signal", "name" : "S6", "routeshuntsignal" : true }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true, "through_rev" : { "deny" : "route" }, "connect" : { "fromdirection" : "back", "to" : "DS1", "todirection" : "rightback" } }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true, "through_rev" : { "deny" : "route" }, "connect" : { "from_direction" : "back", "to" : "DS1", "to_direction" : "rightback" } }, )"
 	R"({ "type" : "start_of_line", "name" : "B" }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
-	R"({ "type" : "route_signal", "name" : "S2", "routeshuntsignal" : true, "routerestrictions" : [ { "targets" : "C", "deny" : "route" } ] }, )"
+	R"({ "type" : "route_signal", "name" : "S2", "routeshuntsignal" : true, "route_restrictions" : [ { "targets" : "C", "deny" : "route" } ] }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
-	R"({ "type" : "points", "name" : "P1", "connect" : { "fromdirection" : "reverse", "to" : "DS1", "todirection" : "rightfront" } }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
+	R"({ "type" : "points", "name" : "P1", "connect" : { "from_direction" : "reverse", "to" : "DS1", "to_direction" : "rightfront" } }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
-	R"({ "type" : "routing_marker", "overlapend_rev" : true, "through" : { "deny" : "all" } }, )"
+	R"({ "type" : "routing_marker", "overlap_end_rev" : true, "through" : { "deny" : "all" } }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
-	R"({ "type" : "route_signal", "name" : "S4", "reverseautoconnection" : true, "routeshuntsignal" : true, "through_rev" : { "deny" : "all" }, "overlapend" : true}, )"
+	R"({ "type" : "route_signal", "name" : "S4", "reverse_auto_connection" : true, "routeshuntsignal" : true, "through_rev" : { "deny" : "all" }, "overlap_end" : true}, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
-	R"({ "type" : "auto_signal", "name" : "S5", "reverseautoconnection" : true }, )"
+	R"({ "type" : "auto_signal", "name" : "S5", "reverse_auto_connection" : true }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
 	R"({ "type" : "end_of_line", "name" : "E" } )"
 "] }";
@@ -233,33 +233,33 @@ TEST_CASE( "signal/routing/general", "Test basic signal and routing connectivity
 std::string autosig_test_str_1 =
 R"({ "content" : [ )"
 
-	R"({ "type" : "typedef", "newtype" : "4aspectauto", "basetype" : "auto_signal", "content" : { "maxaspect" : 3 } }, )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectauto", "base_type" : "auto_signal", "content" : { "max_aspect" : 3 } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "track_seg", "length" : 50000, "track_circuit" : "T1" }, )"
 	R"({ "type" : "4aspectauto", "name" : "S1" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S1ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2" }, )"
 	R"({ "type" : "4aspectauto", "name" : "S2" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S2ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T3" }, )"
 	R"({ "type" : "4aspectauto", "name" : "S3" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S3ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T4" }, )"
 	R"({ "type" : "4aspectauto", "name" : "S4" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S4ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T5" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S5" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S5ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T6" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S6" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S6ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T7" }, )"
 	R"({ "type" : "end_of_line", "name" : "B" } )"
 "] }";
@@ -340,32 +340,32 @@ TEST_CASE( "signal/propagation/auto_signal", "Test basic auto_signal aspect prop
 
 std::string signalmixture_test_str_1 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "track_seg", "length" : 50000, "track_circuit" : "T1" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S1" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S1ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2" }, )"
-	R"({ "type" : "route_signal", "name" : "S2", "shuntsignal" : true }, )"
+	R"({ "type" : "route_signal", "name" : "S2", "shunt_signal" : true }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S2ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T3" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S3" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S3ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T4" }, )"
-	R"({ "type" : "route_signal", "name" : "S4", "shuntsignal" : true, "end" : { "allow" : "route" } }, )"
+	R"({ "type" : "route_signal", "name" : "S4", "shunt_signal" : true, "end" : { "allow" : "route" } }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S4ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T5" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S5" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S5ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T6" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S6" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S6ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T7" }, )"
 	R"({ "type" : "end_of_line", "name" : "B" } )"
 "] }";
@@ -457,32 +457,32 @@ TEST_CASE( "signal/route_signal/reserveaction", "Test basic route_signal reserva
 std::string approachlocking_test_str_1 =
 R"({ "content" : [ )"
 
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "track_seg", "length" : 50000, "track_circuit" : "T1" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S1" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S1ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S2" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S2ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T3" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S3" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S3ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T4" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S4", "approachlockingtimeout" : 1000, "routerestrictions" : [ { "approachlockingtimeout" : 120000, "targets" : "S5" } ] }, )"
+	R"({ "type" : "4aspectroute", "name" : "S4", "approach_locking_timeout" : 1000, "route_restrictions" : [ { "approach_locking_timeout" : 120000, "targets" : "S5" } ] }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S4ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T5", "name" : "TS5" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S5", "approachlockingtimeout" : [ { "routeclass" : "shunt", "timeout" : 1000 }, { "routeclass" : "route", "timeout" : 60000 } ] }, )"
+	R"({ "type" : "4aspectroute", "name" : "S5", "approach_locking_timeout" : [ { "routeclass" : "shunt", "timeout" : 1000 }, { "routeclass" : "route", "timeout" : 60000 } ] }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S5ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T6" }, )"
-	R"({ "type" : "route_signal", "name" : "S6", "shuntsignal" : true, "end" : { "allow" : "route" }, "approachlockingtimeout" : 45000 }, )"
+	R"({ "type" : "route_signal", "name" : "S6", "shunt_signal" : true, "end" : { "allow" : "route" }, "approach_locking_timeout" : 45000 }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S6ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T7" }, )"
 	R"({ "type" : "end_of_line", "name" : "B" } )"
 "] }";
@@ -676,32 +676,32 @@ TEST_CASE( "signal/approachlocking/general", "Test basic approach locking route 
 
 std::string overlaptimeout_test_str_1 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "2aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 1, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "2aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 1, "route_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "track_seg", "length" : 50000, "track_circuit" : "T1" }, )"
 	R"({ "type" : "auto_signal", "name" : "S1" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S1ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2" }, )"
 	R"({ "type" : "auto_signal", "name" : "S2" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S2ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T3" }, )"
-	R"({ "type" : "2aspectroute", "name" : "S3", "overlaptimeout" : 30000 }, )"
+	R"({ "type" : "2aspectroute", "name" : "S3", "overlap_timeout" : 30000 }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S3ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T4" }, )"
-	R"({ "type" : "2aspectroute", "name" : "S4", "routerestrictions" : [ { "overlaptimeout" : 90000, "targets" : "S4ovlpend" } ] }, )"
+	R"({ "type" : "2aspectroute", "name" : "S4", "route_restrictions" : [ { "overlap_timeout" : 90000, "targets" : "S4ovlpend" } ] }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S4ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true, "name" : "S4ovlpend" }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true, "name" : "S4ovlpend" }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T5" }, )"
-	R"({ "type" : "2aspectroute", "name" : "S5", "overlaptimeout" : 30000 }, )"
+	R"({ "type" : "2aspectroute", "name" : "S5", "overlap_timeout" : 30000 }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S5ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T6" }, )"
-	R"({ "type" : "2aspectroute", "name" : "S6", "overlaptimeout" : 0 }, )"
+	R"({ "type" : "2aspectroute", "name" : "S6", "overlap_timeout" : 0 }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S6ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T7" }, )"
 	R"({ "type" : "end_of_line", "name" : "B" } )"
 "] }";
@@ -803,17 +803,17 @@ TEST_CASE( "signal/overlap/timeout", "Test overlap timeouts" ) {
 
 std::string overlaptimeout_test_str_2 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "2aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 1, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "2aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 1, "route_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
 	R"({ "type" : "2aspectroute", "name" : "S1" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S1ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2" }, )"
-	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2", "tracktriggers" : "TT1" }, )"
-	R"({ "type" : "2aspectroute", "name" : "S2", "routerestrictions" : [ { "overlaptimeout" : 90000, "targets" : "S2ovlpend", "overlaptimeouttrigger" : "TT1" } ] }, )"
+	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2", "track_triggers" : "TT1" }, )"
+	R"({ "type" : "2aspectroute", "name" : "S2", "route_restrictions" : [ { "overlap_timeout" : 90000, "targets" : "S2ovlpend", "overlap_timeout_trigger" : "TT1" } ] }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S2ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true, "name" : "S2ovlpend" }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true, "name" : "S2ovlpend" }, )"
 	R"({ "type" : "end_of_line", "name" : "B" } )"
 "] }";
 
@@ -858,13 +858,13 @@ TEST_CASE( "signal/deserialisation/flagchecks", "Test signal/route flags contrad
 
 	check(
 	R"({ "content" : [ )"
-		R"({ "type" : "route_signal", "name" : "S1", "overlapend" : true, "end" : { "allow" : "overlap" } } )"
+		R"({ "type" : "route_signal", "name" : "S1", "overlap_end" : true, "end" : { "allow" : "overlap" } } )"
 	"] }"
 	, 0);
 
 	check(
 	R"({ "content" : [ )"
-		R"({ "type" : "route_signal", "name" : "S1", "overlapend" : true, "end" : { "deny" : "overlap" } } )"
+		R"({ "type" : "route_signal", "name" : "S1", "overlap_end" : true, "end" : { "deny" : "overlap" } } )"
 	"] }"
 	, 1);
 
@@ -876,45 +876,45 @@ TEST_CASE( "signal/deserialisation/flagchecks", "Test signal/route flags contrad
 
 	check(
 	R"({ "content" : [ )"
-		R"({ "type" : "route_signal", "name" : "S1", "routerestrictions" : [ { "approachcontrol" : true, "approachcontroltriggerdelay" : 100} ] } )"
+		R"({ "type" : "route_signal", "name" : "S1", "route_restrictions" : [ { "approach_control" : true, "approach_control_trigger_delay" : 100} ] } )"
 	"] }"
 	, 0);
 
 	check(
 	R"({ "content" : [ )"
-		R"({ "type" : "route_signal", "name" : "S1", "routerestrictions" : [ { "approachcontrol" : false, "approachcontroltriggerdelay" : 100} ] } )"
+		R"({ "type" : "route_signal", "name" : "S1", "route_restrictions" : [ { "approach_control" : false, "approach_control_trigger_delay" : 100} ] } )"
 	"] }"
 	, 1);
 }
 
 std::string approachcontrol_test_str_1 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "track_seg", "length" : 50000, "track_circuit" : "T1" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S1" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S1ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T3" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S3", "routerestrictions" : [ { "approachcontrol" : true } ] }, )"
+	R"({ "type" : "4aspectroute", "name" : "S3", "route_restrictions" : [ { "approach_control" : true } ] }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S3ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000 }, )"
 	R"({ "type" : "auto_signal", "name" : "AS" }, )"
 	R"({ "type" : "track_seg", "length" : 20000 }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T4" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S4", "routerestrictions" : [ { "approachcontroltriggerdelay" : 3000 } ] }, )"
+	R"({ "type" : "4aspectroute", "name" : "S4", "route_restrictions" : [ { "approach_control_trigger_delay" : 3000 } ] }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S4ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T5" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S5", "routerestrictions" : [ { "targets" : "C", "approachcontrol" : true } ] }, )"
+	R"({ "type" : "4aspectroute", "name" : "S5", "route_restrictions" : [ { "targets" : "C", "approach_control" : true } ] }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S5ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 
 	R"({ "type" : "points", "name" : "P1" }, )"
 	R"({ "type" : "track_seg", "length" : 500000, "track_circuit" : "T6"  }, )"
-	R"({ "type" : "route_signal", "name" : "S6", "shuntsignal" : true, "end" : { "allow" : "route" } }, )"
+	R"({ "type" : "route_signal", "name" : "S6", "shunt_signal" : true, "end" : { "allow" : "route" } }, )"
 	R"({ "type" : "track_seg", "length" : 500000 }, )"
 	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "overlap" } }, )"
 
@@ -982,16 +982,16 @@ TEST_CASE( "signal/approachcontrol/general", "Test basic approach control" ) {
 
 std::string approachcontrol_test_str_2 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "2aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 1, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "2aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 1, "route_signal" : true } }, )"
 
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "auto_signal", "name" : "S1" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2" }, )"
-	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2", "tracktriggers" : "TT1" }, )"
-	R"({ "type" : "2aspectroute", "name" : "S2", "routerestrictions" : [ { "approachcontroltrigger" : "TT1" } ] }, )"
+	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2", "track_triggers" : "TT1" }, )"
+	R"({ "type" : "2aspectroute", "name" : "S2", "route_restrictions" : [ { "approach_control_trigger" : "TT1" } ] }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S2ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true, "name" : "S2ovlpend" }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true, "name" : "S2ovlpend" }, )"
 	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "route" } } )"
 "] }";
 
@@ -1038,18 +1038,18 @@ TEST_CASE( "signal/approachcontrol/tracktrigger", "Test approach control for tri
 
 std::string approachcontrol_test_str_3 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
-	R"({ "type" : "typedef", "newtype" : "4aspectauto", "basetype" : "auto_signal", "content" : { "maxaspect" : 3 } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectauto", "base_type" : "auto_signal", "content" : { "max_aspect" : 3 } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "4aspectauto", "name" : "S0" }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T0" }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T1" }, )"
 	R"({ "type" : "4aspectauto", "name" : "S1" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S2", "routeendrestrictions" : [ { "approachcontrolifnoforwardroute" : true } ] }, )"
+	R"({ "type" : "4aspectroute", "name" : "S2", "route_end_restrictions" : [ { "approach_control_if_noforward_route" : true } ] }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S2ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true, "name" : "S2ovlpend" }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true, "name" : "S2ovlpend" }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T3" }, )"
 	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "route" } } )"
 "] }";
@@ -1108,18 +1108,18 @@ TEST_CASE( "signal/approachcontrol/onlyifnoforwardroute", "Test approach control
 
 std::string callon_test_str_1 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "track_seg", "length" : 50000, "track_circuit" : "T1" }, )"
 	R"({ "type" : "4aspectroute", "name" : "S1" }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S1ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S2", "start" : { "allow" : "callon" }, "routerestrictions" : [ { "applyonly" : "callon", "exitsignalcontrol" : true } ] }, )"
+	R"({ "type" : "4aspectroute", "name" : "S2", "start" : { "allow" : "call_on" }, "route_restrictions" : [ { "apply_only" : "call_on", "exit_signal_control" : true } ] }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S2ovlp" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T3" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S3", "end" : { "allow" : "callon" } }, )"
+	R"({ "type" : "4aspectroute", "name" : "S3", "end" : { "allow" : "call_on" } }, )"
 	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S3ovlp" }, )"
 	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "overlap" } } )"
 "] }";
@@ -1202,7 +1202,7 @@ TEST_CASE( "signal/callon/general", "Test call-on routes" ) {
 TEST_CASE( "signal/overlap/general", "Test basic overlap assignment" ) {
 	test_fixture_world_init_checked env(
 		R"({ "content" : [ )"
-			R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+			R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 			R"({ "type" : "start_of_line", "name" : "A" }, )"
 			R"({ "type" : "4aspectroute", "name" : "S1" }, )"
 			R"({ "type" : "track_seg", "length" : 30000 }, )"
@@ -1225,7 +1225,7 @@ TEST_CASE( "signal/overlap/general", "Test basic overlap assignment" ) {
 TEST_CASE( "signal/overlap/nooverlapflag", "Test signal no overlap flag" ) {
 	test_fixture_world_init_checked env(
 		R"({ "content" : [ )"
-			R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+			R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 			R"({ "type" : "start_of_line", "name" : "A" }, )"
 			R"({ "type" : "4aspectroute", "name" : "S1" }, )"
 			R"({ "type" : "track_seg", "length" : 30000 }, )"
@@ -1248,7 +1248,7 @@ TEST_CASE( "signal/overlap/nooverlapflag", "Test signal no overlap flag" ) {
 TEST_CASE( "signal/overlap/missingoverlap", "Test that a missing overlap triggers an error" ) {
 	test_fixture_world env(
 		R"({ "content" : [ )"
-			R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+			R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 			R"({ "type" : "start_of_line", "name" : "A" }, )"
 			R"({ "type" : "4aspectroute", "name" : "S1" }, )"
 			R"({ "type" : "track_seg", "length" : 30000 }, )"
@@ -1266,13 +1266,13 @@ TEST_CASE( "signal/overlap/missingoverlap", "Test that a missing overlap trigger
 TEST_CASE( "signal/overlap/alt", "Test basic alternative overlap assignment" ) {
 	test_fixture_world_init_checked env(
 		R"({ "content" : [ )"
-			R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+			R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 			R"({ "type" : "start_of_line", "name" : "A" }, )"
-			R"({ "type" : "4aspectroute", "name" : "S1", "routerestrictions" : [ { "targets" : "S2" , "overlap" : "altoverlap1" } ] }, )"
+			R"({ "type" : "4aspectroute", "name" : "S1", "route_restrictions" : [ { "targets" : "S2" , "overlap" : "alt_overlap_1" } ] }, )"
 			R"({ "type" : "track_seg", "length" : 30000 }, )"
 			R"({ "type" : "4aspectroute", "name" : "S2" }, )"
 			R"({ "type" : "track_seg", "length" : 20000 }, )"
-			R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "altoverlap1" } } )"
+			R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "alt_overlap_1" } } )"
 		"] }"
 	);
 
@@ -1289,9 +1289,9 @@ TEST_CASE( "signal/overlap/alt", "Test basic alternative overlap assignment" ) {
 TEST_CASE( "signal/overlap/missingaltoverlap", "Test that a missing alternative overlap triggers an error" ) {
 	test_fixture_world env(
 		R"({ "content" : [ )"
-			R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+			R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 			R"({ "type" : "start_of_line", "name" : "A" }, )"
-			R"({ "type" : "4aspectroute", "name" : "S1", "routerestrictions" : [ { "targets" : "S2" , "overlap" : "altoverlap1" } ] }, )"
+			R"({ "type" : "4aspectroute", "name" : "S1", "route_restrictions" : [ { "targets" : "S2" , "overlap" : "alt_overlap_1" } ] }, )"
 			R"({ "type" : "track_seg", "length" : 30000 }, )"
 			R"({ "type" : "4aspectroute", "name" : "S2" }, )"
 			R"({ "type" : "track_seg", "length" : 20000 }, )"
@@ -1307,13 +1307,13 @@ TEST_CASE( "signal/overlap/missingaltoverlap", "Test that a missing alternative 
 TEST_CASE( "signal/overlap/multi", "Test multiple overlap types" ) {
 	test_fixture_world_init_checked env(
 		R"({ "content" : [ )"
-			R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+			R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 			R"({ "type" : "start_of_line", "name" : "A" }, )"
-			R"({ "type" : "4aspectroute", "name" : "S1", "start" : { "allow" : "callon" }, "routerestrictions" : [ { "applyonly" : "callon" , "overlap" : "altoverlap1" } ] }, )"
+			R"({ "type" : "4aspectroute", "name" : "S1", "start" : { "allow" : "call_on" }, "route_restrictions" : [ { "apply_only" : "call_on" , "overlap" : "alt_overlap_1" } ] }, )"
 			R"({ "type" : "track_seg", "length" : 30000 }, )"
-			R"({ "type" : "4aspectroute", "name" : "S2", "end" : { "allow" : "callon" } }, )"
+			R"({ "type" : "4aspectroute", "name" : "S2", "end" : { "allow" : "call_on" } }, )"
 			R"({ "type" : "track_seg", "length" : 20000 }, )"
-			R"({ "type" : "routing_marker", "name" : "C", "end" : { "allow" : "altoverlap1" } }, )"
+			R"({ "type" : "routing_marker", "name" : "C", "end" : { "allow" : "alt_overlap_1" } }, )"
 			R"({ "type" : "track_seg", "length" : 20000 }, )"
 			R"({ "type" : "end_of_line", "name" : "B",  "end" : { "allow" : "overlap" } } )"
 		"] }"
@@ -1341,15 +1341,15 @@ TEST_CASE( "signal/overlap/multi", "Test multiple overlap types" ) {
 TEST_CASE( "route/restrictions/end", "Test route end restrictions" ) {
 	test_fixture_world_init_checked env(
 		R"({ "content" : [ )"
-			R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+			R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 			R"({ "type" : "start_of_line", "name" : "A" }, )"
-			R"({ "type" : "4aspectroute", "name" : "S1", "start" : { "allow" : "callon" } }, )"
+			R"({ "type" : "4aspectroute", "name" : "S1", "start" : { "allow" : "call_on" } }, )"
 			R"({ "type" : "track_seg", "length" : 30000 }, )"
-			R"({ "type" : "4aspectroute", "name" : "S2", "start" : { "allow" : "shunt" }, "end" : { "allow" : "callon" }, "routeendrestrictions" : { "routestart" : "S1", "applyonly" : "callon" , "overlap" : "altoverlap1" } }, )"
+			R"({ "type" : "4aspectroute", "name" : "S2", "start" : { "allow" : "shunt" }, "end" : { "allow" : "call_on" }, "route_end_restrictions" : { "route_start" : "S1", "apply_only" : "call_on" , "overlap" : "alt_overlap_1" } }, )"
 			R"({ "type" : "track_seg", "length" : 20000 }, )"
-			R"({ "type" : "routing_marker", "name" : "C", "end" : { "allow" : "altoverlap1" } }, )"
+			R"({ "type" : "routing_marker", "name" : "C", "end" : { "allow" : "alt_overlap_1" } }, )"
 			R"({ "type" : "track_seg", "length" : 20000 }, )"
-			R"({ "type" : "end_of_line", "name" : "B",  "end" : { "allow" : "overlap" }, "routeendrestrictions" : { "routestart" : "nonexistant", "deny" : "shunt" } } )"
+			R"({ "type" : "end_of_line", "name" : "B",  "end" : { "allow" : "overlap" }, "route_end_restrictions" : { "route_start" : "nonexistant", "deny" : "shunt" } } )"
 		"] }"
 	);
 
@@ -1435,8 +1435,8 @@ TEST_CASE( "signal/propagation/repeater", "Test aspect propagation and route cre
 		test_fixture_world_init_checked env(
 			string_format(
 				R"({ "content" : [ )"
-					R"({ "type" : "typedef", "newtype" : "4aspectauto", "basetype" : "auto_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
-					R"({ "type" : "typedef", "newtype" : "4aspectrepeater", "basetype" : "repeater_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+					R"({ "type" : "typedef", "new_type" : "4aspectauto", "base_type" : "auto_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
+					R"({ "type" : "typedef", "new_type" : "4aspectrepeater", "base_type" : "repeater_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 					R"({ "type" : "start_of_line", "name" : "A" }, )"
 					R"({ "type" : "4aspectauto", "name" : "S1" }, )"
 					R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "T1" }, )"
@@ -1485,7 +1485,7 @@ TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal a
 			string_format(
 				R"({ "content" : [ )"
 					R"({ "type" : "start_of_line", "name" : "A" }, )"
-					R"({ "type" : "route_signal", "name" : "S1", "route_signal" : true %s, "routerestrictions" : [ { "targets" : "B" %s } ] }, )"
+					R"({ "type" : "route_signal", "name" : "S1", "route_signal" : true %s, "route_restrictions" : [ { "targets" : "B" %s } ] }, )"
 					R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "T1" }, )"
 					R"({ "type" : "points", "name" : "P1" }, )"
 					R"({ "type" : "track_seg", "length" : 20000 }, )"
@@ -1564,11 +1564,11 @@ TEST_CASE( "signal/aspect/delayed", "Test delay before setting non-zero signal a
 		test("Both", mkparam(paramvalue * 2), mkparam(paramvalue), expected_time);
 	};
 
-	multitest("routeprovedelay", 10000, 11000);
-	multitest("routecleardelay", 10000, 12000);
-	multitest("route_setdelay", 10000, 10000);
-	multitest("routeprovedelay", 500, 2001);
-	multitest("route_setdelay", 500, 2001);
+	multitest("route_prove_delay", 10000, 11000);
+	multitest("route_clear_delay", 10000, 12000);
+	multitest("route_set_delay", 10000, 10000);
+	multitest("route_prove_delay", 500, 2001);
+	multitest("route_set_delay", 500, 2001);
 }
 
 void SignalAspectTest(std::string allowed_aspects, aspect_mask_type expected_mask, const std::vector<unsigned int> &aspects, bool repeatermode, const std::string &conditional_aspects) {
@@ -1582,10 +1582,10 @@ void SignalAspectTest(std::string allowed_aspects, aspect_mask_type expected_mas
 		R"({ "type" : "start_of_line", "name" : "A" }, )";
 
 
-	std::string default_aspectstr = ", \"allowedaspects\" : \"0-31\"";
-	std::string param_aspectstr = ", \"allowedaspects\" : \"" + allowed_aspects + "\"";
+	std::string default_aspectstr = ", \"allowed_aspects\" : \"0-31\"";
+	std::string param_aspectstr = ", \"allowed_aspects\" : \"" + allowed_aspects + "\"";
 	if (!conditional_aspects.empty()) {
-		param_aspectstr += R"(, "conditionalallowedaspects" : [ )" + conditional_aspects + "]";
+		param_aspectstr += R"(, "conditional_allowed_aspects" : [ )" + conditional_aspects + "]";
 	}
 
 	for (unsigned int i = 0; i < signals; i++) {
@@ -1672,11 +1672,11 @@ TEST_CASE("signal/aspect/conditional", "Test conditionally allowed signal aspect
 		SignalAspectTest(allowed_aspects, expected_mask, aspects, repeatermode, conditional_aspects);
 	};
 
-	test("1-3", 0xE, std::vector<unsigned int> { 0, 0, 0, 0, 3 }, false, R"( { "condition" : "0-2", "allowedaspects" : "0" } )");
-	test("1-3", 0xE, std::vector<unsigned int> { 0, 1, 0, 0, 3 }, false, R"( { "condition" : "1-2", "allowedaspects" : "0" } )");
-	test("1-4", 0x1E, std::vector<unsigned int> { 0, 1, 2, 2, 4 }, false, R"( { "condition" : "2", "allowedaspects" : "0-2" } )");
-	test("1-4", 0x1E, std::vector<unsigned int> { 0, 1, 1, 1, 3 }, false, R"( { "condition" : "1,2", "allowedaspects" : "0-1" }, { "condition" : "3", "allowedaspects" : "0-3" } )");
-	test("1-2", 0x6, std::vector<unsigned int> { 0, 1, 1, 1, 2 }, false, R"( { "condition" : "1,2", "allowedaspects" : "0-1" }, { "condition" : "3", "allowedaspects" : "0-3" } )");
-	test("1-3", 0xE, std::vector<unsigned int> { 1, 0, 0, 3, 3 }, true, R"( { "condition" : "1-2", "allowedaspects" : "0" } )");
-	test("1-3", 0xE, std::vector<unsigned int> { 1, 0, 3, 3, 0 }, true, R"( { "condition" : "1-4", "allowedaspects" : "3" }, { "condition" : "4", "allowedaspects" : "4" } )");
+	test("1-3", 0xE, std::vector<unsigned int> { 0, 0, 0, 0, 3 }, false, R"( { "condition" : "0-2", "allowed_aspects" : "0" } )");
+	test("1-3", 0xE, std::vector<unsigned int> { 0, 1, 0, 0, 3 }, false, R"( { "condition" : "1-2", "allowed_aspects" : "0" } )");
+	test("1-4", 0x1E, std::vector<unsigned int> { 0, 1, 2, 2, 4 }, false, R"( { "condition" : "2", "allowed_aspects" : "0-2" } )");
+	test("1-4", 0x1E, std::vector<unsigned int> { 0, 1, 1, 1, 3 }, false, R"( { "condition" : "1,2", "allowed_aspects" : "0-1" }, { "condition" : "3", "allowed_aspects" : "0-3" } )");
+	test("1-2", 0x6, std::vector<unsigned int> { 0, 1, 1, 1, 2 }, false, R"( { "condition" : "1,2", "allowed_aspects" : "0-1" }, { "condition" : "3", "allowed_aspects" : "0-3" } )");
+	test("1-3", 0xE, std::vector<unsigned int> { 1, 0, 0, 3, 3 }, true, R"( { "condition" : "1-2", "allowed_aspects" : "0" } )");
+	test("1-3", 0xE, std::vector<unsigned int> { 1, 0, 3, 3, 0 }, true, R"( { "condition" : "1-4", "allowed_aspects" : "3" }, { "condition" : "4", "allowed_aspects" : "4" } )");
 }

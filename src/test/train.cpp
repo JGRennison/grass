@@ -64,15 +64,15 @@ static void checktd(const train_dynamics &td, unsigned int length, unsigned int 
 TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialisation" ) {
 	std::string test_vc_deserialisation_1 =
 	R"({ "content" : [ )"
-		R"({ "type" : "tractiontype", "name" : "diesel", "always_available" : true }, )"
-		R"({ "type" : "tractiontype", "name" : "AC" }, )"
-		R"({ "type" : "vehicleclass", "name" : "VC1", "length" : "25m", "maxspeed" : "125.50mph", "tractiveforce" : "500kN", "tractivepower" : "1000hp", "brakingforce" : "1MN",)"
-			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "dragv2" : 200, "facedragv2" : 50, "full_mass" : "15t", "empty_mass" : "10t",)"
+		R"({ "type" : "traction_type", "name" : "diesel", "always_available" : true }, )"
+		R"({ "type" : "traction_type", "name" : "AC" }, )"
+		R"({ "type" : "vehicle_class", "name" : "VC1", "length" : "25m", "max_speed" : "125.50mph", "tractive_force" : "500kN", "tractive_power" : "1000hp", "braking_force" : "1MN",)"
+			R"( "tractive_limit" : "1.2MN", "drag_c" : 500, "drag_v" : 100, "drag_v2" : 200, "face_drag_v2" : 50, "full_mass" : "15t", "empty_mass" : "10t",)"
 			R"( "traction_types" : [ "diesel", "AC" ] }, )"
-		R"({ "type" : "vehicleclass", "name" : "VC2", "length" : "30yd", "maxspeed" : "170km/h", "tractiveforce" : "500kN", "tractivepower" : "1000hp", "brakingforce" : "1MN",)"
-			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "mass" : "15t",)"
+		R"({ "type" : "vehicle_class", "name" : "VC2", "length" : "30yd", "max_speed" : "170km/h", "tractive_force" : "500kN", "tractive_power" : "1000hp", "braking_force" : "1MN",)"
+			R"( "tractive_limit" : "1.2MN", "drag_c" : 500, "drag_v" : 100, "mass" : "15t",)"
 			R"( "traction_types" : [ "AC", "AC" ] }, )"
-		R"({ "type" : "vehicleclass", "name" : "VC3", "length" : "120ft", "tractiveforce" : "1024lbf", "tractivepower" : "512 ft lbf/s", "brakingforce" : "1MN",)"
+		R"({ "type" : "vehicle_class", "name" : "VC3", "length" : "120ft", "tractive_force" : "1024lbf", "tractive_power" : "512 ft lbf/s", "braking_force" : "1MN",)"
 			R"( "mass" : "15t" } )"
 	"] }";
 
@@ -94,22 +94,22 @@ TEST_CASE( "train/vehicle_class/deserialisation", "Test vehicle class deserialis
 
 	parsecheckerr(
 		R"({ "content" : [ )"
-		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "25m", "full_mass" : "15t", "empty_mass" : "20t" } )"
+		R"({ "type" : "vehicle_class", "name" : "VCE", "length" : "25m", "full_mass" : "15t", "empty_mass" : "20t" } )"
 		"] }"
 		, "full mass < empty mass");
 	parsecheckerr(
 		R"({ "content" : [ )"
-		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "25m", "mass" : "15t", "empty_mass" : "20t" } )"
+		R"({ "type" : "vehicle_class", "name" : "VCE", "length" : "25m", "mass" : "15t", "empty_mass" : "20t" } )"
 		"] }"
 		, "Unknown object property");
 	parsecheckerr(
 		R"({ "content" : [ )"
-		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "0", "mass" : "15t" } )"
+		R"({ "type" : "vehicle_class", "name" : "VCE", "length" : "0", "mass" : "15t" } )"
 		"] }"
 		, "non-zero");
 	parsecheckerr(
 		R"({ "content" : [ )"
-		R"({ "type" : "vehicleclass", "name" : "VCE", "length" : "30m" } )"
+		R"({ "type" : "vehicle_class", "name" : "VCE", "length" : "30m" } )"
 		"] }"
 		, "non-zero");
 }
@@ -130,7 +130,7 @@ TEST_CASE("/train/train/deserialisation/typeerror", "Check that trains cannot ap
 		"] }"
 		, "Unknown object type");
 	parsecheckerr(
-		R"({ "gamestate" : [ )"
+		R"({ "game_state" : [ )"
 		R"({ "type" : "train", "nosuch" : "field" } )"
 		"] }"
 		, "Unknown object property");
@@ -139,23 +139,23 @@ TEST_CASE("/train/train/deserialisation/typeerror", "Check that trains cannot ap
 TEST_CASE("/train/train/deserialisation/dynamics", "Train deserialisation and dynamics") {
 	std::string test_train_deserialisation_dynamics =
 	R"({ "content" : [ )"
-		R"({ "type" : "tractiontype", "name" : "diesel", "always_available" : true }, )"
-		R"({ "type" : "tractiontype", "name" : "AC" }, )"
-		R"({ "type" : "vehicleclass", "name" : "VC1", "length" : "25m", "maxspeed" : "30m/s", "tractiveforce" : "500kN", "tractivepower" : "1000hp", "brakingforce" : "1MN",)"
-			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "dragv2" : 200, "facedragv2" : 50, "full_mass" : "15t", "empty_mass" : "10t",)"
+		R"({ "type" : "traction_type", "name" : "diesel", "always_available" : true }, )"
+		R"({ "type" : "traction_type", "name" : "AC" }, )"
+		R"({ "type" : "vehicle_class", "name" : "VC1", "length" : "25m", "max_speed" : "30m/s", "tractive_force" : "500kN", "tractive_power" : "1000hp", "braking_force" : "1MN",)"
+			R"( "tractive_limit" : "1.2MN", "drag_c" : 500, "drag_v" : 100, "drag_v2" : 200, "face_drag_v2" : 50, "full_mass" : "15t", "empty_mass" : "10t",)"
 			R"( "traction_types" : [ "diesel", "AC" ] }, )"
-		R"({ "type" : "vehicleclass", "name" : "VC2", "length" : "30m", "maxspeed" : "170km/h", "tractiveforce" : "500kN", "tractivepower" : "1000hp", "brakingforce" : "1MN",)"
-			R"( "tractivelimit" : "1.2MN", "dragc" : 500, "dragv" : 100, "mass" : "15t",)"
+		R"({ "type" : "vehicle_class", "name" : "VC2", "length" : "30m", "max_speed" : "170km/h", "tractive_force" : "500kN", "tractive_power" : "1000hp", "braking_force" : "1MN",)"
+			R"( "tractive_limit" : "1.2MN", "drag_c" : 500, "drag_v" : 100, "mass" : "15t",)"
 			R"( "traction_types" : [ "AC" ] } )"
 	R"( ], )"
-	R"( "gamestate" : [ )"
+	R"( "game_state" : [ )"
 		"%s"
 	"] }";
 
-	std::string veh1 = R"({ "type" : "train", "activetractions" : %s, "vehicleclasses" : [ "VC1", "VC2" ] })";
-	std::string veh2 = R"({ "type" : "train", "activetractions" : %s, "vehicleclasses" : [ { "classname" : "VC1", "full" : true }, { "classname" : "VC2", "count" : 2 } ] })";
-	std::string veh3 = R"({ "type" : "train", "activetractions" : %s, "vehicleclasses" : [ { "classname" : "VC1", "full" : true }, { "classname" : "VC2", "count" : 2, "segmentmass" : "0" } ] })";
-	std::string veh4 = R"({ "type" : "train", "activetractions" : %s, "vehicleclasses" : [ { "classname" : "VC1", "count" : 2, "segmentmass" : "24t" }, { "classname" : "VC2", "count" : 0 } ] })";
+	std::string veh1 = R"({ "type" : "train", "active_tractions" : %s, "vehicle_classes" : [ "VC1", "VC2" ] })";
+	std::string veh2 = R"({ "type" : "train", "active_tractions" : %s, "vehicle_classes" : [ { "class_name" : "VC1", "full" : true }, { "class_name" : "VC2", "count" : 2 } ] })";
+	std::string veh3 = R"({ "type" : "train", "active_tractions" : %s, "vehicle_classes" : [ { "class_name" : "VC1", "full" : true }, { "class_name" : "VC2", "count" : 2, "segment_mass" : "0" } ] })";
+	std::string veh4 = R"({ "type" : "train", "active_tractions" : %s, "vehicle_classes" : [ { "class_name" : "VC1", "count" : 2, "segment_mass" : "24t" }, { "class_name" : "VC2", "count" : 0 } ] })";
 
 	auto mktenv = [&](const std::string &str) -> test_fixture_world* {
 		return new test_fixture_world(str);
@@ -285,21 +285,21 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	std::string test_train_drop_into_position =
 	R"({ "content" : [ )"
 		R"({ "type" : "start_of_line", "name" : "A"}, )"
-		R"({ "type" : "track_seg", "name" : "T0", "length" : "50m", "track_circuit" : "TC0", "tracktriggers" : "TT0" }, )"
+		R"({ "type" : "track_seg", "name" : "T0", "length" : "50m", "track_circuit" : "TC0", "track_triggers" : "TT0" }, )"
 		R"({ "type" : "points", "name" : "P0", "connect" : { "to" : "C" } }, )"
 		R"({ "type" : "track_seg", "name" : "T1", "length" : "50m" }, )"
-		R"({ "type" : "route_signal", "name" : "S0", "shuntsignal" : true }, )"
+		R"({ "type" : "route_signal", "name" : "S0", "shunt_signal" : true }, )"
 		R"({ "type" : "track_seg", "name" : "T3", "length" : "200m" }, )"
 		R"({ "type" : "end_of_line", "name" : "B" }, )"
 
 		R"({ "type" : "end_of_line", "name" : "C" }, )"
 
-		R"({ "type" : "tractiontype", "name" : "diesel", "always_available" : true }, )"
-		R"({ "type" : "tractiontype", "name" : "AC" }, )"
-		R"({ "type" : "vehicleclass", "name" : "VC1", "length" : "30m", "mass" : "15t", "traction_types" : [ "diesel" ] }, )"
-		R"({ "type" : "vehicleclass", "name" : "VC2", "length" : "30m", "mass" : "15t", "traction_types" : [ "AC" ] } )"
+		R"({ "type" : "traction_type", "name" : "diesel", "always_available" : true }, )"
+		R"({ "type" : "traction_type", "name" : "AC" }, )"
+		R"({ "type" : "vehicle_class", "name" : "VC1", "length" : "30m", "mass" : "15t", "traction_types" : [ "diesel" ] }, )"
+		R"({ "type" : "vehicle_class", "name" : "VC2", "length" : "30m", "mass" : "15t", "traction_types" : [ "AC" ] } )"
 	R"( ], )"
-	R"( "gamestate" : [ )"
+	R"( "game_state" : [ )"
 		"%s"
 	"] }";
 
@@ -319,7 +319,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("1: Deserialisation drop");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 2} ], )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 2} ], )"
 				R"( "position" : { "piece" : "S0", "dir" : "front", "offset" : 0 } } )"
 		);
 		train *t = tenv->w->FindTrainByName("TR0");
@@ -334,7 +334,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("2: Direct drop");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 2} ] } )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 2} ] } )"
 		);
 		check_ttcbs(*tenv, "Pre-drop", false);
 		train *t = tenv->w->FindTrainByName("TR0");
@@ -352,7 +352,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("3: Direct drop: train too long error");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 4} ] } )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 4} ] } )"
 		);
 		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
 		check_drop_train_insufficient_track(t, track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
@@ -360,7 +360,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("4: Direct drop: non-zero offset, just short of TTCBs");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] } )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
 		check_ttcbs(*tenv, "Pre-drop", false);
 		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
@@ -371,7 +371,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("5: Direct drop: non-zero offset, reverse, just short of end");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] } )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
 		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
 		check_drop_train(t, track_location(tenv->w->FindTrackByName("T3"), EDGE_BACK, 170000));
@@ -380,7 +380,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("6: Direct drop: non-zero offset, reverse, just over end error");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] } )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
 		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
 		check_drop_train_insufficient_track(t, track_location(tenv->w->FindTrackByName("T3"), EDGE_BACK, 170001));
@@ -388,7 +388,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("7: Direct drop: over OOC points");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 2} ] } )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 2} ] } )"
 		);
 		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
 		PTR_CHECK(tenv->w->FindTrackByNameCast<points>("P0"))->SetPointsFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
@@ -397,8 +397,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("8: Direct drop: collision test: overlap error at back");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] }, )"
-				R"({ "type" : "train", "name" : "TR1", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] } )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] }, )"
+				R"({ "type" : "train", "name" : "TR1", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
 		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
 		check_drop_train_insufficient_track(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T3"), EDGE_FRONT, 29999));
@@ -406,8 +406,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("9: Direct drop: collision test: just fits behind");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] }, )"
-				R"({ "type" : "train", "name" : "TR1", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] } )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] }, )"
+				R"({ "type" : "train", "name" : "TR1", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
 		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
 		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T3"), EDGE_FRONT, 30000));
@@ -415,8 +415,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("10: Direct drop: collision test: overlap error at front");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] }, )"
-				R"({ "type" : "train", "name" : "TR1", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] } )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] }, )"
+				R"({ "type" : "train", "name" : "TR1", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
 		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
 		check_drop_train_insufficient_track(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T1"), EDGE_BACK, 49999));
@@ -424,8 +424,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("11: Direct drop: collision test: just fits in front");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] }, )"
-				R"({ "type" : "train", "name" : "TR1", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] } )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] }, )"
+				R"({ "type" : "train", "name" : "TR1", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
 		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
 		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("S0"), EDGE_BACK, 0));
@@ -433,8 +433,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 	{
 		INFO("12: Direct drop: collision test: overlap error across whole length");
 		std::unique_ptr<test_fixture_world> tenv = make_test_tenv(
-				R"({ "type" : "train", "name" : "TR0", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 2} ] }, )"
-				R"({ "type" : "train", "name" : "TR1", "activetractions" : ["diesel"], "vehicleclasses" : [ { "classname" : "VC1", "count" : 1} ] } )"
+				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 2} ] }, )"
+				R"({ "type" : "train", "name" : "TR1", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
 		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
 		check_drop_train_insufficient_track(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T1"), EDGE_FRONT, 49000));

@@ -238,7 +238,7 @@ TEST_CASE( "track/deserialisation/track", "Test basic track segment deserialisat
 	std::string track_test_str =
 	"{ \"content\" : [ "
 		"{ \"type\" : \"track_seg\", \"name\" : \"T1\", \"length\" : 50000, \"elevation_delta\" : -1000, \"train_count\" : 1, "
-			"\"speedlimits\" : [ { \"speed_class\" : \"foo\", \"speed\" : 27778 } ] }"
+			"\"speed_limits\" : [ { \"speed_class\" : \"foo\", \"speed\" : 27778 } ] }"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -259,7 +259,7 @@ TEST_CASE( "track/deserialisation/track", "Test basic track segment deserialisat
 TEST_CASE( "track/deserialisation/points", "Test basic points deserialisation" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"points\", \"name\" : \"P1\", \"reverse\" : true, \"failednorm\" : false, \"reminder\" : true}"
+		"{ \"type\" : \"points\", \"name\" : \"P1\", \"reverse\" : true, \"failed_norm\" : false, \"reminder\" : true}"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -289,15 +289,15 @@ TEST_CASE( "track/deserialisation/autoname", "Test deserialisation automatic nam
 std::string track_test_str_ds =
 R"({ "content" : [ )"
 	R"({ "type" : "double_slip", "name" : "DS1" }, )"
-	R"({ "type" : "double_slip", "name" : "DS2", "degreesoffreedom" : 1 }, )"
-	R"({ "type" : "double_slip", "name" : "DS3", "degreesoffreedom" : 2 }, )"
-	R"({ "type" : "double_slip", "name" : "DS4", "degreesoffreedom" : 4 }, )"
-	R"({ "type" : "double_slip", "name" : "DS5", "notrack_fl_bl" : true }, )"
-	R"({ "type" : "double_slip", "name" : "DS6", "notrack_fl_br" : true, "rightfrontpoints" : { "reverse" : true } }, )"
-	R"({ "type" : "double_slip", "name" : "DS7", "notrack_fr_br" : true, "degreesoffreedom" : 1, "leftfrontpoints" : { "reverse" : true } }, )"
-	R"({ "type" : "double_slip", "name" : "DS8", "notrack_fr_bl" : true, "degreesoffreedom" : 4 }, )"
-	R"({ "type" : "double_slip", "name" : "DS9", "degreesoffreedom" : 1, "leftbackpoints" : { "locked" : true, "reverse" : true } }, )"
-	R"({ "type" : "double_slip", "name" : "DS10", "degreesoffreedom" : 2, "leftbackpoints" : { "failedrev" : true, "reverse" : true } }, )"
+	R"({ "type" : "double_slip", "name" : "DS2", "degrees_of_freedom" : 1 }, )"
+	R"({ "type" : "double_slip", "name" : "DS3", "degrees_of_freedom" : 2 }, )"
+	R"({ "type" : "double_slip", "name" : "DS4", "degrees_of_freedom" : 4 }, )"
+	R"({ "type" : "double_slip", "name" : "DS5", "no_track_fl_bl" : true }, )"
+	R"({ "type" : "double_slip", "name" : "DS6", "no_track_fl_br" : true, "right_front_points" : { "reverse" : true } }, )"
+	R"({ "type" : "double_slip", "name" : "DS7", "no_track_fr_br" : true, "degrees_of_freedom" : 1, "left_front_points" : { "reverse" : true } }, )"
+	R"({ "type" : "double_slip", "name" : "DS8", "no_track_fr_bl" : true, "degrees_of_freedom" : 4 }, )"
+	R"({ "type" : "double_slip", "name" : "DS9", "degrees_of_freedom" : 1, "left_back_points" : { "locked" : true, "reverse" : true } }, )"
+	R"({ "type" : "double_slip", "name" : "DS10", "degrees_of_freedom" : 2, "left_back_points" : { "failed_rev" : true, "reverse" : true } }, )"
 	R"({ "type" : "end_of_line", "name" : "FL" }, )"
 	R"({ "type" : "end_of_line", "name" : "FR" }, )"
 	R"({ "type" : "end_of_line", "name" : "BL" }, )"
@@ -482,10 +482,10 @@ TEST_CASE( "track/deserialisation/ambiguouspartialconnection/3", "Test handling 
 TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 	std::string track_test_str_coupling =
 	R"({ "content" : [ )"
-		R"({ "type" : "couplepoints", "points" : [ { "name" : "P1", "edge" : "reverse"}, { "name" : "P2", "edge" : "normal"}, { "name" : "DS1", "edge" : "rightfront"} ] }, )"
-		R"({ "type" : "couplepoints", "points" : [ { "name" : "DS2", "edge" : "rightfront"}, { "name" : "DS1", "edge" : "rightback"} ] }, )"
-		R"({ "type" : "double_slip", "name" : "DS1", "degreesoffreedom" : 2 }, )"
-		R"({ "type" : "double_slip", "name" : "DS2", "notrack_fl_bl" : true, "rightfrontpoints" : { "reverse" : true } }, )"
+		R"({ "type" : "couple_points", "points" : [ { "name" : "P1", "edge" : "reverse"}, { "name" : "P2", "edge" : "normal"}, { "name" : "DS1", "edge" : "rightfront"} ] }, )"
+		R"({ "type" : "couple_points", "points" : [ { "name" : "DS2", "edge" : "rightfront"}, { "name" : "DS1", "edge" : "rightback"} ] }, )"
+		R"({ "type" : "double_slip", "name" : "DS1", "degrees_of_freedom" : 2 }, )"
+		R"({ "type" : "double_slip", "name" : "DS2", "no_track_fl_bl" : true, "right_front_points" : { "reverse" : true } }, )"
 		R"({ "type" : "points", "name" : "P1" }, )"
 		R"({ "type" : "points", "name" : "P2" } )"
 	"] }";
@@ -615,7 +615,7 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 }
 
 TEST_CASE( "track/deserialisation/gamestate/basicload", "Test basic gamestate loading, including track creation check" ) {
-	test_fixture_world env1(R"({ "gamestate" : [ )"
+	test_fixture_world env1(R"({ "game_state" : [ )"
 		R"({ "type" : "points", "name" : "P1", "reverse" : true } )"
 	"] }");
 	INFO("Error Collection: " << env1.ec);
@@ -624,7 +624,7 @@ TEST_CASE( "track/deserialisation/gamestate/basicload", "Test basic gamestate lo
 	INFO("Error Collection: " << env1.ec);
 	CHECK(env1.ec.GetErrorCount() == 1);
 
-	test_fixture_world env2(R"({ "gamestate" : [ )"
+	test_fixture_world env2(R"({ "game_state" : [ )"
 		R"({ "type" : "points", "name" : "P1", "reverse" : true } )"
 	"],"
 	R"("content" : [ )"

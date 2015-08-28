@@ -85,7 +85,7 @@ TEST_CASE( "text_pool/variables/badinput", "Test variable expansion input error"
 TEST_CASE( "logging/future/generic", "Test generic future log messages" ) {
 	test_fixture_world_ops_1 env;
 
-	env.w.GetUserMessageTextpool().RegisterNewText("test", "foo $gametime bar");
+	env.w.GetUserMessageTextpool().RegisterNewText("test", "foo $game_time bar");
 	env.w.futures.RegisterFuture(std::make_shared<future_generic_user_message>(env.w, 150, &env.w, "test"));
 	env.w.futures.RegisterFuture(std::make_shared<future_generic_user_message>(env.w, 300, &env.w, "test"));
 	env.w.futures.RegisterFuture(std::make_shared<future_generic_user_message>(env.w, 500, &env.w, "test"));

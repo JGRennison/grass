@@ -89,7 +89,7 @@ TEST_CASE( "deserialisation/error/wrongtype", "Test wrong value type" ) {
 TEST_CASE( "deserialisation/error/wrongtypeobjectarray", "Test supplying a value instead of an object/array" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"track_seg\", \"speedlimits\" : 0, \"trs\" : 0}"
+		"{ \"type\" : \"track_seg\", \"speed_limits\" : 0, \"trs\" : 0}"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -100,8 +100,8 @@ TEST_CASE( "deserialisation/error/wrongtypeobjectarray", "Test supplying a value
 TEST_CASE( "deserialisation/error/arraytypemismatch", "Test supplying a value of the wrong type in a value array" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"route_signal\", \"routerestrictions\" : [ { \"targets\" : 0 } ] }, "
-		"{ \"type\" : \"route_signal\", \"routerestrictions\" : [ { \"targets\" : [ \"foo\", 0, \"bar\" ] } ] }"
+		"{ \"type\" : \"route_signal\", \"route_restrictions\" : [ { \"targets\" : 0 } ] }, "
+		"{ \"type\" : \"route_signal\", \"route_restrictions\" : [ { \"targets\" : [ \"foo\", 0, \"bar\" ] } ] }"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -134,7 +134,7 @@ TEST_CASE( "deserialisation/error/flagcontradiction", "Test contradictory flags"
 TEST_CASE( "deserialisation/error/flagnoncontradiction", "Test non-contradictory flags" ) {
 	std::string track_test_str =
 	"{ \"content\" : [ "
-		"{ \"type\" : \"routing_marker\", \"through\" : { \"allowonly\" : \"all\", \"allow\" : \"route\" } }"
+		"{ \"type\" : \"routing_marker\", \"through\" : { \"allow_only\" : \"all\", \"allow\" : \"route\" } }"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -147,8 +147,8 @@ TEST_CASE( "deserialisation/error/flagnoncontradiction", "Test non-contradictory
 TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
-		R"({ "type" : "typedef", "newtype" : "base", "basetype" : "routing_marker", "content" : { "through" : { "deny" : "all" }, "through_rev" : { "deny" : "all" } } }, )"
-		R"({ "type" : "typedef", "newtype" : "derived", "basetype" : "base", "content" : { "through_rev" : { "allow" : "all" } } }, )"
+		R"({ "type" : "typedef", "new_type" : "base", "base_type" : "routing_marker", "content" : { "through" : { "deny" : "all" }, "through_rev" : { "deny" : "all" } } }, )"
+		R"({ "type" : "typedef", "new_type" : "derived", "base_type" : "base", "content" : { "through_rev" : { "allow" : "all" } } }, )"
 		R"({ "type" : "derived", "name" : "R1", "through_rev" : { "deny" : "overlap" } } )"
 	"] }";
 	test_fixture_world env(track_test_str);
@@ -167,8 +167,8 @@ TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 TEST_CASE( "deserialisation/error/typedefrecursion", "Test check for typedef recursion" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
-		R"({ "type" : "typedef", "newtype" : "T1", "basetype" : "T2" }, )"
-		R"({ "type" : "typedef", "newtype" : "T2", "basetype" : "T1" }, )"
+		R"({ "type" : "typedef", "new_type" : "T1", "base_type" : "T2" }, )"
+		R"({ "type" : "typedef", "new_type" : "T2", "base_type" : "T1" }, )"
 		R"({ "type" : "T1", "name" : "R1" } )"
 	"] }";
 	test_fixture_world env(track_test_str);
@@ -191,7 +191,7 @@ TEST_CASE( "deserialisation/error/templateextravalues", "Test templating extra v
 TEST_CASE( "deserialisation/error/typedefextravalues", "Test typedef extra values check" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
-		R"({ "type" : "typedef", "newtype" : "derived", "basetype" : "base", "foobar" : true, "content" : { } } )"
+		R"({ "type" : "typedef", "new_type" : "derived", "base_type" : "base", "foobar" : true, "content" : { } } )"
 	"] }";
 	test_fixture_world env(track_test_str);
 
@@ -258,19 +258,19 @@ TEST_CASE( "deserialisation/gamestateload/typeerror", "Check that content sectio
 		CHECK_CONTAINS(env_err.ec, "Unknown object type");
 	};
 
-	check_parse_err(R"({ "gamestate" : [ )"
+	check_parse_err(R"({ "game_state" : [ )"
 		R"({ "type" : "template" } )"
 	"] }");
-	check_parse_err(R"({ "gamestate" : [ )"
+	check_parse_err(R"({ "game_state" : [ )"
 		R"({ "type" : "typedef" } )"
 	"] }");
-	check_parse_err(R"({ "gamestate" : [ )"
-		R"({ "type" : "tractiontype" } )"
+	check_parse_err(R"({ "game_state" : [ )"
+		R"({ "type" : "traction_type" } )"
 	"] }");
-	check_parse_err(R"({ "gamestate" : [ )"
-		R"({ "type" : "couplepoints" } )"
+	check_parse_err(R"({ "game_state" : [ )"
+		R"({ "type" : "couple_points" } )"
 	"] }");
-	check_parse_err(R"({ "gamestate" : [ )"
-		R"({ "type" : "vehicleclass" } )"
+	check_parse_err(R"({ "game_state" : [ )"
+		R"({ "type" : "vehicle_class" } )"
 	"] }");
 }

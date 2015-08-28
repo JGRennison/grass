@@ -133,14 +133,14 @@ void track_train_counter_block::TrainLeave(train *t) {
 void track_train_counter_block::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	world_obj::Deserialise(di, ec);
 
-	CheckTransJsonValueFlag(tc_flags, TCF::FORCE_OCCUPIED, di, "forceoccupied", ec);
+	CheckTransJsonValueFlag(tc_flags, TCF::FORCE_OCCUPIED, di, "force_occupied", ec);
 	CheckTransJsonValue(last_change, di, "last_change", ec);
 }
 
 void track_train_counter_block::Serialise(serialiser_output &so, error_collection &ec) const {
 	world_obj::Serialise(so, ec);
 
-	SerialiseFlagJson(tc_flags, TCF::FORCE_OCCUPIED, so, "forceoccupied");
+	SerialiseFlagJson(tc_flags, TCF::FORCE_OCCUPIED, so, "force_occupied");
 	SerialiseValueJson(last_change, so, "last_change");
 }
 

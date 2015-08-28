@@ -91,14 +91,14 @@ void ParseAspectMaskString(aspect_mask_type &aspect_mask, const std::string &asp
 bool DeserialiseAspectProps(aspect_mask_type &aspect_mask, const deserialiser_input &di, error_collection &ec) {
 	unsigned int max_aspect;
 	std::string aspect_string;
-	if (CheckTransJsonValue(max_aspect, di, "maxaspect", ec)) {
+	if (CheckTransJsonValue(max_aspect, di, "max_aspect", ec)) {
 		if (max_aspect > ASPECT_MAX) {
 			ec.RegisterNewError<error_deserialisation>(di, string_format("Maximum signal aspect cannot exceed %u. %u given.", ASPECT_MAX, max_aspect));
 		} else {
 			aspect_mask = (max_aspect == 31) ? 0xFFFFFFFF : (1 << (max_aspect + 1)) - 1;
 		}
 		return true;
-	} else if (CheckTransJsonValue(aspect_string, di, "allowedaspects", ec)) {
+	} else if (CheckTransJsonValue(aspect_string, di, "allowed_aspects", ec)) {
 		ParseAspectMaskString(aspect_mask, aspect_string, di, ec, "allowed aspects");
 		return true;
 	}
@@ -106,7 +106,7 @@ bool DeserialiseAspectProps(aspect_mask_type &aspect_mask, const deserialiser_in
 }
 
 void DeserialiseConditionalAspectProps(std::vector<route_common::conditional_aspect_mask> &cams, const deserialiser_input &di, error_collection &ec) {
-	CheckIterateJsonArrayOrType<json_object>(di, "conditionalallowedaspects", "conditionalallowedaspect", ec, [&](const deserialiser_input &innerdi, error_collection &ec) {
+	CheckIterateJsonArrayOrType<json_object>(di, "conditional_allowed_aspects", "conditionalallowedaspect", ec, [&](const deserialiser_input &innerdi, error_collection &ec) {
 		cams.emplace_back();
 
 		auto parse_aspect = [&](aspect_mask_type &aspect_mask, const char *prop, const std::string &name) {
@@ -116,7 +116,7 @@ void DeserialiseConditionalAspectProps(std::vector<route_common::conditional_asp
 			}
 		};
 		parse_aspect(cams.back().condition, "condition", "aspect mask condition");
-		parse_aspect(cams.back().aspect_mask, "allowedaspects", "conditional allowed aspects");
+		parse_aspect(cams.back().aspect_mask, "allowed_aspects", "conditional allowed aspects");
 		innerdi.PostDeserialisePropCheck(ec);
 	});
 }
@@ -155,42 +155,42 @@ void route_common::DeserialiseRouteCommon(const deserialiser_input &subdi, error
 		route_common_flags |= route_restriction::RCF::PRIORITY_SET;
 	}
 	if (!(flags & DeserialisationFlags::NO_APLOCK_TIMEOUT)) {
-		if (CheckTransJsonValueProc(approach_locking_timeout, subdi, "approachlockingtimeout", ec, dsconv::Time)) {
+		if (CheckTransJsonValueProc(approach_locking_timeout, subdi, "approach_locking_timeout", ec, dsconv::Time)) {
 			route_common_flags |= route_restriction::RCF::AP_LOCKING_TIMEOUT_SET;
 		}
 	}
-	if (CheckTransJsonValueProc(overlap_timeout, subdi, "overlaptimeout", ec, dsconv::Time)) {
+	if (CheckTransJsonValueProc(overlap_timeout, subdi, "overlap_timeout", ec, dsconv::Time)) {
 		route_common_flags |= route_restriction::RCF::OVERLAP_TIMEOUT_SET;
 	}
-	if (CheckTransJsonValueProc(route_prove_delay, subdi, "routeprovedelay", ec, dsconv::Time)) {
+	if (CheckTransJsonValueProc(route_prove_delay, subdi, "route_prove_delay", ec, dsconv::Time)) {
 		route_common_flags |= route_restriction::RCF::ROUTE_PROVE_DELAY_SET;
 	}
-	if (CheckTransJsonValueProc(route_clear_delay, subdi, "routecleardelay", ec, dsconv::Time)) {
+	if (CheckTransJsonValueProc(route_clear_delay, subdi, "route_clear_delay", ec, dsconv::Time)) {
 		route_common_flags |= route_restriction::RCF::ROUTE_CLEAR_DELAY_SET;
 	}
-	if (CheckTransJsonValueProc(route_set_delay, subdi, "route_setdelay", ec, dsconv::Time)) {
+	if (CheckTransJsonValueProc(route_set_delay, subdi, "route_set_delay", ec, dsconv::Time)) {
 		route_common_flags |= route_restriction::RCF::ROUTE_SET_DELAY_SET;
 	}
-	deserialise_ttcb("overlaptimeouttrigger", [this](track_train_counter_block *ttcb) {
+	deserialise_ttcb("overlap_timeout_trigger", [this](track_train_counter_block *ttcb) {
 		this->overlap_timeout_trigger = ttcb;
 	});
 
-	bool res = CheckTransJsonValueFlag(route_common_flags, route_restriction::RCF::AP_CONTROL, subdi, "approachcontrol", ec);
+	bool res = CheckTransJsonValueFlag(route_common_flags, route_restriction::RCF::AP_CONTROL, subdi, "approach_control", ec);
 	if (res) {
 		route_common_flags |= route_restriction::RCF::AP_CONTROL_SET;
 	}
 	if (!res || route_common_flags & route_restriction::RCF::AP_CONTROL) {
-		if (CheckTransJsonValueProc(approach_control_triggerdelay, subdi, "approachcontroltriggerdelay", ec, dsconv::Time)) {
+		if (CheckTransJsonValueProc(approach_control_triggerdelay, subdi, "approach_control_trigger_delay", ec, dsconv::Time)) {
 			route_common_flags |= route_restriction::RCF::AP_CONTROL_TRIGGER_DELAY_SET | route_restriction::RCF::AP_CONTROL_SET | route_restriction::RCF::AP_CONTROL;
 		}
-		deserialise_ttcb("approachcontroltrigger", [this](track_train_counter_block *ttcb) {
+		deserialise_ttcb("approach_control_trigger", [this](track_train_counter_block *ttcb) {
 			this->approach_control_trigger = ttcb;
 			this->route_common_flags |= route_restriction::RCF::AP_CONTROL_SET | route_restriction::RCF::AP_CONTROL;
 		});
 
 		// Approach control if no forward route
 		bool ap_control_if_route_res = CheckTransJsonValueFlag(route_common_flags, route_restriction::RCF::AP_CONTROL_IF_NOROUTE,
-				subdi, "approachcontrolifnoforwardroute", ec);
+				subdi, "approach_control_if_noforward_route", ec);
 		if (ap_control_if_route_res) {
 			route_common_flags |= route_restriction::RCF::AP_CONTROL_IF_NOROUTE_SET;
 		}
@@ -203,7 +203,7 @@ void route_common::DeserialiseRouteCommon(const deserialiser_input &subdi, error
 	if (CheckTransJsonValueFlag(route_common_flags, route_restriction::RCF::TORR, subdi, "torr", ec)) {
 		route_common_flags |= route_restriction::RCF::TORR_SET;
 	}
-	if (CheckTransJsonValueFlag(route_common_flags, route_restriction::RCF::EXIT_SIGNAL_CONTROL, subdi, "exitsignalcontrol", ec)) {
+	if (CheckTransJsonValueFlag(route_common_flags, route_restriction::RCF::EXIT_SIGNAL_CONTROL, subdi, "exit_signal_control", ec)) {
 		route_common_flags |= route_restriction::RCF::EXIT_SIGNAL_CONTROL_SET;
 	}
 
@@ -233,10 +233,10 @@ void route_restriction_set::DeserialiseRestriction(const deserialiser_input &sub
 	route_restriction &rr = restrictions.back();
 
 	if (isendtype) {
-		CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "routestart", ec, rr.targets);
+		CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "route_start", ec, rr.targets);
 	} else {
 		CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "targets", ec, rr.targets) ||
-				CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "routeend", ec, rr.targets);
+				CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "route_end", ec, rr.targets);
 	}
 	CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "via", ec, rr.via);
 	CheckFillTypeVectorFromJsonArrayOrType<std::string>(subdi, "not_via", ec, rr.not_via);
@@ -247,14 +247,14 @@ void route_restriction_set::DeserialiseRestriction(const deserialiser_input &sub
 
 	flag_conflict_checker<route_class::set> conflictnegcheck;
 	route_class::set val = 0;
-	if (route_class::DeserialiseProp("applyonly", val, subdi, ec)) {
+	if (route_class::DeserialiseProp("apply_only", val, subdi, ec)) {
 		rr.apply_to_types = val;
-		conflictnegcheck.RegisterFlags(true, val, subdi, "applyonly", ec);
-		conflictnegcheck.RegisterFlags(false, ~val, subdi, "applyonly", ec);
+		conflictnegcheck.RegisterFlags(true, val, subdi, "apply_only", ec);
+		conflictnegcheck.RegisterFlags(false, ~val, subdi, "apply_only", ec);
 	}
-	if (route_class::DeserialiseProp("applydeny", val, subdi, ec)) {
+	if (route_class::DeserialiseProp("apply_deny", val, subdi, ec)) {
 		rr.apply_to_types &= ~val;
-		conflictnegcheck.RegisterFlags(false, val, subdi, "applydeny", ec);
+		conflictnegcheck.RegisterFlags(false, val, subdi, "apply_deny", ec);
 	}
 
 	subdi.PostDeserialisePropCheck(ec);

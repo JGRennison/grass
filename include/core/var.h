@@ -37,7 +37,7 @@ struct message_formatter {
 	std::string ExpandVariable(std::string::const_iterator &begin, std::string::const_iterator end) const;
 
 	inline bool IsVarChar(char c) const {
-		return isalpha(c) || (c == '-');
+		return isalpha(c) || (c == '_');
 	}
 };
 

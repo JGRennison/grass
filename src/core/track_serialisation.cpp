@@ -78,7 +78,7 @@ void generic_track::Deserialise(const deserialiser_input &di, error_collection &
 		}
 	}
 
-	deserialiser_input subdi(di.json["connect"], "trackconnection", "connect", di);
+	deserialiser_input subdi(di.json["connect"], "track_connection", "connect", di);
 	if (!subdi.json.IsNull() && subdi.w) {
 		di.RegisterProp("connect");
 		auto connfunc = [&](const deserialiser_input &funcdi) {
@@ -88,8 +88,8 @@ void generic_track::Deserialise(const deserialiser_input &di, error_collection &
 				EDGETYPE target_entrance_direction = EDGE_NULL;
 				std::string target_name;
 				bool have_directions;
-				have_directions = CheckTransJsonValue(this_entrance_direction, funcdi, "fromdirection", ec);
-				have_directions &= CheckTransJsonValue(target_entrance_direction, funcdi, "todirection", ec);
+				have_directions = CheckTransJsonValue(this_entrance_direction, funcdi, "from_direction", ec);
+				have_directions &= CheckTransJsonValue(target_entrance_direction, funcdi, "to_direction", ec);
 				ok = CheckTransJsonValue(target_name, funcdi, "to", ec);
 
 				if (ok) {
@@ -151,7 +151,7 @@ void generic_track::Deserialise(const deserialiser_input &di, error_collection &
 		}
 	}
 
-	CheckTransJsonValueFlag(gt_privflags, GTPRIVF::REVERSE_AUTO_CONN, di, "reverseautoconnection", ec);
+	CheckTransJsonValueFlag(gt_privflags, GTPRIVF::REVERSE_AUTO_CONN, di, "reverse_auto_connection", ec);
 
 	if (CanHaveBerth()) {
 		deserialiser_input bdi(di.json["berth"], "berth", "berth", di);
@@ -179,8 +179,8 @@ void generic_track::Deserialise(const deserialiser_input &di, error_collection &
 			}
 		}
 		if (berth) {
-			CheckTransJsonValue(berth->contents, di, "berthstr", ec);
-			CheckIterateJsonArrayOrType<json_object>(di, "berthlayout", "layout", ec, [&](const deserialiser_input &di, error_collection &ec) {
+			CheckTransJsonValue(berth->contents, di, "berth_str", ec);
+			CheckIterateJsonArrayOrType<json_object>(di, "berth_layout", "layout", ec, [&](const deserialiser_input &di, error_collection &ec) {
 				if (di.ws) {
 					di.ws->gui_layout_track_berth(berth.get(), this, di, ec);
 				}
@@ -204,7 +204,7 @@ void generic_track::DeserialiseReservationState(track_reservation_state &trs, co
 void generic_track::Serialise(serialiser_output &so, error_collection &ec) const {
 	world_obj::Serialise(so, ec);
 	if (berth) {
-		SerialiseValueJson(berth->contents, so, "berthstr");
+		SerialiseValueJson(berth->contents, so, "berth_str");
 	}
 }
 
@@ -215,10 +215,10 @@ void track_seg::Deserialise(const deserialiser_input &di, error_collection &ec) 
 	CheckTransJsonValueProc(elevation_delta, di, "elevation_delta", ec, dsconv::Length);
 	CheckTransJsonValue(train_count, di, "train_count", ec);
 	DeserialiseReservationState(trs, di, "trs", ec);
-	CheckTransJsonSubArray(speed_limits, di, "speedlimits", "speedlimits", ec);
+	CheckTransJsonSubArray(speed_limits, di, "speed_limits", "speed_limits", ec);
 	CheckTransJsonSubArray(traction_types, di, "traction_types", "traction_types", ec);
 
-	CheckIterateJsonArrayOrType<std::string>(di, "tracktriggers", "tracktrigger", ec, [&](const deserialiser_input &sdi, error_collection &ec) {
+	CheckIterateJsonArrayOrType<std::string>(di, "track_triggers", "tracktrigger", ec, [&](const deserialiser_input &sdi, error_collection &ec) {
 		track_train_counter_block *ttcb = GetWorld().track_triggers.FindOrMakeByName(GetType<std::string>(sdi.json));
 		ttcbs.push_back(ttcb);
 		ttcb->RegisterTrack(this);
@@ -237,8 +237,8 @@ void DeserialisePointFlags(generic_points::PTF &pflags, const deserialiser_input
 	CheckTransJsonValueFlag(pflags, generic_points::PTF::OOC, di, "ooc", ec);
 	CheckTransJsonValueFlag(pflags, generic_points::PTF::LOCKED, di, "locked", ec);
 	CheckTransJsonValueFlag(pflags, generic_points::PTF::REMINDER, di, "reminder", ec);
-	CheckTransJsonValueFlag(pflags, generic_points::PTF::FAILED_NORM, di, "failednorm", ec);
-	CheckTransJsonValueFlag(pflags, generic_points::PTF::FAILED_REV, di, "failedrev", ec);
+	CheckTransJsonValueFlag(pflags, generic_points::PTF::FAILED_NORM, di, "failed_norm", ec);
+	CheckTransJsonValueFlag(pflags, generic_points::PTF::FAILED_REV, di, "failed_rev", ec);
 	CheckTransJsonValueFlag(pflags, generic_points::PTF::AUTO_NORMALISE, di, "auto_normalise", ec);
 }
 
@@ -247,8 +247,8 @@ void SerialisePointFlags(generic_points::PTF pflags, serialiser_output &so, erro
 	SerialiseFlagJson(pflags, generic_points::PTF::OOC, so, "ooc");
 	SerialiseFlagJson(pflags, generic_points::PTF::LOCKED, so, "locked");
 	SerialiseFlagJson(pflags, generic_points::PTF::REMINDER, so, "reminder");
-	SerialiseFlagJson(pflags, generic_points::PTF::FAILED_NORM, so, "failednorm");
-	SerialiseFlagJson(pflags, generic_points::PTF::FAILED_REV, so, "failedrev");
+	SerialiseFlagJson(pflags, generic_points::PTF::FAILED_NORM, so, "failed_norm");
+	SerialiseFlagJson(pflags, generic_points::PTF::FAILED_REV, so, "failed_rev");
 }
 
 void points::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -283,7 +283,7 @@ void spring_points::Deserialise(const deserialiser_input &di, error_collection &
 	generic_zlen_track::Deserialise(di, ec);
 
 	DeserialiseReservationState(trs, di, "trs", ec);
-	CheckTransJsonValue(sendreverse, di, "sendreverse", ec);
+	CheckTransJsonValue(sendreverse, di, "send_reverse", ec);
 }
 
 void spring_points::Serialise(serialiser_output &so, error_collection &ec) const {
@@ -327,16 +327,16 @@ void double_slip::Deserialise(const deserialiser_input &di, error_collection &ec
 	generic_points::Deserialise(di, ec);
 
 	DeserialiseReservationState(trs, di, "trs", ec);
-	if (CheckTransJsonValue(dof, di, "degreesoffreedom", ec)) {
+	if (CheckTransJsonValue(dof, di, "degrees_of_freedom", ec)) {
 		if (dof != 1 && dof != 2 && dof != 4) {
 			ec.RegisterNewError<error_deserialisation>(di, "Invalid double slip degrees of freedom: " + std::to_string(dof));
 		}
 	}
 
-	CheckTransJsonValueFlag(dsflags, DSF::NO_FL_BL, di, "notrack_fl_bl", ec);
-	CheckTransJsonValueFlag(dsflags, DSF::NO_FR_BL, di, "notrack_fr_bl", ec);
-	CheckTransJsonValueFlag(dsflags, DSF::NO_FL_BR, di, "notrack_fl_br", ec);
-	CheckTransJsonValueFlag(dsflags, DSF::NO_FR_BR, di, "notrack_fr_br", ec);
+	CheckTransJsonValueFlag(dsflags, DSF::NO_FL_BL, di, "no_track_fl_bl", ec);
+	CheckTransJsonValueFlag(dsflags, DSF::NO_FR_BL, di, "no_track_fr_bl", ec);
+	CheckTransJsonValueFlag(dsflags, DSF::NO_FL_BR, di, "no_track_fl_br", ec);
+	CheckTransJsonValueFlag(dsflags, DSF::NO_FR_BR, di, "no_track_fr_br", ec);
 
 	if (__builtin_popcount(flag_unwrap<DSF>(dsflags&DSF::NO_TRACK_MASK)) >= 2) {
 		ec.RegisterNewError<error_deserialisation>(di, "Cannot remove more than one track edge from a double-slip, use points or a crossover instead");
@@ -352,23 +352,23 @@ void double_slip::Deserialise(const deserialiser_input &di, error_collection &ec
 		CheckTransJsonSubObj(ps, di, prop, "", ec);
 		SetPointsFlagsMasked(GetPointsIndexByEdge(direction), pf, generic_points::PTF::ALL);
 	};
-	deserialisepointsflags(EDGE_DS_FL, "leftfrontpoints");
-	deserialisepointsflags(EDGE_DS_FR, "rightfrontpoints");
-	deserialisepointsflags(EDGE_DS_BR, "rightbackpoints");
-	deserialisepointsflags(EDGE_DS_BL, "leftbackpoints");
+	deserialisepointsflags(EDGE_DS_FL, "left_front_points");
+	deserialisepointsflags(EDGE_DS_FR, "right_front_points");
+	deserialisepointsflags(EDGE_DS_BR, "right_back_points");
+	deserialisepointsflags(EDGE_DS_BL, "left_back_points");
 }
 
 void double_slip::Serialise(serialiser_output &so, error_collection &ec) const {
 	generic_points::Serialise(so, ec);
 
 	SerialiseSubObjJson(trs, so, "trs", ec);
-	SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_FL)), so, "forwardleftpoints", ec);
+	SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_FL)), so, "left_front_points", ec);
 	if (dof >= 2) {
-		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_BR)), so, "reverseleftpoints", ec);
+		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_BR)), so, "right_back_points", ec);
 	}
 	if (dof >= 4) {
-		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_FR)), so, "forwardrightpoints", ec);
-		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_BL)), so, "reverserightpoints", ec);
+		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_FR)), so, "right_front_points", ec);
+		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_BL)), so, "left_back_points", ec);
 	}
 }
 
@@ -430,7 +430,7 @@ void DeserialiseRouteTargetByParentAndIndex(const route *& output, const deseria
 
 void speed_restriction_set::Deserialise(const deserialiser_input &di, error_collection &ec) {
 	for (rapidjson::SizeType i = 0; i < di.json.Size(); i++) {
-		deserialiser_input subdi(di.json[i], "speedrestriction", MkArrayRefName(i), di);
+		deserialiser_input subdi(di.json[i], "speed_restriction", MkArrayRefName(i), di);
 		speed_restriction sr;
 		if (subdi.json.IsObject() && CheckTransJsonValueDef(sr.speed_class, subdi, "speed_class", "", ec)
 				&& CheckTransJsonValueDefProc(sr.speed, subdi, "speed", 0, ec, dsconv::Speed)) {
@@ -448,12 +448,12 @@ void speed_restriction_set::Serialise(serialiser_output &so, error_collection &e
 
 void DeserialisePointsCoupling(const deserialiser_input &di, error_collection &ec) {
 	bool ok = true;
-	deserialiser_input subdi(di.json["points"], "pointscouplingarray", "points", di);
+	deserialiser_input subdi(di.json["points"], "points_coupling_array", "points", di);
 	if (subdi.json.IsArray() && subdi.json.Size() >= 2) {
 		di.RegisterProp("points");
 		auto params = std::make_shared<std::vector<std::pair<std::string, EDGETYPE> > >();
 		for (rapidjson::SizeType i = 0; i < subdi.json.Size(); i++) {
-			deserialiser_input itemdi(subdi.json[i], "pointscoupling", MkArrayRefName(i), subdi);
+			deserialiser_input itemdi(subdi.json[i], "points_coupling", MkArrayRefName(i), subdi);
 			std::string name;
 			EDGETYPE direction;
 			if (itemdi.json.IsObject() && CheckTransJsonValueDef(name, itemdi, "name", "", ec)

@@ -24,7 +24,7 @@
 #include "core/text_pool.h"
 
 void future_user_message::InitVariables(message_formatter &mf, world &w) {
-	mf.RegisterVariable("gametime", [&](std::string) -> std::string {
+	mf.RegisterVariable("game_time", [&](std::string) -> std::string {
 		return w.FormatGameTime(w.GetGameTime());
 	});
 }

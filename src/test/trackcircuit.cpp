@@ -54,12 +54,12 @@ TEST_CASE( "track_circuit/deserialisation", "Test basic deserialisation of track
 
 std::string tcdereservation_test_str_1 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S1", "routerestrictions" : [{ "torr" : true }] }, )"
+	R"({ "type" : "4aspectroute", "name" : "S1", "route_restrictions" : [{ "torr" : true }] }, )"
 	R"({ "type" : "track_seg", "name" : "TS2", "length" : 20000, "track_circuit" : "T2" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true, "track_circuit" : "T2" }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true, "track_circuit" : "T2" }, )"
 	R"({ "type" : "track_seg", "name" : "TS3", "length" : 30000, "track_circuit" : "T3" }, )"
 	R"({ "type" : "routing_marker" }, )"
 	R"({ "type" : "track_seg", "name" : "TS4", "length" : 30000, "track_circuit" : "T4" }, )"
@@ -67,9 +67,9 @@ R"({ "content" : [ )"
 	R"({ "type" : "points", "name" : "P1" }, )"
 
 	R"({ "type" : "track_seg", "name" : "TS5", "length" : 30000, "track_circuit" : "T5" }, )"
-	R"({ "type" : "4aspectroute", "name" : "S2", "routerestrictions" : [{ "torr" : false }] }, )"
+	R"({ "type" : "4aspectroute", "name" : "S2", "route_restrictions" : [{ "torr" : false }] }, )"
 	R"({ "type" : "track_seg", "name" : "TS6", "length" : 20000, "track_circuit" : "T6" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "name" : "TS7", "length" : 20000, "track_circuit" : "T7" }, )"
 	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "route" } }, )"
 
@@ -270,25 +270,25 @@ TEST_CASE( "track_circuit/reservation_state", "Test track circuit reservation st
 
 std::string berth_test_str_1 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectauto", "basetype" : "auto_signal", "content" : { "maxaspect" : 3 } }, )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectauto", "base_type" : "auto_signal", "content" : { "max_aspect" : 3 } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "track_seg", "name" : "TS0", "length" : 50000, "berth" : true  }, )"
 	R"({ "type" : "4aspectauto", "name" : "S0" }, )"
 	R"({ "type" : "track_seg", "name" : "TS0A", "length" : 50000, "track_circuit" : "T0A", "berth" : true }, )"
-	R"({ "type" : "4aspectauto", "name" : "S0A", "overlapend" : true }, )"
+	R"({ "type" : "4aspectauto", "name" : "S0A", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1" }, )"
-	R"({ "type" : "4aspectauto", "name" : "S1", "overlapend" : true }, )"
+	R"({ "type" : "4aspectauto", "name" : "S1", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "name" : "TS2", "length" : 20000, "track_circuit" : "T2", "berth" : true }, )"
-	R"({ "type" : "4aspectroute", "name" : "S2", "overlapend" : true, "overlapswingable" : true }, )"
+	R"({ "type" : "4aspectroute", "name" : "S2", "overlap_end" : true, "overlap_swingable" : true }, )"
 	R"({ "type" : "track_seg", "name" : "TS3", "length" : 30000, "track_circuit" : "T3" }, )"
 
 	R"({ "type" : "points", "name" : "P1" }, )"
 
 	R"({ "type" : "track_seg", "name" : "TS4", "length" : 30000, "track_circuit" : "T4", "berth" : true }, )"
-	R"({ "type" : "4aspectauto", "name" : "S3", "overlapend" : true }, )"
+	R"({ "type" : "4aspectauto", "name" : "S3", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "name" : "TS5", "length" : 20000, "track_circuit" : "T5" }, )"
-	R"({ "type" : "routing_marker", "overlapend" : true }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "name" : "TS6", "length" : 20000, "track_circuit" : "T6", "berth" : true }, )"
 	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "route" }, "track_circuit" : "T6" }, )"
 
@@ -423,22 +423,22 @@ TEST_CASE( "berth/step/4", "Berth stepping test no 4: check stepping when leavin
 
 std::string berth_test_str_2 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1", "berth" : true  }, )"
 	R"({ "type" : "4aspectroute", "name" : "S1" }, )"
 	R"({ "type" : "track_seg", "name" : "TS2", "length" : 50000, "track_circuit" : "T2" }, )"
 
-	R"({ "type" : "points", "name" : "P1", "reverseautoconnection" : true }, )"
+	R"({ "type" : "points", "name" : "P1", "reverse_auto_connection" : true }, )"
 
-	R"({ "type" : "4aspectroute", "name" : "BS", "reverseautoconnection" : true, "overlapend_rev" : true }, )"
+	R"({ "type" : "4aspectroute", "name" : "BS", "reverse_auto_connection" : true, "overlap_end_rev" : true }, )"
 	R"({ "type" : "track_seg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
 	R"({ "type" : "track_seg", "name" : "BTS1", "length" : 50000, "berth" : true }, )"
 	R"({ "type" : "track_seg", "name" : "BTS2", "length" : 50000, "berth" : true }, )"
 	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : [ "route", "overlap" ] } }, )"
 
 	R"({ "type" : "track_seg", "name" : "RTS1", "length" : 30000, "track_circuit" : "RT1", "connect" : { "to" : "P1" }, "berth" : true }, )"
-	R"({ "type" : "4aspectroute", "name" : "RS1", "overlapend" : true }, )"
+	R"({ "type" : "4aspectroute", "name" : "RS1", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "name" : "RTS2", "length" : 50000, "track_circuit" : "RT2", "berth" : true }, )"
 	R"({ "type" : "end_of_line", "name" : "C", "end" : { "allow" : [ "route", "overlap" ] } } )"
 "] }";
@@ -525,14 +525,14 @@ TEST_CASE( "berth/step/10", "Berth stepping test no 10: check stepping into mult
 
 std::string berth_test_str_3 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "4aspectroute", "basetype" : "route_signal", "content" : { "maxaspect" : 3, "route_signal" : true } }, )"
-	R"({ "type" : "typedef", "newtype" : "4aspectrouteshunt", "basetype" : "4aspectroute", "content" : { "shuntsignal" : true } }, )"
-	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "route_signal", "content" : { "shuntsignal" : true, "through" : { "allow" : "route" } } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectrouteshunt", "base_type" : "4aspectroute", "content" : { "shunt_signal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "shunt", "base_type" : "route_signal", "content" : { "shunt_signal" : true, "through" : { "allow" : "route" } } }, )"
 	R"({ "type" : "start_of_line", "name" : "A" }, )"
 	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1", "berth" : true  }, )"
 	R"({ "type" : "4aspectrouteshunt", "name" : "S1" }, )"
 	R"({ "type" : "track_seg", "name" : "TS2", "length" : 50000, "track_circuit" : "T2", "berth" : true  }, )"
-	R"({ "type" : "shunt", "name" : "S2", "overlapend" : true }, )"
+	R"({ "type" : "shunt", "name" : "S2", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
 	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : [ "route", "overlap" ] } } )"
 "] }";
@@ -562,13 +562,13 @@ TEST_CASE( "berth/step/12", "Berth stepping test no 12: check stepping across un
 
 std::string berth_test_str_4 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "route_signal", "content" : { "shuntsignal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "shunt", "base_type" : "route_signal", "content" : { "shunt_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A", "end" : { "allow" : "shunt" } }, )"
 	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1", "berth" : true }, )"
 	R"({ "type" : "shunt", "name" : "S1" }, )"
-	R"({ "type" : "shunt", "name" : "RS1", "reverseautoconnection" : true }, )"
+	R"({ "type" : "shunt", "name" : "RS1", "reverse_auto_connection" : true }, )"
 	R"({ "type" : "track_seg", "name" : "TS2", "length" : 50000, "track_circuit" : "T2", "berth" : "back" }, )"
-	R"({ "type" : "shunt", "name" : "RS2", "overlapend" : true, "reverseautoconnection" : true }, )"
+	R"({ "type" : "shunt", "name" : "RS2", "overlap_end" : true, "reverse_auto_connection" : true }, )"
 	R"({ "type" : "track_seg", "name" : "BTS0", "length" : 50000, "berth" : true }, )"
 	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "shunt" } } )"
 "] }";
@@ -632,15 +632,15 @@ TEST_CASE( "berth/step/16", "Berth stepping test no 16: check stepping using ber
 
 std::string berth_test_str_5 =
 R"({ "content" : [ )"
-	R"({ "type" : "typedef", "newtype" : "shunt", "basetype" : "route_signal", "content" : { "shuntsignal" : true } }, )"
+	R"({ "type" : "typedef", "new_type" : "shunt", "base_type" : "route_signal", "content" : { "shunt_signal" : true } }, )"
 	R"({ "type" : "start_of_line", "name" : "A", "end" : { "allow" : "shunt" } }, )"
 	R"({ "type" : "track_seg", "name" : "TS1", "length" : 50000, "track_circuit" : "T1", "berth" : true }, )"
 	R"({ "type" : "shunt", "name" : "S1" }, )"
 	R"({ "type" : "track_seg", "name" : "TS2", "length" : 50000, "track_circuit" : "T1" }, )"
-	R"({ "type" : "shunt", "name" : "RS1", "reverseautoconnection" : true }, )"
+	R"({ "type" : "shunt", "name" : "RS1", "reverse_auto_connection" : true }, )"
 	R"({ "type" : "track_seg", "name" : "BTS0", "length" : 50000, "track_circuit" : "BT0", "berth" : true }, )"
 	R"({ "type" : "track_seg", "name" : "BTS1", "length" : 50000, "track_circuit" : "BT1", "berth" : true }, )"
-	R"({ "type" : "shunt", "name" : "S2", "overlapend" : true }, )"
+	R"({ "type" : "shunt", "name" : "S2", "overlap_end" : true }, )"
 	R"({ "type" : "track_seg", "name" : "TS3", "length" : 50000, "track_circuit" : "T3", "berth" : true }, )"
 	R"({ "type" : "end_of_line", "name" : "B", "end" : { "allow" : "shunt" } } )"
 "] }";
@@ -694,7 +694,7 @@ TEST_CASE( "track_circuit/updates", "Test basic track circuit updates" ) {
 }
 
 TEST_CASE( "track_circuit/deserialisation/gamestate/basicload", "Test basic gamestate loading, including track circuit/trigger creation check" ) {
-	test_fixture_world env1(R"({ "gamestate" : [ )"
+	test_fixture_world env1(R"({ "game_state" : [ )"
 		R"({ "type" : "track_circuit", "name" : "T1" } )"
 	"] }");
 	INFO("Error Collection: " << env1.ec);
@@ -703,11 +703,11 @@ TEST_CASE( "track_circuit/deserialisation/gamestate/basicload", "Test basic game
 	INFO("Error Collection: " << env1.ec);
 	CHECK(env1.ec.GetErrorCount() == 1);
 
-	test_fixture_world env2(R"({ "gamestate" : [ )"
-		R"({ "type" : "tracktraincounterblock", "name" : "T1", "forceoccupied" : true } )"
+	test_fixture_world env2(R"({ "game_state" : [ )"
+		R"({ "type" : "track_train_counter_block", "name" : "T1", "force_occupied" : true } )"
 	"],"
 	R"("content" : [ )"
-		R"({ "type" : "tracktraincounterblock", "name" : "T1" } )"
+		R"({ "type" : "track_train_counter_block", "name" : "T1" } )"
 	"] }");
 	INFO("Error Collection: " << env2.ec);
 	CHECK(env2.ec.GetErrorCount() == 0);
