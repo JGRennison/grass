@@ -33,22 +33,22 @@ R"({ "content" : [ )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
 	R"({ "type" : "route_signal", "name" : "S1", "routeshuntsignal" : true }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
-	R"({ "type" : "routing_marker", "overlap_end" : true, "connect" : { "from_direction" : "back", "to" : "DS1", "to_direction" : "leftfront" } }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true, "connect" : { "from_direction" : "back", "to" : "DS1", "to_direction" : "left_front" } }, )"
 	R"({ "type" : "double_slip", "name" : "DS1", "no_track_fl_bl" : true }, )"
 	R"({ "type" : "start_of_line", "name" : "C" }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
-	R"({ "type" : "route_signal", "name" : "S3", "shunt_signal" : true, "connect" : { "from_direction" : "back", "to" : "DS1", "to_direction" : "leftback" } }, )"
+	R"({ "type" : "route_signal", "name" : "S3", "shunt_signal" : true, "connect" : { "from_direction" : "back", "to" : "DS1", "to_direction" : "left_back" } }, )"
 	R"({ "type" : "start_of_line", "name" : "D" }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
 	R"({ "type" : "route_signal", "name" : "S6", "routeshuntsignal" : true }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
-	R"({ "type" : "routing_marker", "overlap_end" : true, "through_rev" : { "deny" : "route" }, "connect" : { "from_direction" : "back", "to" : "DS1", "to_direction" : "rightback" } }, )"
+	R"({ "type" : "routing_marker", "overlap_end" : true, "through_rev" : { "deny" : "route" }, "connect" : { "from_direction" : "back", "to" : "DS1", "to_direction" : "right_back" } }, )"
 	R"({ "type" : "start_of_line", "name" : "B" }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
 	R"({ "type" : "route_signal", "name" : "S2", "routeshuntsignal" : true, "route_restrictions" : [ { "targets" : "C", "deny" : "route" } ] }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
 	R"({ "type" : "routing_marker", "overlap_end" : true }, )"
-	R"({ "type" : "points", "name" : "P1", "connect" : { "from_direction" : "reverse", "to" : "DS1", "to_direction" : "rightfront" } }, )"
+	R"({ "type" : "points", "name" : "P1", "connect" : { "from_direction" : "reverse", "to" : "DS1", "to_direction" : "right_front" } }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
 	R"({ "type" : "routing_marker", "overlap_end_rev" : true, "through" : { "deny" : "all" } }, )"
 	R"({ "type" : "track_seg", "length" : 50000 }, )"
@@ -72,38 +72,38 @@ TEST_CASE( "signal/deserialisation/general", "Test basic signal and routing dese
 
 	start_of_line *a = dynamic_cast<start_of_line *>(env.w->FindTrackByName("A"));
 	REQUIRE(a != nullptr);
-	CHECK(a->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(0, 0, route_class::AllNonOverlaps()));
-	CHECK(a->GetAvailableRouteTypes(EDGE_BACK) == RPRT());
-	CHECK(a->GetSetRouteTypes(EDGE_FRONT) == RPRT());
-	CHECK(a->GetSetRouteTypes(EDGE_BACK) == RPRT());
+	CHECK(a->GetAvailableRouteTypes(EDGE::FRONT) == RPRT(0, 0, route_class::AllNonOverlaps()));
+	CHECK(a->GetAvailableRouteTypes(EDGE::BACK) == RPRT());
+	CHECK(a->GetSetRouteTypes(EDGE::FRONT) == RPRT());
+	CHECK(a->GetSetRouteTypes(EDGE::BACK) == RPRT());
 
 	route_signal *s1 = dynamic_cast<route_signal *>(env.w->FindTrackByName("S1"));
 	REQUIRE(s1 != nullptr);
-	CHECK(s1->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(shuntset | route_set | route_class::AllOverlaps(), 0, shuntset | route_set));
-	CHECK(s1->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::AllNonOverlaps(), 0));
-	CHECK(s1->GetSetRouteTypes(EDGE_FRONT) == RPRT());
-	CHECK(s1->GetSetRouteTypes(EDGE_BACK) == RPRT());
+	CHECK(s1->GetAvailableRouteTypes(EDGE::FRONT) == RPRT(shuntset | route_set | route_class::AllOverlaps(), 0, shuntset | route_set));
+	CHECK(s1->GetAvailableRouteTypes(EDGE::BACK) == RPRT(0, route_class::AllNonOverlaps(), 0));
+	CHECK(s1->GetSetRouteTypes(EDGE::FRONT) == RPRT());
+	CHECK(s1->GetSetRouteTypes(EDGE::BACK) == RPRT());
 
 	routing_marker *rm = dynamic_cast<routing_marker *>(env.w->FindTrackByName("#4"));
 	REQUIRE(rm != nullptr);
-	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(0, route_class::All(), overlapset));
-	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All(), 0));
-	CHECK(rm->GetSetRouteTypes(EDGE_FRONT) == RPRT());
-	CHECK(rm->GetSetRouteTypes(EDGE_BACK) == RPRT());
+	CHECK(rm->GetAvailableRouteTypes(EDGE::FRONT) == RPRT(0, route_class::All(), overlapset));
+	CHECK(rm->GetAvailableRouteTypes(EDGE::BACK) == RPRT(0, route_class::All(), 0));
+	CHECK(rm->GetSetRouteTypes(EDGE::FRONT) == RPRT());
+	CHECK(rm->GetSetRouteTypes(EDGE::BACK) == RPRT());
 
 	route_signal *s3 = dynamic_cast<route_signal *>(env.w->FindTrackByName("S3"));
 	REQUIRE(s3 != nullptr);
-	CHECK(s3->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(shuntset | route_class::AllOverlaps(), 0, shuntset));
-	CHECK(s3->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::AllNonOverlaps(), 0));
-	CHECK(s3->GetSetRouteTypes(EDGE_FRONT) == RPRT());
-	CHECK(s3->GetSetRouteTypes(EDGE_BACK) == RPRT());
+	CHECK(s3->GetAvailableRouteTypes(EDGE::FRONT) == RPRT(shuntset | route_class::AllOverlaps(), 0, shuntset));
+	CHECK(s3->GetAvailableRouteTypes(EDGE::BACK) == RPRT(0, route_class::AllNonOverlaps(), 0));
+	CHECK(s3->GetSetRouteTypes(EDGE::FRONT) == RPRT());
+	CHECK(s3->GetSetRouteTypes(EDGE::BACK) == RPRT());
 
 	routing_marker *rm2 = dynamic_cast<routing_marker *>(env.w->FindTrackByName("#13"));
 	REQUIRE(rm2 != nullptr);
-	CHECK(rm2->GetAvailableRouteTypes(EDGE_FRONT) == RPRT(0, route_class::All(), overlapset));
-	CHECK(rm2->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All() & ~route_set, 0));
-	CHECK(rm2->GetSetRouteTypes(EDGE_FRONT) == RPRT());
-	CHECK(rm2->GetSetRouteTypes(EDGE_BACK) == RPRT());
+	CHECK(rm2->GetAvailableRouteTypes(EDGE::FRONT) == RPRT(0, route_class::All(), overlapset));
+	CHECK(rm2->GetAvailableRouteTypes(EDGE::BACK) == RPRT(0, route_class::All() & ~route_set, 0));
+	CHECK(rm2->GetSetRouteTypes(EDGE::FRONT) == RPRT());
+	CHECK(rm2->GetSetRouteTypes(EDGE::BACK) == RPRT());
 
 	route_signal *s2 = dynamic_cast<route_signal *>(env.w->FindTrackByName("S2"));
 	REQUIRE(s2 != nullptr);
@@ -159,7 +159,7 @@ TEST_CASE( "signal/routing/general", "Test basic signal and routing connectivity
 	auto s5check = [&](unsigned int index, route_class::ID type) {
 		REQUIRE(s5->GetRouteByIndex(index) != nullptr);
 		CHECK(s5->GetRouteByIndex(index)->type == type);
-		CHECK(s5->GetRouteByIndex(index)->end == vartrack_target_ptr<routing_point>(s4, EDGE_FRONT));
+		CHECK(s5->GetRouteByIndex(index)->end == vartrack_target_ptr<routing_point>(s4, EDGE::FRONT));
 		CHECK(s5->GetRouteByIndex(index)->pieces.size() == 1);
 	};
 	s5check(0, route_class::RTC_ROUTE);

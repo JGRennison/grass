@@ -101,8 +101,8 @@ class routing_point : public generic_zlen_track {
 	virtual ASPECT_FLAGS GetAspectFlags() const { return ASPECT_FLAGS::ZERO; }
 	virtual void UpdateRoutingPoint() { }
 
-	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const = 0;
-	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const = 0;
+	virtual RPRT GetAvailableRouteTypes(EDGE direction) const = 0;
+	virtual RPRT GetSetRouteTypes(EDGE direction) const = 0;
 
 	virtual route *GetRouteByIndex(unsigned int index) = 0;
 	const route *FindBestOverlap(route_class::set types = route_class::AllOverlaps()) const;
@@ -114,8 +114,8 @@ class routing_point : public generic_zlen_track {
 		ZERO            = 0,
 		GET_NON_EMPTY   = 1<<0,
 	};
-	virtual track_berth *GetPriorBerth(EDGETYPE direction, GPBF flags) { return nullptr; }
-	inline const track_berth *GetPriorBerth(EDGETYPE direction, GPBF flags) const {
+	virtual track_berth *GetPriorBerth(EDGE direction, GPBF flags) { return nullptr; }
+	inline const track_berth *GetPriorBerth(EDGE direction, GPBF flags) const {
 		return const_cast<routing_point*>(this)->GetPriorBerth(direction, flags);
 	}
 
@@ -152,20 +152,20 @@ class track_routing_point : public routing_point {
 
 	public:
 	track_routing_point(world &w_) : routing_point(w_) { }
-	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual const edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
-	virtual const edge_track_target GetConnectingPiece(EDGETYPE direction) override;
-	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
-	virtual const edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override;
-	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
-	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
-	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
+	virtual bool IsEdgeValid(EDGE edge) const override;
+	virtual const edge_track_target GetEdgeConnectingPiece(EDGE edgeid) override;
+	virtual const edge_track_target GetConnectingPiece(EDGE direction) override;
+	virtual unsigned int GetMaxConnectingPieces(EDGE direction) const override;
+	virtual const edge_track_target GetConnectingPieceByIndex(EDGE direction, unsigned int index) override;
+	virtual EDGE GetReverseDirection(EDGE direction) const override;
+	virtual EDGE GetDefaultValidDirecton() const override { return EDGE::FRONT; }
+	virtual RPRT GetAvailableRouteTypes(EDGE direction) const override;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
+	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
 };
 
@@ -209,15 +209,15 @@ class generic_signal : public track_routing_point {
 
 	virtual GSF GetSignalFlags() const;
 	virtual GSF SetSignalFlagsMasked(GSF set_flags, GSF mask_flags);
-	virtual GTF GetFlags(EDGETYPE direction) const override;
+	virtual GTF GetFlags(EDGE direction) const override;
 
-	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
+	virtual RPRT GetSetRouteTypes(EDGE direction) const override;
 
 	virtual const route *GetCurrentForwardRoute() const;                                            //this will not return the overlap, only the "real" route
 	virtual const route *GetCurrentForwardOverlap() const;                                          //this will only return the overlap, not the "real" route
 	virtual void EnumerateCurrentBackwardsRoutes(std::function<void (const route *)> func) const;   //this will return all routes which currently terminate here
 	virtual bool RepeaterAspectMeaningfulForRouteType(route_class::ID type) const;
-	virtual track_berth *GetPriorBerth(EDGETYPE direction, GPBF flags) override;
+	virtual track_berth *GetPriorBerth(EDGE direction, GPBF flags) override;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
@@ -241,7 +241,7 @@ class generic_signal : public track_routing_point {
 	protected:
 	bool PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions,
 			std::function<route*(route_class::ID type, const track_target_ptr &piece)> make_blank_route);
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
+	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
 };
 
 class std_signal : public generic_signal {
@@ -317,21 +317,21 @@ class start_of_line : public routing_point {
 
 	public:
 	start_of_line(world &w_) : routing_point(w_) { available_route_types.end |= route_class::AllNonOverlaps(); }
-	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual const edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
-	virtual const edge_track_target GetConnectingPiece(EDGETYPE direction) override;
-	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
-	virtual const edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override;
-	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
-	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
-	virtual GTF GetFlags(EDGETYPE direction) const override;
+	virtual bool IsEdgeValid(EDGE edge) const override;
+	virtual const edge_track_target GetEdgeConnectingPiece(EDGE edgeid) override;
+	virtual const edge_track_target GetConnectingPiece(EDGE direction) override;
+	virtual unsigned int GetMaxConnectingPieces(EDGE direction) const override;
+	virtual const edge_track_target GetConnectingPieceByIndex(EDGE direction, unsigned int index) override;
+	virtual EDGE GetReverseDirection(EDGE direction) const override;
+	virtual EDGE GetDefaultValidDirecton() const override { return EDGE::FRONT; }
+	virtual GTF GetFlags(EDGE direction) const override;
 
-	virtual void TrainEnter(EDGETYPE direction, train *t) override { }
-	virtual void TrainLeave(EDGETYPE direction, train *t) override { }
+	virtual void TrainEnter(EDGE direction, train *t) override { }
+	virtual void TrainLeave(EDGE direction, train *t) override { }
 
-	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
-	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
+	virtual RPRT GetAvailableRouteTypes(EDGE direction) const override;
+	virtual RPRT GetSetRouteTypes(EDGE direction) const override;
+	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &output_list) override;
 
 	virtual route *GetRouteByIndex(unsigned int index) override { return nullptr; }
@@ -344,7 +344,7 @@ class start_of_line : public routing_point {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
 	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
+	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
 };
 
@@ -356,7 +356,7 @@ class end_of_line : public start_of_line {
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 
 	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
+	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
 };
 
 class routing_marker : public track_routing_point {
@@ -368,15 +368,15 @@ class routing_marker : public track_routing_point {
 		available_route_types_forward.through = route_class::All();
 		available_route_types_reverse.through = route_class::All();
 	}
-	virtual void TrainEnter(EDGETYPE direction, train *t) override { }
-	virtual void TrainLeave(EDGETYPE direction, train *t) override { }
-	virtual GTF GetFlags(EDGETYPE direction) const override;
+	virtual void TrainEnter(EDGE direction, train *t) override { }
+	virtual void TrainLeave(EDGE direction, train *t) override { }
+	virtual GTF GetFlags(EDGE direction) const override;
 
 	virtual route *GetRouteByIndex(unsigned int index) override { return nullptr; }
 
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
-	virtual RPRT GetAvailableRouteTypes(EDGETYPE direction) const override;
-	virtual RPRT GetSetRouteTypes(EDGETYPE direction) const override;
+	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
+	virtual RPRT GetAvailableRouteTypes(EDGE direction) const override;
+	virtual RPRT GetSetRouteTypes(EDGE direction) const override;
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &output_list) override;
 
 	virtual std::string GetTypeName() const override { return "Routing Marker"; }
@@ -387,7 +387,7 @@ class routing_marker : public track_routing_point {
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 };
 
-inline const generic_signal* FastSignalCast(const generic_track *gt, EDGETYPE direction) {
+inline const generic_signal* FastSignalCast(const generic_track *gt, EDGE direction) {
 	if (gt && gt->GetFlags(direction) & GTF::SIGNAL) {
 		return static_cast<const generic_signal*>(gt);
 	}
@@ -399,7 +399,7 @@ inline const generic_signal* FastSignalCast(const generic_track *gt) {
 	}
 	return nullptr;
 }
-inline const routing_point* FastRoutingpointCast(const generic_track *gt, EDGETYPE direction) {
+inline const routing_point* FastRoutingpointCast(const generic_track *gt, EDGE direction) {
 	if (gt && gt->GetFlags(direction) & GTF::ROUTING_POINT) {
 		return static_cast<const routing_point*>(gt);
 	}
@@ -412,13 +412,13 @@ inline const routing_point* FastRoutingpointCast(const generic_track *gt) {
 	return nullptr;
 }
 
-inline generic_signal* FastSignalCast(generic_track *gt, EDGETYPE direction) {
+inline generic_signal* FastSignalCast(generic_track *gt, EDGE direction) {
 	return const_cast<generic_signal*>(FastSignalCast(const_cast<const generic_track*>(gt), direction));
 }
 inline generic_signal* FastSignalCast(generic_track *gt) {
 	return const_cast<generic_signal*>(FastSignalCast(const_cast<const generic_track*>(gt)));
 }
-inline routing_point* FastRoutingpointCast(generic_track *gt, EDGETYPE direction) {
+inline routing_point* FastRoutingpointCast(generic_track *gt, EDGE direction) {
 	return const_cast<routing_point*>(FastRoutingpointCast(const_cast<const generic_track*>(gt), direction));
 }
 inline routing_point* FastRoutingpointCast(generic_track *gt) {

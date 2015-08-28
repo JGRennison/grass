@@ -130,7 +130,7 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 
 	lookahead l;
 	std::map<unsigned int, unsigned int> map;
-	track_location pos(ts1, EDGE_FRONT, 100000);
+	track_location pos(ts1, EDGE::FRONT, 100000);
 	const route *s1rt = s1->GetCurrentForwardRoute();
 	CHECK(s1->GetAspect() > 0);
 	CHECK(s1rt != nullptr);
@@ -140,7 +140,7 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	FinaliseLookaheadCheck(pos, map);
 
 	l.Advance(300000);
-	pos = track_location(ts1, EDGE_FRONT, 400000);
+	pos = track_location(ts1, EDGE::FRONT, 400000);
 	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 100000, 200);
 	CheckLookaheadResult(pos, map, 600000, 0);
@@ -158,7 +158,7 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	CHECK(s3->GetCurrentForwardRoute() != 0);
 	env.w->SubmitAction(action_unreserve_track_route(*(env.w), *s3->GetCurrentForwardRoute()));
 	env.w->GameStep(1);
-	CheckLookahead(nullptr, l, pos, map, lookahead::LA_ERROR::SIG_ASPECT_LESS_THAN_EXPECTED, track_target_ptr(s2, EDGE_FRONT));
+	CheckLookahead(nullptr, l, pos, map, lookahead::LA_ERROR::SIG_ASPECT_LESS_THAN_EXPECTED, track_target_ptr(s2, EDGE::FRONT));
 	CheckLookaheadResult(pos, map, 100000, 200);
 	CheckLookaheadResult(pos, map, 600000, 0);
 	FinaliseLookaheadCheck(pos, map);
@@ -167,7 +167,7 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	env.w->GameStep(1);
 
 	l.Advance(500000);
-	pos = track_location(ts2, EDGE_FRONT, 400000);
+	pos = track_location(ts2, EDGE::FRONT, 400000);
 	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 0, 200);
 	CheckLookaheadResult(pos, map, 1000000, 0);
@@ -183,7 +183,7 @@ TEST_CASE( "lookahead/routed", "Test routed track lookahead" ) {
 	env.w->GameStep(1);
 	CHECK(env.w->GetLogText() == "");
 
-	CheckLookahead(nullptr, l, pos, map, lookahead::LA_ERROR::SIG_TARGET_CHANGE, track_target_ptr(s3, EDGE_FRONT));
+	CheckLookahead(nullptr, l, pos, map, lookahead::LA_ERROR::SIG_TARGET_CHANGE, track_target_ptr(s3, EDGE::FRONT));
 	CheckLookaheadResult(pos, map, 0, 200);
 	CheckLookaheadResult(pos, map, 600000, 100);
 	CheckLookaheadResult(pos, map, 1100000, 0);
@@ -211,14 +211,14 @@ TEST_CASE( "lookahead/unrouted", "Test unrouted track lookahead" ) {
 
 	lookahead l;
 	std::map<unsigned int, unsigned int> map;
-	track_location pos(ts3, EDGE_FRONT, 100000);
+	track_location pos(ts3, EDGE::FRONT, 100000);
 	l.Init(nullptr, pos, 0);
 	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 400000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
 	l.Advance(350000);
-	pos = track_location(ts3, EDGE_FRONT, 450000);
+	pos = track_location(ts3, EDGE::FRONT, 450000);
 	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 50000, 100);
 	CheckLookaheadResult(pos, map, 550000, 0);
@@ -241,15 +241,15 @@ TEST_CASE( "lookahead/unrouted", "Test unrouted track lookahead" ) {
 	FinaliseLookaheadCheck(pos, map);
 
 	l.Advance(350000);
-	pos = track_location(ts4, EDGE_FRONT, 300000);
+	pos = track_location(ts4, EDGE::FRONT, 300000);
 	CheckLookahead(nullptr, l, pos, map);
 	CheckLookaheadResult(pos, map, 0, 100);
 	CheckLookaheadResult(pos, map, 200000, 0);
 	FinaliseLookaheadCheck(pos, map);
 
 	l.Advance(200000);
-	pos = track_location(s4, EDGE_FRONT, 0);
-	CheckLookahead(nullptr, l, pos, map, lookahead::LA_ERROR::WAITING_AT_RED_SIG, track_target_ptr(s4, EDGE_FRONT));
+	pos = track_location(s4, EDGE::FRONT, 0);
+	CheckLookahead(nullptr, l, pos, map, lookahead::LA_ERROR::WAITING_AT_RED_SIG, track_target_ptr(s4, EDGE::FRONT));
 	CheckLookaheadResult(pos, map, 0, 0);
 	FinaliseLookaheadCheck(pos, map);
 
@@ -297,23 +297,23 @@ TEST_CASE( "lookahead/tractiontype", "Test traction types lookahead" ) {
 	};
 
 	INFO("Check 1");
-	checklookahead(track_location(ts1, EDGE_FRONT, 0), true, 0);
+	checklookahead(track_location(ts1, EDGE::FRONT, 0), true, 0);
 
 	traction_set trs1;
 	trs1.AddTractionType(ac);
 	t->SetActiveTractionSet(trs1);
 	INFO("Check 2");
-	checklookahead(track_location(ts1, EDGE_FRONT, 0), false, 500000);
+	checklookahead(track_location(ts1, EDGE::FRONT, 0), false, 500000);
 	INFO("Check 3");
-	checklookahead(track_location(s1, EDGE_FRONT, 0), true, 0);
+	checklookahead(track_location(s1, EDGE::FRONT, 0), true, 0);
 
 	traction_set trs2;
 	trs2.AddTractionType(diesel);
 	t->SetActiveTractionSet(trs2);
 	INFO("Check 4");
-	checklookahead(track_location(ts1, EDGE_FRONT, 0), false, 1500000);
+	checklookahead(track_location(ts1, EDGE::FRONT, 0), false, 1500000);
 	INFO("Check 5");
-	checklookahead(track_location(s1, EDGE_FRONT, 0), false, 1500000);
+	checklookahead(track_location(s1, EDGE::FRONT, 0), false, 1500000);
 }
 
 TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserialisation" ) {
@@ -385,7 +385,7 @@ TEST_CASE( "lookahead/serialisation", "Test lookahead serialisation and deserial
 		compare_lookaheads(l1, l2, pos);
 	};
 
-	track_location pos(a, EDGE_FRONT, 0);
+	track_location pos(a, EDGE::FRONT, 0);
 	lookahead l1;
 	lookahead l2;
 	l1.Init(nullptr, pos, 0);

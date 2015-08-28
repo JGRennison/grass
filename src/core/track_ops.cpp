@@ -174,7 +174,7 @@ bool action_points_action::TrySwingOverlap(std::function<void()> &overlap_callba
 
 	const route *foundoverlap = nullptr;
 	bool failed = false;
-	target->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+	target->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
 		if (!route_class::IsOverlap(reserved_route->type)) {
 			failed = true;
 			return;
@@ -398,7 +398,7 @@ bool action_reserve_track_base::TryReserveRoute(const route *rt, world_time acti
 	bool found_route = false;
 	bool route_conflict = false;
 	rt->start.track->ReservationEnumerationInDirection(rt->start.direction,
-			[&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+			[&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
 		if (route_class::IsOverlap(reserved_route->type)) {
 			return;
 		}

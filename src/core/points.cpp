@@ -28,10 +28,10 @@
 
 class train;
 
-void generic_points::TrainEnter(EDGETYPE direction, train *t) { }
-void generic_points::TrainLeave(EDGETYPE direction, train *t) { }
+void generic_points::TrainEnter(EDGE direction, train *t) { }
+void generic_points::TrainLeave(EDGE direction, train *t) { }
 
-GTF generic_points::GetFlags(EDGETYPE direction) const {
+GTF generic_points::GetFlags(EDGE direction) const {
 	return GTF::ROUTE_FORK | trs.GetGTReservationFlags(direction);
 }
 
@@ -83,7 +83,7 @@ bool generic_points::ShouldAutoNormalise(unsigned int index, generic_points::PTF
 	return (new_flags & PTF::REV);
 }
 
-void generic_points::CommonReservationAction(unsigned int points_index, EDGETYPE direction, unsigned int index,
+void generic_points::CommonReservationAction(unsigned int points_index, EDGE direction, unsigned int index,
 		RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) {
 	PTF pflags = GetPointsFlags(points_index);
 	if (pflags & PTF::AUTO_NORMALISE && rr_flags & RRF::UNRESERVE && trs.GetReservationCount() == 1 && !IsFlagsImmovable(pflags)) {
@@ -91,7 +91,7 @@ void generic_points::CommonReservationAction(unsigned int points_index, EDGETYPE
 	}
 }
 
-generic_track::edge_track_target points::GetConnectingPiece(EDGETYPE direction) {
+generic_track::edge_track_target points::GetConnectingPiece(EDGE direction) {
 	if (IsOOC(0)) {
 		return empty_track_target;
 	}
@@ -99,13 +99,13 @@ generic_track::edge_track_target points::GetConnectingPiece(EDGETYPE direction) 
 	bool pointsrev = pflags & PTF::REV;
 
 	switch (direction) {
-		case EDGE_PTS_FACE:
+		case EDGE::PTS_FACE:
 			return pointsrev ? reverse : normal;
 
-		case EDGE_PTS_NORMAL:
+		case EDGE::PTS_NORMAL:
 			return pointsrev ? empty_track_target : prev;
 
-		case EDGE_PTS_REVERSE:
+		case EDGE::PTS_REVERSE:
 			return pointsrev ? prev : empty_track_target;
 
 		default:
@@ -114,15 +114,15 @@ generic_track::edge_track_target points::GetConnectingPiece(EDGETYPE direction) 
 	}
 }
 
-unsigned int points::GetMaxConnectingPieces(EDGETYPE direction) const {
+unsigned int points::GetMaxConnectingPieces(EDGE direction) const {
 	switch (direction) {
-		case EDGE_PTS_FACE:
+		case EDGE::PTS_FACE:
 			return 2;
 
-		case EDGE_PTS_NORMAL:
+		case EDGE::PTS_NORMAL:
 			return 1;
 
-		case EDGE_PTS_REVERSE:
+		case EDGE::PTS_REVERSE:
 			return 1;
 
 		default:
@@ -131,15 +131,15 @@ unsigned int points::GetMaxConnectingPieces(EDGETYPE direction) const {
 	}
 }
 
-generic_track::edge_track_target points::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
+generic_track::edge_track_target points::GetConnectingPieceByIndex(EDGE direction, unsigned int index) {
 	switch (direction) {
-		case EDGE_PTS_FACE:
+		case EDGE::PTS_FACE:
 			return index == 1 ? reverse : normal;
 
-		case EDGE_PTS_NORMAL:
+		case EDGE::PTS_NORMAL:
 			return prev;
 
-		case EDGE_PTS_REVERSE:
+		case EDGE::PTS_REVERSE:
 			return prev;
 
 		default:
@@ -148,46 +148,46 @@ generic_track::edge_track_target points::GetConnectingPieceByIndex(EDGETYPE dire
 	}
 }
 
-unsigned int points::GetCurrentNominalConnectionIndex(EDGETYPE direction) const {
-	if (direction == EDGE_PTS_FACE && pflags & PTF::REV) {
+unsigned int points::GetCurrentNominalConnectionIndex(EDGE direction) const {
+	if (direction == EDGE::PTS_FACE && pflags & PTF::REV) {
 		return 1;
 	} else {
 		return 0;
 	}
 }
 
-EDGETYPE points::GetReverseDirection(EDGETYPE direction) const {
+EDGE points::GetReverseDirection(EDGE direction) const {
 	if (IsOOC(0)) {
-		return EDGE_NULL;
+		return EDGE::INVALID;
 	}
 
 	bool pointsrev = pflags & PTF::REV;
 
 	switch (direction) {
-		case EDGE_PTS_FACE:
-			return pointsrev ? EDGE_PTS_REVERSE : EDGE_PTS_NORMAL;
+		case EDGE::PTS_FACE:
+			return pointsrev ? EDGE::PTS_REVERSE : EDGE::PTS_NORMAL;
 
-		case EDGE_PTS_NORMAL:
-			return pointsrev ? EDGE_NULL : EDGE_PTS_FACE;
+		case EDGE::PTS_NORMAL:
+			return pointsrev ? EDGE::INVALID : EDGE::PTS_FACE;
 
-		case EDGE_PTS_REVERSE:
-			return pointsrev ? EDGE_PTS_FACE : EDGE_NULL;
+		case EDGE::PTS_REVERSE:
+			return pointsrev ? EDGE::PTS_FACE : EDGE::INVALID;
 
 		default:
 			assert(false);
-			return EDGE_NULL;
+			return EDGE::INVALID;
 	}
 }
 
-generic_track::edge_track_target points::GetEdgeConnectingPiece(EDGETYPE edgeid) {
+generic_track::edge_track_target points::GetEdgeConnectingPiece(EDGE edgeid) {
 	switch (edgeid) {
-		case EDGE_PTS_FACE:
+		case EDGE::PTS_FACE:
 			return prev;
 
-		case EDGE_PTS_NORMAL:
+		case EDGE::PTS_NORMAL:
 			return normal;
 
-		case EDGE_PTS_REVERSE:
+		case EDGE::PTS_REVERSE:
 			return reverse;
 
 		default:
@@ -196,11 +196,11 @@ generic_track::edge_track_target points::GetEdgeConnectingPiece(EDGETYPE edgeid)
 	}
 }
 
-bool points::IsEdgeValid(EDGETYPE edge) const {
+bool points::IsEdgeValid(EDGE edge) const {
 	switch (edge) {
-		case EDGE_PTS_FACE:
-		case EDGE_PTS_NORMAL:
-		case EDGE_PTS_REVERSE:
+		case EDGE::PTS_FACE:
+		case EDGE::PTS_NORMAL:
+		case EDGE::PTS_REVERSE:
 			return true;
 
 		default:
@@ -223,15 +223,15 @@ void GetReservationFailureReason(generic_points::PTF pflags, std::string *fail_r
 	}
 }
 
-bool IsPointsRoutingDirAndIndexRev(EDGETYPE direction, unsigned int index) {
+bool IsPointsRoutingDirAndIndexRev(EDGE direction, unsigned int index) {
 	switch (direction) {
-		case EDGE_PTS_FACE:
+		case EDGE::PTS_FACE:
 			return (index == 1);
 
-		case EDGE_PTS_NORMAL:
+		case EDGE::PTS_NORMAL:
 			return false;
 
-		case EDGE_PTS_REVERSE:
+		case EDGE::PTS_REVERSE:
 			return true;
 
 		default:
@@ -239,7 +239,7 @@ bool IsPointsRoutingDirAndIndexRev(EDGETYPE direction, unsigned int index) {
 	}
 }
 
-bool points::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+bool points::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	PTF pflags = GetPointsFlags(0);
 	bool rev = pflags & PTF::REV;
 	if (IsFlagsImmovable(pflags)) {
@@ -251,7 +251,7 @@ bool points::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, 
 	return trs.Reservation(direction, index, rr_flags, res_route, fail_reason_key);
 }
 
-void points::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route,
+void points::ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route,
 		std::function<void(action &&reservation_act)> submit_action) {
 	if (rr_flags & RRF::RESERVE) {
 		bool rev = pflags & PTF::REV;
@@ -264,26 +264,26 @@ void points::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_
 	CommonReservationAction(0, direction, index, rr_flags, res_route, submit_action);
 }
 
-EDGETYPE points::GetAvailableAutoConnectionDirection(bool forward_connection) const {
+EDGE points::GetAvailableAutoConnectionDirection(bool forward_connection) const {
 	if (forward_connection && !normal.IsValid()) {
-		return EDGE_PTS_NORMAL;
+		return EDGE::PTS_NORMAL;
 	}
 	if (!forward_connection && !prev.IsValid()) {
-		return EDGE_PTS_FACE;
+		return EDGE::PTS_FACE;
 	}
-	return EDGE_NULL;
+	return EDGE::INVALID;
 }
 
 void points::GetListOfEdges(std::vector<edgelistitem> &output_list) const {
-	output_list.insert(output_list.end(), { edgelistitem(EDGE_PTS_FACE, prev), edgelistitem(EDGE_PTS_NORMAL, normal), edgelistitem(EDGE_PTS_REVERSE, reverse) });
+	output_list.insert(output_list.end(), { edgelistitem(EDGE::PTS_FACE, prev), edgelistitem(EDGE::PTS_NORMAL, normal), edgelistitem(EDGE::PTS_REVERSE, reverse) });
 }
 
-bool points::IsCoupleable(EDGETYPE direction) const {
-	return (direction == EDGE_PTS_NORMAL || direction == EDGE_PTS_REVERSE) && !(pflags & PTF::COUPLED);
+bool points::IsCoupleable(EDGE direction) const {
+	return (direction == EDGE::PTS_NORMAL || direction == EDGE::PTS_REVERSE) && !(pflags & PTF::COUPLED);
 }
 
-void points::GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<points_coupling> &output) {
-	output.emplace_back(&pflags, (direction == EDGE_PTS_REVERSE)?PTF::REV:PTF::ZERO, this, 0);
+void points::GetCouplingPointsFlagsByEdge(EDGE direction, std::vector<points_coupling> &output) {
+	output.emplace_back(&pflags, (direction == EDGE::PTS_REVERSE)?PTF::REV:PTF::ZERO, this, 0);
 }
 
 void points::CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) {
@@ -291,12 +291,12 @@ void points::CouplePointsFlagsAtIndexTo(unsigned int index, const points_couplin
 }
 
 void points::InitSightingDistances() {
-	sighting_distances.emplace_back(EDGE_PTS_FACE, SIGHTING_DISTANCE_POINTS);
-	sighting_distances.emplace_back(EDGE_PTS_NORMAL, SIGHTING_DISTANCE_POINTS);
-	sighting_distances.emplace_back(EDGE_PTS_REVERSE, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE::PTS_FACE, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE::PTS_NORMAL, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE::PTS_REVERSE, SIGHTING_DISTANCE_POINTS);
 }
 
-generic_track::edge_track_target catchpoints::GetConnectingPiece(EDGETYPE direction) {
+generic_track::edge_track_target catchpoints::GetConnectingPiece(EDGE direction) {
 	if (IsOOC(0)) {
 		return empty_track_target;
 	}
@@ -305,10 +305,10 @@ generic_track::edge_track_target catchpoints::GetConnectingPiece(EDGETYPE direct
 	}
 
 	switch (direction) {
-		case EDGE_FRONT:
+		case EDGE::FRONT:
 			return next;
 
-		case EDGE_BACK:
+		case EDGE::BACK:
 			return prev;
 
 		default:
@@ -317,12 +317,12 @@ generic_track::edge_track_target catchpoints::GetConnectingPiece(EDGETYPE direct
 	}
 }
 
-unsigned int catchpoints::GetMaxConnectingPieces(EDGETYPE direction) const {
+unsigned int catchpoints::GetMaxConnectingPieces(EDGE direction) const {
 	switch (direction) {
-		case EDGE_FRONT:
+		case EDGE::FRONT:
 			return 1;
 
-		case EDGE_BACK:
+		case EDGE::BACK:
 			return 1;
 
 		default:
@@ -331,12 +331,12 @@ unsigned int catchpoints::GetMaxConnectingPieces(EDGETYPE direction) const {
 	}
 }
 
-generic_track::edge_track_target catchpoints::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
+generic_track::edge_track_target catchpoints::GetConnectingPieceByIndex(EDGE direction, unsigned int index) {
 	switch (direction) {
-		case EDGE_FRONT:
+		case EDGE::FRONT:
 			return next;
 
-		case EDGE_BACK:
+		case EDGE::BACK:
 			return prev;
 
 		default:
@@ -345,33 +345,33 @@ generic_track::edge_track_target catchpoints::GetConnectingPieceByIndex(EDGETYPE
 	}
 }
 
-EDGETYPE catchpoints::GetReverseDirection(EDGETYPE direction) const {
+EDGE catchpoints::GetReverseDirection(EDGE direction) const {
 	if (IsOOC(0)) {
-		return EDGE_NULL;
+		return EDGE::INVALID;
 	}
 	if (!(pflags & PTF::REV)) {
-		return EDGE_NULL;
+		return EDGE::INVALID;
 	}
 
 	switch (direction) {
-		case EDGE_FRONT:
-			return EDGE_BACK;
+		case EDGE::FRONT:
+			return EDGE::BACK;
 
-		case EDGE_BACK:
-			return EDGE_FRONT;
+		case EDGE::BACK:
+			return EDGE::FRONT;
 
 		default:
 			assert(false);
-			return EDGE_NULL;
+			return EDGE::INVALID;
 	}
 }
 
-generic_track::edge_track_target catchpoints::GetEdgeConnectingPiece(EDGETYPE edgeid) {
+generic_track::edge_track_target catchpoints::GetEdgeConnectingPiece(EDGE edgeid) {
 	switch (edgeid) {
-		case EDGE_FRONT:
+		case EDGE::FRONT:
 			return prev;
 
-		case EDGE_BACK:
+		case EDGE::BACK:
 			return next;
 
 		default:
@@ -380,10 +380,10 @@ generic_track::edge_track_target catchpoints::GetEdgeConnectingPiece(EDGETYPE ed
 	}
 }
 
-bool catchpoints::IsEdgeValid(EDGETYPE edge) const {
+bool catchpoints::IsEdgeValid(EDGE edge) const {
 	switch (edge) {
-		case EDGE_FRONT:
-		case EDGE_BACK:
+		case EDGE::FRONT:
+		case EDGE::BACK:
 			return true;
 
 		default:
@@ -398,7 +398,7 @@ const generic_points::PTF &catchpoints::GetPointsFlagsRef(unsigned int points_in
 	return pflags;
 }
 
-bool catchpoints::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+bool catchpoints::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	generic_points::PTF pflags = GetPointsFlags(0);
 	if (IsFlagsImmovable(pflags) && !(pflags & PTF::REV)) {
 		GetReservationFailureReason(pflags, fail_reason_key);
@@ -407,7 +407,7 @@ bool catchpoints::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_fl
 	return trs.Reservation(direction, index, rr_flags, res_route, fail_reason_key);
 }
 
-void catchpoints::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) {
+void catchpoints::ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) {
 	if (rr_flags & RRF::RESERVE && trs.GetReservationCount() == 0) {
 		submit_action(action_points_action(GetWorld(), *this, 0, PTF::REV, PTF::REV,
 				action_points_action::APAF::NO_OVERLAP_SWING | action_points_action::APAF::NO_POINTS_NORMALISE));
@@ -415,34 +415,34 @@ void catchpoints::ReservationActionsV(EDGETYPE direction, unsigned int index, RR
 	CommonReservationAction(0, direction, index, rr_flags, res_route, submit_action);
 }
 
-EDGETYPE catchpoints::GetAvailableAutoConnectionDirection(bool forward_connection) const {
+EDGE catchpoints::GetAvailableAutoConnectionDirection(bool forward_connection) const {
 	if (forward_connection && !next.IsValid()) {
-		return EDGE_BACK;
+		return EDGE::BACK;
 	}
 	if (!forward_connection && !prev.IsValid()) {
-		return EDGE_FRONT;
+		return EDGE::FRONT;
 	}
-	return EDGE_NULL;
+	return EDGE::INVALID;
 }
 
 void catchpoints::GetListOfEdges(std::vector<edgelistitem> &output_list) const {
-	output_list.insert(output_list.end(), { edgelistitem(EDGE_BACK, next), edgelistitem(EDGE_FRONT, prev) });
+	output_list.insert(output_list.end(), { edgelistitem(EDGE::BACK, next), edgelistitem(EDGE::FRONT, prev) });
 }
 
 void catchpoints::InitSightingDistances() {
-	sighting_distances.emplace_back(EDGE_BACK, SIGHTING_DISTANCE_POINTS);
-	sighting_distances.emplace_back(EDGE_FRONT, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE::BACK, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE::FRONT, SIGHTING_DISTANCE_POINTS);
 }
 
-generic_track::edge_track_target spring_points::GetConnectingPiece(EDGETYPE direction) {
+generic_track::edge_track_target spring_points::GetConnectingPiece(EDGE direction) {
 	switch (direction) {
-		case EDGE_PTS_FACE:
+		case EDGE::PTS_FACE:
 			return sendreverse ? reverse : normal;
 
-		case EDGE_PTS_NORMAL:
+		case EDGE::PTS_NORMAL:
 			return prev;
 
-		case EDGE_PTS_REVERSE:
+		case EDGE::PTS_REVERSE:
 			return prev;
 
 		default:
@@ -451,36 +451,36 @@ generic_track::edge_track_target spring_points::GetConnectingPiece(EDGETYPE dire
 	}
 }
 
-unsigned int spring_points::GetMaxConnectingPieces(EDGETYPE direction) const {
+unsigned int spring_points::GetMaxConnectingPieces(EDGE direction) const {
 	return 1;
 }
 
-EDGETYPE spring_points::GetReverseDirection(EDGETYPE direction) const {
+EDGE spring_points::GetReverseDirection(EDGE direction) const {
 	switch (direction) {
-		case EDGE_PTS_FACE:
-			return sendreverse ? EDGE_PTS_REVERSE : EDGE_PTS_NORMAL;
+		case EDGE::PTS_FACE:
+			return sendreverse ? EDGE::PTS_REVERSE : EDGE::PTS_NORMAL;
 
-		case EDGE_PTS_NORMAL:
-			return EDGE_PTS_FACE;
+		case EDGE::PTS_NORMAL:
+			return EDGE::PTS_FACE;
 
-		case EDGE_PTS_REVERSE:
-			return EDGE_PTS_FACE;
+		case EDGE::PTS_REVERSE:
+			return EDGE::PTS_FACE;
 
 		default:
 			assert(false);
-			return EDGE_NULL;
+			return EDGE::INVALID;
 	}
 }
 
-generic_track::edge_track_target spring_points::GetEdgeConnectingPiece(EDGETYPE edgeid) {
+generic_track::edge_track_target spring_points::GetEdgeConnectingPiece(EDGE edgeid) {
 	switch (edgeid) {
-		case EDGE_PTS_FACE:
+		case EDGE::PTS_FACE:
 			return prev;
 
-		case EDGE_PTS_NORMAL:
+		case EDGE::PTS_NORMAL:
 			return normal;
 
-		case EDGE_PTS_REVERSE:
+		case EDGE::PTS_REVERSE:
 			return reverse;
 
 		default:
@@ -489,11 +489,11 @@ generic_track::edge_track_target spring_points::GetEdgeConnectingPiece(EDGETYPE 
 	}
 }
 
-bool spring_points::IsEdgeValid(EDGETYPE edge) const {
+bool spring_points::IsEdgeValid(EDGE edge) const {
 	switch (edge) {
-		case EDGE_PTS_FACE:
-		case EDGE_PTS_NORMAL:
-		case EDGE_PTS_REVERSE:
+		case EDGE::PTS_FACE:
+		case EDGE::PTS_NORMAL:
+		case EDGE::PTS_REVERSE:
 			return true;
 
 		default:
@@ -501,50 +501,50 @@ bool spring_points::IsEdgeValid(EDGETYPE edge) const {
 	}
 }
 
-GTF spring_points::GetFlags(EDGETYPE direction) const {
+GTF spring_points::GetFlags(EDGE direction) const {
 	return GTF::ROUTE_FORK | trs.GetGTReservationFlags(direction);
 }
 
-bool spring_points::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+bool spring_points::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	return trs.Reservation(direction, index, rr_flags, res_route);
 }
 
-EDGETYPE spring_points::GetAvailableAutoConnectionDirection(bool forward_connection) const {
+EDGE spring_points::GetAvailableAutoConnectionDirection(bool forward_connection) const {
 	if (forward_connection && !normal.IsValid()) {
-		return EDGE_PTS_NORMAL;
+		return EDGE::PTS_NORMAL;
 	}
 	if (!forward_connection && !prev.IsValid()) {
-		return EDGE_PTS_FACE;
+		return EDGE::PTS_FACE;
 	}
-	return EDGE_NULL;
+	return EDGE::INVALID;
 }
 
 void spring_points::GetListOfEdges(std::vector<edgelistitem> &output_list) const {
-	output_list.insert(output_list.end(), { edgelistitem(EDGE_PTS_FACE, prev), edgelistitem(EDGE_PTS_NORMAL, normal), edgelistitem(EDGE_PTS_REVERSE, reverse) });
+	output_list.insert(output_list.end(), { edgelistitem(EDGE::PTS_FACE, prev), edgelistitem(EDGE::PTS_NORMAL, normal), edgelistitem(EDGE::PTS_REVERSE, reverse) });
 }
 
-generic_track::edge_track_target double_slip::GetConnectingPiece(EDGETYPE direction) {
-	EDGETYPE exitdirection = GetReverseDirection(direction);
+generic_track::edge_track_target double_slip::GetConnectingPiece(EDGE direction) {
+	EDGE exitdirection = GetReverseDirection(direction);
 
-	if (exitdirection != EDGE_NULL) {
+	if (exitdirection != EDGE::INVALID) {
 		return GetInputPieceOrEmpty(exitdirection);
 	} else {
 		return empty_track_target;
 	}
 }
 
-unsigned int double_slip::GetMaxConnectingPieces(EDGETYPE direction) const {
+unsigned int double_slip::GetMaxConnectingPieces(EDGE direction) const {
 	switch (direction) {
-		case EDGE_DS_FL:
+		case EDGE::DS_FL:
 			return 2 - __builtin_popcount(flag_unwrap<DSF>(dsflags & (DSF::NO_FL_BL | DSF::NO_FL_BR)));
 
-		case EDGE_DS_FR:
+		case EDGE::DS_FR:
 			return 2 - __builtin_popcount(flag_unwrap<DSF>(dsflags & (DSF::NO_FR_BL | DSF::NO_FR_BR)));
 
-		case EDGE_DS_BR:
+		case EDGE::DS_BR:
 			return 2 - __builtin_popcount(flag_unwrap<DSF>(dsflags & (DSF::NO_FL_BR | DSF::NO_FR_BR)));
 
-		case EDGE_DS_BL:
+		case EDGE::DS_BL:
 			return 2 - __builtin_popcount(flag_unwrap<DSF>(dsflags & (DSF::NO_FL_BL | DSF::NO_FR_BL)));
 
 		default:
@@ -553,15 +553,15 @@ unsigned int double_slip::GetMaxConnectingPieces(EDGETYPE direction) const {
 	}
 }
 
-generic_track::edge_track_target double_slip::GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) {
+generic_track::edge_track_target double_slip::GetConnectingPieceByIndex(EDGE direction, unsigned int index) {
 	generic_points::PTF pf = GetCurrentPointFlags(direction);
 	bool isrev = (pf & PTF::FIXED) ? static_cast<bool>(pf & PTF::REV) : index != 0;
 
-	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isrev);
+	EDGE exitdirection = GetConnectingPointDirection(direction, isrev);
 	return GetInputPieceOrEmpty(exitdirection);
 }
 
-unsigned int double_slip::GetCurrentNominalConnectionIndex(EDGETYPE direction) const {
+unsigned int double_slip::GetCurrentNominalConnectionIndex(EDGE direction) const {
 	generic_points::PTF pf = GetCurrentPointFlags(direction);
 	if (!(pf & PTF::FIXED) && pf & PTF::REV) {
 		return 1;
@@ -570,26 +570,26 @@ unsigned int double_slip::GetCurrentNominalConnectionIndex(EDGETYPE direction) c
 	}
 }
 
-EDGETYPE double_slip::GetReverseDirection(EDGETYPE direction) const {
+EDGE double_slip::GetReverseDirection(EDGE direction) const {
 	generic_points::PTF pf = GetCurrentPointFlags(direction);
 	if (IsFlagsOOC(pf)) {
-		return EDGE_NULL;
+		return EDGE::INVALID;
 	}
 
-	EDGETYPE exitdirection = GetConnectingPointDirection(direction, pf & PTF::REV);
+	EDGE exitdirection = GetConnectingPointDirection(direction, pf & PTF::REV);
 	generic_points::PTF exitpf = GetCurrentPointFlags(exitdirection);
 	if (IsFlagsOOC(exitpf)) {
-		return EDGE_NULL;
+		return EDGE::INVALID;
 	}
 
 	if (GetConnectingPointDirection(exitdirection, exitpf & PTF::REV) == direction) {
 		return exitdirection;
 	} else {
-		return EDGE_NULL;
+		return EDGE::INVALID;
 	}
 }
 
-generic_track::edge_track_target double_slip::GetEdgeConnectingPiece(EDGETYPE edgeid) {
+generic_track::edge_track_target double_slip::GetEdgeConnectingPiece(EDGE edgeid) {
 	track_target_ptr *ttp = GetInputPiece(edgeid);
 	if (ttp) {
 		return *ttp;
@@ -599,12 +599,12 @@ generic_track::edge_track_target double_slip::GetEdgeConnectingPiece(EDGETYPE ed
 	}
 }
 
-bool double_slip::IsEdgeValid(EDGETYPE edge) const {
+bool double_slip::IsEdgeValid(EDGE edge) const {
 	switch (edge) {
-			case EDGE_DS_FL:
-			case EDGE_DS_FR:
-			case EDGE_DS_BR:
-			case EDGE_DS_BL:
+			case EDGE::DS_FL:
+			case EDGE::DS_FR:
+			case EDGE::DS_BR:
+			case EDGE::DS_BL:
 			return true;
 
 		default:
@@ -621,7 +621,7 @@ const generic_points::PTF &double_slip::GetPointsFlagsRef(unsigned int points_in
 	}
 }
 
-bool double_slip::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+bool double_slip::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	PTF pf = GetCurrentPointFlags(direction);
 	if (IsFlagsImmovable(pf)) {
 		if (!(pf & PTF::REV) != !index) {
@@ -631,7 +631,7 @@ bool double_slip::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_fl
 	}
 
 	bool isrev = (pf & PTF::FIXED) ? static_cast<bool>(pf & PTF::REV) : index != 0;
-	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isrev);
+	EDGE exitdirection = GetConnectingPointDirection(direction, isrev);
 	PTF exitpf = GetCurrentPointFlags(exitdirection);
 	bool exitpointsrev = (GetConnectingPointDirection(exitdirection, true) == direction);
 
@@ -645,12 +645,12 @@ bool double_slip::ReservationV(EDGETYPE direction, unsigned int index, RRF rr_fl
 	return trs.Reservation(direction, index, rr_flags, res_route, fail_reason_key);
 }
 
-void double_slip::ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) {
+void double_slip::ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) {
 	unsigned int entranceindex = GetPointsIndexByEdge(direction);
 	PTF entrancepf = GetCurrentPointFlags(direction);
 	bool isentrancerev = (entrancepf & PTF::FIXED) ? static_cast<bool>(entrancepf & PTF::REV) : index != 0;
 
-	EDGETYPE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
+	EDGE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
 	unsigned int exitindex = GetPointsIndexByEdge(exitdirection);
 	PTF exitpf = GetCurrentPointFlags(exitdirection);
 
@@ -672,13 +672,13 @@ void double_slip::ReservationActionsV(EDGETYPE direction, unsigned int index, RR
 }
 
 void double_slip::GetListOfEdges(std::vector<edgelistitem> &output_list) const {
-	output_list.insert(output_list.end(), { edgelistitem(EDGE_DS_FL, frontleft), edgelistitem(EDGE_DS_FR, frontright),
-			edgelistitem(EDGE_DS_BR, backright), edgelistitem(EDGE_DS_BL, backleft) });
+	output_list.insert(output_list.end(), { edgelistitem(EDGE::DS_FL, frontleft), edgelistitem(EDGE::DS_FR, frontright),
+			edgelistitem(EDGE::DS_BR, backright), edgelistitem(EDGE::DS_BL, backleft) });
 }
 
 void double_slip::UpdatePointsFixedStatesFromMissingTrackEdges() {
-	auto fixpoints = [&](EDGETYPE direction1, bool reverse1, EDGETYPE direction2, bool reverse2) {
-		auto fixpoints2 = [&](EDGETYPE direction, bool reverse) {
+	auto fixpoints = [&](EDGE direction1, bool reverse1, EDGE direction2, bool reverse2) {
+		auto fixpoints2 = [&](EDGE direction, bool reverse) {
 			GetCurrentPointFlags(direction) |= PTF::FIXED;
 			GetCurrentPointFlags(direction) &= ~ PTF::REV;
 			GetCurrentPointFlags(direction) |= reverse ? PTF::REV : PTF::ZERO;
@@ -689,19 +689,19 @@ void double_slip::UpdatePointsFixedStatesFromMissingTrackEdges() {
 
 	switch (static_cast<DSF>(dsflags&DSF::NO_TRACK_MASK)) {
 		case DSF::NO_FL_BL:
-			fixpoints(EDGE_DS_FL, false, EDGE_DS_BL, false);
+			fixpoints(EDGE::DS_FL, false, EDGE::DS_BL, false);
 			break;
 
 		case DSF::NO_FR_BL:
-			fixpoints(EDGE_DS_FR, true, EDGE_DS_BL, true);
+			fixpoints(EDGE::DS_FR, true, EDGE::DS_BL, true);
 			break;
 
 		case DSF::NO_FL_BR:
-			fixpoints(EDGE_DS_FL, true, EDGE_DS_BR, true);
+			fixpoints(EDGE::DS_FL, true, EDGE::DS_BR, true);
 			break;
 
 		case DSF::NO_FR_BR:
-			fixpoints(EDGE_DS_FR, false, EDGE_DS_BR, false);
+			fixpoints(EDGE::DS_FR, false, EDGE::DS_BR, false);
 			break;
 
 		default:
@@ -731,15 +731,15 @@ void double_slip::UpdateInternalCoupling() {
 	}
 }
 
-bool double_slip::IsCoupleable(EDGETYPE direction) const {
+bool double_slip::IsCoupleable(EDGE direction) const {
 	if (dof != 2) return false;
 	return !(GetCurrentPointFlags(GetConnectingPointDirection(direction, true)) & PTF::COUPLED ||
 			GetCurrentPointFlags(GetConnectingPointDirection(direction, false)) & PTF::COUPLED);
 }
 
-void double_slip::GetCouplingPointsFlagsByEdge(EDGETYPE direction, std::vector<points_coupling> &output) {
+void double_slip::GetCouplingPointsFlagsByEdge(EDGE direction, std::vector<points_coupling> &output) {
 	auto docoupling = [&](bool reverse) {
-		EDGETYPE oppositeedge = GetConnectingPointDirection(direction, reverse);
+		EDGE oppositeedge = GetConnectingPointDirection(direction, reverse);
 		if (GetCurrentPointFlags(oppositeedge) & PTF::FIXED) {
 			return;
 		}
@@ -755,8 +755,8 @@ void double_slip::CouplePointsFlagsAtIndexTo(unsigned int index, const points_co
 }
 
 void double_slip::InitSightingDistances() {
-	sighting_distances.emplace_back(EDGE_DS_FL, SIGHTING_DISTANCE_POINTS);
-	sighting_distances.emplace_back(EDGE_DS_FR, SIGHTING_DISTANCE_POINTS);
-	sighting_distances.emplace_back(EDGE_DS_BL, SIGHTING_DISTANCE_POINTS);
-	sighting_distances.emplace_back(EDGE_DS_BR, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE::DS_FL, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE::DS_FR, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE::DS_BL, SIGHTING_DISTANCE_POINTS);
+	sighting_distances.emplace_back(EDGE::DS_BR, SIGHTING_DISTANCE_POINTS);
 }

@@ -43,10 +43,10 @@ class updatable_obj;
 
 struct connection_forward_declaration {
 	generic_track *track1;
-	EDGETYPE dir1;
+	EDGE dir1;
 	std::string name2;
-	EDGETYPE dir2;
-	connection_forward_declaration(generic_track *t1, EDGETYPE d1, const std::string &n2, EDGETYPE d2) : track1(t1), dir1(d1), name2(n2), dir2(d2) { }
+	EDGE dir2;
+	connection_forward_declaration(generic_track *t1, EDGE d1, const std::string &n2, EDGE d2) : track1(t1), dir1(d1), name2(n2), dir2(d2) { }
 };
 
 enum class GAME_MODE {
@@ -163,7 +163,7 @@ class world : public serialisable_futurable_obj {
 	void AddTrack(std::unique_ptr<generic_track> &&piece, error_collection &ec);
 	void AddTractionType(std::string name, bool always_available);
 	traction_type *GetTractionTypeByName(std::string name) const;
-	void ConnectTrack(generic_track *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec);
+	void ConnectTrack(generic_track *track1, EDGE dir1, std::string name2, EDGE dir2, error_collection &ec);
 	void LayoutInit(error_collection &ec);
 	void PostLayoutInit(error_collection &ec);
 	generic_track *FindTrackByName(const std::string &name) const;

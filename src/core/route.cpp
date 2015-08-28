@@ -193,7 +193,7 @@ bool route::IsRouteSubSet(const route *subset) const {
 
 bool route::IsStartAnchored(RRF check_mask) const {
 	bool anchored = false;
-	start.track->ReservationEnumerationInDirection(start.direction, [&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+	start.track->ReservationEnumerationInDirection(start.direction, [&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
 		if (rr_flags && RRF::START_PIECE && reserved_route == this) {
 			anchored = true;
 		}

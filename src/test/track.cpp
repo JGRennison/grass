@@ -41,7 +41,7 @@ struct test_fixture_track_1 {
 		track2.SetLength(100000);
 		track2.SetElevationDelta(+50);
 		track2.SetName("T2");
-		track1.FullConnect(EDGE_BACK, track_target_ptr(&track2, EDGE_FRONT), ec);
+		track1.FullConnect(EDGE::BACK, track_target_ptr(&track2, EDGE::FRONT), ec);
 	}
 };
 
@@ -60,9 +60,9 @@ struct test_fixture_track_2 {
 		track3.SetLength(200000);
 		track3.SetElevationDelta(-50);
 		track3.SetName("T3");
-		track1.FullConnect(EDGE_BACK, track_target_ptr(&pt1, EDGE_PTS_FACE), ec);
-		track2.FullConnect(EDGE_FRONT, track_target_ptr(&pt1, EDGE_PTS_NORMAL), ec);
-		track3.FullConnect(EDGE_FRONT, track_target_ptr(&pt1, EDGE_PTS_REVERSE), ec);
+		track1.FullConnect(EDGE::BACK, track_target_ptr(&pt1, EDGE::PTS_FACE), ec);
+		track2.FullConnect(EDGE::FRONT, track_target_ptr(&pt1, EDGE::PTS_NORMAL), ec);
+		track3.FullConnect(EDGE::FRONT, track_target_ptr(&pt1, EDGE::PTS_REVERSE), ec);
 		pt1.SetName("P1");
 	}
 };
@@ -74,81 +74,81 @@ struct test_fixture_track_3 {
 	spring_points sp1;
 	error_collection ec;
 	test_fixture_track_3() : track1(w), track2(w), track3(w), track4(w), cp1(w), sp1(w) {
-		track1.FullConnect(EDGE_BACK, track_target_ptr(&sp1, EDGE_PTS_FACE), ec);
-		track2.FullConnect(EDGE_FRONT, track_target_ptr(&sp1, EDGE_PTS_NORMAL), ec);
-		track3.FullConnect(EDGE_FRONT, track_target_ptr(&sp1, EDGE_PTS_REVERSE), ec);
-		cp1.FullConnect(EDGE_FRONT, track_target_ptr(&track2, EDGE_BACK), ec);
-		track4.FullConnect(EDGE_FRONT, track_target_ptr(&cp1, EDGE_BACK), ec);
+		track1.FullConnect(EDGE::BACK, track_target_ptr(&sp1, EDGE::PTS_FACE), ec);
+		track2.FullConnect(EDGE::FRONT, track_target_ptr(&sp1, EDGE::PTS_NORMAL), ec);
+		track3.FullConnect(EDGE::FRONT, track_target_ptr(&sp1, EDGE::PTS_REVERSE), ec);
+		cp1.FullConnect(EDGE::FRONT, track_target_ptr(&track2, EDGE::BACK), ec);
+		track4.FullConnect(EDGE::FRONT, track_target_ptr(&cp1, EDGE::BACK), ec);
 	}
 };
 
 TEST_CASE( "track/conn/track", "Test basic track segment connectivity" ) {
 	test_fixture_track_1 env;
 
-	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT) == track_target_ptr(&env.track2, EDGE_FRONT));
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.track1, EDGE_BACK));
-	REQUIRE(env.track1.GetConnectingPiece(EDGE_BACK) == track_target_ptr());
-	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr());
+	REQUIRE(env.track1.GetConnectingPiece(EDGE::FRONT) == track_target_ptr(&env.track2, EDGE::FRONT));
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::BACK) == track_target_ptr(&env.track1, EDGE::BACK));
+	REQUIRE(env.track1.GetConnectingPiece(EDGE::BACK) == track_target_ptr());
+	REQUIRE(env.track1.GetConnectingPiece(EDGE::FRONT).GetConnectingPiece() == track_target_ptr());
 }
 
 TEST_CASE( "track/conn/points", "Test basic points connectivity" ) {
 	test_fixture_track_2 env;
 
 	REQUIRE(env.pt1.GetPointsFlags(0) == generic_points::PTF::ZERO);
-	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT) == track_target_ptr(&env.pt1, EDGE_PTS_FACE));
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.pt1, EDGE_PTS_NORMAL));
-	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.pt1, EDGE_PTS_REVERSE));
+	REQUIRE(env.track1.GetConnectingPiece(EDGE::FRONT) == track_target_ptr(&env.pt1, EDGE::PTS_FACE));
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::BACK) == track_target_ptr(&env.pt1, EDGE::PTS_NORMAL));
+	REQUIRE(env.track3.GetConnectingPiece(EDGE::BACK) == track_target_ptr(&env.pt1, EDGE::PTS_REVERSE));
 	//normal
-	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr(&env.track2, EDGE_FRONT));
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE_BACK));
-	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
+	REQUIRE(env.track1.GetConnectingPiece(EDGE::FRONT).GetConnectingPiece() == track_target_ptr(&env.track2, EDGE::FRONT));
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE::BACK));
+	REQUIRE(env.track3.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr());
 	//reverse
 	env.pt1.SetPointsFlagsMasked(0, points::PTF::REV, points::PTF::REV);
-	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr(&env.track3, EDGE_FRONT));
-	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE_BACK));
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
+	REQUIRE(env.track1.GetConnectingPiece(EDGE::FRONT).GetConnectingPiece() == track_target_ptr(&env.track3, EDGE::FRONT));
+	REQUIRE(env.track3.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE::BACK));
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr());
 	//OOC
 	env.pt1.SetPointsFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
-	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr());
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
-	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
+	REQUIRE(env.track1.GetConnectingPiece(EDGE::FRONT).GetConnectingPiece() == track_target_ptr());
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr());
+	REQUIRE(env.track3.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr());
 }
 
 TEST_CASE( "track/conn/catchpoints", "Test basic catchpoints connectivity" ) {
 	test_fixture_track_3 env;
 
 	REQUIRE(env.cp1.GetPointsFlags(0) == catchpoints::PTF::AUTO_NORMALISE);
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT) == track_target_ptr(&env.cp1, EDGE_FRONT));
-	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.cp1, EDGE_BACK));
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::FRONT) == track_target_ptr(&env.cp1, EDGE::FRONT));
+	REQUIRE(env.track4.GetConnectingPiece(EDGE::BACK) == track_target_ptr(&env.cp1, EDGE::BACK));
 	//reverse
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr());
-	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::FRONT).GetConnectingPiece() == track_target_ptr());
+	REQUIRE(env.track4.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr());
 	//normal
 	env.cp1.SetPointsFlagsMasked(0, generic_points::PTF::REV, points::PTF::REV);
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr(&env.track4, EDGE_FRONT));
-	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track2, EDGE_BACK));
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::FRONT).GetConnectingPiece() == track_target_ptr(&env.track4, EDGE::FRONT));
+	REQUIRE(env.track4.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr(&env.track2, EDGE::BACK));
 	//OOC
 	env.cp1.SetPointsFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr());
-	REQUIRE(env.track4.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr());
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::FRONT).GetConnectingPiece() == track_target_ptr());
+	REQUIRE(env.track4.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr());
 }
 
 TEST_CASE( "track/conn/spring_points", "Test basic spring_points connectivity" ) {
 	test_fixture_track_3 env;
 
 	REQUIRE(env.sp1.GetSendReverseFlag() == false);
-	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT) == track_target_ptr(&env.sp1, EDGE_PTS_FACE));
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.sp1, EDGE_PTS_NORMAL));
-	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK) == track_target_ptr(&env.sp1, EDGE_PTS_REVERSE));
+	REQUIRE(env.track1.GetConnectingPiece(EDGE::FRONT) == track_target_ptr(&env.sp1, EDGE::PTS_FACE));
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::BACK) == track_target_ptr(&env.sp1, EDGE::PTS_NORMAL));
+	REQUIRE(env.track3.GetConnectingPiece(EDGE::BACK) == track_target_ptr(&env.sp1, EDGE::PTS_REVERSE));
 	//normal
-	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr(&env.track2, EDGE_FRONT));
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE_BACK));
-	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE_BACK));
+	REQUIRE(env.track1.GetConnectingPiece(EDGE::FRONT).GetConnectingPiece() == track_target_ptr(&env.track2, EDGE::FRONT));
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE::BACK));
+	REQUIRE(env.track3.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE::BACK));
 	//reverse
 	env.sp1.SetSendReverseFlag(true);
-	REQUIRE(env.track1.GetConnectingPiece(EDGE_FRONT).GetConnectingPiece() == track_target_ptr(&env.track3, EDGE_FRONT));
-	REQUIRE(env.track2.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE_BACK));
-	REQUIRE(env.track3.GetConnectingPiece(EDGE_BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE_BACK));
+	REQUIRE(env.track1.GetConnectingPiece(EDGE::FRONT).GetConnectingPiece() == track_target_ptr(&env.track3, EDGE::FRONT));
+	REQUIRE(env.track2.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE::BACK));
+	REQUIRE(env.track3.GetConnectingPiece(EDGE::BACK).GetConnectingPiece() == track_target_ptr(&env.track1, EDGE::BACK));
 }
 
 TEST_CASE( "track/traverse/track", "Test basic track segment traversal" ) {
@@ -158,19 +158,19 @@ TEST_CASE( "track/traverse/track", "Test basic track segment traversal" ) {
 	track_location loc;
 	std::function<void(track_location &, track_location &)> stub;
 
-	loc.SetTargetStartLocation(&env.track1, EDGE_FRONT);
+	loc.SetTargetStartLocation(&env.track1, EDGE::FRONT);
 
 	leftover = AdvanceDisplacement(20000, loc, 0, stub);
 	REQUIRE(leftover == 0);
-	REQUIRE(loc == track_location(&env.track1, EDGE_FRONT, 20000));
+	REQUIRE(loc == track_location(&env.track1, EDGE::FRONT, 20000));
 
 	leftover = AdvanceDisplacement(40000, loc, 0, stub);
 	REQUIRE(leftover == 0);
-	REQUIRE(loc == track_location(&env.track2, EDGE_FRONT, 10000));
+	REQUIRE(loc == track_location(&env.track2, EDGE::FRONT, 10000));
 
 	leftover = AdvanceDisplacement(100000, loc, 0, stub);
 	REQUIRE(leftover == 10000);
-	REQUIRE(loc == track_location(&env.track2, EDGE_FRONT, 100000));
+	REQUIRE(loc == track_location(&env.track2, EDGE::FRONT, 100000));
 }
 
 TEST_CASE( "track/traverse/points", "Test basic points traversal" ) {
@@ -180,58 +180,58 @@ TEST_CASE( "track/traverse/points", "Test basic points traversal" ) {
 	track_location loc;
 	std::function<void(track_location &, track_location &)> stub;
 
-	loc.SetTargetStartLocation(&env.track1, EDGE_FRONT);
+	loc.SetTargetStartLocation(&env.track1, EDGE::FRONT);
 
 	//normal
-	loc.SetTargetStartLocation(&env.track1, EDGE_FRONT);
+	loc.SetTargetStartLocation(&env.track1, EDGE::FRONT);
 	leftover = AdvanceDisplacement(60000, loc, 0, stub);
 	REQUIRE(leftover == 0);
-	REQUIRE(loc == track_location(&env.track2, EDGE_FRONT, 10000));
+	REQUIRE(loc == track_location(&env.track2, EDGE::FRONT, 10000));
 
-	loc.SetTargetStartLocation(&env.track2, EDGE_BACK);
+	loc.SetTargetStartLocation(&env.track2, EDGE::BACK);
 	leftover = AdvanceDisplacement(110000, loc, 0, stub);
 	REQUIRE(leftover == 0);
-	REQUIRE(loc == track_location(&env.track1, EDGE_BACK, 40000));
+	REQUIRE(loc == track_location(&env.track1, EDGE::BACK, 40000));
 
-	loc.SetTargetStartLocation(&env.track3, EDGE_BACK);
+	loc.SetTargetStartLocation(&env.track3, EDGE::BACK);
 	leftover = AdvanceDisplacement(210000, loc, 0, stub);
 	REQUIRE(leftover == 10000);
-	REQUIRE(loc == track_location(&env.pt1, EDGE_PTS_REVERSE, 0));
+	REQUIRE(loc == track_location(&env.pt1, EDGE::PTS_REVERSE, 0));
 
 	//reverse
 	env.pt1.SetPointsFlagsMasked(0, points::PTF::REV, points::PTF::REV);
 
-	loc.SetTargetStartLocation(&env.track1, EDGE_FRONT);
+	loc.SetTargetStartLocation(&env.track1, EDGE::FRONT);
 	leftover = AdvanceDisplacement(60000, loc, 0, stub);
 	REQUIRE(leftover == 0);
-	REQUIRE(loc == track_location(&env.track3, EDGE_FRONT, 10000));
+	REQUIRE(loc == track_location(&env.track3, EDGE::FRONT, 10000));
 
-	loc.SetTargetStartLocation(&env.track3, EDGE_BACK);
+	loc.SetTargetStartLocation(&env.track3, EDGE::BACK);
 	leftover = AdvanceDisplacement(210000, loc, 0, stub);
 	REQUIRE(leftover == 0);
-	REQUIRE(loc == track_location(&env.track1, EDGE_BACK, 40000));
+	REQUIRE(loc == track_location(&env.track1, EDGE::BACK, 40000));
 
-	loc.SetTargetStartLocation(&env.track2, EDGE_BACK);
+	loc.SetTargetStartLocation(&env.track2, EDGE::BACK);
 	leftover = AdvanceDisplacement(110000, loc, 0, stub);
 	REQUIRE(leftover == 10000);
-	REQUIRE(loc == track_location(&env.pt1, EDGE_PTS_NORMAL, 0));
+	REQUIRE(loc == track_location(&env.pt1, EDGE::PTS_NORMAL, 0));
 
 	//OOC
 	env.pt1.SetPointsFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
-	loc.SetTargetStartLocation(&env.track1, EDGE_FRONT);
+	loc.SetTargetStartLocation(&env.track1, EDGE::FRONT);
 	leftover = AdvanceDisplacement(60000, loc, 0, stub);
 	REQUIRE(leftover == 10000);
-	REQUIRE(loc == track_location(&env.pt1, EDGE_PTS_FACE, 0));
+	REQUIRE(loc == track_location(&env.pt1, EDGE::PTS_FACE, 0));
 
-	loc.SetTargetStartLocation(&env.track2, EDGE_BACK);
+	loc.SetTargetStartLocation(&env.track2, EDGE::BACK);
 	leftover = AdvanceDisplacement(110000, loc, 0, stub);
 	REQUIRE(leftover == 10000);
-	REQUIRE(loc == track_location(&env.pt1, EDGE_PTS_NORMAL, 0));
+	REQUIRE(loc == track_location(&env.pt1, EDGE::PTS_NORMAL, 0));
 
-	loc.SetTargetStartLocation(&env.track3, EDGE_BACK);
+	loc.SetTargetStartLocation(&env.track3, EDGE::BACK);
 	leftover = AdvanceDisplacement(210000, loc, 0, stub);
 	REQUIRE(leftover == 10000);
-	REQUIRE(loc == track_location(&env.pt1, EDGE_PTS_REVERSE, 0));
+	REQUIRE(loc == track_location(&env.pt1, EDGE::PTS_REVERSE, 0));
 }
 
 TEST_CASE( "track/deserialisation/track", "Test basic track segment deserialisation" ) {
@@ -247,8 +247,8 @@ TEST_CASE( "track/deserialisation/track", "Test basic track segment deserialisat
 
 	track_seg *t = dynamic_cast<track_seg *>(env.w->FindTrackByName("T1"));
 	REQUIRE(t != nullptr);
-	REQUIRE(t->GetLength(EDGE_FRONT) == 50000);
-	REQUIRE(t->GetElevationDelta(EDGE_FRONT) == -1000);
+	REQUIRE(t->GetLength(EDGE::FRONT) == 50000);
+	REQUIRE(t->GetElevationDelta(EDGE::FRONT) == -1000);
 
 	const speed_restriction_set *sr = t->GetSpeedRestrictions();
 	REQUIRE(sr != nullptr);
@@ -315,10 +315,10 @@ TEST_CASE( "track/deserialisation/double_slip", "Test basic double_slip deserial
 
 		double_slip *ds = dynamic_cast<double_slip *>(env.w->FindTrackByName(name));
 		REQUIRE(ds != nullptr);
-		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_FL) == pffl);
-		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_FR) == pffr);
-		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_BL) == pfbl);
-		REQUIRE(ds->GetCurrentPointFlags(EDGE_DS_BR) == pfbr);
+		REQUIRE(ds->GetCurrentPointFlags(EDGE::DS_FL) == pffl);
+		REQUIRE(ds->GetCurrentPointFlags(EDGE::DS_FR) == pffr);
+		REQUIRE(ds->GetCurrentPointFlags(EDGE::DS_BL) == pfbl);
+		REQUIRE(ds->GetCurrentPointFlags(EDGE::DS_BR) == pfbr);
 	};
 
 	checkds("DS1", generic_points::PTF::ZERO, points::PTF::REV, points::PTF::REV, generic_points::PTF::ZERO);
@@ -335,10 +335,10 @@ TEST_CASE( "track/deserialisation/double_slip", "Test basic double_slip deserial
 
 class test_double_slip {
 	public:
-	static inline bool HalfConnect(double_slip *ds, EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance) {
+	static inline bool HalfConnect(double_slip *ds, EDGE this_entrance_direction, const track_target_ptr &target_entrance) {
 		return ds->HalfConnect(this_entrance_direction, target_entrance);
 	}
-	static inline unsigned int GetCurrentPointIndex(double_slip *ds, EDGETYPE direction) {
+	static inline unsigned int GetCurrentPointIndex(double_slip *ds, EDGE direction) {
 		return ds->GetPointsIndexByEdge(direction);
 	}
 };
@@ -360,17 +360,17 @@ TEST_CASE( "track/conn/double_slip", "Test basic double_slip connectivity" ) {
 		double_slip *ds = dynamic_cast<double_slip *>(env.w->FindTrackByName(name));
 		REQUIRE(ds != nullptr);
 
-		REQUIRE(test_double_slip::HalfConnect(ds, EDGE_DS_FL, track_target_ptr(fl, EDGE_FRONT)) == true);
-		REQUIRE(test_double_slip::HalfConnect(ds, EDGE_DS_FR, track_target_ptr(fr, EDGE_FRONT)) == true);
-		REQUIRE(test_double_slip::HalfConnect(ds, EDGE_DS_BL, track_target_ptr(bl, EDGE_FRONT)) == true);
-		REQUIRE(test_double_slip::HalfConnect(ds, EDGE_DS_BR, track_target_ptr(br, EDGE_FRONT)) == true);
-		REQUIRE(ds->GetConnectingPiece(EDGE_DS_FL).track == flt);
-		REQUIRE(ds->GetConnectingPiece(EDGE_DS_FR).track == frt);
-		REQUIRE(ds->GetConnectingPiece(EDGE_DS_BL).track == blt);
-		REQUIRE(ds->GetConnectingPiece(EDGE_DS_BR).track == brt);
+		REQUIRE(test_double_slip::HalfConnect(ds, EDGE::DS_FL, track_target_ptr(fl, EDGE::FRONT)) == true);
+		REQUIRE(test_double_slip::HalfConnect(ds, EDGE::DS_FR, track_target_ptr(fr, EDGE::FRONT)) == true);
+		REQUIRE(test_double_slip::HalfConnect(ds, EDGE::DS_BL, track_target_ptr(bl, EDGE::FRONT)) == true);
+		REQUIRE(test_double_slip::HalfConnect(ds, EDGE::DS_BR, track_target_ptr(br, EDGE::FRONT)) == true);
+		REQUIRE(ds->GetConnectingPiece(EDGE::DS_FL).track == flt);
+		REQUIRE(ds->GetConnectingPiece(EDGE::DS_FR).track == frt);
+		REQUIRE(ds->GetConnectingPiece(EDGE::DS_BL).track == blt);
+		REQUIRE(ds->GetConnectingPiece(EDGE::DS_BR).track == brt);
 	};
 
-	auto dsmovepoints = [&](const char *name, EDGETYPE direction, bool rev) {
+	auto dsmovepoints = [&](const char *name, EDGE direction, bool rev) {
 		INFO("Double-slip check for: " << name);
 
 		double_slip *ds = dynamic_cast<double_slip *>(env.w->FindTrackByName(name));
@@ -381,18 +381,18 @@ TEST_CASE( "track/conn/double_slip", "Test basic double_slip connectivity" ) {
 
 	checkdstraverse("DS1", br, 0, 0, fl);
 	checkdstraverse("DS2", br, bl, fr, fl);
-	dsmovepoints("DS2", EDGE_DS_FL, true);
+	dsmovepoints("DS2", EDGE::DS_FL, true);
 	checkdstraverse("DS2", bl, br, fl, fr);
 	checkdstraverse("DS3", br, 0, 0, fl);
-	dsmovepoints("DS3", EDGE_DS_FL, true);
+	dsmovepoints("DS3", EDGE::DS_FL, true);
 	checkdstraverse("DS3", bl, 0, fl, 0);
 	checkdstraverse("DS4", br, bl, fr, fl);
-	dsmovepoints("DS4", EDGE_DS_FL, true);
+	dsmovepoints("DS4", EDGE::DS_FL, true);
 	checkdstraverse("DS4", 0, bl, fr, 0);
 	checkdstraverse("DS5", br, bl, fr, fl);
 	checkdstraverse("DS6", 0, br, 0, fr);
 	checkdstraverse("DS7", bl, 0, fl, 0);
-	dsmovepoints("DS7", EDGE_DS_FL, false);
+	dsmovepoints("DS7", EDGE::DS_FL, false);
 	checkdstraverse("DS7", br, bl, fr, fl);
 	checkdstraverse("DS8", br, 0, 0, fl);
 	checkdstraverse("DS9", bl, br, fl, fr);
@@ -427,8 +427,8 @@ TEST_CASE( "track/deserialisation/partialconnection", "Test partial track connec
 	track_seg *t3 = dynamic_cast<track_seg *>(env.w->FindTrackByName("T3"));
 	REQUIRE(t3 != nullptr);
 
-	REQUIRE(p1->GetEdgeConnectingPiece(EDGE_PTS_REVERSE) == track_target_ptr(t2, EDGE_FRONT));
-	REQUIRE(p2->GetEdgeConnectingPiece(EDGE_PTS_REVERSE) == track_target_ptr(t3, EDGE_FRONT));
+	REQUIRE(p1->GetEdgeConnectingPiece(EDGE::PTS_REVERSE) == track_target_ptr(t2, EDGE::FRONT));
+	REQUIRE(p2->GetEdgeConnectingPiece(EDGE::PTS_REVERSE) == track_target_ptr(t3, EDGE::FRONT));
 }
 
 TEST_CASE( "track/deserialisation/ambiguouspartialconnection/1", "Test handling of ambiguous partial track connection declaration deserialisation" ) {
@@ -482,8 +482,8 @@ TEST_CASE( "track/deserialisation/ambiguouspartialconnection/3", "Test handling 
 TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 	std::string track_test_str_coupling =
 	R"({ "content" : [ )"
-		R"({ "type" : "couple_points", "points" : [ { "name" : "P1", "edge" : "reverse"}, { "name" : "P2", "edge" : "normal"}, { "name" : "DS1", "edge" : "rightfront"} ] }, )"
-		R"({ "type" : "couple_points", "points" : [ { "name" : "DS2", "edge" : "rightfront"}, { "name" : "DS1", "edge" : "rightback"} ] }, )"
+		R"({ "type" : "couple_points", "points" : [ { "name" : "P1", "edge" : "reverse"}, { "name" : "P2", "edge" : "normal"}, { "name" : "DS1", "edge" : "right_front"} ] }, )"
+		R"({ "type" : "couple_points", "points" : [ { "name" : "DS2", "edge" : "right_front"}, { "name" : "DS1", "edge" : "right_back"} ] }, )"
 		R"({ "type" : "double_slip", "name" : "DS1", "degrees_of_freedom" : 2 }, )"
 		R"({ "type" : "double_slip", "name" : "DS2", "no_track_fl_bl" : true, "right_front_points" : { "reverse" : true } }, )"
 		R"({ "type" : "points", "name" : "P1" }, )"
@@ -503,10 +503,10 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 
 		double_slip *ds = dynamic_cast<double_slip *>(env.w->FindTrackByName(name));
 		REQUIRE(ds != nullptr);
-		CHECK(ds->GetCurrentPointFlags(EDGE_DS_FL) == pffl);
-		CHECK(ds->GetCurrentPointFlags(EDGE_DS_FR) == pffr);
-		CHECK(ds->GetCurrentPointFlags(EDGE_DS_BL) == pfbl);
-		CHECK(ds->GetCurrentPointFlags(EDGE_DS_BR) == pfbr);
+		CHECK(ds->GetCurrentPointFlags(EDGE::DS_FL) == pffl);
+		CHECK(ds->GetCurrentPointFlags(EDGE::DS_FR) == pffr);
+		CHECK(ds->GetCurrentPointFlags(EDGE::DS_BL) == pfbl);
+		CHECK(ds->GetCurrentPointFlags(EDGE::DS_BR) == pfbr);
 	};
 	auto checkp = [&](const char *name, generic_points::PTF pflags) {
 		INFO("Points check for: " << name << ", at time: " << env.w->GetGameTime());
@@ -576,17 +576,17 @@ TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisa
 		INFO("Points check for: " << name);
 		generic_track *p = env.w->FindTrackByName(name);
 		REQUIRE(p != nullptr);
-		CHECK(p->GetSightingDistance(EDGE_PTS_NORMAL) == norm_dist);
-		CHECK(p->GetSightingDistance(EDGE_PTS_REVERSE) == rev_dist);
-		CHECK(p->GetSightingDistance(EDGE_PTS_FACE) == face_dist);
-		CHECK(p->GetSightingDistance(EDGE_FRONT) == 0);
+		CHECK(p->GetSightingDistance(EDGE::PTS_NORMAL) == norm_dist);
+		CHECK(p->GetSightingDistance(EDGE::PTS_REVERSE) == rev_dist);
+		CHECK(p->GetSightingDistance(EDGE::PTS_FACE) == face_dist);
+		CHECK(p->GetSightingDistance(EDGE::FRONT) == 0);
 	};
 	auto checksig = [&](const std::string &name, unsigned int dist) {
 		INFO("Signal check for: " << name);
 		generic_track *s = env.w->FindTrackByName(name);
 		REQUIRE(s != nullptr);
-		CHECK(s->GetSightingDistance(EDGE_FRONT) == dist);
-		CHECK(s->GetSightingDistance(EDGE_BACK) == 0);
+		CHECK(s->GetSightingDistance(EDGE::FRONT) == dist);
+		CHECK(s->GetSightingDistance(EDGE::BACK) == 0);
 	};
 	checkpoints("P1", 40000, 40000, 40000);
 	checkpoints("P2", 40000, SIGHTING_DISTANCE_POINTS, SIGHTING_DISTANCE_POINTS);

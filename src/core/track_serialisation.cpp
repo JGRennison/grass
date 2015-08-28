@@ -44,7 +44,7 @@ void generic_track::Deserialise(const deserialiser_input &di, error_collection &
 			bool ok = false;
 
 			if (funcdi.json.IsObject()) {
-				EDGETYPE dir;
+				EDGE dir;
 				unsigned int distance;
 				if (CheckTransJsonValue(dir, funcdi, "direction", ec) && CheckTransJsonValueProc(distance, funcdi, "distance", ec, dsconv::Length)) {
 					for (auto &it : sighting_distances) {
@@ -84,8 +84,8 @@ void generic_track::Deserialise(const deserialiser_input &di, error_collection &
 		auto connfunc = [&](const deserialiser_input &funcdi) {
 			bool ok = true;
 			if (funcdi.json.IsObject()) {
-				EDGETYPE this_entrance_direction = EDGE_NULL;
-				EDGETYPE target_entrance_direction = EDGE_NULL;
+				EDGE this_entrance_direction = EDGE::INVALID;
+				EDGE target_entrance_direction = EDGE::INVALID;
 				std::string target_name;
 				bool have_directions;
 				have_directions = CheckTransJsonValue(this_entrance_direction, funcdi, "from_direction", ec);
@@ -98,8 +98,8 @@ void generic_track::Deserialise(const deserialiser_input &di, error_collection &
 					} else {
 						world *w = di.w;
 						auto resolveconnection = [w, this, this_entrance_direction, target_entrance_direction, target_name](error_collection &ec) mutable {
-							auto checkconnection = [&](generic_track *gt, EDGETYPE &dir) {
-								if (dir != EDGE_NULL) {
+							auto checkconnection = [&](generic_track *gt, EDGE &dir) {
+								if (dir != EDGE::INVALID) {
 									return;
 								}
 								if (!gt) {
@@ -110,7 +110,7 @@ void generic_track::Deserialise(const deserialiser_input &di, error_collection &
 
 								std::vector<edgelistitem> edges;
 								gt->GetListOfEdges(edges);
-								EDGETYPE lastfound;
+								EDGE lastfound;
 								unsigned int freeedgecount = 0;
 								for (auto &it : edges) {
 									if (! it.target->IsValid()) {
@@ -159,12 +159,12 @@ void generic_track::Deserialise(const deserialiser_input &di, error_collection &
 			di.RegisterProp("berth");
 
 			bool berthval = false;
-			EDGETYPE berthedge = EDGE_NULL;
+			EDGE berthedge = EDGE::INVALID;
 			if (bdi.json.IsBool()) {
 				berthval = bdi.json.GetBool();
-			} else if (IsType<EDGETYPE>(bdi.json)) {
+			} else if (IsType<EDGE>(bdi.json)) {
 				berthval = true;
-				berthedge = GetType<EDGETYPE>(bdi.json);
+				berthedge = GetType<EDGE>(bdi.json);
 			} else {
 				ec.RegisterNewError<error_deserialisation>(bdi, "Invalid track berth definition");
 			}
@@ -346,29 +346,29 @@ void double_slip::Deserialise(const deserialiser_input &di, error_collection &ec
 	UpdatePointsFixedStatesFromMissingTrackEdges();
 	UpdateInternalCoupling();
 
-	auto deserialisepointsflags = [&](EDGETYPE direction, const char *prop) {
+	auto deserialisepointsflags = [&](EDGE direction, const char *prop) {
 		generic_points::PTF pf = GetCurrentPointFlags(direction);
 		pointsflagssubobj ps(&pf);
 		CheckTransJsonSubObj(ps, di, prop, "", ec);
 		SetPointsFlagsMasked(GetPointsIndexByEdge(direction), pf, generic_points::PTF::ALL);
 	};
-	deserialisepointsflags(EDGE_DS_FL, "left_front_points");
-	deserialisepointsflags(EDGE_DS_FR, "right_front_points");
-	deserialisepointsflags(EDGE_DS_BR, "right_back_points");
-	deserialisepointsflags(EDGE_DS_BL, "left_back_points");
+	deserialisepointsflags(EDGE::DS_FL, "left_front_points");
+	deserialisepointsflags(EDGE::DS_FR, "right_front_points");
+	deserialisepointsflags(EDGE::DS_BR, "right_back_points");
+	deserialisepointsflags(EDGE::DS_BL, "left_back_points");
 }
 
 void double_slip::Serialise(serialiser_output &so, error_collection &ec) const {
 	generic_points::Serialise(so, ec);
 
 	SerialiseSubObjJson(trs, so, "trs", ec);
-	SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_FL)), so, "left_front_points", ec);
+	SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE::DS_FL)), so, "left_front_points", ec);
 	if (dof >= 2) {
-		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_BR)), so, "right_back_points", ec);
+		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE::DS_BR)), so, "right_back_points", ec);
 	}
 	if (dof >= 4) {
-		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_FR)), so, "right_front_points", ec);
-		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE_DS_BL)), so, "left_back_points", ec);
+		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE::DS_FR)), so, "right_front_points", ec);
+		SerialiseSubObjJson(pointsflagssubobj(GetCurrentPointFlags(EDGE::DS_BL)), so, "left_back_points", ec);
 	}
 }
 
@@ -451,13 +451,13 @@ void DeserialisePointsCoupling(const deserialiser_input &di, error_collection &e
 	deserialiser_input subdi(di.json["points"], "points_coupling_array", "points", di);
 	if (subdi.json.IsArray() && subdi.json.Size() >= 2) {
 		di.RegisterProp("points");
-		auto params = std::make_shared<std::vector<std::pair<std::string, EDGETYPE> > >();
+		auto params = std::make_shared<std::vector<std::pair<std::string, EDGE> > >();
 		for (rapidjson::SizeType i = 0; i < subdi.json.Size(); i++) {
 			deserialiser_input itemdi(subdi.json[i], "points_coupling", MkArrayRefName(i), subdi);
 			std::string name;
-			EDGETYPE direction;
+			EDGE direction;
 			if (itemdi.json.IsObject() && CheckTransJsonValueDef(name, itemdi, "name", "", ec)
-					&& CheckTransJsonValueDef(direction, itemdi, "edge", EDGE_NULL, ec)) {
+					&& CheckTransJsonValueDef(direction, itemdi, "edge", EDGE::INVALID, ec)) {
 				params->emplace_back(name, direction);
 				itemdi.PostDeserialisePropCheck(ec);
 			} else {
@@ -523,7 +523,7 @@ template<> void track_target_ptr::Deserialise(const std::string &name, const des
 			ec.RegisterNewError<error_deserialisation>(edi, "Invalid track target definition: no such piece");
 			return;
 		}
-		CheckTransJsonValueDef(direction, edi, "dir", EDGETYPE::EDGE_NULL, ec);
+		CheckTransJsonValueDef(direction, edi, "dir", EDGE::INVALID, ec);
 	};
 
 	if (name.empty()) {

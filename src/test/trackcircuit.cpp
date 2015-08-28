@@ -92,7 +92,7 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 	auto hasroute = [&](generic_track *piece, const route *r) -> bool {
 		if (!piece) return false;
 		bool found = false;
-		piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
+		piece->ReservationEnumeration([&](const route *reserved_route, EDGE r_direction, unsigned int r_index, RRF rr_flags) {
 			if (reserved_route == r) {
 				found = true;
 			}
@@ -105,7 +105,7 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 			CHECK(piece != nullptr);
 			if (!piece) return;
 			bool found = false;
-			piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
+			piece->ReservationEnumeration([&](const route *reserved_route, EDGE r_direction, unsigned int r_index, RRF rr_flags) {
 				if (reserved_route == rt) {
 					INFO("checkstate: piece: " << piece->GetName());
 					found = true;
@@ -131,7 +131,7 @@ TEST_CASE( "track_circuit/dereservation", "Test track circuit deoccupation route
 		REQUIRE(rt != nullptr);
 		auto check_piece = [&](generic_track *piece) {
 			bool found = false;
-			piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
+			piece->ReservationEnumeration([&](const route *reserved_route, EDGE r_direction, unsigned int r_index, RRF rr_flags) {
 				if (reserved_route == rt) {
 					found = true;
 				}

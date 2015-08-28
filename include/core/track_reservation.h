@@ -53,7 +53,7 @@ class inner_track_reservation_state {
 	friend track_reservation_state;
 
 	const route *reserved_route = nullptr;
-	EDGETYPE direction = EDGE_NULL;
+	EDGE direction = EDGE::INVALID;
 	unsigned int index = 0;
 	RRF rr_flags = RRF::ZERO;
 };
@@ -77,14 +77,14 @@ class track_reservation_state : public serialisable_obj {
 	std::vector<inner_track_reservation_state> itrss;
 
 	public:
-	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr);
-	GTF GetGTReservationFlags(EDGETYPE direction) const;
+	bool Reservation(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr);
+	GTF GetGTReservationFlags(EDGE direction) const;
 	bool IsReserved() const;
 	unsigned int GetReservationCount() const;
-	bool IsReservedInDirection(EDGETYPE direction) const;
+	bool IsReservedInDirection(EDGE direction) const;
 
 	// These are templated/inlined as they are called very frequently
-	// F has the function signature: void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)
+	// F has the function signature: void(const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags)
 	template <typename F> unsigned int ReservationEnumeration(F func, RRF check_mask = RRF::RESERVE) const {
 		unsigned int counter = 0;
 		for (const auto &it : itrss) {
@@ -95,7 +95,7 @@ class track_reservation_state : public serialisable_obj {
 		}
 		return counter;
 	}
-	template <typename F> unsigned int ReservationEnumerationInDirection(EDGETYPE direction, F func, RRF check_mask = RRF::RESERVE) const {
+	template <typename F> unsigned int ReservationEnumerationInDirection(EDGE direction, F func, RRF check_mask = RRF::RESERVE) const {
 		unsigned int counter = 0;
 		for (const auto &it : itrss) {
 			if (it.rr_flags & check_mask && it.direction == direction) {
@@ -107,7 +107,7 @@ class track_reservation_state : public serialisable_obj {
 	}
 
 	void ReservationTypeCount(reservation_count_set &rcs) const;
-	void ReservationTypeCountInDirection(reservation_count_set &rcs, EDGETYPE direction) const;
+	void ReservationTypeCountInDirection(reservation_count_set &rcs, EDGE direction) const;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;

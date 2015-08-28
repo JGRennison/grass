@@ -160,8 +160,8 @@ TEST_CASE( "deserialisation/typedef/nested", "Test nested type declaration" ) {
 
 	routing_marker *rm = dynamic_cast<routing_marker *>(env.w->FindTrackByName("R1"));
 	REQUIRE(rm != nullptr);
-	CHECK(rm->GetAvailableRouteTypes(EDGE_FRONT) == RPRT());
-	CHECK(rm->GetAvailableRouteTypes(EDGE_BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::RTC_OVERLAP), 0));
+	CHECK(rm->GetAvailableRouteTypes(EDGE::FRONT) == RPRT());
+	CHECK(rm->GetAvailableRouteTypes(EDGE::BACK) == RPRT(0, route_class::All() & ~route_class::Flag(route_class::RTC_OVERLAP), 0));
 }
 
 TEST_CASE( "deserialisation/error/typedefrecursion", "Test check for typedef recursion" ) {
@@ -215,11 +215,11 @@ TEST_CASE( "deserialisation/scalartypeconv/length", "Test scalar type conversion
 	}
 	REQUIRE(env.ec.GetErrorCount() == 0);
 
-	CHECK(PTR_CHECK(env.w->FindTrackByName("#0"))->GetLength(EDGE_FRONT) == 1000);
-	CHECK(PTR_CHECK(env.w->FindTrackByName("#1"))->GetLength(EDGE_FRONT) == 1000000);
-	CHECK(PTR_CHECK(env.w->FindTrackByName("#2"))->GetLength(EDGE_FRONT) == 2400000);
-	CHECK(PTR_CHECK(env.w->FindTrackByName("#3"))->GetLength(EDGE_FRONT) == 901232);
-	CHECK(PTR_CHECK(env.w->FindTrackByName("#4"))->GetLength(EDGE_FRONT) == 4294966826);
+	CHECK(PTR_CHECK(env.w->FindTrackByName("#0"))->GetLength(EDGE::FRONT) == 1000);
+	CHECK(PTR_CHECK(env.w->FindTrackByName("#1"))->GetLength(EDGE::FRONT) == 1000000);
+	CHECK(PTR_CHECK(env.w->FindTrackByName("#2"))->GetLength(EDGE::FRONT) == 2400000);
+	CHECK(PTR_CHECK(env.w->FindTrackByName("#3"))->GetLength(EDGE::FRONT) == 901232);
+	CHECK(PTR_CHECK(env.w->FindTrackByName("#4"))->GetLength(EDGE::FRONT) == 4294966826);
 }
 
 TEST_CASE( "deserialisation/scalartypeconv/errors", "Test scalar type conversion error detection" ) {

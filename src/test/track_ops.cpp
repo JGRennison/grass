@@ -487,7 +487,7 @@ TEST_CASE( "track/ops/reservation/overset", "Test overset track reservation and 
 		tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.bovlp);
 
-		CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 2);
+		CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 2);
 
 		env.w->SubmitAction(action_reserve_path(*(env.w), tenv.s2, tenv.c));
 		env.w->SubmitAction(action_reserve_path(*(env.w), tenv.s2, tenv.c));
@@ -506,7 +506,7 @@ TEST_CASE( "track/ops/reservation/overset", "Test overset track reservation and 
 		tenv.checksignal(tenv.s1, 2, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 		tenv.checksignal(tenv.s2, 1, route_class::RTC_ROUTE, tenv.c, tenv.c, tenv.covlp);
 
-		CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 3);
+		CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 3);
 
 		env.w->SubmitAction(action_unreserve_track(*(env.w), *tenv.s2));
 		RoundTrip();
@@ -516,6 +516,6 @@ TEST_CASE( "track/ops/reservation/overset", "Test overset track reservation and 
 		tenv.checksignal(tenv.s1, 1, route_class::RTC_ROUTE, tenv.s2, tenv.s2, 0);
 		tenv.checksignal(tenv.s2, 0, route_class::RTC_NULL, 0, 0, tenv.covlp);
 
-		CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 2);
+		CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 2);
 	});
 }

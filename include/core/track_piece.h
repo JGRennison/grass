@@ -36,26 +36,26 @@ class track_seg : public generic_track {
 
 	public:
 	track_seg(world &w_) : generic_track(w_) { }
-	void TrainEnter(EDGETYPE direction, train *t) override;
-	void TrainLeave(EDGETYPE direction, train *t) override;
-	virtual const edge_track_target GetConnectingPiece(EDGETYPE direction) override;
-	virtual unsigned int GetStartOffset(EDGETYPE direction) const override;
-	virtual int GetElevationDelta(EDGETYPE direction) const override;
-	virtual unsigned int GetLength(EDGETYPE direction) const override;
+	void TrainEnter(EDGE direction, train *t) override;
+	void TrainLeave(EDGE direction, train *t) override;
+	virtual const edge_track_target GetConnectingPiece(EDGE direction) override;
+	virtual unsigned int GetStartOffset(EDGE direction) const override;
+	virtual int GetElevationDelta(EDGE direction) const override;
+	virtual unsigned int GetLength(EDGE direction) const override;
 	virtual const speed_restriction_set *GetSpeedRestrictions() const override;
 	virtual const traction_set *GetTractionTypes() const override;
-	virtual unsigned int GetNewOffset(EDGETYPE direction, unsigned int current_offset, unsigned int step) const override;
-	virtual unsigned int GetRemainingLength(EDGETYPE direction, unsigned int current_offset) const override;
+	virtual unsigned int GetNewOffset(EDGE direction, unsigned int current_offset, unsigned int step) const override;
+	virtual unsigned int GetRemainingLength(EDGE direction, unsigned int current_offset) const override;
 	virtual const std::vector<track_train_counter_block *> *GetOtherTrackTriggers() const override;
-	virtual GTF GetFlags(EDGETYPE direction) const override;
-	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
-	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_FRONT; }
+	virtual GTF GetFlags(EDGE direction) const override;
+	virtual EDGE GetReverseDirection(EDGE direction) const override;
+	virtual EDGE GetDefaultValidDirecton() const override { return EDGE::FRONT; }
 
-	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual const edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
-	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const;
-	virtual const edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override;
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
+	virtual bool IsEdgeValid(EDGE edge) const override;
+	virtual const edge_track_target GetEdgeConnectingPiece(EDGE edgeid) override;
+	virtual unsigned int GetMaxConnectingPieces(EDGE direction) const;
+	virtual const edge_track_target GetConnectingPieceByIndex(EDGE direction, unsigned int index) override;
+	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
 
 	virtual std::string GetTypeName() const { return "Track Segment"; }
 
@@ -71,7 +71,7 @@ class track_seg : public generic_track {
 	}
 	virtual bool CanHaveBerth() const override { return true; }
 
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
+	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
 
 	public:
@@ -91,23 +91,23 @@ class crossover : public generic_zlen_track {
 
 	public:
 	crossover(world &w_) : generic_zlen_track(w_) { }
-	virtual void TrainEnter(EDGETYPE direction, train *t) override { }
-	virtual void TrainLeave(EDGETYPE direction, train *t) override { }
+	virtual void TrainEnter(EDGE direction, train *t) override { }
+	virtual void TrainLeave(EDGE direction, train *t) override { }
 
-	virtual const edge_track_target GetConnectingPiece(EDGETYPE direction) override;
-	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const override;
-	virtual GTF GetFlags(EDGETYPE direction) const override;
-	virtual EDGETYPE GetDefaultValidDirecton() const override { return EDGE_X_LEFT; }
+	virtual const edge_track_target GetConnectingPiece(EDGE direction) override;
+	virtual EDGE GetReverseDirection(EDGE direction) const override;
+	virtual GTF GetFlags(EDGE direction) const override;
+	virtual EDGE GetDefaultValidDirecton() const override { return EDGE::X_LEFT; }
 
-	virtual bool IsEdgeValid(EDGETYPE edge) const override;
-	virtual edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) override;
-	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const override;
+	virtual bool IsEdgeValid(EDGE edge) const override;
+	virtual edge_track_target GetEdgeConnectingPiece(EDGE edgeid) override;
+	virtual unsigned int GetMaxConnectingPieces(EDGE direction) const override;
 
-	virtual edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) override {
+	virtual edge_track_target GetConnectingPieceByIndex(EDGE direction, unsigned int index) override {
 		return GetConnectingPiece(direction);
 	}
 
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
+	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
 
 	virtual std::string GetTypeName() const override { return "Crossover"; }
 
@@ -122,7 +122,7 @@ class crossover : public generic_zlen_track {
 	}
 
 	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
+	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
 };
 

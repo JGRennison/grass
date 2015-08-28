@@ -190,9 +190,9 @@ template <> inline bool IsType<const char*>(const rapidjson::Value& val) { retur
 template <> inline bool IsType<std::string>(const rapidjson::Value& val) { return val.IsString(); }
 template <> inline bool IsType<json_object>(const rapidjson::Value& val) { return val.IsObject(); }
 template <> inline bool IsType<json_array>(const rapidjson::Value& val) { return val.IsArray(); }
-template <> inline bool IsType<EDGETYPE>(const rapidjson::Value& val) {
+template <> inline bool IsType<EDGE>(const rapidjson::Value& val) {
 	if (val.IsString()) {
-		EDGETYPE dir;
+		EDGE dir;
 		return DeserialiseDirectionName(dir, val.GetString());
 	} else {
 		return false;
@@ -206,8 +206,8 @@ template <> inline int GetType<int>(const rapidjson::Value& val) { return val.Ge
 template <> inline uint64_t GetType<uint64_t>(const rapidjson::Value& val) { return val.GetUint64(); }
 template <> inline const char* GetType<const char*>(const rapidjson::Value& val) { return val.GetString(); }
 template <> inline std::string GetType<std::string>(const rapidjson::Value& val) { return std::string(val.GetString(), val.GetStringLength()); }
-template <> inline EDGETYPE GetType<EDGETYPE>(const rapidjson::Value& val) {
-	EDGETYPE dir = EDGE_NULL;
+template <> inline EDGE GetType<EDGE>(const rapidjson::Value& val) {
+	EDGE dir = EDGE::INVALID;
 	DeserialiseDirectionName(dir, val.GetString());
 	return dir;
 }
@@ -219,7 +219,7 @@ template <> inline void SetType<int>(Handler &out, int val) { out.Int(val); }
 template <> inline void SetType<uint64_t>(Handler &out, uint64_t val) { out.Uint64(val); }
 template <> inline void SetType<const char*>(Handler &out, const char* val) { out.String(val); }
 template <> inline void SetType<std::string>(Handler &out, std::string val) { out.String(val); }
-template <> inline void SetType<EDGETYPE>(Handler &out, EDGETYPE val) {
+template <> inline void SetType<EDGE>(Handler &out, EDGE val) {
 	out.String(SerialiseDirectionName(val));
 }
 
@@ -230,7 +230,7 @@ template <> inline const char *GetTypeFriendlyName<int>() { return "integer"; }
 template <> inline const char *GetTypeFriendlyName<uint64_t>() { return "unsigned 64-bit integer"; }
 template <> inline const char *GetTypeFriendlyName<const char*>() { return "string"; }
 template <> inline const char *GetTypeFriendlyName<std::string>() { return "string"; }
-template <> inline const char *GetTypeFriendlyName<EDGETYPE>() { return "direction"; }
+template <> inline const char *GetTypeFriendlyName<EDGE>() { return "direction"; }
 template <> inline const char *GetTypeFriendlyName<json_object>() { return "object"; }
 template <> inline const char *GetTypeFriendlyName<json_array>() { return "array"; }
 
@@ -257,7 +257,7 @@ struct flagtyperemover<C, typename std::enable_if<std::is_convertible<C, const c
 };
 
 template<typename C>
-struct flagtyperemover<C, typename std::enable_if<std::is_convertible<C, EDGETYPE>::value>::type> {
+struct flagtyperemover<C, typename std::enable_if<std::is_convertible<C, EDGE>::value>::type> {
 	typedef C type;
 };
 

@@ -23,7 +23,7 @@
 #include "core/signal.h"
 #include "core/serialisable_impl.h"
 
-bool track_reservation_state::Reservation(EDGETYPE in_dir, unsigned int in_index, RRF in_rr_flags, const route *res_route, std::string* fail_reason_key) {
+bool track_reservation_state::Reservation(EDGE in_dir, unsigned int in_index, RRF in_rr_flags, const route *res_route, std::string* fail_reason_key) {
 	if (in_rr_flags & (RRF::RESERVE | RRF::TRY_RESERVE | RRF::PROVISIONAL_RESERVE)) {
 		for (auto &it : itrss) {
 			if (it.rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {    //track already reserved
@@ -89,7 +89,7 @@ unsigned int track_reservation_state::GetReservationCount() const {
 	return count;
 }
 
-bool track_reservation_state::IsReservedInDirection(EDGETYPE direction) const {
+bool track_reservation_state::IsReservedInDirection(EDGE direction) const {
 	for (auto &it : itrss) {
 		if (it.rr_flags & RRF::RESERVE && it.direction == direction) {
 			return true;
@@ -98,7 +98,7 @@ bool track_reservation_state::IsReservedInDirection(EDGETYPE direction) const {
 	return false;
 }
 
-GTF track_reservation_state::GetGTReservationFlags(EDGETYPE checkdirection) const {
+GTF track_reservation_state::GetGTReservationFlags(EDGE checkdirection) const {
 	GTF outputflags = GTF::ZERO;
 	if (IsReserved()) {
 		outputflags |= GTF::ROUTE_SET;
@@ -120,7 +120,7 @@ void track_reservation_state::ReservationTypeCount(reservation_count_set &rcs) c
 	}
 }
 
-void track_reservation_state::ReservationTypeCountInDirection(reservation_count_set &rcs, EDGETYPE direction) const {
+void track_reservation_state::ReservationTypeCountInDirection(reservation_count_set &rcs, EDGE direction) const {
 	for (auto &it : itrss) {
 		if (it.rr_flags & RRF::RESERVE && it.direction == direction) {
 			rcs.route_set++;

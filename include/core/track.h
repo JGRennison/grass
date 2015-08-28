@@ -74,7 +74,7 @@ void SerialiseRouteTargetByParentAndIndex(const route *rt, serialiser_output &so
 
 struct track_berth {
 	std::string contents;
-	EDGETYPE direction = EDGE_NULL;
+	EDGE direction = EDGE::INVALID;
 };
 
 class generic_track : public world_obj {
@@ -103,50 +103,50 @@ class generic_track : public world_obj {
 	typedef const const_track_target_ptr const_edge_track_target;
 
 	protected:
-	std::vector<std::pair<EDGETYPE, unsigned int> > sighting_distances;
+	std::vector<std::pair<EDGE, unsigned int> > sighting_distances;
 
 	public:
 	generic_track(world &w_) : world_obj(w_) { }
 	virtual const speed_restriction_set *GetSpeedRestrictions() const;
 	virtual const traction_set *GetTractionTypes() const;
-	virtual unsigned int GetNewOffset(EDGETYPE direction, unsigned int current_offset, unsigned int step) const = 0;
-	virtual unsigned int GetStartOffset(EDGETYPE direction) const = 0;
-	virtual unsigned int GetRemainingLength(EDGETYPE direction, unsigned int current_offset) const = 0;
-	virtual unsigned int GetLength(EDGETYPE direction) const = 0;
-	virtual int GetElevationDelta(EDGETYPE direction) const = 0;
-	virtual int GetPartialElevationDelta(EDGETYPE direction, unsigned int displacement) const;
+	virtual unsigned int GetNewOffset(EDGE direction, unsigned int current_offset, unsigned int step) const = 0;
+	virtual unsigned int GetStartOffset(EDGE direction) const = 0;
+	virtual unsigned int GetRemainingLength(EDGE direction, unsigned int current_offset) const = 0;
+	virtual unsigned int GetLength(EDGE direction) const = 0;
+	virtual int GetElevationDelta(EDGE direction) const = 0;
+	virtual int GetPartialElevationDelta(EDGE direction, unsigned int displacement) const;
 	virtual const std::vector<track_train_counter_block *> *GetOtherTrackTriggers() const { return nullptr; }
-	virtual void TrainEnter(EDGETYPE direction, train *t);
-	virtual void TrainLeave(EDGETYPE direction, train *t);
-	virtual EDGETYPE GetReverseDirection(EDGETYPE direction) const = 0;
+	virtual void TrainEnter(EDGE direction, train *t);
+	virtual void TrainLeave(EDGE direction, train *t);
+	virtual EDGE GetReverseDirection(EDGE direction) const = 0;
 
-	virtual edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) = 0;
-	const_edge_track_target GetEdgeConnectingPiece(EDGETYPE edgeid) const;
-	virtual edge_track_target GetConnectingPiece(EDGETYPE direction) = 0;
-	const_edge_track_target GetConnectingPiece(EDGETYPE edgeid) const;
-	virtual unsigned int GetMaxConnectingPieces(EDGETYPE direction) const = 0;
-	virtual edge_track_target GetConnectingPieceByIndex(EDGETYPE direction, unsigned int index) = 0;
-	const_edge_track_target GetConnectingPieceByIndex(EDGETYPE edgeid, unsigned int index) const;
-	virtual unsigned int GetCurrentNominalConnectionIndex(EDGETYPE direction) const { return 0; }
-	unsigned int GetSightingDistance(EDGETYPE direction) const;
+	virtual edge_track_target GetEdgeConnectingPiece(EDGE edgeid) = 0;
+	const_edge_track_target GetEdgeConnectingPiece(EDGE edgeid) const;
+	virtual edge_track_target GetConnectingPiece(EDGE direction) = 0;
+	const_edge_track_target GetConnectingPiece(EDGE edgeid) const;
+	virtual unsigned int GetMaxConnectingPieces(EDGE direction) const = 0;
+	virtual edge_track_target GetConnectingPieceByIndex(EDGE direction, unsigned int index) = 0;
+	const_edge_track_target GetConnectingPieceByIndex(EDGE edgeid, unsigned int index) const;
+	virtual unsigned int GetCurrentNominalConnectionIndex(EDGE direction) const { return 0; }
+	unsigned int GetSightingDistance(EDGE direction) const;
 
 	inline track_circuit *GetTrackCircuit() { return tc; }
 	inline const track_circuit *GetTrackCircuit() const { return tc; }
 
-	bool FullConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec);
+	bool FullConnect(EDGE this_entrance_direction, const track_target_ptr &target_entrance, error_collection &ec);
 
 	protected:
 	//return true if reservation OK
-	virtual bool ReservationV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) = 0;
-	virtual void ReservationActionsV(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route,
+	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) = 0;
+	virtual void ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route,
 			std::function<void(action &&reservation_act)> submit_action) { }
 	void DeserialiseReservationState(track_reservation_state &trs, const deserialiser_input &di, const char *name, error_collection &ec);
 
 	public:
 	void UpdateTrackCircuitReservationState();
-	bool Reservation(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr);
+	bool Reservation(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr);
 
-	void ReservationActions(EDGETYPE direction, unsigned int index, RRF rr_flags, const route *res_route,
+	void ReservationActions(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route,
 			std::function<void(action &&reservation_act)> submit_action) {
 		ReservationActionsV(direction, index, rr_flags, res_route, submit_action);
 	}
@@ -160,9 +160,9 @@ class generic_track : public world_obj {
 	virtual bool AutoConnections(error_collection &ec);
 	virtual bool CheckUnconnectedEdges(error_collection &ec);
 
-	virtual EDGETYPE GetDefaultValidDirecton() const = 0;
+	virtual EDGE GetDefaultValidDirecton() const = 0;
 
-	virtual GTF GetFlags(EDGETYPE direction) const = 0;
+	virtual GTF GetFlags(EDGE direction) const = 0;
 
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
@@ -170,27 +170,27 @@ class generic_track : public world_obj {
 	virtual void TrackTick() { }
 
 	virtual bool IsTrackAlwaysPassable() const { return true; }
-	inline bool IsTrackPassable(EDGETYPE direction, unsigned int connection_index) const;
+	inline bool IsTrackPassable(EDGE direction, unsigned int connection_index) const;
 
-	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags)> func,
+	unsigned int ReservationEnumeration(std::function<void(const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags)> func,
 			RRF check_mask);
-	unsigned int ReservationEnumerationInDirection(EDGETYPE direction, std::function<void(const route *reserved_route, EDGETYPE direction,
+	unsigned int ReservationEnumerationInDirection(EDGE direction, std::function<void(const route *reserved_route, EDGE direction,
 			unsigned int index, RRF rr_flags)> func, RRF check_mask);
 	void ReservationTypeCount(reservation_count_set &rcs) const;
-	void ReservationTypeCountInDirection(reservation_count_set &rcs, EDGETYPE direction) const;
+	void ReservationTypeCountInDirection(reservation_count_set &rcs, EDGE direction) const;
 
 	struct edgelistitem {
-		EDGETYPE edge;
+		EDGE edge;
 		const track_target_ptr *target;
-		edgelistitem(EDGETYPE e, const track_target_ptr &t) : edge(e), target(&t) { }
+		edgelistitem(EDGE e, const track_target_ptr &t) : edge(e), target(&t) { }
 		edgelistitem(const edgelistitem &in) : edge(in.edge), target(in.target) { }
 	};
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const = 0;
-	virtual bool IsEdgeValid(EDGETYPE edge) const = 0;
+	virtual bool IsEdgeValid(EDGE edge) const = 0;
 
 	protected:
-	virtual EDGETYPE GetAvailableAutoConnectionDirection(bool forward_connection) const = 0;
-	bool HalfConnect(EDGETYPE this_entrance_direction, const track_target_ptr &target_entrance);
+	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const = 0;
+	bool HalfConnect(EDGE this_entrance_direction, const track_target_ptr &target_entrance);
 
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &output_list) { return 0; }
 
@@ -198,7 +198,7 @@ class generic_track : public world_obj {
 
 	public:
 	inline bool HasBerth() { return static_cast<bool>(berth); }
-	inline bool HasBerth(EDGETYPE direction) { return HasBerth() && (GetBerth()->direction == EDGE_NULL || GetBerth()->direction == direction); }
+	inline bool HasBerth(EDGE direction) { return HasBerth() && (GetBerth()->direction == EDGE::INVALID || GetBerth()->direction == direction); }
 	inline track_berth *GetBerth() { return berth.get(); }
 
 	struct train_occupation {
@@ -223,7 +223,7 @@ template<> struct enum_traits< generic_track::GTPRIVF > { static constexpr bool 
 
 template <typename T> struct vartrack_target_ptr {
 	T *track;
-	EDGETYPE direction;
+	EDGE direction;
 
 	inline bool IsValid() const { return static_cast<bool>(track); }
 	inline void ReverseDirection() {
@@ -231,10 +231,10 @@ template <typename T> struct vartrack_target_ptr {
 	}
 	inline void Reset() {
 		track = nullptr;
-		direction = EDGE_NULL;
+		direction = EDGE::INVALID;
 	}
 	vartrack_target_ptr() { Reset(); }
-	vartrack_target_ptr(T *track_, EDGETYPE direction_) : track(track_), direction(direction_) { }
+	vartrack_target_ptr(T *track_, EDGE direction_) : track(track_), direction(direction_) { }
 	template <typename S>
 	vartrack_target_ptr(const vartrack_target_ptr<S> &in) : track(in.track), direction(in.direction) { }
 	template <typename S> inline bool operator==(const vartrack_target_ptr<S> &other) const {
@@ -260,7 +260,7 @@ template<> inline const vartrack_target_ptr<generic_track> &vartrack_target_ptr<
 	return track ? track->GetConnectingPiece(direction) : empty_track_target;
 }
 
-inline bool generic_track::IsTrackPassable(EDGETYPE direction, unsigned int connection_index) const {
+inline bool generic_track::IsTrackPassable(EDGE direction, unsigned int connection_index) const {
 	return GetConnectingPiece(direction) == GetConnectingPieceByIndex(direction, connection_index);
 }
 
@@ -277,10 +277,10 @@ template <typename T> class vartrack_location {
 		track_piece = targ;
 		offset = track_piece.track ? track_piece.track->GetStartOffset(track_piece.direction) : 0;
 	}
-	inline void SetTargetStartLocation(generic_track *t, EDGETYPE dir) {
+	inline void SetTargetStartLocation(generic_track *t, EDGE dir) {
 		SetTargetStartLocation(vartrack_target_ptr<T>(t, dir));
 	}
-	inline const EDGETYPE &GetDirection() const {
+	inline const EDGE &GetDirection() const {
 		return track_piece.direction;
 	}
 	inline T * const &GetTrack() const {
@@ -292,7 +292,7 @@ template <typename T> class vartrack_location {
 	inline const vartrack_target_ptr<T> &GetTrackTargetPtr() const {
 		return track_piece;
 	}
-	inline EDGETYPE &GetDirection() {
+	inline EDGE &GetDirection() {
 		return track_piece.direction;
 	}
 	inline T *&GetTrack() {
@@ -315,7 +315,7 @@ template <typename T> class vartrack_location {
 	vartrack_location(const vartrack_target_ptr<T> &targ) {
 		SetTargetStartLocation(targ);
 	}
-	vartrack_location(T *track_, EDGETYPE direction_, unsigned int offset_) : track_piece(track_, direction_), offset(offset_) { }
+	vartrack_location(T *track_, EDGE direction_, unsigned int offset_) : track_piece(track_, direction_), offset(offset_) { }
 
 	void Deserialise(const std::string &name, const deserialiser_input &di, error_collection &ec);
 	void Serialise(const std::string &name, serialiser_output &so, error_collection &ec) const;
@@ -324,11 +324,11 @@ template <typename T> class vartrack_location {
 class generic_zlen_track : public generic_track {
 	public:
 	generic_zlen_track(world &w_) : generic_track(w_) { }
-	virtual unsigned int GetNewOffset(EDGETYPE direction, unsigned int current_offset, unsigned int step) const override;
-	virtual unsigned int GetRemainingLength(EDGETYPE direction, unsigned int current_offset) const override;
-	virtual unsigned int GetLength(EDGETYPE direction) const override;
-	virtual unsigned int GetStartOffset(EDGETYPE direction) const override;
-	virtual int GetElevationDelta(EDGETYPE direction) const override;
+	virtual unsigned int GetNewOffset(EDGE direction, unsigned int current_offset, unsigned int step) const override;
+	virtual unsigned int GetRemainingLength(EDGE direction, unsigned int current_offset) const override;
+	virtual unsigned int GetLength(EDGE direction) const override;
+	virtual unsigned int GetStartOffset(EDGE direction) const override;
+	virtual int GetElevationDelta(EDGE direction) const override;
 };
 
 class layout_initialisation_error_obj : public error_obj {
@@ -352,13 +352,13 @@ std::ostream& StreamOutTrackPtr(std::ostream& os, const track_target_ptr& obj);
 template <typename C> std::ostream& operator<<(std::ostream& os, const vartrack_target_ptr<C>& obj) { return StreamOutTrackPtr(os, obj); }
 std::ostream& operator<<(std::ostream& os, const track_location& obj);
 
-inline generic_track::const_edge_track_target generic_track::GetEdgeConnectingPiece(EDGETYPE edgeid) const {
+inline generic_track::const_edge_track_target generic_track::GetEdgeConnectingPiece(EDGE edgeid) const {
 	return const_cast<generic_track*>(this)->GetEdgeConnectingPiece(edgeid);
 }
-inline generic_track::const_edge_track_target generic_track::GetConnectingPiece(EDGETYPE edgeid) const  {
+inline generic_track::const_edge_track_target generic_track::GetConnectingPiece(EDGE edgeid) const  {
 	return const_cast<generic_track*>(this)->GetConnectingPiece(edgeid);
 }
-inline generic_track::const_edge_track_target generic_track::GetConnectingPieceByIndex(EDGETYPE edgeid, unsigned int index) const  {
+inline generic_track::const_edge_track_target generic_track::GetConnectingPieceByIndex(EDGE edgeid, unsigned int index) const  {
 	return const_cast<generic_track*>(this)->GetConnectingPieceByIndex(edgeid, index);
 }
 

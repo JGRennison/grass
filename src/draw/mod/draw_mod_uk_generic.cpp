@@ -256,7 +256,7 @@ namespace draw {
 				}
 			}
 
-			route_class::set route_types = gs->GetAvailableRouteTypes(EDGE_FRONT).start;
+			route_class::set route_types = gs->GetAvailableRouteTypes(EDGE::FRONT).start;
 			if (route_types & route_class::AllRoutes()) {
 				sigflags |= SDF_HAVE_ROUTE;
 			}

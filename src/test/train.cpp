@@ -219,15 +219,15 @@ TEST_CASE("/train/train/deserialisation/dynamics", "Train deserialisation and dy
 	});
 }
 
-static void check_position(const track_location &l, std::string trackname, EDGETYPE direction, unsigned int trackpos) {
+static void check_position(const track_location &l, std::string trackname, EDGE direction, unsigned int trackpos) {
 	REQUIRE(l.GetTrack() != nullptr);
 	CHECK(l.GetTrack()->GetName() == trackname);
 	CHECK(l.GetDirection() == direction);
 	CHECK(l.GetOffset() == trackpos);
 };
 
-static void check_train_position(const train *t, std::string head_trackname, EDGETYPE head_direction, unsigned int head_trackpos,
-		std::string tail_trackname, EDGETYPE tail_direction, unsigned int tail_trackpos) {
+static void check_train_position(const train *t, std::string head_trackname, EDGE head_direction, unsigned int head_trackpos,
+		std::string tail_trackname, EDGE tail_direction, unsigned int tail_trackpos) {
 	REQUIRE(t != nullptr);
 	INFO("Checking train: " << t->GetName());
 	{
@@ -324,7 +324,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 		);
 		train *t = tenv->w->FindTrainByName("TR0");
 		REQUIRE(t != nullptr);
-		check_train_position(t, "S0", EDGE_FRONT, 0, "T0", EDGE_FRONT, 40000);
+		check_train_position(t, "S0", EDGE::FRONT, 0, "T0", EDGE::FRONT, 40000);
 		check_ttcbs(*tenv, "Pre-uproot", true);
 
 		check_uproot_train(t);
@@ -341,8 +341,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 		REQUIRE(t != nullptr);
 		check_train_is_uprooted(t);
 
-		check_drop_train(t, track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
-		check_train_position(t, "S0", EDGE_FRONT, 0, "T0", EDGE_FRONT, 40000);
+		check_drop_train(t, track_location(tenv->w->FindTrackByName("S0"), EDGE::FRONT, 0));
+		check_train_position(t, "S0", EDGE::FRONT, 0, "T0", EDGE::FRONT, 40000);
 		check_ttcbs(*tenv, "Post-drop, pre-uproot", true);
 
 		check_uproot_train(t);
@@ -355,7 +355,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 4} ] } )"
 		);
 		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
-		check_drop_train_insufficient_track(t, track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
+		check_drop_train_insufficient_track(t, track_location(tenv->w->FindTrackByName("S0"), EDGE::FRONT, 0));
 	}
 	{
 		INFO("4: Direct drop: non-zero offset, just short of TTCBs");
@@ -364,8 +364,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 		);
 		check_ttcbs(*tenv, "Pre-drop", false);
 		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
-		check_drop_train(t, track_location(tenv->w->FindTrackByName("T1"), EDGE_FRONT, 30000));
-		check_train_position(t, "T1", EDGE_FRONT, 30000, "T1", EDGE_FRONT, 0);
+		check_drop_train(t, track_location(tenv->w->FindTrackByName("T1"), EDGE::FRONT, 30000));
+		check_train_position(t, "T1", EDGE::FRONT, 30000, "T1", EDGE::FRONT, 0);
 		check_ttcbs(*tenv, "Post-drop", false);
 	}
 	{
@@ -374,8 +374,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
 		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
-		check_drop_train(t, track_location(tenv->w->FindTrackByName("T3"), EDGE_BACK, 170000));
-		check_train_position(t, "T3", EDGE_BACK, 170000, "T3", EDGE_BACK, 200000);
+		check_drop_train(t, track_location(tenv->w->FindTrackByName("T3"), EDGE::BACK, 170000));
+		check_train_position(t, "T3", EDGE::BACK, 170000, "T3", EDGE::BACK, 200000);
 	}
 	{
 		INFO("6: Direct drop: non-zero offset, reverse, just over end error");
@@ -383,7 +383,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
 		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
-		check_drop_train_insufficient_track(t, track_location(tenv->w->FindTrackByName("T3"), EDGE_BACK, 170001));
+		check_drop_train_insufficient_track(t, track_location(tenv->w->FindTrackByName("T3"), EDGE::BACK, 170001));
 	}
 	{
 		INFO("7: Direct drop: over OOC points");
@@ -392,7 +392,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 		);
 		train *t = PTR_CHECK(tenv->w->FindTrainByName("TR0"));
 		PTR_CHECK(tenv->w->FindTrackByNameCast<points>("P0"))->SetPointsFlagsMasked(0, points::PTF::OOC, points::PTF::OOC);
-		check_drop_train_insufficient_track(t, track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
+		check_drop_train_insufficient_track(t, track_location(tenv->w->FindTrackByName("S0"), EDGE::FRONT, 0));
 	}
 	{
 		INFO("8: Direct drop: collision test: overlap error at back");
@@ -400,8 +400,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] }, )"
 				R"({ "type" : "train", "name" : "TR1", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
-		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
-		check_drop_train_insufficient_track(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T3"), EDGE_FRONT, 29999));
+		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE::FRONT, 0));
+		check_drop_train_insufficient_track(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T3"), EDGE::FRONT, 29999));
 	}
 	{
 		INFO("9: Direct drop: collision test: just fits behind");
@@ -409,8 +409,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] }, )"
 				R"({ "type" : "train", "name" : "TR1", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
-		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
-		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T3"), EDGE_FRONT, 30000));
+		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE::FRONT, 0));
+		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T3"), EDGE::FRONT, 30000));
 	}
 	{
 		INFO("10: Direct drop: collision test: overlap error at front");
@@ -418,8 +418,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] }, )"
 				R"({ "type" : "train", "name" : "TR1", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
-		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
-		check_drop_train_insufficient_track(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T1"), EDGE_BACK, 49999));
+		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE::FRONT, 0));
+		check_drop_train_insufficient_track(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T1"), EDGE::BACK, 49999));
 	}
 	{
 		INFO("11: Direct drop: collision test: just fits in front");
@@ -427,8 +427,8 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] }, )"
 				R"({ "type" : "train", "name" : "TR1", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
-		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
-		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("S0"), EDGE_BACK, 0));
+		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE::FRONT, 0));
+		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("S0"), EDGE::BACK, 0));
 	}
 	{
 		INFO("12: Direct drop: collision test: overlap error across whole length");
@@ -436,7 +436,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 				R"({ "type" : "train", "name" : "TR0", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 2} ] }, )"
 				R"({ "type" : "train", "name" : "TR1", "active_tractions" : ["diesel"], "vehicle_classes" : [ { "class_name" : "VC1", "count" : 1} ] } )"
 		);
-		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE_FRONT, 0));
-		check_drop_train_insufficient_track(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T1"), EDGE_FRONT, 49000));
+		check_drop_train(PTR_CHECK(tenv->w->FindTrainByName("TR0")), track_location(tenv->w->FindTrackByName("S0"), EDGE::FRONT, 0));
+		check_drop_train_insufficient_track(PTR_CHECK(tenv->w->FindTrainByName("TR1")), track_location(tenv->w->FindTrackByName("T1"), EDGE::FRONT, 49000));
 	}
 }

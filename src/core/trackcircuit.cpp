@@ -173,7 +173,7 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 		if (bt_tc && bt_tc != tc) {
 			//hit different TC, unreserve if route not reserved here
 			bool found = false;
-			bt_piece->ReservationEnumeration([&](const route *chk_reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+			bt_piece->ReservationEnumeration([&](const route *chk_reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
 				if (reserved_route == chk_reserved_route) {
 					found = true;
 				}
@@ -183,10 +183,10 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 			//hit same TC or no TC, unreserve if route runs out, or keep scanning
 			bool success = true;
 			bool unreserve = false;
-			EDGETYPE unresdirection;
+			EDGE unresdirection;
 			unsigned int unresidex;
 			RRF unresrrflags;
-			bt_piece->ReservationEnumeration([&](const route *chk_reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+			bt_piece->ReservationEnumeration([&](const route *chk_reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
 				if (reserved_route == chk_reserved_route) {
 					if (rr_flags & RRF::START_PIECE) {
 						if (reserved_route->route_common_flags & route::RCF::TORR) {
@@ -228,10 +228,10 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 		} else {
 			bool success = false;
 			bool unreserve = false;
-			EDGETYPE unresdirection;
+			EDGE unresdirection;
 			unsigned int unresidex;
 			RRF unresrrflags;
-			ft_piece->ReservationEnumeration([&](const route *chk_reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+			ft_piece->ReservationEnumeration([&](const route *chk_reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
 				if (reserved_route == chk_reserved_route) {
 					if (rr_flags & RRF::END_PIECE) {
 						unreserve = true;
@@ -261,7 +261,7 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 	const std::vector<generic_track *> &pieces = tc->GetOwnedTrackSet();
 	for (auto piece : pieces) {
 		std::vector<std::function<void()> > fixups;
-		piece->ReservationEnumeration([&](const route *reserved_route, EDGETYPE r_direction, unsigned int r_index, RRF rr_flags) {
+		piece->ReservationEnumeration([&](const route *reserved_route, EDGE r_direction, unsigned int r_index, RRF rr_flags) {
 			if (!route_class::IsValid(reserved_route->type) || route_class::IsOverlap(reserved_route->type)) {
 				return;
 			}
@@ -280,7 +280,7 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 
 void track_train_counter_block::GetSetRoutes(std::vector<const route *> &routes) {
 	for (generic_track *it : owned_pieces) {
-		it->ReservationEnumeration([&](const route *reserved_route, EDGETYPE direction, unsigned int index, RRF rr_flags) {
+		it->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
 			if (std::find(routes.begin(), routes.end(), reserved_route) == routes.end()) {
 				routes.push_back(reserved_route);
 			}

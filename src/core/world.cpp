@@ -58,7 +58,7 @@ void world::GameStep(world_time delta) {
 	}
 }
 
-void world::ConnectTrack(generic_track *track1, EDGETYPE dir1, std::string name2, EDGETYPE dir2, error_collection &ec) {
+void world::ConnectTrack(generic_track *track1, EDGE dir1, std::string name2, EDGE dir2, error_collection &ec) {
 	auto target_it = all_pieces.find(name2);
 	if (target_it == all_pieces.end()) {
 		connection_forward_declarations.emplace_back(track1, dir1, name2, dir2);
@@ -226,7 +226,7 @@ void world::CapAllTrackPieceUnconnectedEdges() {
 					start_of_line *sol = new start_of_line(*this);
 					sol->SetName(name);
 					newpieces.push_back(sol);
-					sol->FullConnect(EDGE_FRONT, track_target_ptr(it.second.get(), jt.edge), ec);
+					sol->FullConnect(EDGE::FRONT, track_target_ptr(it.second.get(), jt.edge), ec);
 				}
 			}
 		}
