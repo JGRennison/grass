@@ -143,11 +143,11 @@ void gui_layout::layout_track_obj::Deserialise(const deserialiser_input &di, err
 	if (CheckTransJsonValue(layout_direction, di, "direction", ec)) {
 		set_members |= LTOSM_LAYOUTDIR;
 	}
-	if (CheckTransJsonValue(track_type, di, "tracktype", ec)) {
+	if (CheckTransJsonValue(track_type, di, "track_type", ec)) {
 		set_members |= LTOSM_TRACKTYPE;
 	}
 
-	deserialiser_input pointsdi(di.json["pointslayout"], "pointslayout", "pointslayout", di);
+	deserialiser_input pointsdi(di.json["points_layout"], "points_layout", "points_layout", di);
 	if (pointsdi.json.IsObject()) {
 		points_layout.reset(new points_layout_info());
 		auto parse_dir = [&](LAYOUT_DIR &out, const char *name) {
