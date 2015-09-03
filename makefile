@@ -145,7 +145,7 @@ LIBS_main:=`wx-config --libs $(WXCFGFLAGS)`
 WX_CFLAGS+=$(patsubst -I/%,-isystem /%,$(shell wx-config --cxxflags $(WXCFGFLAGS)))
 GCC_MAJOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f1)
 GCC_MINOR:=$(shell $(GCC) -dumpversion | cut -d'.' -f2)
-ARCH:=$(shell test $(GCC_MAJOR) -gt 4 -o \( $(GCC_MAJOR) -eq 4 -a $(GCC_MINOR) -ge 2 \) && echo native)
+CFLAGS+=$(shell [ -t 0 ] && [ $(GCC_MAJOR) -gt 4 -o \( $(GCC_MAJOR) -eq 4 -a $(GCC_MINOR) -ge 9 \) ] && echo -fdiagnostics-color)
 
 wxconf:=$(shell wx-config --selected-config)
 ifeq (gtk, $(findstring gtk,$(wxconf)))
