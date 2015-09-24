@@ -46,7 +46,7 @@ void error_obj::StreamOut(std::ostream& os) const {
 error_obj::error_obj() {
 	millitimestamp = GetMilliTime();
 	timestamp = time(nullptr);
-	msg << gr_strftime(string_format("[%%F %%T.%03d %%z] Error: ", millitimestamp), localtime(&timestamp), timestamp, true);
+	msg << gr_strftime(string_format("[%%F %%T.%03d %%z] Error: ", millitimestamp).c_str(), localtime(&timestamp), timestamp, true);
 }
 
 std::ostream& operator<<(std::ostream& os, const error_obj& obj) {

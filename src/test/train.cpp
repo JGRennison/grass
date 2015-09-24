@@ -162,7 +162,7 @@ TEST_CASE("/train/train/deserialisation/dynamics", "Train deserialisation and dy
 	};
 
 	auto make_test_tenv = [&](const std::string &vehstring, const std::string &activetractions) {
-		test_fixture_world *env = mktenv(string_format(string_format(test_train_deserialisation_dynamics, vehstring.c_str()), activetractions.c_str()));
+		test_fixture_world *env = mktenv(string_format(string_format(test_train_deserialisation_dynamics.c_str(), vehstring.c_str()).c_str(), activetractions.c_str()));
 		env->ws->DeserialiseGameState(env->ec);
 		return env;
 	};
@@ -305,7 +305,7 @@ TEST_CASE("/train/train/dropanduproot", "Drop train into position and train upro
 
 	auto make_test_tenv = [&](const std::string &trainstring) {
 		std::unique_ptr<test_fixture_world> env {
-			new test_fixture_world_init_checked(string_format(test_train_drop_into_position, trainstring.c_str()), true, true, true)
+			new test_fixture_world_init_checked(string_format(test_train_drop_into_position.c_str(), trainstring.c_str()), true, true, true)
 		};
 		return std::move(env);
 	};

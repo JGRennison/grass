@@ -47,8 +47,8 @@ template <typename I> I fast_isqrt( I n ){
 	return p;
 }
 
-std::string string_format(const std::string &fmt, ...);
-std::string gr_strftime(const std::string &format, const struct tm *tm, time_t timestamp, bool localtime);
+std::string string_format(const char *fmt, ...);
+std::string gr_strftime(const char *format, const struct tm *tm, time_t timestamp, bool localtime);
 unsigned int GetMilliTime();
 size_t GetLineNumberOfStringOffset(const std::string &input, size_t offset, size_t *linestart = nullptr, size_t *lineend = nullptr);
 

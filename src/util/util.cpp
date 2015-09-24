@@ -31,14 +31,14 @@
 #endif
 
 //from http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf#2342176
-std::string string_format(const std::string &fmt, ...) {
+std::string string_format(const char *fmt, ...) {
 	int size = 100;
 	std::string str;
 	va_list ap;
 	while (true) {
 		str.resize(size);
 		va_start(ap, fmt);
-		int n = vsnprintf((char *)str.c_str(), size, fmt.c_str(), ap);
+		int n = vsnprintf((char *)str.c_str(), size, fmt, ap);
 		va_end(ap);
 		if (n > -1 && n < size) {
 			str.resize(n);
@@ -53,7 +53,7 @@ std::string string_format(const std::string &fmt, ...) {
 	return str;
 }
 
-std::string gr_strftime(const std::string &format, const struct tm *tm, time_t timestamp, bool localtime) {
+std::string gr_strftime(const char *format, const struct tm *tm, time_t timestamp, bool localtime) {
 	#ifdef _WIN32
 		//%z is broken in MSVCRT, use a replacement
 		//also add %F, %R, %T, %s
@@ -61,7 +61,7 @@ std::string gr_strftime(const std::string &format, const struct tm *tm, time_t t
 
 	std::string newfmt;
 	std::string &real_format = newfmt;
-	const char *ch = format.c_str();
+	const char *ch = format;
 	const char *cur = ch;
 	while (*ch) {
 		if (ch[0] == '%') {
@@ -106,7 +106,7 @@ std::string gr_strftime(const std::string &format, const struct tm *tm, time_t t
 	}
 	real_format += cur;
 	#else
-	const std::string &real_format=format;
+	const std::string &real_format = format;
 	#endif
 
 	char timestr[256];
