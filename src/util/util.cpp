@@ -38,7 +38,7 @@ std::string string_format(const char *fmt, ...) {
 	while (true) {
 		str.resize(size);
 		va_start(ap, fmt);
-		int n = vsnprintf((char *)str.c_str(), size, fmt, ap);
+		int n = vsnprintf(const_cast<char *>(str.c_str()), size, fmt, ap);
 		va_end(ap);
 		if (n > -1 && n < size) {
 			str.resize(n);

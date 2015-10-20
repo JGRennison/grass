@@ -39,7 +39,7 @@ LIST_RESOBJS = $(foreach dir,$1,$(call GENERIC_RESOBJS,$(dir)))
 OUTDIR:=bin/
 OUTNAME:=grass
 TESTOUTNAME=$(OUTNAME)-test
-CFLAGS=-g -O3 -Wextra -Wall -Wno-unused-parameter -Wshadow -Wcast-qual
+CFLAGS=-g -O3 -Wextra -Wall -Wno-unused-parameter -Wcast-qual
 AFLAGS=-g
 #-Wno-missing-braces -Wno-unused-parameter
 CXXFLAGS:=-std=gnu++0x
