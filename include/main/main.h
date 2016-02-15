@@ -74,6 +74,7 @@ class grass_app: public wxApp {
 	std::shared_ptr<draw::draw_options> GetDrawOptions();
 	void DisplayErrors(error_collection &ec);
 	void MakeNewViewWin();
+	void RefreshAllViews();
 
 	protected:
 	void RunGameTimer();

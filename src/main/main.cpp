@@ -147,3 +147,10 @@ void grass_app::InitialDrawAll() {
 		});
 	}
 }
+
+void grass_app::RefreshAllViews() {
+	InitialDrawAll();
+	for (auto &it : panelset->viewpanels) {
+		it->Refresh();
+	}
+}
