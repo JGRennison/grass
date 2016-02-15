@@ -22,7 +22,7 @@
 namespace draw {
 
 	struct draw_options {
-
+		bool tc_gaps = false;
 	};
 
 };

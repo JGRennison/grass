@@ -19,6 +19,7 @@
 #include "draw/mod/draw_mod_uk_generic.h"
 #include "draw/draw_res.h"
 #include "draw/draw_engine.h"
+#include "draw/draw_options.h"
 #include "layout/layout.h"
 #include "core/track.h"
 #include "core/signal.h"
@@ -39,6 +40,8 @@ IMG_EXTERN(sigpost_bar_png, sigpost_bar)
 IMG_EXTERN(circle_png, circle)
 IMG_EXTERN(shunt_png, shunt)
 IMG_EXTERN(blank_png, blank)
+IMG_EXTERN(tc_gap_r_png, tc_gap_r)
+IMG_EXTERN(tc_gap_d_png, tc_gap_d)
 
 #define BERTHLEVEL 10
 #define UNKNOWNLEVEL 20
@@ -57,6 +60,8 @@ namespace {
 		SID_signal_shunt    = 9,
 		SID_signal_post     = 16,
 		SID_signal_post_bar = 17,
+		SID_tc_gap_r        = 24,
+		SID_tc_gap_d        = 25,
 
 		SID_dir_mask        = 0xF00,
 		SID_dir_shift       = 8,
@@ -66,6 +71,8 @@ namespace {
 		SID_has_tc          = 0x2000,
 		SID_tc_occ          = 0x4000,
 		SID_reserved        = 0x8000,
+		SID_has_tc_gap_r    = 0x10000,
+		SID_has_tc_gap_d    = 0x20000,
 
 		SID_signal_red      = 0x2000,
 		SID_signal_yellow   = 0x4000,
@@ -193,7 +200,25 @@ namespace draw {
 		draw::sprite_ref base_sprite_ooc;
 		draw::sprite_ref base_sprite_normal;
 		draw::sprite_ref base_sprite_reverse;
+		draw::sprite_ref tc_gap_sprite;
 	};
+
+	draw::sprite_ref PointsLayoutTcGapSpriteRef(const generic_track *gt, const gui_layout::layout_track_obj::points_layout_info &info) {
+		draw::sprite_ref sr = 0;
+
+		auto exec_dir = [&](LAYOUT_DIR dir, EDGE edge) {
+			if (dir == LAYOUT_DIR::R && gt->GetTrackCircuit() != gt->GetEdgeConnectingPiece(edge).track->GetTrackCircuit()) {
+				sr |= SID_has_tc_gap_r;
+			} else if (dir == LAYOUT_DIR::D && gt->GetTrackCircuit() != gt->GetEdgeConnectingPiece(edge).track->GetTrackCircuit()) {
+				sr |= SID_has_tc_gap_d;
+			}
+		};
+		exec_dir(info.facing, EDGE::PTS_FACE);
+		exec_dir(info.normal, EDGE::PTS_NORMAL);
+		exec_dir(info.reverse, EDGE::PTS_REVERSE);
+
+		return sr;
+	}
 
 	points_sprites MakePointsSprites(const generic_track *gt, const gui_layout::layout_track_obj::points_layout_info *layout_info) {
 		points_sprites out;
@@ -211,7 +236,12 @@ namespace draw {
 				layoutdir_to_spriteid(gui_layout::FoldLayoutDirection(gui_layout::EdgesToDirection(layout_info->facing, layout_info->normal)));
 		out.base_sprite_reverse = base | SID_track_seg |
 				layoutdir_to_spriteid(gui_layout::FoldLayoutDirection(gui_layout::EdgesToDirection(layout_info->facing, layout_info->reverse)));
+		out.tc_gap_sprite = PointsLayoutTcGapSpriteRef(gt, *layout_info);
 		return out;
+	}
+
+	draw::sprite_ref TcGapExtras(const draw_engine &eng, draw::sprite_ref tc_gap_sprite) {
+		return eng.GetOptions()->tc_gaps ? tc_gap_sprite : 0;
 	}
 
 	draw_func_type draw_module_uk_generic::GetDrawTrack(const std::shared_ptr<gui_layout::layout_track_obj> &obj, error_collection &ec) {
@@ -368,6 +398,7 @@ namespace draw {
 				int y;
 				LAYOUT_DIR direction;
 				draw::sprite_ref base_sprite;
+				draw::sprite_ref tc_gap_extra;
 			};
 			auto points = std::make_shared<std::vector<track_segpointinfo> >();
 
@@ -376,13 +407,30 @@ namespace draw {
 				if (ts->GetTrackCircuit()) {
 					base_sprite |= SID_has_tc;
 				}
-				points->push_back({sx, sy, sdir, base_sprite});
+				points->push_back({sx, sy, sdir, base_sprite, 0});
 			});
+
+			if (!points->empty()) {
+				auto check_tc_gap = [&](gui_layout::LAYOUT_DIR dir, EDGE out_edge) -> draw::sprite_ref {
+					if (gt->GetEdgeConnectingPiece(out_edge).track->GetTrackCircuit() == gt->GetTrackCircuit()) return 0;
+
+					gui_layout::LAYOUT_DIR out_edge_dir = DirectionToOutputEdge(dir);
+					draw::sprite_ref out = 0;
+					if (out_edge_dir == gui_layout::LAYOUT_DIR::R) {
+						out |= SID_has_tc_gap_r;
+					} else if (out_edge_dir == gui_layout::LAYOUT_DIR::R) {
+						out |= SID_has_tc_gap_d;
+					}
+					return out;
+				};
+				points->front().tc_gap_extra |= check_tc_gap(ReverseLayoutDirection(points->front().direction), EDGE::FRONT);
+				points->back().tc_gap_extra |= check_tc_gap(points->back().direction, EDGE::BACK);
+			}
 
 			return [points, ts, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
 				draw::sprite_ref extras = track_sprite_extras(ts);
 				for (auto &it : *points) {
-					layout.SetSprite(it.x, it.y, it.base_sprite | extras, obj, 0);
+					layout.SetSprite(it.x, it.y, it.base_sprite | extras | TcGapExtras(eng, it.tc_gap_extra), obj, 0);
 				}
 			};
 		}
@@ -407,14 +455,15 @@ namespace draw {
 
 				if (layout_info->flags & points_layout_info::PLI_FLAGS::SHOW_MERGED) {
 					auto base_sprite_ooc = ps.base_sprite_ooc;
-					return [x, y, base_sprite_ooc, gp, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
-						draw::sprite_ref sprite = track_sprite_extras(gp) | base_sprite_ooc;
+					auto tc_gap_sprite = ps.tc_gap_sprite;
+					return [x, y, base_sprite_ooc, tc_gap_sprite, gp, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
+						draw::sprite_ref sprite = track_sprite_extras(gp) | TcGapExtras(eng, tc_gap_sprite) | base_sprite_ooc;
 						layout.SetSprite(x, y, sprite, obj, 0);
 					};
 				}
 
 				return [x, y, ps, gp, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
-					draw::sprite_ref sprite = track_sprite_extras(gp);
+					draw::sprite_ref sprite = track_sprite_extras(gp) | TcGapExtras(eng, ps.tc_gap_sprite);
 					generic_points::PTF flags = gp->GetPointsFlags(0);
 
 					if (flags & generic_points::PTF::OOC) {
@@ -457,9 +506,10 @@ namespace draw {
 			} else {
 				base_sprite = ps.base_sprite_normal;
 			}
+			auto tc_gap_sprite = ps.tc_gap_sprite;
 
-			return [x, y, base_sprite, sp, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
-				draw::sprite_ref sprite = track_sprite_extras(sp) | base_sprite;
+			return [x, y, base_sprite, tc_gap_sprite, sp, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
+				draw::sprite_ref sprite = track_sprite_extras(sp) | TcGapExtras(eng, tc_gap_sprite) | base_sprite;
 				layout.SetSprite(x, y, sprite, obj, 0);
 			};
 		}
@@ -586,6 +636,14 @@ namespace draw {
 					}
 					return;
 
+				case SID_tc_gap_r:
+					sp.LoadFromFileDataFallback("tc_gap_r.png", GetImageData_tc_gap_r());
+					return;
+
+				case SID_tc_gap_d:
+					sp.LoadFromFileDataFallback("tc_gap_d.png", GetImageData_tc_gap_d());
+					return;
+
 				default:
 					break;
 			}
@@ -594,6 +652,12 @@ namespace draw {
 				case SID_track_seg:
 				case SID_points_ooc:
 					sp.LoadFromSprite((sr & (SID_type_mask | SID_dir_mask)) | SID_raw_img);
+					if (sr & SID_has_tc_gap_r) {
+						sp.OverlaySprite(SID_tc_gap_r | SID_raw_img);
+					}
+					if (sr & SID_has_tc_gap_d) {
+						sp.OverlaySprite(SID_tc_gap_d | SID_raw_img);
+					}
 					if (sr & SID_has_tc) {
 						sp.ReplaceColour(0x0000FF, 0xFF0000);
 					} else {

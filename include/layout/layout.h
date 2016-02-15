@@ -118,6 +118,7 @@ namespace gui_layout {
 	}
 
 	LAYOUT_DIR EdgesToDirection(LAYOUT_DIR in, LAYOUT_DIR out);
+	LAYOUT_DIR DirectionToOutputEdge(LAYOUT_DIR dir);
 
 	class layout_obj : public std::enable_shared_from_this<layout_obj> {
 		protected:

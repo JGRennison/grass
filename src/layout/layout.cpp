@@ -83,6 +83,20 @@ namespace gui_layout {
 
 		return LAYOUT_DIR::NULLDIR;
 	}
+
+	LAYOUT_DIR DirectionToOutputEdge(LAYOUT_DIR dir) {
+		if (IsEdgeLayoutDirection(dir)) return dir;
+
+		for (const auto &it : layout_table) {
+			if (it.dir == dir) {
+				return it.step2;
+			} else if (it.altstep == dir) {
+				return it.step1;
+			}
+		}
+
+		return LAYOUT_DIR::NULLDIR;
+	}
 };
 
 template<typename C>
