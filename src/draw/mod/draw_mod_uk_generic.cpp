@@ -424,7 +424,7 @@ namespace draw {
 							sprite = change_spriteid_layoutdir(LAYOUT_DIR::NULLDIR, sprite);
 						}
 						auto options = std::make_shared<gui_layout::pos_sprite_desc_opts>();
-						options->refresh_interval_ms = APPROACHLOCKING_FLASHINTERVAL;
+						options->refresh_interval_ms = POINTS_OOC_FLASHINTERVAL;
 						layout.SetSprite(x, y, sprite, obj, 0, options);
 						return;
 					}
