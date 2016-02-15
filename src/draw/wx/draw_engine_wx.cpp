@@ -83,6 +83,29 @@ namespace draw {
 		img = img.Mirror(mode == MIRROR::HORIZ);
 	}
 
+	void wx_sprite_obj::OverlaySprite(sprite_ref sr) {
+		if (!img.IsOk()) {
+			// image is not present, use a green block instead to make it obvious
+			img.Create(eng->GetSpriteWidth(), eng->GetSpriteHeight(), true);
+			img.Replace(0, 0, 0, 0x7F, 0xFF, 0x7F);
+		}
+		wxBitmap dc_bmp(img, 24);
+		wxMemoryDC memdc(dc_bmp);
+		if (!memdc.IsOk()) {
+			return;
+		}
+		wx_sprite_obj &overlay = eng->GetSpriteObj(sr, GST::IMG);
+		wxImage overlay_img = overlay.img;
+		if (overlay_img.GetWidth() != img.GetWidth() || overlay_img.GetHeight() != img.GetHeight()) {
+			overlay_img = overlay_img.Scale(img.GetWidth(), img.GetHeight());
+		}
+		wxBitmap overlay_bmp(overlay_img, 24);
+		memdc.DrawBitmap(overlay_bmp, 0, 0, true);
+		memdc.SelectObjectAsSource(wxNullBitmap);
+		img = dc_bmp.ConvertToImage();
+		bmp = wxBitmap();
+	}
+
 	void wx_sprite_obj::CheckType(GST type) {
 		if (type == GST::IMG || type == GST::BMP) {
 			if (!img.IsOk()) {
