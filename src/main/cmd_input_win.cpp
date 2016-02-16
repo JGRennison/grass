@@ -22,7 +22,7 @@
 #include "main/wx_util.h"
 #include "main/train_win.h"
 #include "main/main_gui.h"
-#include "text_cmd/text_cmd.h"
+#include "main/text_cmd_main.h"
 #include "util/util.h"
 
 #include <wx/sizer.h>
@@ -49,5 +49,5 @@ void main_gui::cmd_input_win::InputEvent(wxCommandEvent &event) {
 	std::string text = stdstrwx(input->GetValue());
 	input->ChangeValue(wxT(""));
 
-	text_command_handler(text, *w).Execute();
+	text_cmd_main(text, *w).Execute();
 }

@@ -13,31 +13,18 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program. If not, see <http://www.gnu.org/licenses/>.
 //
-//  2014 - Jonathan Rennison <j.g.rennison@gmail.com>
+//  2016 - Jonathan Rennison <j.g.rennison@gmail.com>
 //==========================================================================
 
-#ifndef INC_TEXT_CMD_ALREADY
-#define INC_TEXT_CMD_ALREADY
+#ifndef INC_MAIN_TEXT_CMD_MAIN_ALREADY
+#define INC_MAIN_TEXT_CMD_MAIN_ALREADY
 
-#include <string>
-#include <vector>
+#include "text_cmd/text_cmd.h"
 
-class world;
-
-struct text_command_handler {
-	protected:
-	const std::string &cmd;
-	world &w;
-
-	virtual bool ProcessTokens(const std::vector<std::string> &tokens);
-	void RegisterInputError() const;
-	void RegisterCannotUseError(const std::string &item, const std::string &reasoncode) const;
-
-	public:
-	text_command_handler(const std::string &cmd_, world &w_)
-			: cmd(cmd_), w(w_) { }
-	virtual ~text_command_handler() { }
-	bool Execute();
+struct text_cmd_main : public text_command_handler {
+	text_cmd_main(const std::string &cmd_, world &w_)
+			: text_command_handler(cmd_, w_) { }
+	virtual bool ProcessTokens(const std::vector<std::string> &tokens) override;
 };
 
 #endif

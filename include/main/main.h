@@ -81,4 +81,6 @@ class grass_app: public wxApp {
 	void InitialDrawAll();
 };
 
+DECLARE_APP(grass_app)
+
 #endif
