@@ -27,34 +27,36 @@
 
 #include <vector>
 
-bool ExecuteTextCommand(const std::string &cmd, world &w) {
-	auto input_err = [&]() -> bool {
-		message_formatter mf;
-		mf.RegisterVariableString("input", cmd);
-		w.LogUserMessageLocal(LOG_CATEGORY::FAILED, mf.FormatMessage(w.GetUserMessageTextpool().GetTextByName("generic/invalidcommand")));
-		return false;
-	};
+void text_command_handler::RegisterInputError() const {
+	message_formatter mf;
+	mf.RegisterVariableString("input", cmd);
+	w.LogUserMessageLocal(LOG_CATEGORY::FAILED, mf.FormatMessage(w.GetUserMessageTextpool().GetTextByName("generic/invalidcommand")));
+};
 
-	auto cannot_use_err = [&](const std::string &item, const std::string &reasoncode) -> bool {
-		message_formatter mf;
-		mf.RegisterVariableString("reason", w.GetUserMessageTextpool().GetTextByName(reasoncode));
-		mf.RegisterVariableString("item", item);
-		w.LogUserMessageLocal(LOG_CATEGORY::FAILED, mf.FormatMessage(w.GetUserMessageTextpool().GetTextByName("generic/cannotuse")));
-		return false;
-	};
+void text_command_handler::RegisterCannotUseError(const std::string &item, const std::string &reasoncode) const {
+	message_formatter mf;
+	mf.RegisterVariableString("reason", w.GetUserMessageTextpool().GetTextByName(reasoncode));
+	mf.RegisterVariableString("item", item);
+	w.LogUserMessageLocal(LOG_CATEGORY::FAILED, mf.FormatMessage(w.GetUserMessageTextpool().GetTextByName("generic/cannotuse")));
+};
 
+bool text_command_handler::Execute() {
 	std::vector<std::string> tokens = TokenizeString(cmd, " \t\n\r");
 	if (tokens.size() < 1) {
-		return input_err();
+		RegisterInputError();
+		return false;
 	}
+	return ProcessTokens(tokens);
+}
 
+bool text_command_handler::ProcessTokens(const std::vector<std::string> &tokens) {
 	if (tokens[0] == "reserve") {
 		std::vector<routing_point *> rps;
 		bool ok = true;
 		for (size_t i = 1; i < tokens.size(); i++) {
 			routing_point *rp = w.FindTrackByNameCast<routing_point>(tokens[i]);
 			if (!rp) {
-				cannot_use_err(tokens[i], "track/reservation/notroutingpoint");
+				RegisterCannotUseError(tokens[i], "track/reservation/notroutingpoint");
 				ok = false;
 			} else {
 				rps.emplace_back(rp);
@@ -64,7 +66,8 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 			return false;
 		}
 		if (rps.size() < 2) {
-			return input_err();
+			RegisterInputError();
+			return false;
 		}
 
 		action_reserve_path act(w, rps.front(), rps.back());
@@ -76,11 +79,13 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 
 	if (tokens[0] == "unreserve") {
 		if (tokens.size() != 2) {
-			return input_err();
+			RegisterInputError();
+			return false;
 		}
 		generic_signal *rp = w.FindTrackByNameCast<generic_signal>(tokens[1]);
 		if (!rp) {
-			return cannot_use_err(tokens[1], "track/reservation/notsignal");
+			RegisterCannotUseError(tokens[1], "track/reservation/notsignal");
+			return false;
 		}
 		w.SubmitAction(action_unreserve_track(w, *rp));
 		return true;
@@ -88,16 +93,19 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 
 	auto points_cmd = [&](bool reverse) -> bool {
 		if (tokens.size() < 2 || tokens.size() > 3) {
-			return input_err();
+			RegisterInputError();
+			return false;
 		}
 		generic_points *p = w.FindTrackByNameCast<generic_points>(tokens[1]);
 		if (!p) {
-			return cannot_use_err(tokens[1], "track/notpoints");
+			RegisterCannotUseError(tokens[1], "track/notpoints");
+			return false;
 		}
 		unsigned int index = 0;
 		if (tokens.size() > 2) {
 			if (!ownstrtonum(index, tokens[2].c_str(), tokens[2].size())) {
-				return input_err();
+				RegisterInputError();
+				return false;
 			}
 		}
 		w.SubmitAction(action_points_action(w, *p, index, reverse));
@@ -111,5 +119,6 @@ bool ExecuteTextCommand(const std::string &cmd, world &w) {
 		return points_cmd(true);
 	}
 
-	return input_err();
+	RegisterInputError();
+	return false;
 }

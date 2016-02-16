@@ -20,9 +20,23 @@
 #define INC_TEXT_CMD_ALREADY
 
 #include <string>
+#include <vector>
 
 class world;
 
-bool ExecuteTextCommand(const std::string &cmd, world &w);
+struct text_command_handler {
+	protected:
+	const std::string &cmd;
+	world &w;
+
+	bool ProcessTokens(const std::vector<std::string> &tokens);
+	void RegisterInputError() const;
+	void RegisterCannotUseError(const std::string &item, const std::string &reasoncode) const;
+
+	public:
+	text_command_handler(const std::string &cmd_, world &w_)
+			: cmd(cmd_), w(w_) { }
+	bool Execute();
+};
 
 #endif

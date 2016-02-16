@@ -49,5 +49,5 @@ void main_gui::cmd_input_win::InputEvent(wxCommandEvent &event) {
 	std::string text = stdstrwx(input->GetValue());
 	input->ChangeValue(wxT(""));
 
-	ExecuteTextCommand(text, *w);
+	text_command_handler(text, *w).Execute();
 }
