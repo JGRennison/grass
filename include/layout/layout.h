@@ -140,7 +140,7 @@ namespace gui_layout {
 		}
 
 		virtual std::string GetFriendlyName() const = 0;
-		virtual void Process(world_layout &wl, error_collection &ec) = 0;
+		virtual void Process(world_layout &wl, error_collection &ec);
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec);
 		draw::draw_func_type draw_function;
 	};
@@ -221,6 +221,23 @@ namespace gui_layout {
 		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	};
 
+	class layout_text_obj : public layout_obj {
+		protected:
+		draw::draw_text_char dtc;
+
+		enum {
+			LTOSM_TEXT        = 1<<16,
+			LTOSM_FG_COLOUR   = 1<<17,
+			LTOSM_BG_COLOUR   = 1<<18,
+		};
+
+		public:
+		inline const draw::draw_text_char &GetDrawText() const { return dtc; }
+		virtual std::string GetFriendlyName() const override;
+		virtual void Process(world_layout &wl, error_collection &ec) override;
+		virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
+	};
+
 	struct layout_offset_direction_result {
 		int endx;
 		int endy;
@@ -288,9 +305,9 @@ namespace gui_layout {
 
 		void SetSprite(int x, int y, draw::sprite_ref sprite, const std::shared_ptr<layout_obj> &owner,
 				int level = 0, std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
-		void SetTextChar(int x, int y, std::unique_ptr<draw::draw_text_char> &&dt, const std::shared_ptr<layout_obj> &owner,
+		void SetTextChar(int x, int y, std::unique_ptr<draw::draw_text_char> dt, const std::shared_ptr<layout_obj> &owner,
 				int level = 0, std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
-		int SetTextString(int startx, int y, std::unique_ptr<draw::draw_text_char> &&dt, const std::shared_ptr<layout_obj> &owner,
+		int SetTextString(int startx, int y, const draw::draw_text_char &dt, const std::shared_ptr<layout_obj> &owner,
 				int level = 0, int minlength = -1, int maxlength = -1,
 				std::shared_ptr<const pos_sprite_desc_opts> options = std::shared_ptr<const pos_sprite_desc_opts>());
 		const pos_sprite_desc *GetSprite(int x, int y);

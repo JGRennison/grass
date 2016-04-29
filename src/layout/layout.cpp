@@ -97,6 +97,20 @@ namespace gui_layout {
 
 		return LAYOUT_DIR::NULLDIR;
 	}
+
+	struct colour_wrapper {
+		uint32_t data = 0;
+	};
+
+	static bool DeserialiseColour(colour_wrapper &colour, std::string str) {
+		if (str.size() < 2) return false;
+		if (str[0] != '#') return false;
+		char *end = nullptr;
+		unsigned long out = std::strtoul(str.c_str() + 1, &end, 16);
+		if (!end || *end != 0) return false;
+		colour.data = out;
+		return true;
+	}
 };
 
 template<typename C>
@@ -128,6 +142,27 @@ template <> inline void SetType<gui_layout::LAYOUT_DIR>(Handler &out, gui_layout
 }
 template <> inline const char *GetTypeFriendlyName<gui_layout::LAYOUT_DIR>() { return "layout direction"; }
 
+template<typename C>
+struct flagtyperemover<C, typename std::enable_if<std::is_convertible<C, gui_layout::colour_wrapper>::value>::type> {
+	typedef C type;
+};
+
+template <> inline bool IsType<gui_layout::colour_wrapper>(const rapidjson::Value& val) {
+	if (val.IsString()) {
+		gui_layout::colour_wrapper colour;
+		return gui_layout::DeserialiseColour(colour, val.GetString());
+	} else {
+		return false;
+	}
+}
+template <> inline gui_layout::colour_wrapper GetType<gui_layout::colour_wrapper>(const rapidjson::Value& val) {
+	gui_layout::colour_wrapper colour;
+	gui_layout::DeserialiseColour(colour, val.GetString());
+	return colour;
+}
+
+template <> inline const char *GetTypeFriendlyName<gui_layout::colour_wrapper>() { return "colour"; }
+
 std::string gui_layout::layout_track_obj::GetFriendlyName() const {
 	return "Track: " + gt->GetFriendlyName();
 };
@@ -138,6 +173,10 @@ std::string gui_layout::layout_berth_obj::GetFriendlyName() const {
 
 std::string gui_layout::layout_gui_obj::GetFriendlyName() const {
 	return "Layout GUI Object";
+};
+
+std::string gui_layout::layout_text_obj::GetFriendlyName() const {
+	return "Layout GUI Text";
 };
 
 void gui_layout::layout_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -211,6 +250,26 @@ void gui_layout::layout_gui_obj::Deserialise(const deserialiser_input &di, error
 	}
 }
 
+void gui_layout::layout_text_obj::Deserialise(const deserialiser_input &di, error_collection &ec) {
+	gui_layout::layout_obj::Deserialise(di, ec);
+	if (CheckTransJsonValue(dtc.text, di, "text", ec)) {
+		set_members |= LTOSM_TEXT;
+	}
+	gui_layout::colour_wrapper colour;
+	if (CheckTransJsonValue(colour, di, "fg_colour", ec)) {
+		dtc.foregroundcolour = colour.data;
+		set_members |= LTOSM_FG_COLOUR;
+	} else {
+		dtc.foregroundcolour = 0x888888;
+	}
+	if (CheckTransJsonValue(colour, di, "bg_colour", ec)) {
+		dtc.backgroundcolour = colour.data;
+		set_members |= LTOSM_BG_COLOUR;
+	} else {
+		dtc.backgroundcolour = 0;
+	}
+}
+
 static void RegisterUpdateHook(gui_layout::world_layout &wl, const generic_track *gt, gui_layout::layout_obj *obj) {
 	std::weak_ptr<gui_layout::world_layout> wlptr = wl.GetSharedPtrThis();
 
@@ -275,12 +334,14 @@ void gui_layout::layout_track_obj::Process(world_layout &wl, error_collection &e
 	}
 }
 
-void gui_layout::layout_berth_obj::Process(world_layout &wl, error_collection &ec) {
+void gui_layout::layout_obj::Process(world_layout &wl, error_collection &ec) {
 	if (!(set_members & LOSM_X) || !(set_members & LOSM_Y)) {
-		ec.RegisterNewError<error_layout>(*this, "x and/or y coordinate missing: layout berths must be positioned absolutely");
-		return;
+		ec.RegisterNewError<error_layout>(*this, "x and/or y coordinate missing: layout objects must be positioned absolutely");
 	}
+}
 
+void gui_layout::layout_berth_obj::Process(world_layout &wl, error_collection &ec) {
+	layout_obj::Process(wl, ec);
 	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
 	if (dmod) {
 		draw_function = std::move(dmod->GetDrawBerth(std::static_pointer_cast<layout_berth_obj>(shared_from_this()), ec));
@@ -289,13 +350,21 @@ void gui_layout::layout_berth_obj::Process(world_layout &wl, error_collection &e
 }
 
 void gui_layout::layout_gui_obj::Process(world_layout &wl, error_collection &ec) {
-	if (!(set_members & LOSM_X) || !(set_members & LOSM_Y)) {
-		ec.RegisterNewError<error_layout>(*this, "x and/or y coordinate missing: gui layout objects must be positioned absolutely");
-		return;
-	}
+	layout_obj::Process(wl, ec);
 	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
 	if (dmod) {
 		draw_function = std::move(dmod->GetDrawObj(std::static_pointer_cast<layout_gui_obj>(shared_from_this()), ec));
+	}
+}
+
+void gui_layout::layout_text_obj::Process(world_layout &wl, error_collection &ec) {
+	layout_obj::Process(wl, ec);
+	if (!(set_members & LTOSM_TEXT)) {
+		ec.RegisterNewError<error_layout>(*this, "text missing: gui layout text objects must have text");
+	}
+	std::shared_ptr<draw::draw_module> dmod = wl.GetDrawModule();
+	if (dmod) {
+		draw_function = std::move(dmod->GetDrawText(std::static_pointer_cast<layout_text_obj>(shared_from_this()), ec));
 	}
 }
 
@@ -399,11 +468,20 @@ void gui_layout::world_layout::SetWorldSerialisationLayout(world_deserialisation
 
 		wl->AddLayoutObj(std::static_pointer_cast<layout_obj>(obj));
 	};
-	ws.gui_layout_guiobject = [wl_weak](const deserialiser_input &di, error_collection &ec) {
+	ws.gui_layout_gui_object = [wl_weak](const deserialiser_input &di, error_collection &ec) {
 		std::shared_ptr<world_layout> wl = wl_weak.lock();
 		if (!wl) return;
 
 		std::shared_ptr<layout_gui_obj> obj = std::make_shared<layout_gui_obj>();
+		obj->Deserialise(di, ec);
+
+		wl->AddLayoutObj(std::static_pointer_cast<layout_obj>(obj));
+	};
+	ws.gui_layout_text_object = [wl_weak](const deserialiser_input &di, error_collection &ec) {
+		std::shared_ptr<world_layout> wl = wl_weak.lock();
+		if (!wl) return;
+
+		std::shared_ptr<layout_text_obj> obj = std::make_shared<layout_text_obj>();
 		obj->Deserialise(di, ec);
 
 		wl->AddLayoutObj(std::static_pointer_cast<layout_obj>(obj));
@@ -468,7 +546,7 @@ void gui_layout::world_layout::SetSprite(int x, int y, draw::sprite_ref sprite, 
 	redraw_map.insert(std::make_pair(x, y));
 }
 
-void gui_layout::world_layout::SetTextChar(int x, int y, std::unique_ptr<draw::draw_text_char> &&dt, const std::shared_ptr<gui_layout::layout_obj> &owner,
+void gui_layout::world_layout::SetTextChar(int x, int y, std::unique_ptr<draw::draw_text_char> dt, const std::shared_ptr<gui_layout::layout_obj> &owner,
 		int level, std::shared_ptr<const pos_sprite_desc_opts> options) {
 	pos_sprite_desc &psd = GetLocationRef(x, y, level);
 	psd.sprite = 0;
@@ -501,24 +579,22 @@ void gui_layout::world_layout::ClearSpriteLevel(int x, int y, int level) {
 
 }
 
-int gui_layout::world_layout::SetTextString(int startx, int y, std::unique_ptr<draw::draw_text_char> &&dt, const std::shared_ptr<gui_layout::layout_obj> &owner,
+int gui_layout::world_layout::SetTextString(int startx, int y, const draw::draw_text_char &dt, const std::shared_ptr<gui_layout::layout_obj> &owner,
 		int level, int minlength, int maxlength, std::shared_ptr<const pos_sprite_desc_opts> options) {
-	std::unique_ptr<draw::draw_text_char> tdt = std::move(dt);
-
-	int len = strlen_utf8(tdt->text);
-	if (len > maxlength) {
+	int len = strlen_utf8(dt.text);
+	if (maxlength >= 0 && len > maxlength) {
 		len = maxlength;
 	}
 
 	auto puttext = [&](int x, std::string text) {
 		std::unique_ptr<draw::draw_text_char> cdt(new draw::draw_text_char);
 		cdt->text = std::move(text);
-		cdt->foregroundcolour = dt->foregroundcolour;
-		cdt->backgroundcolour = dt->backgroundcolour;
+		cdt->foregroundcolour = dt.foregroundcolour;
+		cdt->backgroundcolour = dt.backgroundcolour;
 		SetTextChar(x, y, std::move(cdt), owner, level, options);
 	};
 
-	const char *str = tdt->text.c_str();
+	const char *str = dt.text.c_str();
 	for (int i = 0; i < len; i++) {
 		int bytes = utf8firsttonumbytes(*str);
 		puttext(startx + i, std::string(str, bytes));

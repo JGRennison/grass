@@ -43,6 +43,7 @@ IMG_EXTERN(blank_png, blank)
 IMG_EXTERN(tc_gap_r_png, tc_gap_r)
 IMG_EXTERN(tc_gap_d_png, tc_gap_d)
 
+#define TEXTLEVEL 9
 #define BERTHLEVEL 10
 #define UNKNOWNLEVEL 20
 
@@ -533,11 +534,11 @@ namespace draw {
 		return [berth_data_ptr, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
 			const std::string &btext = berth_data_ptr->b->contents;
 			if (!btext.empty()) {
-				std::unique_ptr<draw::draw_text_char> drawtext(new draw::draw_text_char);
-				drawtext->text = btext;
-				drawtext->foregroundcolour = 0xFFFFFF;
-				drawtext->backgroundcolour = 0;
-				layout.SetTextString(berth_data_ptr->x, berth_data_ptr->y, std::move(drawtext), obj, BERTHLEVEL, berth_data_ptr->length, berth_data_ptr->length);
+				draw::draw_text_char drawtext;
+				drawtext.text = btext;
+				drawtext.foregroundcolour = 0xFFFFFF;
+				drawtext.backgroundcolour = 0;
+				layout.SetTextString(berth_data_ptr->x, berth_data_ptr->y, drawtext, obj, BERTHLEVEL, berth_data_ptr->length, berth_data_ptr->length);
 			} else {
 				for (int i = 0; i < berth_data_ptr->length; i++) {
 					layout.ClearSpriteLevel(berth_data_ptr->x + i, berth_data_ptr->y, BERTHLEVEL);
@@ -549,6 +550,14 @@ namespace draw {
 	draw_func_type draw_module_uk_generic::GetDrawObj(const std::shared_ptr<gui_layout::layout_gui_obj> &obj, error_collection &ec) {
 		return [](const draw_engine &eng, gui_layout::world_layout &layout) {
 
+		};
+	}
+
+	draw_func_type draw_module_uk_generic::GetDrawText(const std::shared_ptr<gui_layout::layout_text_obj> &obj, error_collection &ec) {
+		return [obj](const draw_engine &eng, gui_layout::world_layout &layout) {
+			int x, y;
+			std::tie(x, y) = obj->GetPosition();
+			layout.SetTextString(x, y, obj->GetDrawText(), obj, TEXTLEVEL);
 		};
 	}
 

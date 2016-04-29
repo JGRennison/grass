@@ -329,9 +329,13 @@ void world_deserialisation::InitObjectTypes() {
 
 	gui_layout_generic_track = [](const generic_track *t, const deserialiser_input &di, error_collection &ec) { };
 	gui_layout_track_berth = [](const track_berth *b, const generic_track *t, const deserialiser_input &di, error_collection &ec) { };
-	gui_layout_guiobject = [](const deserialiser_input &di, error_collection &ec) { };
+	gui_layout_gui_object = [](const deserialiser_input &di, error_collection &ec) { };
+	gui_layout_text_object = [](const deserialiser_input &di, error_collection &ec) { };
 	content_object_types.RegisterType("layout_obj", [this](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
-		this->gui_layout_guiobject(di, ec);
+		this->gui_layout_gui_object(di, ec);
+	});
+	content_object_types.RegisterType("layout_text", [this](const deserialiser_input &di, error_collection &ec, const ws_dtf_params &wdp) {
+		this->gui_layout_text_object(di, ec);
 	});
 }
 

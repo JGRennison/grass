@@ -27,6 +27,7 @@ namespace draw {
 		virtual draw_func_type GetDrawTrack(const std::shared_ptr<gui_layout::layout_track_obj> &obj, error_collection &ec) override;
 		virtual draw_func_type GetDrawBerth(const std::shared_ptr<gui_layout::layout_berth_obj> &obj, error_collection &ec) override;
 		virtual draw_func_type GetDrawObj(const std::shared_ptr<gui_layout::layout_gui_obj> &obj, error_collection &ec) override;
+		virtual draw_func_type GetDrawText(const std::shared_ptr<gui_layout::layout_text_obj> &obj, error_collection &ec) override;
 		virtual void BuildSprite(sprite_ref sr, sprite_obj &sp, const draw_options &dopt) override;   // must be re-entrant
 	};
 

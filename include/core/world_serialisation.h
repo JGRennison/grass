@@ -66,7 +66,8 @@ class world_deserialisation {
 
 	std::function<void(const generic_track *, const deserialiser_input &, error_collection &)> gui_layout_generic_track;
 	std::function<void(const track_berth *, const generic_track *, const deserialiser_input &, error_collection &)> gui_layout_track_berth;
-	std::function<void(const deserialiser_input &, error_collection &)> gui_layout_guiobject;
+	std::function<void(const deserialiser_input &, error_collection &)> gui_layout_gui_object;
+	std::function<void(const deserialiser_input &, error_collection &)> gui_layout_text_object;
 
 	enum class WS_LOAD_GAME_FLAGS {
 		ZERO                    = 0,
