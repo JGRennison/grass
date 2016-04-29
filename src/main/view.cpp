@@ -54,9 +54,8 @@ void main_gui::gr_view_panel::OnDraw(wxDC& dc) {
 
 		if (obj.second->text) {
 			draw::draw_text_char &dt = *(obj.second->text);
-			draw::wx_sprite_obj txt(eng.get(), 0);
-			txt.DrawTextChar(dt.text, dt.foregroundcolour, dt.backgroundcolour);
-			dc.DrawBitmap(txt.GetSpriteBitmap(), wx, wy, false);
+			const wxBitmap &sprite = eng->GetTextSpriteBitmap(dt);
+			dc.DrawBitmap(sprite, wx, wy, false);
 		} else {
 			const wxBitmap &sprite = eng->GetSpriteBitmap(obj.second->sprite);
 			dc.DrawBitmap(sprite, wx, wy, false);

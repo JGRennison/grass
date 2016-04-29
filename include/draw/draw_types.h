@@ -39,6 +39,25 @@ namespace draw {
 		uint32_t foregroundcolour;
 		uint32_t backgroundcolour;
 	};
+	inline bool operator==(const draw_text_char &lhs, const draw_text_char &rhs){
+		return std::tie(lhs.text, lhs.foregroundcolour, lhs.backgroundcolour) ==
+				std::tie(rhs.text, rhs.foregroundcolour, rhs.backgroundcolour);
+	}
+
 };
+
+namespace std {
+	template<> struct hash<draw::draw_text_char> {
+		typedef draw::draw_text_char argument_type;
+		typedef std::size_t result_type;
+
+		result_type operator()(argument_type const& s) const {
+			result_type const h1 (std::hash<std::string>()(s.text));
+			result_type const h2 (std::hash<uint32_t>()(s.foregroundcolour));
+			result_type const h3 (std::hash<uint32_t>()(s.backgroundcolour));
+			return h1 ^ h2 ^ h3;
+		}
+	};
+}
 
 #endif

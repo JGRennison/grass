@@ -151,4 +151,16 @@ namespace draw {
 		return s;
 	}
 
+	wx_sprite_obj &wx_draw_engine::GetTextSpriteObj(const draw::draw_text_char &dtc) {
+		auto sp = text_sprites.insert(std::make_pair(dtc, wx_sprite_obj()));
+		wx_sprite_obj &s = sp.first->second;
+		if (sp.second) {
+			// this is a new sprite
+			s.this_sr = 0;
+			s.eng = this;
+			s.DrawTextChar(dtc.text, dtc.foregroundcolour, dtc.backgroundcolour);
+		}
+		return s;
+	}
+
 };

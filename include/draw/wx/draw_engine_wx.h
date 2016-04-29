@@ -72,9 +72,13 @@ namespace draw {
 
 	class wx_draw_engine : public draw_engine {
 		friend wx_sprite_obj;
+
 		std::unordered_map<sprite_ref, wx_sprite_obj> sprites;
-		wx_sprite_obj &GetSpriteObj(sprite_ref sr, wx_sprite_obj::GST type);
+		std::unordered_map<draw::draw_text_char, wx_sprite_obj> text_sprites;
 		wxFont textfont;
+
+		wx_sprite_obj &GetSpriteObj(sprite_ref sr, wx_sprite_obj::GST type);
+		wx_sprite_obj &GetTextSpriteObj(const draw::draw_text_char &dtc);
 
 		public:
 		wx_draw_engine(std::shared_ptr<draw_module> dmod_, unsigned int sw, unsigned int sh, std::shared_ptr<draw_options> dopt_);
@@ -82,6 +86,8 @@ namespace draw {
 		const wxBitmap &GetSpriteBitmap(sprite_ref sr) { return GetSpriteObj(sr, wx_sprite_obj::GST::BMP).bmp; }
 		const wxImage &GetSpriteImage(sprite_ref sr) { return GetSpriteObj(sr, wx_sprite_obj::GST::IMG).img; }
 		const wxFont &GetTextFont() const { return textfont; }
+		const wxBitmap &GetTextSpriteBitmap(const draw::draw_text_char &dtc) { return GetTextSpriteObj(dtc).bmp; }
+		const wxImage &GetTextSpriteImage(const draw::draw_text_char &dtc) { return GetTextSpriteObj(dtc).img; }
 	};
 
 };
