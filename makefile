@@ -39,7 +39,13 @@ LIST_RESOBJS = $(foreach dir,$1,$(call GENERIC_RESOBJS,$(dir)))
 OUTDIR:=bin/
 OUTNAME:=grass
 TESTOUTNAME=$(OUTNAME)-test
-CFLAGS=-g -O3 -Wextra -Wall -Wno-unused-parameter -Wcast-qual
+CFLAGS=-g -Wextra -Wall -Wno-unused-parameter -Wcast-qual
+ifndef debug
+CFLAGS+=-O3
+CFLAGS_test=-O1
+else
+CFLAGS+=-Og
+endif
 AFLAGS=-g
 #-Wno-missing-braces -Wno-unused-parameter
 CXXFLAGS:=-std=gnu++0x
@@ -53,7 +59,6 @@ MKDIR:=mkdir -p
 
 CFLAGS_main=$(WX_CFLAGS)
 CFLAGS_draw_wx=$(WX_CFLAGS)
-CFLAGS_test=-O1
 
 ifdef noexceptions
 CXXFLAGS += -fno-exceptions
@@ -63,7 +68,6 @@ OUTNAME:=$(OUTNAME)$(NXPOSTFIX)
 endif
 
 ifdef debug
-CFLAGS=-g -Wextra -Wall -Wno-unused-parameter
 AFLAGS=-g
 #AFLAGS:=-Wl,-d,--export-all-symbols
 DEBUGPOSTFIX:=_debug
@@ -74,6 +78,7 @@ endif
 
 ifdef gcov
 CFLAGS += -O0 -fprofile-arcs -ftest-coverage
+CFLAGS_test=
 AFLAGS += -fprofile-arcs -lgcov
 GCOVPOSTFIX:=_gcov
 DIR_POSTFIX:=$(DIR_POSTFIX)$(GCOVPOSTFIX)
