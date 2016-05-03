@@ -288,6 +288,7 @@ void points::GetCouplingPointsFlagsByEdge(EDGE direction, std::vector<points_cou
 
 void points::CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) {
 	couplings.push_back(pc);
+	pflags |= PTF::COUPLED;
 }
 
 void points::InitSightingDistances() {
@@ -752,6 +753,7 @@ void double_slip::GetCouplingPointsFlagsByEdge(EDGE direction, std::vector<point
 
 void double_slip::CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) {
 	couplings[index].push_back(pc);
+	pflags[index] |= PTF::COUPLED;
 }
 
 void double_slip::InitSightingDistances() {

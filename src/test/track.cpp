@@ -513,12 +513,19 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 
 		points *p = dynamic_cast<points *>(env.w->FindTrackByName(name));
 		REQUIRE(p != nullptr);
-		CHECK(p->GetPointsFlags(0) == pflags);
+		CHECK(p->GetPointsFlags(0) == (pflags | generic_points::PTF::COUPLED));
 	};
+	auto checkds1 = [&](generic_points::PTF pffl, generic_points::PTF pffr, generic_points::PTF pfbl, generic_points::PTF pfbr)  {
+		return checkds("DS1", pffl | generic_points::PTF::COUPLED, pffr | generic_points::PTF::COUPLED, pfbl | generic_points::PTF::COUPLED, pfbr | generic_points::PTF::COUPLED);
+	};
+	auto checkds2 = [&](generic_points::PTF pffl, generic_points::PTF pffr, generic_points::PTF pfbl, generic_points::PTF pfbr)  {
+		return checkds("DS2", pffl, pffr, pfbl, pfbr | generic_points::PTF::COUPLED);
+	};
+
 	checkp("P1", generic_points::PTF::ZERO);
 	checkp("P2", generic_points::PTF::REV);
-	checkds("DS1", generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::REV, generic_points::PTF::ZERO);
-	checkds("DS2", generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
+	checkds1(generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::REV, generic_points::PTF::ZERO);
+	checkds2(generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
 
 	points *p1 = dynamic_cast<points *>(env.w->FindTrackByName("P1"));
 	points *p2 = dynamic_cast<points *>(env.w->FindTrackByName("P2"));
@@ -530,8 +537,8 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 
 	checkp("P1", generic_points::PTF::REV | generic_points::PTF::OOC | generic_points::PTF::FAILED_NORM);
 	checkp("P2",  generic_points::PTF::OOC | generic_points::PTF::FAILED_REV);
-	checkds("DS1", generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::OOC | generic_points::PTF::FAILED_REV, generic_points::PTF::REV | generic_points::PTF::OOC | generic_points::PTF::FAILED_NORM);
-	checkds("DS2", generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
+	checkds1(generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::OOC | generic_points::PTF::FAILED_REV, generic_points::PTF::REV | generic_points::PTF::OOC | generic_points::PTF::FAILED_NORM);
+	checkds2(generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
 
 	env.w->GameStep(4000);
 
@@ -544,16 +551,36 @@ TEST_CASE( "track/points/coupling", "Test points coupling" ) {
 
 	checkp("P1", generic_points::PTF::OOC | generic_points::PTF::FAILED_NORM);
 	checkp("P2",  generic_points::PTF::REV | generic_points::PTF::OOC | generic_points::PTF::FAILED_REV);
-	checkds("DS1", generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::REV | generic_points::PTF::OOC | generic_points::PTF::FAILED_REV, generic_points::PTF::OOC | generic_points::PTF::FAILED_NORM);
-	checkds("DS2", generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
+	checkds1(generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::REV | generic_points::PTF::OOC | generic_points::PTF::FAILED_REV, generic_points::PTF::OOC | generic_points::PTF::FAILED_NORM);
+	checkds2(generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
 
 	env.w->GameStep(2000);
 
 	checkp("P1", generic_points::PTF::FAILED_NORM);
 	checkp("P2",  generic_points::PTF::REV | generic_points::PTF::FAILED_REV);
-	checkds("DS1", generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::REV | generic_points::PTF::FAILED_REV, generic_points::PTF::FAILED_NORM);
-	checkds("DS2", generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
+	checkds1(generic_points::PTF::REV, generic_points::PTF::ZERO, generic_points::PTF::REV | generic_points::PTF::FAILED_REV, generic_points::PTF::FAILED_NORM);
+	checkds2(generic_points::PTF::FIXED, generic_points::PTF::REV, generic_points::PTF::FIXED, generic_points::PTF::ZERO);
 
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+}
+
+TEST_CASE( "track/points/coupling/duplicate", "Test points coupling duplicate error detection" ) {
+	std::string track_test_str_coupling =
+	R"({ "content" : [ )"
+		R"({ "type" : "couple_points", "points" : [ { "name" : "P1", "edge" : "reverse"}, { "name" : "P2", "edge" : "normal"} ] }, )"
+		R"({ "type" : "couple_points", "points" : [ { "name" : "P1", "edge" : "reverse"}, { "name" : "P3", "edge" : "normal"} ] }, )"
+		R"({ "type" : "points", "name" : "P1" }, )"
+		R"({ "type" : "points", "name" : "P2" }, )"
+		R"({ "type" : "points", "name" : "P3" } )"
+	"] }";
+
+	test_fixture_world env(track_test_str_coupling);
+
+	env.w->CapAllTrackPieceUnconnectedEdges();
+	env.w->LayoutInit(env.ec);
+	CHECK(env.ec.GetErrorCount() == 1);
+	CHECK_CONTAINS(env.ec, "points cannot be coupled: P1");
 }
 
 TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisation" ) {
