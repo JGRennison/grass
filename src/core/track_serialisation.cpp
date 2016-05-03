@@ -350,6 +350,9 @@ void double_slip::Deserialise(const deserialiser_input &di, error_collection &ec
 		generic_points::PTF pf = GetCurrentPointFlags(direction);
 		pointsflagssubobj ps(&pf);
 		CheckTransJsonSubObj(ps, di, prop, "", ec);
+		if (dof != 4 && pf & PTF::AUTO_NORMALISE) {
+			ec.RegisterNewError<error_deserialisation>(di, "Self-coupled double-slips cannot have auto-normalise set");
+		}
 		SetPointsFlagsMasked(GetPointsIndexByEdge(direction), pf, generic_points::PTF::ALL);
 	};
 	deserialisepointsflags(EDGE::DS_FL, "left_front_points");

@@ -215,6 +215,22 @@ const generic_points::PTF &points::GetPointsFlagsRef(unsigned int points_index) 
 	return pflags;
 }
 
+bool generic_points::PostLayoutInit(error_collection &ec) {
+	// check that AUTO_NORMALISE is not used with coupled points
+	// TODO: consider relaxing this restriction
+	unsigned int count = GetPointsCount();
+	for (unsigned int i = 0; i < count; i++) {
+		std::vector<points_coupling> *couplings = GetCouplingVector(i);
+		if (couplings && !couplings->empty()) {
+			if (GetPointsFlags(i) & PTF::AUTO_NORMALISE) {
+				ec.RegisterNewError<generic_error_obj>("Coupled points cannot be auto-normalised: " + GetName());
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 void GetReservationFailureReason(generic_points::PTF pflags, std::string *fail_reason_key) {
 	if (fail_reason_key && pflags & generic_points::PTF::LOCKED) {
 		*fail_reason_key = "points/locked";

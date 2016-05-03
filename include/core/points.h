@@ -71,6 +71,8 @@ class generic_points : public generic_zlen_track {
 	// this is only called if PTF::AUTO_NORMALISE is set
 	virtual bool ShouldAutoNormalise(unsigned int index, PTF change_flags) const;
 
+	virtual bool PostLayoutInit(error_collection &ec) override;
+
 	protected:
 	void CommonReservationAction(unsigned int points_index, EDGE direction, unsigned int index,
 			RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action);

@@ -583,6 +583,38 @@ TEST_CASE( "track/points/coupling/duplicate", "Test points coupling duplicate er
 	CHECK_CONTAINS(env.ec, "points cannot be coupled: P1");
 }
 
+TEST_CASE( "track/points/coupling/auto-normalise", "Test points coupling auto-normalisation error detection" ) {
+	std::string track_test_str_coupling =
+	R"({ "content" : [ )"
+		R"({ "type" : "couple_points", "points" : [ { "name" : "P1", "edge" : "normal"}, { "name" : "P2", "edge" : "normal"} ] }, )"
+		R"({ "type" : "points", "name" : "P1", "auto_normalise" : true }, )"
+		R"({ "type" : "points", "name" : "P2" } )"
+	"] }";
+
+	test_fixture_world env(track_test_str_coupling);
+
+	env.w->CapAllTrackPieceUnconnectedEdges();
+	env.w->LayoutInit(env.ec);
+	CHECK(env.ec.GetErrorCount() == 0);
+	env.w->PostLayoutInit(env.ec);
+	CHECK(env.ec.GetErrorCount() == 1);
+	CHECK_CONTAINS(env.ec, "Coupled points cannot be auto-normalised: P1");
+}
+
+TEST_CASE( "track/points/coupling/double-slip/auto-normalise", "Test double-slip self-coupling auto-normalisation error detection" ) {
+	std::string track_test_str_coupling =
+	R"({ "content" : [ )"
+		R"({ "type" : "double_slip", "name" : "DS1", "right_front_points" : { "auto_normalise" : true } } )"
+	"] }";
+
+	test_fixture_world env(track_test_str_coupling);
+
+	env.w->CapAllTrackPieceUnconnectedEdges();
+	env.w->LayoutInit(env.ec);
+	CHECK(env.ec.GetErrorCount() == 1);
+	CHECK_CONTAINS(env.ec, "Self-coupled double-slips cannot have auto-normalise set");
+}
+
 TEST_CASE( "track/deserialisation/sighting", "Test sighting distance deserialisation" ) {
 	std::string track_test_str_sighting =
 	R"({ "content" : [ )"
