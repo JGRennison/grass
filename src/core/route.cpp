@@ -76,45 +76,54 @@ void route_common::ApplyTo(route_common &target) const {
 //returns an unsuccessful result on failure/partial completion
 reservation_result route::RouteReservation(RRF reserve_flags, std::string *fail_reason_key) const {
 	reservation_result res;
-	res.MergeFrom(start.track->Reservation(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key));
+	reservation_request_res start_req(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key);
+	res.MergeFrom(start.track->Reservation(start_req));
 	if (!res.IsSuccess()) return res;
 
 	for (auto &it : pieces) {
-		res.MergeFrom(it.location.track->Reservation(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key));
+		reservation_request_res piece_req(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key);
+		res.MergeFrom(it.location.track->Reservation(piece_req));
 		if (!res.IsSuccess()) return res;
 	}
 
-	res.MergeFrom(end.track->Reservation(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key));
+	reservation_request_res end_req(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key);
+	res.MergeFrom(end.track->Reservation(end_req));
 	return res;
 }
 
 //returns an unsuccessful result on failure/partial completion
 reservation_result route::PartialRouteReservationWithActions(RRF reserve_flags, std::string *fail_reason_key, RRF action_reserve_flags, std::function<void(action &&reservation_act)> action_callback) const {
 	reservation_result res;
-	res.MergeFrom(start.track->Reservation(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key));
+	reservation_request_res start_req(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key);
+	res.MergeFrom(start.track->Reservation(start_req));
 	if (!res.IsSuccess()) return res;
-	start.track->ReservationActions(start.direction, 0, action_reserve_flags | RRF::START_PIECE, this, action_callback);
+	reservation_request_action start_action(start.direction, 0, action_reserve_flags | RRF::START_PIECE, this, action_callback);
+	start.track->ReservationActions(start_action);
 
 	for (auto &it : pieces) {
-		res.MergeFrom(it.location.track->Reservation(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key));
+		reservation_request_res piece_req(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key);
+		res.MergeFrom(it.location.track->Reservation(piece_req));
 		if (!res.IsSuccess()) return res;
-		it.location.track->ReservationActions(it.location.direction, it.connection_index, action_reserve_flags, this, action_callback);
+		reservation_request_action piece_action(it.location.direction, it.connection_index, action_reserve_flags, this, action_callback);
+		it.location.track->ReservationActions(piece_action);
 	}
 
-	res.MergeFrom(end.track->Reservation(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key));
+	reservation_request_res end_req(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key);
+	res.MergeFrom(end.track->Reservation(end_req));
 	if (!res.IsSuccess()) return res;
-	end.track->ReservationActions(end.direction, 0, action_reserve_flags | RRF::END_PIECE, this, action_callback);
+	reservation_request_action end_action(end.direction, 0, action_reserve_flags | RRF::END_PIECE, this, action_callback);
+	end.track->ReservationActions(end_action);
 	return res;
 }
 
 void route::RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> action_callback) const {
-	start.track->ReservationActions(start.direction, 0, reserve_flags | RRF::START_PIECE, this, action_callback);
+	start.track->ReservationActions(reservation_request_action(start.direction, 0, reserve_flags | RRF::START_PIECE, this, action_callback));
 
 	for (auto &it : pieces) {
-		it.location.track->ReservationActions(it.location.direction, it.connection_index, reserve_flags, this, action_callback);
+		it.location.track->ReservationActions(reservation_request_action(it.location.direction, it.connection_index, reserve_flags, this, action_callback));
 	}
 
-	end.track->ReservationActions(end.direction, 0, reserve_flags | RRF::END_PIECE, this, action_callback);
+	end.track->ReservationActions(reservation_request_action(end.direction, 0, reserve_flags | RRF::END_PIECE, this, action_callback));
 }
 
 void route::FillLists() {

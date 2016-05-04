@@ -261,15 +261,15 @@ GSF generic_signal::SetSignalFlagsMasked(GSF set_flags, GSF mask_flags) {
 	return sflags;
 }
 
-reservation_result generic_signal::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
-	if (direction != EDGE::FRONT && rr_flags & (RRF::START_PIECE | RRF::END_PIECE)) {
+reservation_result generic_signal::ReservationV(const reservation_request_res &req) {
+	if (req.direction != EDGE::FRONT && req.rr_flags & (RRF::START_PIECE | RRF::END_PIECE)) {
 		return reservation_result(RSRVRF::FAILED | RSRVRF::INVALID_OP);
 	}
-	if (rr_flags & RRF::START_PIECE) {
-		return start_trs.Reservation(direction, index, rr_flags, res_route);
-	} else if (rr_flags & RRF::END_PIECE) {
-		reservation_result result = end_trs.Reservation(direction, index, rr_flags, res_route);
-		if (rr_flags & RRF::UNRESERVE) {
+	if (req.rr_flags & RRF::START_PIECE) {
+		return start_trs.Reservation(req);
+	} else if (req.rr_flags & RRF::END_PIECE) {
+		reservation_result result = end_trs.Reservation(req);
+		if (req.rr_flags & RRF::UNRESERVE) {
 			GetWorld().ExecuteIfActionScope([&]() {
 				const route* ovlp = GetCurrentForwardOverlap();
 				if (ovlp) {
@@ -279,7 +279,7 @@ reservation_result generic_signal::ReservationV(EDGE direction, unsigned int ind
 		}
 		return result;
 	} else {
-		return start_trs.Reservation(direction, index, rr_flags, res_route).MergeFrom(end_trs.Reservation(direction, index, rr_flags, res_route));
+		return start_trs.Reservation(req).MergeFrom(end_trs.Reservation(req));
 	}
 }
 
@@ -1071,11 +1071,11 @@ void start_of_line::GetListOfEdges(std::vector<edgelistitem> &output_list) const
 	output_list.insert(output_list.end(), { edgelistitem(EDGE::FRONT, connection) });
 }
 
-reservation_result start_of_line::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
-	if (rr_flags & RRF::START_PIECE && direction == EDGE::BACK) {
-		return trs.Reservation(direction, index, rr_flags, res_route);
-	} else if (rr_flags & RRF::END_PIECE && direction == EDGE::FRONT) {
-		return trs.Reservation(direction, index, rr_flags, res_route);
+reservation_result start_of_line::ReservationV(const reservation_request_res &req) {
+	if (req.rr_flags & RRF::START_PIECE && req.direction == EDGE::BACK) {
+		return trs.Reservation(req);
+	} else if (req.rr_flags & RRF::END_PIECE && req.direction == EDGE::FRONT) {
+		return trs.Reservation(req);
 	} else {
 		return reservation_result(RSRVRF::FAILED | RSRVRF::INVALID_OP);
 	}
@@ -1117,8 +1117,8 @@ GTF routing_marker::GetFlags(EDGE direction) const {
 	return GTF::ROUTING_POINT | trs.GetGTReservationFlags(direction);
 }
 
-reservation_result routing_marker::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
-	return trs.Reservation(direction, index, rr_flags, res_route);
+reservation_result routing_marker::ReservationV(const reservation_request_res &req) {
+	return trs.Reservation(req);
 }
 
 RPRT routing_marker::GetAvailableRouteTypes(EDGE direction) const {

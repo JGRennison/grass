@@ -28,6 +28,7 @@
 #include "core/serialisable.h"
 
 class route;
+struct action;
 
 enum class RRF : unsigned int {
 	ZERO                    = 0,
@@ -89,6 +90,34 @@ enum class RSRVRIF : unsigned char {
 };
 template<> struct enum_traits< RSRVRIF > { static constexpr bool flags = true; };
 
+struct reservation_request_base {
+	EDGE direction;
+	unsigned int index;
+	RRF rr_flags;
+	const route *res_route;
+
+	reservation_request_base(EDGE direction_, unsigned int index_, RRF rr_flags_, const route *res_route_)
+			: direction(direction_), index(index_), rr_flags(rr_flags_), res_route(res_route_) { }
+};
+
+struct reservation_request_res : public reservation_request_base {
+	std::string* fail_reason_key;
+
+	reservation_request_res(EDGE direction_, unsigned int index_, RRF rr_flags_, const route *res_route_, std::string* fail_reason_key_ = nullptr)
+			: reservation_request_base(direction_, index_, rr_flags_, res_route_), fail_reason_key(fail_reason_key_) { }
+	reservation_request_res(const reservation_request_base &base, std::string* fail_reason_key_)
+			: reservation_request_base(base), fail_reason_key(fail_reason_key_) { }
+};
+
+struct reservation_request_action : public reservation_request_base {
+	std::function<void(action &&reservation_act)> submit_action;
+
+	reservation_request_action(EDGE direction_, unsigned int index_, RRF rr_flags_, const route *res_route_, std::function<void(action &&reservation_act)> submit_action_)
+			: reservation_request_base(direction_, index_, rr_flags_, res_route_), submit_action(std::move(submit_action_)) { }
+	reservation_request_action(const reservation_request_base &base, std::function<void(action &&reservation_act)> submit_action_)
+			: reservation_request_base(base), submit_action(std::move(submit_action_)) { }
+};
+
 struct reservation_result {
 	struct reservation_result_conflict {
 		RSRVRIF conflict_flags;
@@ -110,7 +139,7 @@ class track_reservation_state : public serialisable_obj {
 	std::vector<inner_track_reservation_state> itrss;
 
 	public:
-	reservation_result Reservation(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr);
+	reservation_result Reservation(const reservation_request_res &req);
 	GTF GetGTReservationFlags(EDGE direction) const;
 	bool IsReserved() const;
 	unsigned int GetReservationCount() const;

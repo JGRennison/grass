@@ -74,8 +74,7 @@ class generic_points : public generic_zlen_track {
 	virtual bool PostLayoutInit(error_collection &ec) override;
 
 	protected:
-	void CommonReservationAction(unsigned int points_index, EDGE direction, unsigned int index,
-			RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action);
+	void CommonReservationAction(unsigned int points_index, const reservation_request_action &req);
 
 	public:
 	virtual std::string GetTypeName() const override { return "Generic Points"; }
@@ -148,8 +147,8 @@ class points : public generic_points {
 	protected:
 	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
-	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
-	virtual void ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) override;
+	virtual reservation_result ReservationV(const reservation_request_res &req) override;
+	virtual void ReservationActionsV(const reservation_request_action &req) override;
 };
 
 class catchpoints : public generic_points {
@@ -184,8 +183,8 @@ class catchpoints : public generic_points {
 	protected:
 	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
-	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
-	virtual void ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) override;
+	virtual reservation_result ReservationV(const reservation_request_res &req) override;
+	virtual void ReservationActionsV(const reservation_request_action &req) override;
 };
 
 class spring_points : public generic_zlen_track {
@@ -227,7 +226,7 @@ class spring_points : public generic_zlen_track {
 	}
 	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
-	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
+	virtual reservation_result ReservationV(const reservation_request_res &req) override;
 };
 
 class test_double_slip;
@@ -372,8 +371,8 @@ class double_slip : public generic_points {
 	protected:
 	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const  override{ return EDGE::INVALID; }
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
-	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
-	virtual void ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) override;
+	virtual reservation_result ReservationV(const reservation_request_res &req) override;
+	virtual void ReservationActionsV(const reservation_request_action &req) override;
 };
 
 template<> struct enum_traits< double_slip::DSF > { static constexpr bool flags = true; };

@@ -50,6 +50,8 @@ enum class RRF : unsigned int;
 enum class GTF : unsigned int;
 struct reservation_count_set;
 struct reservation_result;
+struct reservation_request_res;
+struct reservation_request_action;
 
 struct speed_restriction {
 	unsigned int speed;
@@ -138,18 +140,16 @@ class generic_track : public world_obj {
 
 	protected:
 	//return true if reservation OK
-	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) = 0;
-	virtual void ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route,
-			std::function<void(action &&reservation_act)> submit_action) { }
+	virtual reservation_result ReservationV(const reservation_request_res &req) = 0;
+	virtual void ReservationActionsV(const reservation_request_action &req) { }
 	void DeserialiseReservationState(track_reservation_state &trs, const deserialiser_input &di, const char *name, error_collection &ec);
 
 	public:
 	void UpdateTrackCircuitReservationState();
-	reservation_result Reservation(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr);
+	reservation_result Reservation(const reservation_request_res &req);
 
-	void ReservationActions(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route,
-			std::function<void(action &&reservation_act)> submit_action) {
-		ReservationActionsV(direction, index, rr_flags, res_route, submit_action);
+	inline void ReservationActions(const reservation_request_action &req) {
+		ReservationActionsV(req);
 	}
 
 	virtual std::string GetTypeName() const { return "Generic Track"; }

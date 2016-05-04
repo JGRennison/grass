@@ -83,11 +83,10 @@ bool generic_points::ShouldAutoNormalise(unsigned int index, generic_points::PTF
 	return (new_flags & PTF::REV);
 }
 
-void generic_points::CommonReservationAction(unsigned int points_index, EDGE direction, unsigned int index,
-		RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) {
+void generic_points::CommonReservationAction(unsigned int points_index, const reservation_request_action &req) {
 	PTF pflags = GetPointsFlags(points_index);
-	if (pflags & PTF::AUTO_NORMALISE && rr_flags & RRF::UNRESERVE && trs.GetReservationCount() == 1 && !IsFlagsImmovable(pflags)) {
-		submit_action(action_points_auto_normalise(GetWorld(), *this, points_index));
+	if (pflags & PTF::AUTO_NORMALISE && req.rr_flags & RRF::UNRESERVE && trs.GetReservationCount() == 1 && !IsFlagsImmovable(pflags)) {
+		req.submit_action(action_points_auto_normalise(GetWorld(), *this, points_index));
 	}
 }
 
@@ -255,29 +254,28 @@ bool IsPointsRoutingDirAndIndexRev(EDGE direction, unsigned int index) {
 	}
 }
 
-reservation_result points::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result points::ReservationV(const reservation_request_res &req) {
 	PTF pflags = GetPointsFlags(0);
 	bool rev = pflags & PTF::REV;
 	if (IsFlagsImmovable(pflags)) {
-		if (IsPointsRoutingDirAndIndexRev(direction, index) != rev) {
-			GetReservationFailureReason(pflags, fail_reason_key);
+		if (IsPointsRoutingDirAndIndexRev(req.direction, req.index) != rev) {
+			GetReservationFailureReason(pflags, req.fail_reason_key);
 			return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);
 		}
 	}
-	return trs.Reservation(direction, index, rr_flags, res_route, fail_reason_key);
+	return trs.Reservation(req);
 }
 
-void points::ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route,
-		std::function<void(action &&reservation_act)> submit_action) {
-	if (rr_flags & RRF::RESERVE) {
+void points::ReservationActionsV(const reservation_request_action &req) {
+	if (req.rr_flags & RRF::RESERVE) {
 		bool rev = pflags & PTF::REV;
-		bool newrev = IsPointsRoutingDirAndIndexRev(direction, index);
+		bool newrev = IsPointsRoutingDirAndIndexRev(req.direction, req.index);
 		if (newrev != rev) {
-			submit_action(action_points_action(GetWorld(), *this, 0, newrev ? PTF::REV : PTF::ZERO, PTF::REV,
+			req.submit_action(action_points_action(GetWorld(), *this, 0, newrev ? PTF::REV : PTF::ZERO, PTF::REV,
 					action_points_action::APAF::NO_OVERLAP_SWING | action_points_action::APAF::NO_POINTS_NORMALISE));
 		}
 	}
-	CommonReservationAction(0, direction, index, rr_flags, res_route, submit_action);
+	CommonReservationAction(0, req);
 }
 
 EDGE points::GetAvailableAutoConnectionDirection(bool forward_connection) const {
@@ -415,21 +413,21 @@ const generic_points::PTF &catchpoints::GetPointsFlagsRef(unsigned int points_in
 	return pflags;
 }
 
-reservation_result catchpoints::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result catchpoints::ReservationV(const reservation_request_res &req) {
 	generic_points::PTF pflags = GetPointsFlags(0);
 	if (IsFlagsImmovable(pflags) && !(pflags & PTF::REV)) {
-		GetReservationFailureReason(pflags, fail_reason_key);
+		GetReservationFailureReason(pflags, req.fail_reason_key);
 		return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);
 	}
-	return trs.Reservation(direction, index, rr_flags, res_route, fail_reason_key);
+	return trs.Reservation(req);
 }
 
-void catchpoints::ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) {
-	if (rr_flags & RRF::RESERVE && trs.GetReservationCount() == 0) {
-		submit_action(action_points_action(GetWorld(), *this, 0, PTF::REV, PTF::REV,
+void catchpoints::ReservationActionsV(const reservation_request_action &req) {
+	if (req.rr_flags & RRF::RESERVE && trs.GetReservationCount() == 0) {
+		req.submit_action(action_points_action(GetWorld(), *this, 0, PTF::REV, PTF::REV,
 				action_points_action::APAF::NO_OVERLAP_SWING | action_points_action::APAF::NO_POINTS_NORMALISE));
 	}
-	CommonReservationAction(0, direction, index, rr_flags, res_route, submit_action);
+	CommonReservationAction(0, req);
 }
 
 EDGE catchpoints::GetAvailableAutoConnectionDirection(bool forward_connection) const {
@@ -522,8 +520,8 @@ GTF spring_points::GetFlags(EDGE direction) const {
 	return GTF::ROUTE_FORK | trs.GetGTReservationFlags(direction);
 }
 
-reservation_result spring_points::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
-	return trs.Reservation(direction, index, rr_flags, res_route);
+reservation_result spring_points::ReservationV(const reservation_request_res &req) {
+	return trs.Reservation(req);
 }
 
 EDGE spring_points::GetAvailableAutoConnectionDirection(bool forward_connection) const {
@@ -638,54 +636,54 @@ const generic_points::PTF &double_slip::GetPointsFlagsRef(unsigned int points_in
 	}
 }
 
-reservation_result double_slip::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
-	PTF pf = GetCurrentPointFlags(direction);
+reservation_result double_slip::ReservationV(const reservation_request_res &req) {
+	PTF pf = GetCurrentPointFlags(req.direction);
 	if (IsFlagsImmovable(pf)) {
-		if (!(pf & PTF::REV) != !index) {
-			GetReservationFailureReason(pf, fail_reason_key);
+		if (!(pf & PTF::REV) != !req.index) {
+			GetReservationFailureReason(pf, req.fail_reason_key);
 			return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);    //points locked in wrong direction
 		}
 	}
 
-	bool isrev = (pf & PTF::FIXED) ? static_cast<bool>(pf & PTF::REV) : index != 0;
-	EDGE exitdirection = GetConnectingPointDirection(direction, isrev);
+	bool isrev = (pf & PTF::FIXED) ? static_cast<bool>(pf & PTF::REV) : req.index != 0;
+	EDGE exitdirection = GetConnectingPointDirection(req.direction, isrev);
 	PTF exitpf = GetCurrentPointFlags(exitdirection);
-	bool exitpointsrev = (GetConnectingPointDirection(exitdirection, true) == direction);
+	bool exitpointsrev = (GetConnectingPointDirection(exitdirection, true) == req.direction);
 
 	if (IsFlagsImmovable(exitpf)) {
 		if (!(exitpf & PTF::REV) != !exitpointsrev) {
-			GetReservationFailureReason(exitpf, fail_reason_key);
+			GetReservationFailureReason(exitpf, req.fail_reason_key);
 			return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);    //points locked in wrong direction
 		}
 	}
 
-	return trs.Reservation(direction, index, rr_flags, res_route, fail_reason_key);
+	return trs.Reservation(req);
 }
 
-void double_slip::ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) {
-	unsigned int entranceindex = GetPointsIndexByEdge(direction);
-	PTF entrancepf = GetCurrentPointFlags(direction);
-	bool isentrancerev = (entrancepf & PTF::FIXED) ? static_cast<bool>(entrancepf & PTF::REV) : index != 0;
+void double_slip::ReservationActionsV(const reservation_request_action &req) {
+	unsigned int entranceindex = GetPointsIndexByEdge(req.direction);
+	PTF entrancepf = GetCurrentPointFlags(req.direction);
+	bool isentrancerev = (entrancepf & PTF::FIXED) ? static_cast<bool>(entrancepf & PTF::REV) : req.index != 0;
 
-	EDGE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
+	EDGE exitdirection = GetConnectingPointDirection(req.direction, isentrancerev);
 	unsigned int exitindex = GetPointsIndexByEdge(exitdirection);
 	PTF exitpf = GetCurrentPointFlags(exitdirection);
 
-	if (rr_flags & RRF::RESERVE) {
-		bool isexitrev = (GetConnectingPointDirection(exitdirection, true) == direction);
+	if (req.rr_flags & RRF::RESERVE) {
+		bool isexitrev = (GetConnectingPointDirection(exitdirection, true) == req.direction);
 
 		if (!(entrancepf & PTF::REV) != !(isentrancerev)) {
-			submit_action(action_points_action(GetWorld(), *this, entranceindex, isentrancerev ? PTF::REV : PTF::ZERO, PTF::REV,
+			req.submit_action(action_points_action(GetWorld(), *this, entranceindex, isentrancerev ? PTF::REV : PTF::ZERO, PTF::REV,
 					action_points_action::APAF::NO_OVERLAP_SWING | action_points_action::APAF::NO_POINTS_NORMALISE));
 		}
 		if (!(exitpf & PTF::REV) != !(isexitrev)) {
-			submit_action(action_points_action(GetWorld(), *this, exitindex, isexitrev ? PTF::REV : PTF::ZERO, PTF::REV,
+			req.submit_action(action_points_action(GetWorld(), *this, exitindex, isexitrev ? PTF::REV : PTF::ZERO, PTF::REV,
 					action_points_action::APAF::NO_OVERLAP_SWING | action_points_action::APAF::NO_POINTS_NORMALISE));
 		}
 	}
 
-	CommonReservationAction(entranceindex, direction, index, rr_flags, res_route, submit_action);
-	CommonReservationAction(exitindex, direction, index, rr_flags, res_route, submit_action);
+	CommonReservationAction(entranceindex, req);
+	CommonReservationAction(exitindex, req);
 }
 
 void double_slip::GetListOfEdges(std::vector<edgelistitem> &output_list) const {

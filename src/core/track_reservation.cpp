@@ -52,24 +52,24 @@ reservation_result &reservation_result::MergeFrom(const reservation_result &othe
 	return *this;
 }
 
-reservation_result track_reservation_state::Reservation(EDGE in_dir, unsigned int in_index, RRF in_rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result track_reservation_state::Reservation(const reservation_request_res &req) {
 	reservation_result res;
-	if (in_rr_flags & (RRF::RESERVE | RRF::TRY_RESERVE | RRF::PROVISIONAL_RESERVE)) {
+	if (req.rr_flags & (RRF::RESERVE | RRF::TRY_RESERVE | RRF::PROVISIONAL_RESERVE)) {
 		for (auto &it : itrss) {
 			if (it.rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {    //track already reserved
-				if (in_rr_flags & RRF::IGNORE_OWN_OVERLAP && it.reserved_route && it.reserved_route->start == res_route->start
+				if (req.rr_flags & RRF::IGNORE_OWN_OVERLAP && it.reserved_route && it.reserved_route->start == req.res_route->start
 						&& route_class::IsOverlap(it.reserved_route->type)) {
 					//do nothing, own overlap is being ignored
-				} else if (it.direction != in_dir || it.index != in_index) {
-					if (fail_reason_key) {
-						*fail_reason_key = "track/reservation/conflict";
+				} else if (it.direction != req.direction || it.index != req.index) {
+					if (req.fail_reason_key) {
+						*(req.fail_reason_key) = "track/reservation/conflict";
 					}
 					res.AddConflict(it.reserved_route);    //reserved piece doesn't match
 				}
 			}
 			if (!res.IsSuccess()) continue;
-			if (it.rr_flags & RRF::PROVISIONAL_RESERVE && in_rr_flags & RRF::RESERVE) {
-				if (it.reserved_route == res_route && (in_rr_flags & RRF::SAVEMASK & ~RRF::RESERVE)
+			if (it.rr_flags & RRF::PROVISIONAL_RESERVE && req.rr_flags & RRF::RESERVE) {
+				if (it.reserved_route == req.res_route && (req.rr_flags & RRF::SAVEMASK & ~RRF::RESERVE)
 						== (it.rr_flags & RRF::SAVEMASK & ~RRF::PROVISIONAL_RESERVE)) {
 					//we are now properly reserving what we already preliminarily reserved, reuse inner_track_reservation_state
 					it.rr_flags |= RRF::RESERVE;
@@ -79,20 +79,20 @@ reservation_result track_reservation_state::Reservation(EDGE in_dir, unsigned in
 			}
 		}
 		if (!res.IsSuccess()) return res;
-		if (in_rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {
+		if (req.rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {
 			itrss.emplace_back();
 			inner_track_reservation_state &itrs = itrss.back();
 
-			itrs.rr_flags = in_rr_flags & RRF::SAVEMASK;
-			itrs.direction = in_dir;
-			itrs.index = in_index;
-			itrs.reserved_route = res_route;
+			itrs.rr_flags = req.rr_flags & RRF::SAVEMASK;
+			itrs.direction = req.direction;
+			itrs.index = req.index;
+			itrs.reserved_route = req.res_route;
 		}
 		return res;
-	} else if (in_rr_flags & (RRF::UNRESERVE | RRF::TRY_UNRESERVE)) {
+	} else if (req.rr_flags & (RRF::UNRESERVE | RRF::TRY_UNRESERVE)) {
 		for (auto it = itrss.begin(); it != itrss.end(); ++it) {
-			if (it->rr_flags & RRF::RESERVE && it->direction == in_dir && it->index == in_index && it->reserved_route == res_route) {
-				if (in_rr_flags & RRF::UNRESERVE) {
+			if (it->rr_flags & RRF::RESERVE && it->direction == req.direction && it->index == req.index && it->reserved_route == req.res_route) {
+				if (req.rr_flags & RRF::UNRESERVE) {
 					itrss.erase(it);
 				}
 				return res;

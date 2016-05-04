@@ -212,7 +212,7 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 				}
 			}, RRF::RESERVE);
 			if (unreserve) {
-				bt_piece->Reservation(unresdirection, unresidex, unresrrflags, reserved_route);
+				bt_piece->Reservation(reservation_request_res(unresdirection, unresidex, unresrrflags, reserved_route));
 			}
 			return success;
 		}
@@ -252,7 +252,7 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 				}
 			}, RRF::RESERVE);
 			if (unreserve) {
-				ft_piece->Reservation(unresdirection, unresidex, unresrrflags, reserved_route);
+				ft_piece->Reservation(reservation_request_res(unresdirection, unresidex, unresrrflags, reserved_route));
 			}
 			return success;
 		}
@@ -267,7 +267,7 @@ void CheckUnreserveTrackCircuit(track_circuit *tc) {
 			}
 			if (backtrack(piece->GetEdgeConnectingPiece(r_direction).track, piece, reserved_route)) {
 				fixups.emplace_back([=]() {
-					piece->Reservation(r_direction, r_index, RRF::UNRESERVE, reserved_route);
+					piece->Reservation(reservation_request_res(r_direction, r_index, RRF::UNRESERVE, reserved_route));
 				});
 				forwardtrack(piece->GetConnectingPieceByIndex(r_direction, r_index).track, reserved_route);
 			}
