@@ -166,8 +166,8 @@ struct route  : public route_common {
 	route() : type(route_class::ID::NONE) { }
 	void FillLists();
 	bool TestRouteForMatch(const routing_point *check_end, const via_list &check_vias) const;
-	bool RouteReservation(RRF reserve_flags, std::string *fail_reason_key = nullptr) const;
-	bool PartialRouteReservationWithActions(RRF reserve_flags, std::string *fail_reason_key, RRF action_reserve_flags,
+	reservation_result RouteReservation(RRF reserve_flags, std::string *fail_reason_key = nullptr) const;
+	reservation_result PartialRouteReservationWithActions(RRF reserve_flags, std::string *fail_reason_key, RRF action_reserve_flags,
 			std::function<void(action &&reservation_act)> action_callback) const;
 	void RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> action_callback) const;
 	bool IsRouteSubSet(const route *subset) const;

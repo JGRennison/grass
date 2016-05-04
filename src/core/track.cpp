@@ -141,9 +141,9 @@ bool generic_track::PostLayoutInit(error_collection &ec) {
 	return true;
 }
 
-bool generic_track::Reservation(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
-	bool result = ReservationV(direction, index, rr_flags, res_route, fail_reason_key);
-	if (result) {
+reservation_result generic_track::Reservation(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+	reservation_result result = ReservationV(direction, index, rr_flags, res_route, fail_reason_key);
+	if (result.IsSuccess()) {
 		MarkUpdated();
 		UpdateTrackCircuitReservationState();
 	}
@@ -377,9 +377,9 @@ track_seg & track_seg::SetElevationDelta(unsigned int elevation_delta) {
 	return *this;
 }
 
-bool track_seg::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result track_seg::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	if (rr_flags & RRF::STOP_ON_OCCUPIED_TC && GetTrackCircuit() && GetTrackCircuit()->Occupied()) {
-		return false;
+		return reservation_result(RSRVRF::FAILED | RSRVRF::STOP_ON_OCCUPIED_TC);
 	}
 	return trs.Reservation(direction, index, rr_flags, res_route);
 }
@@ -540,7 +540,7 @@ GTF crossover::GetFlags(EDGE direction) const {
 	return GTF::ROUTE_FORK | trs.GetGTReservationFlags(direction);
 }
 
-bool crossover::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result crossover::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	return trs.Reservation(direction, index, rr_flags, res_route);
 }
 

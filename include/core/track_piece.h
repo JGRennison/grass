@@ -55,7 +55,7 @@ class track_seg : public generic_track {
 	virtual const edge_track_target GetEdgeConnectingPiece(EDGE edgeid) override;
 	virtual unsigned int GetMaxConnectingPieces(EDGE direction) const;
 	virtual const edge_track_target GetConnectingPieceByIndex(EDGE direction, unsigned int index) override;
-	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
+	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
 
 	virtual std::string GetTypeName() const { return "Track Segment"; }
 
@@ -107,7 +107,7 @@ class crossover : public generic_zlen_track {
 		return GetConnectingPiece(direction);
 	}
 
-	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
+	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
 
 	virtual std::string GetTypeName() const override { return "Crossover"; }
 

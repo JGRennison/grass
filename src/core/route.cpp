@@ -73,42 +73,38 @@ void route_common::ApplyTo(route_common &target) const {
 	target.conditional_aspect_masks.insert(target.conditional_aspect_masks.end(), conditional_aspect_masks.begin(), conditional_aspect_masks.end());
 }
 
-//returns false on failure/partial completion
-bool route::RouteReservation(RRF reserve_flags, std::string *fail_reason_key) const {
-	if (!start.track->Reservation(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key)) {
-		return false;
-	}
+//returns an unsuccessful result on failure/partial completion
+reservation_result route::RouteReservation(RRF reserve_flags, std::string *fail_reason_key) const {
+	reservation_result res;
+	res.MergeFrom(start.track->Reservation(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key));
+	if (!res.IsSuccess()) return res;
 
 	for (auto &it : pieces) {
-		if (!it.location.track->Reservation(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key)) {
-			return false;
-		}
+		res.MergeFrom(it.location.track->Reservation(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key));
+		if (!res.IsSuccess()) return res;
 	}
 
-	if (!end.track->Reservation(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key)) {
-		return false;
-	}
-	return true;
+	res.MergeFrom(end.track->Reservation(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key));
+	return res;
 }
 
-//returns false on failure/partial completion
-bool route::PartialRouteReservationWithActions(RRF reserve_flags, std::string *fail_reason_key, RRF action_reserve_flags, std::function<void(action &&reservation_act)> action_callback) const {
-	if (!start.track->Reservation(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key)) {
-		return false;
-	}
+//returns an unsuccessful result on failure/partial completion
+reservation_result route::PartialRouteReservationWithActions(RRF reserve_flags, std::string *fail_reason_key, RRF action_reserve_flags, std::function<void(action &&reservation_act)> action_callback) const {
+	reservation_result res;
+	res.MergeFrom(start.track->Reservation(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key));
+	if (!res.IsSuccess()) return res;
 	start.track->ReservationActions(start.direction, 0, action_reserve_flags | RRF::START_PIECE, this, action_callback);
 
 	for (auto &it : pieces) {
-		if (!it.location.track->Reservation(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key)) {
-			return false;
-		}
+		res.MergeFrom(it.location.track->Reservation(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key));
+		if (!res.IsSuccess()) return res;
 		it.location.track->ReservationActions(it.location.direction, it.connection_index, action_reserve_flags, this, action_callback);
 	}
 
-	if (!end.track->Reservation(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key))
-		return false;
+	res.MergeFrom(end.track->Reservation(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key));
+	if (!res.IsSuccess()) return res;
 	end.track->ReservationActions(end.direction, 0, action_reserve_flags | RRF::END_PIECE, this, action_callback);
-	return true;
+	return res;
 }
 
 void route::RouteReservationActions(RRF reserve_flags, std::function<void(action &&reservation_act)> action_callback) const {

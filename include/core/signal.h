@@ -241,7 +241,7 @@ class generic_signal : public track_routing_point {
 	protected:
 	bool PostLayoutInitTrackScan(error_collection &ec, unsigned int max_pieces, unsigned int junction_max, route_restriction_set *restrictions,
 			std::function<route*(route_class::ID type, const track_target_ptr &piece)> make_blank_route);
-	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
+	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
 };
 
 class std_signal : public generic_signal {
@@ -331,7 +331,7 @@ class start_of_line : public routing_point {
 
 	virtual RPRT GetAvailableRouteTypes(EDGE direction) const override;
 	virtual RPRT GetSetRouteTypes(EDGE direction) const override;
-	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
+	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &output_list) override;
 
 	virtual route *GetRouteByIndex(unsigned int index) override { return nullptr; }
@@ -374,7 +374,7 @@ class routing_marker : public track_routing_point {
 
 	virtual route *GetRouteByIndex(unsigned int index) override { return nullptr; }
 
-	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
+	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
 	virtual RPRT GetAvailableRouteTypes(EDGE direction) const override;
 	virtual RPRT GetSetRouteTypes(EDGE direction) const override;
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &output_list) override;

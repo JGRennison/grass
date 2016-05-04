@@ -73,11 +73,44 @@ struct reservation_count_set {
 	unsigned int route_set_auto = 0;
 };
 
+enum class RSRVRF : unsigned char {
+	ZERO                        = 0,
+	FAILED                      = 1<<0,
+	INVALID_OP                  = 1<<1,
+	ROUTE_CONFLICT              = 1<<2,
+	STOP_ON_OCCUPIED_TC         = 1<<3,
+	POINTS_LOCKED               = 1<<4,
+};
+template<> struct enum_traits< RSRVRF > { static constexpr bool flags = true; };
+
+enum class RSRVRIF : unsigned char {
+	ZERO               = 0,
+	SWINGABLE_OVERLAP  = 1<<0,
+};
+template<> struct enum_traits< RSRVRIF > { static constexpr bool flags = true; };
+
+struct reservation_result {
+	struct reservation_result_conflict {
+		RSRVRIF conflict_flags;
+		const route *conflict_route;
+	};
+
+	std::vector<reservation_result_conflict> conflicts;
+	RSRVRF flags;
+
+	reservation_result() : flags(RSRVRF::ZERO) { }
+	reservation_result(RSRVRF flags_) : flags(flags_) { }
+	reservation_result(flagwrapper<RSRVRF> flags_) : flags(flags_) { }
+	bool IsSuccess() const { return !(flags & RSRVRF::FAILED); }
+	reservation_result &MergeFrom(const reservation_result &other);
+	reservation_result &AddConflict(const route *r);
+};
+
 class track_reservation_state : public serialisable_obj {
 	std::vector<inner_track_reservation_state> itrss;
 
 	public:
-	bool Reservation(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr);
+	reservation_result Reservation(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr);
 	GTF GetGTReservationFlags(EDGE direction) const;
 	bool IsReserved() const;
 	unsigned int GetReservationCount() const;

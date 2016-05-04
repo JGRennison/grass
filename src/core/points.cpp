@@ -255,13 +255,13 @@ bool IsPointsRoutingDirAndIndexRev(EDGE direction, unsigned int index) {
 	}
 }
 
-bool points::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result points::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	PTF pflags = GetPointsFlags(0);
 	bool rev = pflags & PTF::REV;
 	if (IsFlagsImmovable(pflags)) {
 		if (IsPointsRoutingDirAndIndexRev(direction, index) != rev) {
 			GetReservationFailureReason(pflags, fail_reason_key);
-			return false;
+			return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);
 		}
 	}
 	return trs.Reservation(direction, index, rr_flags, res_route, fail_reason_key);
@@ -415,11 +415,11 @@ const generic_points::PTF &catchpoints::GetPointsFlagsRef(unsigned int points_in
 	return pflags;
 }
 
-bool catchpoints::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result catchpoints::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	generic_points::PTF pflags = GetPointsFlags(0);
 	if (IsFlagsImmovable(pflags) && !(pflags & PTF::REV)) {
 		GetReservationFailureReason(pflags, fail_reason_key);
-		return false;
+		return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);
 	}
 	return trs.Reservation(direction, index, rr_flags, res_route, fail_reason_key);
 }
@@ -522,7 +522,7 @@ GTF spring_points::GetFlags(EDGE direction) const {
 	return GTF::ROUTE_FORK | trs.GetGTReservationFlags(direction);
 }
 
-bool spring_points::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result spring_points::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	return trs.Reservation(direction, index, rr_flags, res_route);
 }
 
@@ -638,12 +638,12 @@ const generic_points::PTF &double_slip::GetPointsFlagsRef(unsigned int points_in
 	}
 }
 
-bool double_slip::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result double_slip::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	PTF pf = GetCurrentPointFlags(direction);
 	if (IsFlagsImmovable(pf)) {
 		if (!(pf & PTF::REV) != !index) {
 			GetReservationFailureReason(pf, fail_reason_key);
-			return false;    //points locked in wrong direction
+			return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);    //points locked in wrong direction
 		}
 	}
 
@@ -655,7 +655,7 @@ bool double_slip::ReservationV(EDGE direction, unsigned int index, RRF rr_flags,
 	if (IsFlagsImmovable(exitpf)) {
 		if (!(exitpf & PTF::REV) != !exitpointsrev) {
 			GetReservationFailureReason(exitpf, fail_reason_key);
-			return false;    //points locked in wrong direction
+			return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);    //points locked in wrong direction
 		}
 	}
 

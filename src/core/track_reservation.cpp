@@ -17,13 +17,43 @@
 //==========================================================================
 
 #include <vector>
+#include <algorithm>
 #include "common.h"
 #include "core/track_reservation.h"
 #include "core/track.h"
 #include "core/signal.h"
 #include "core/serialisable_impl.h"
 
-bool track_reservation_state::Reservation(EDGE in_dir, unsigned int in_index, RRF in_rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result &reservation_result::AddConflict(const route *r) {
+	flags |= RSRVRF::FAILED | RSRVRF::ROUTE_CONFLICT;
+	RSRVRIF conflict_flags = RSRVRIF::ZERO;
+	if (route_class::IsOverlap(r->type)) {
+		generic_signal *rt_start = FastSignalCast(r->start.track, r->start.direction);
+		if (rt_start && rt_start->IsOverlapSwingPermitted(nullptr)) {
+			conflict_flags |= RSRVRIF::SWINGABLE_OVERLAP;
+		}
+	}
+	conflicts.push_back({ conflict_flags, r });
+	return *this;
+}
+
+reservation_result &reservation_result::MergeFrom(const reservation_result &other) {
+	flags |= other.flags;
+	for (auto &it : other.conflicts) {
+		auto cit = std::find_if(conflicts.begin(), conflicts.end(), [&](const reservation_result_conflict &c) {
+			return c.conflict_route == it.conflict_route;
+		});
+		if (cit != conflicts.end()) {
+			cit->conflict_flags |= it.conflict_flags;
+		} else {
+			conflicts.push_back(it);
+		}
+	}
+	return *this;
+}
+
+reservation_result track_reservation_state::Reservation(EDGE in_dir, unsigned int in_index, RRF in_rr_flags, const route *res_route, std::string* fail_reason_key) {
+	reservation_result res;
 	if (in_rr_flags & (RRF::RESERVE | RRF::TRY_RESERVE | RRF::PROVISIONAL_RESERVE)) {
 		for (auto &it : itrss) {
 			if (it.rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {    //track already reserved
@@ -34,19 +64,21 @@ bool track_reservation_state::Reservation(EDGE in_dir, unsigned int in_index, RR
 					if (fail_reason_key) {
 						*fail_reason_key = "track/reservation/conflict";
 					}
-					return false;    //reserved piece doesn't match
+					res.AddConflict(it.reserved_route);    //reserved piece doesn't match
 				}
 			}
+			if (!res.IsSuccess()) continue;
 			if (it.rr_flags & RRF::PROVISIONAL_RESERVE && in_rr_flags & RRF::RESERVE) {
 				if (it.reserved_route == res_route && (in_rr_flags & RRF::SAVEMASK & ~RRF::RESERVE)
 						== (it.rr_flags & RRF::SAVEMASK & ~RRF::PROVISIONAL_RESERVE)) {
 					//we are now properly reserving what we already preliminarily reserved, reuse inner_track_reservation_state
 					it.rr_flags |= RRF::RESERVE;
 					it.rr_flags &= ~RRF::PROVISIONAL_RESERVE;
-					return true;
+					return res;
 				}
 			}
 		}
+		if (!res.IsSuccess()) return res;
 		if (in_rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {
 			itrss.emplace_back();
 			inner_track_reservation_state &itrs = itrss.back();
@@ -56,18 +88,19 @@ bool track_reservation_state::Reservation(EDGE in_dir, unsigned int in_index, RR
 			itrs.index = in_index;
 			itrs.reserved_route = res_route;
 		}
-		return true;
+		return res;
 	} else if (in_rr_flags & (RRF::UNRESERVE | RRF::TRY_UNRESERVE)) {
 		for (auto it = itrss.begin(); it != itrss.end(); ++it) {
 			if (it->rr_flags & RRF::RESERVE && it->direction == in_dir && it->index == in_index && it->reserved_route == res_route) {
 				if (in_rr_flags & RRF::UNRESERVE) {
 					itrss.erase(it);
 				}
-				return true;
+				return res;
 			}
 		}
 	}
-	return false;
+	res.flags |= RSRVRF::FAILED | RSRVRF::INVALID_OP;
+	return res;
 }
 
 bool track_reservation_state::IsReserved() const {

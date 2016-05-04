@@ -49,6 +49,7 @@ class track_reservation_state;
 enum class RRF : unsigned int;
 enum class GTF : unsigned int;
 struct reservation_count_set;
+struct reservation_result;
 
 struct speed_restriction {
 	unsigned int speed;
@@ -137,14 +138,14 @@ class generic_track : public world_obj {
 
 	protected:
 	//return true if reservation OK
-	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) = 0;
+	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) = 0;
 	virtual void ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route,
 			std::function<void(action &&reservation_act)> submit_action) { }
 	void DeserialiseReservationState(track_reservation_state &trs, const deserialiser_input &di, const char *name, error_collection &ec);
 
 	public:
 	void UpdateTrackCircuitReservationState();
-	bool Reservation(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr);
+	reservation_result Reservation(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr);
 
 	void ReservationActions(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route,
 			std::function<void(action &&reservation_act)> submit_action) {

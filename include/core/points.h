@@ -148,7 +148,7 @@ class points : public generic_points {
 	protected:
 	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
-	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
+	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
 	virtual void ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) override;
 };
 
@@ -184,7 +184,7 @@ class catchpoints : public generic_points {
 	protected:
 	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
-	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
+	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
 	virtual void ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) override;
 };
 
@@ -227,7 +227,7 @@ class spring_points : public generic_zlen_track {
 	}
 	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
-	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
+	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) override;
 };
 
 class test_double_slip;
@@ -372,7 +372,7 @@ class double_slip : public generic_points {
 	protected:
 	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const  override{ return EDGE::INVALID; }
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
-	virtual bool ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
+	virtual reservation_result ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key = nullptr) override;
 	virtual void ReservationActionsV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::function<void(action &&reservation_act)> submit_action) override;
 };
 

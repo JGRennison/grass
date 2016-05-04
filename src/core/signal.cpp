@@ -69,7 +69,7 @@ void routing_point::EnumerateAvailableOverlaps(std::function<void(const route *r
 		if (!(types & route_class::Flag(r->type))) {
 			return;
 		}
-		if (!r->RouteReservation(RRF::TRY_RESERVE | extra_flags)) {
+		if (!r->RouteReservation(RRF::TRY_RESERVE | extra_flags).IsSuccess()) {
 			return;
 		}
 
@@ -101,7 +101,7 @@ unsigned int routing_point::GetMatchingRoutes(std::vector<gmr_route_item> &route
 
 		int score = r->priority;
 		if (gmr_flags & GMRF::CHECK_TRY_RESERVE) {
-			if (!r->RouteReservation(RRF::TRY_RESERVE | extra_flags)) {
+			if (!r->RouteReservation(RRF::TRY_RESERVE | extra_flags).IsSuccess()) {
 				return;
 			}
 		}
@@ -261,14 +261,14 @@ GSF generic_signal::SetSignalFlagsMasked(GSF set_flags, GSF mask_flags) {
 	return sflags;
 }
 
-bool generic_signal::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result generic_signal::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	if (direction != EDGE::FRONT && rr_flags & (RRF::START_PIECE | RRF::END_PIECE)) {
-		return false;
+		return reservation_result(RSRVRF::FAILED | RSRVRF::INVALID_OP);
 	}
 	if (rr_flags & RRF::START_PIECE) {
 		return start_trs.Reservation(direction, index, rr_flags, res_route);
 	} else if (rr_flags & RRF::END_PIECE) {
-		bool result = end_trs.Reservation(direction, index, rr_flags, res_route);
+		reservation_result result = end_trs.Reservation(direction, index, rr_flags, res_route);
 		if (rr_flags & RRF::UNRESERVE) {
 			GetWorld().ExecuteIfActionScope([&]() {
 				const route* ovlp = GetCurrentForwardOverlap();
@@ -279,7 +279,7 @@ bool generic_signal::ReservationV(EDGE direction, unsigned int index, RRF rr_fla
 		}
 		return result;
 	} else {
-		return start_trs.Reservation(direction, index, rr_flags, res_route) && end_trs.Reservation(direction, index, rr_flags, res_route);
+		return start_trs.Reservation(direction, index, rr_flags, res_route).MergeFrom(end_trs.Reservation(direction, index, rr_flags, res_route));
 	}
 }
 
@@ -835,14 +835,14 @@ bool auto_signal::PostLayoutInit(error_collection &ec) {
 	bool scanresult = PostLayoutInitTrackScan(ec, 100, 0, 0, mkroutefunc);
 
 	if (scanresult && signal_route.type == route_class::ID::ROUTE) {
-		if (signal_route.RouteReservation(RRF::AUTO_ROUTE | RRF::TRY_RESERVE)) {
+		if (signal_route.RouteReservation(RRF::AUTO_ROUTE | RRF::TRY_RESERVE).IsSuccess()) {
 			signal_route.RouteReservation(RRF::AUTO_ROUTE | RRF::RESERVE);
 
 			generic_signal *end_signal = FastSignalCast(signal_route.end.track, signal_route.end.direction);
 			if (end_signal && ! (end_signal->GetSignalFlags() & GSF::NO_OVERLAP)) {    //reserve an overlap beyond the end signal too if needed
 				end_signal->PostLayoutInit(ec);    //make sure that the end piece is inited
 				const route *best_overlap = end_signal->FindBestOverlap(route_class::Flag(route_class::ID::OVERLAP));
-				if (best_overlap && best_overlap->RouteReservation(RRF::AUTO_ROUTE | RRF::TRY_RESERVE)) {
+				if (best_overlap && best_overlap->RouteReservation(RRF::AUTO_ROUTE | RRF::TRY_RESERVE).IsSuccess()) {
 					best_overlap->RouteReservation(RRF::AUTO_ROUTE | RRF::RESERVE);
 					signal_route.overlap_type = route_class::ID::OVERLAP;
 				} else {
@@ -1071,13 +1071,13 @@ void start_of_line::GetListOfEdges(std::vector<edgelistitem> &output_list) const
 	output_list.insert(output_list.end(), { edgelistitem(EDGE::FRONT, connection) });
 }
 
-bool start_of_line::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result start_of_line::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	if (rr_flags & RRF::START_PIECE && direction == EDGE::BACK) {
 		return trs.Reservation(direction, index, rr_flags, res_route);
 	} else if (rr_flags & RRF::END_PIECE && direction == EDGE::FRONT) {
 		return trs.Reservation(direction, index, rr_flags, res_route);
 	} else {
-		return false;
+		return reservation_result(RSRVRF::FAILED | RSRVRF::INVALID_OP);
 	}
 }
 
@@ -1117,7 +1117,7 @@ GTF routing_marker::GetFlags(EDGE direction) const {
 	return GTF::ROUTING_POINT | trs.GetGTReservationFlags(direction);
 }
 
-bool routing_marker::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
+reservation_result routing_marker::ReservationV(EDGE direction, unsigned int index, RRF rr_flags, const route *res_route, std::string* fail_reason_key) {
 	return trs.Reservation(direction, index, rr_flags, res_route);
 }
 

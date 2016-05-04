@@ -366,7 +366,7 @@ const route *action_reserve_track_base::TestSwingOverlapAndReserve(const route *
 	if (!gs) {
 		return nullptr;
 	}
-	if (!target_route->RouteReservation(RRF::TRY_RESERVE | RRF::IGNORE_OWN_OVERLAP)) {
+	if (!target_route->RouteReservation(RRF::TRY_RESERVE | RRF::IGNORE_OWN_OVERLAP).IsSuccess()) {
 		return nullptr;    //can't reserve even when ignoring the overlap
 	}
 
@@ -427,7 +427,7 @@ bool action_reserve_track_base::TryReserveRoute(const route *rt, world_time acti
 	const route *swing_this_overlap = nullptr;
 	const route *remove_prev_overlap = nullptr;
 	std::string tryreservation_fail_reason_key = "generic/failurereason";
-	bool success = rt->RouteReservation(RRF::TRY_RESERVE, &tryreservation_fail_reason_key);
+	bool success = rt->RouteReservation(RRF::TRY_RESERVE, &tryreservation_fail_reason_key).IsSuccess();
 	if (!success) {
 		swing_this_overlap = TestSwingOverlapAndReserve(rt, &tryreservation_fail_reason_key);
 		if (swing_this_overlap) {
@@ -559,7 +559,7 @@ bool action_reserve_track_base::GenericRouteUnreservation(const route *targrt, r
 		reservation_act.action_time++;
 		reservation_act.Execute();
 	};
-	return targrt->PartialRouteReservationWithActions(RRF::TRY_UNRESERVE | extra_flags, 0, RRF::UNRESERVE | extra_flags, action_callback);
+	return targrt->PartialRouteReservationWithActions(RRF::TRY_UNRESERVE | extra_flags, 0, RRF::UNRESERVE | extra_flags, action_callback).IsSuccess();
 }
 
 void action_reserve_track_base::CancelApproachLocking(generic_signal *sig) const {
