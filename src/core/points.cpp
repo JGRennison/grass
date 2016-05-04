@@ -257,7 +257,7 @@ bool IsPointsRoutingDirAndIndexRev(EDGE direction, unsigned int index) {
 reservation_result points::ReservationV(const reservation_request_res &req) {
 	PTF pflags = GetPointsFlags(0);
 	bool rev = pflags & PTF::REV;
-	if (IsFlagsImmovable(pflags)) {
+	if (req.rr_flags & RRF::RESERVE_MASK && IsFlagsImmovable(pflags)) {
 		if (IsPointsRoutingDirAndIndexRev(req.direction, req.index) != rev) {
 			GetReservationFailureReason(pflags, req.fail_reason_key);
 			return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);
@@ -415,7 +415,7 @@ const generic_points::PTF &catchpoints::GetPointsFlagsRef(unsigned int points_in
 
 reservation_result catchpoints::ReservationV(const reservation_request_res &req) {
 	generic_points::PTF pflags = GetPointsFlags(0);
-	if (IsFlagsImmovable(pflags) && !(pflags & PTF::REV)) {
+	if (req.rr_flags & RRF::RESERVE_MASK && IsFlagsImmovable(pflags) && !(pflags & PTF::REV)) {
 		GetReservationFailureReason(pflags, req.fail_reason_key);
 		return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);
 	}
@@ -638,7 +638,7 @@ const generic_points::PTF &double_slip::GetPointsFlagsRef(unsigned int points_in
 
 reservation_result double_slip::ReservationV(const reservation_request_res &req) {
 	PTF pf = GetCurrentPointFlags(req.direction);
-	if (IsFlagsImmovable(pf)) {
+	if (req.rr_flags & RRF::RESERVE_MASK && IsFlagsImmovable(pf)) {
 		if (!(pf & PTF::REV) != !req.index) {
 			GetReservationFailureReason(pf, req.fail_reason_key);
 			return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);    //points locked in wrong direction
@@ -650,7 +650,7 @@ reservation_result double_slip::ReservationV(const reservation_request_res &req)
 	PTF exitpf = GetCurrentPointFlags(exitdirection);
 	bool exitpointsrev = (GetConnectingPointDirection(exitdirection, true) == req.direction);
 
-	if (IsFlagsImmovable(exitpf)) {
+	if (req.rr_flags & RRF::RESERVE_MASK && IsFlagsImmovable(exitpf)) {
 		if (!(exitpf & PTF::REV) != !exitpointsrev) {
 			GetReservationFailureReason(exitpf, req.fail_reason_key);
 			return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);    //points locked in wrong direction

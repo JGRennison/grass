@@ -51,6 +51,134 @@ void future_points_action::Serialise(serialiser_output &so, error_collection &ec
 	SerialiseValueJson(mask, so, "mask");
 }
 
+struct overlap_conflict_resolution {
+	std::vector<const route *> remove_overlaps;
+	std::vector<const route *> add_overlaps;
+	int best_score = INT_MIN;
+
+	void Execute(const action &a, std::function<void()> callback = nullptr) {
+		{
+			track_reservation_state_backup_guard guard;
+			// This guard is so that the reservation actions are executed with the old overlaps removed,
+			// as otherwise the points movement to the new position is blocked by the old reservations.
+
+			auto ovlp_action_callback = [&](action &&reservation_act) {
+				reservation_act.Execute();
+			};
+			for (auto &it : remove_overlaps) {
+				auto result = it->RouteReservation(RRF::UNRESERVE, nullptr, &guard);
+				assert(result.IsSuccess());
+				it->RouteReservationActions(RRF::UNRESERVE, ovlp_action_callback);
+				a.ActionRegisterFuture(std::make_shared<future_unreserve_track>(*(it->start.track), a.action_time + 1, it));
+			}
+			for (auto &it : add_overlaps) {
+				it->RouteReservationActions(RRF::RESERVE, ovlp_action_callback);
+				a.ActionRegisterFuture(std::make_shared<future_reserve_track>(*(it->start.track), a.action_time + 1, it));
+			}
+			if (callback) {
+				callback();
+			}
+		}
+		for (auto &it : add_overlaps) {
+			// Use ignore-existing as the old overlap reservations still exist at this point.
+			auto result = it->RouteReservation(RRF::PROVISIONAL_RESERVE | RRF::IGNORE_EXISTING);
+			assert(result.IsSuccess());
+		}
+	}
+};
+
+struct overlap_conflict_req_info {
+	generic_signal *start;
+	route_class::ID type;
+};
+
+void CheckOverlapConflictIntl(std::vector<const route *> &conflicting_overlaps, std::vector<overlap_conflict_req_info> &overlap_starts,
+		std::vector<const route *> &add_overlaps, overlap_conflict_resolution &output, size_t stage, int stage_score) {
+	generic_signal *start = overlap_starts[stage].start;
+	start->EnumerateAvailableOverlaps([&](const route *rt, int score) {
+		add_overlaps.push_back(rt);
+		auto result = rt->RouteReservation(RRF::TRY_RESERVE);
+		if (result.IsSuccess()) {
+			if (stage < overlap_starts.size() - 1) {
+				// more stages
+				track_reservation_state_backup_guard guard;
+				auto res_result = rt->RouteReservation(RRF::RESERVE, nullptr, &guard);
+				assert(res_result.IsSuccess());
+				CheckOverlapConflictIntl(conflicting_overlaps, overlap_starts, add_overlaps, output, stage + 1, stage_score + score);
+			} else {
+				// done
+				if (stage_score + score > output.best_score) {
+					output.add_overlaps = add_overlaps;
+					output.remove_overlaps = conflicting_overlaps;
+					output.best_score = stage_score + score;
+				}
+			}
+		} else {
+			if (!(result.flags & (RSRVRF::INVALID_OP | RSRVRF::POINTS_LOCKED))) {
+				bool ok = true;
+				if (result.conflicts.empty()) ok = false;
+				for (auto &it : result.conflicts) {
+					if (it.conflict_flags & RSRVRIF::SWINGABLE_OVERLAP) {
+						if (std::find(add_overlaps.begin(), add_overlaps.end(), it.conflict_route) != add_overlaps.end()) {
+							// conflicting with own routes, stop searching
+							ok = false;
+						}
+					} else {
+						ok = false;
+					}
+				}
+				if (ok) {
+					// found more overlaps to try and swing
+					track_reservation_state_backup_guard guard;
+
+					for (auto &it : result.conflicts) {
+						auto result = it.conflict_route->RouteReservation(RRF::UNRESERVE, nullptr, &guard);
+						assert(result.IsSuccess());
+						conflicting_overlaps.push_back(it.conflict_route);
+						generic_signal *sig = FastSignalCast(it.conflict_route->start.track, it.conflict_route->start.direction);
+						assert(sig != nullptr);
+						overlap_starts.push_back({ sig, it.conflict_route->type });
+					}
+
+					auto res_result = rt->RouteReservation(RRF::RESERVE, nullptr, &guard);
+					assert(res_result.IsSuccess());
+					CheckOverlapConflictIntl(conflicting_overlaps, overlap_starts, add_overlaps, output, stage + 1, stage_score + score);
+
+					overlap_starts.resize(overlap_starts.size() - result.conflicts.size());
+					conflicting_overlaps.resize(conflicting_overlaps.size() - result.conflicts.size());
+				}
+			}
+		}
+		add_overlaps.pop_back();
+	}, RRF::IGNORE_EXISTING, route_class::Flag(overlap_starts[stage].type));
+}
+
+bool CheckOverlapConflict(std::vector<const route *> conflicting_overlaps, generic_signal *new_overlap_start, route_class::ID new_overlap_type,
+		overlap_conflict_resolution &output) {
+	std::vector<overlap_conflict_req_info> overlap_starts;
+
+	track_reservation_state_backup_guard guard;
+
+	for (auto &it : conflicting_overlaps) {
+		generic_signal *sig = FastSignalCast(it->start.track, it->start.direction);
+		assert(sig != nullptr);
+		auto result = it->RouteReservation(RRF::UNRESERVE, nullptr, &guard);
+		assert(result.IsSuccess());
+		overlap_starts.push_back({ sig, it->type });
+	}
+	if (new_overlap_start) {
+		overlap_starts.push_back({ new_overlap_start, new_overlap_type });
+	}
+
+	if (overlap_starts.empty()) return false;
+
+	std::vector<const route *> add_overlaps;
+	CheckOverlapConflictIntl(conflicting_overlaps, overlap_starts, add_overlaps, output, 0, 0);
+	assert(add_overlaps.empty());
+
+	return output.best_score != INT_MIN;
+}
+
 // Generate flag change for a nominal normalise and reverse operation
 action_points_action::action_points_action(world &w_, generic_points &targ, unsigned int index_, bool reverse)
 		: action(w_), target(&targ), index(index_) {
@@ -93,11 +221,9 @@ void action_points_action::ExecuteAction() const {
 			return;
 		}
 
-		std::vector<const route *> remove_overlaps;
-		std::vector<const route *> add_overlaps;
-		if (!(aflags & APAF::IGNORE_RESERVATION) && target->GetFlags(target->GetDefaultValidDirecton()) & GTF::ROUTE_SET) {
+		if (target->GetFlags(target->GetDefaultValidDirecton()) & GTF::ROUTE_SET) {
 			std::string failreason = "track/reserved";
-			if (!TrySwingOverlap(remove_overlaps, add_overlaps, !!(bits & generic_points::PTF::REV), &failreason)) {
+			if (!TrySwingOverlap(!!(bits & generic_points::PTF::REV), &failreason)) {
 				ActionSendReplyFuture(std::make_shared<future_generic_user_message_reason>(*target, action_time+1, &w,
 						"track_ops/pointsunmovable", failreason));
 				return;
@@ -109,31 +235,6 @@ void action_points_action::ExecuteAction() const {
 		immediate_action_mask |= generic_points::PTF::REV | generic_points::PTF::OOC;
 
 		//code for random failures goes here
-
-		{
-			track_reservation_state_backup_guard guard;
-			// This guard is so that the reservation actions are executed with the old overlaps removed,
-			// as otherwise the points movement to the new position is blocked by the old reservations.
-
-			auto ovlp_action_callback = [&](action &&reservation_act) {
-				reservation_act.Execute();
-			};
-			for (auto &it : remove_overlaps) {
-				auto result = it->RouteReservation(RRF::UNRESERVE, nullptr, &guard);
-				assert(result.IsSuccess());
-				it->RouteReservationActions(RRF::UNRESERVE, ovlp_action_callback);
-				ActionRegisterFuture(std::make_shared<future_unreserve_track>(*(it->start.track), action_time + 1, it));
-			}
-			for (auto &it : add_overlaps) {
-				it->RouteReservationActions(RRF::RESERVE, ovlp_action_callback);
-				ActionRegisterFuture(std::make_shared<future_reserve_track>(*(it->start.track), action_time + 1, it));
-			}
-		}
-		for (auto &it : add_overlaps) {
-			// Use ignore-existing as the old overlap reservations still exist at this point.
-			auto result = it->RouteReservation(RRF::PROVISIONAL_RESERVE | RRF::IGNORE_EXISTING);
-			assert(result.IsSuccess());
-		}
 
 		ActionRegisterFuture(std::make_shared<future_points_action>(*target, GetPointsMovementCompletionTime(), index,
 				generic_points::PTF::ZERO, generic_points::PTF::OOC));
@@ -191,35 +292,32 @@ void action_points_action::CancelFutures(unsigned int index, generic_points::PTF
 	}
 }
 
-bool action_points_action::TrySwingOverlap(std::vector<const route *> &remove_overlaps, std::vector<const route *> &add_overlaps,
-		bool setting_reverse, std::string *fail_reason_key) const {
+bool action_points_action::TrySwingOverlap(bool setting_reverse, std::string *fail_reason_key) const {
 	using PTF = generic_points::PTF;
 
 	if (aflags & APAF::NO_OVERLAP_SWING) return false;
 
-	const route *foundoverlap = nullptr;
+	std::vector<const route *> found_overlaps;
 	bool failed = false;
 	target->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
 		if (!route_class::IsOverlap(reserved_route->type)) {
 			failed = true;
 			return;
 		}
-		if (foundoverlap) {
-			failed = true;
-			return;
-		}
-		foundoverlap = reserved_route;
+		found_overlaps.push_back(reserved_route);
 	}, RRF::RESERVE | RRF::PROVISIONAL_RESERVE);
-	if (failed || !foundoverlap) {
+	if (failed || found_overlaps.empty()) {
 		return false;
 	}
 
-	generic_signal *start = FastSignalCast(foundoverlap->start.track, foundoverlap->start.direction);
-	if (!start) {
-		return false;
-	}
-	if (!start->IsOverlapSwingPermitted(fail_reason_key)) {
-		return false;
+	for (auto &it : found_overlaps) {
+		generic_signal *start = FastSignalCast(it->start.track, it->start.direction);
+		if (!start) {
+			return false;
+		}
+		if (!start->IsOverlapSwingPermitted(fail_reason_key)) {
+			return false;
+		}
 	}
 
 	// temporarily move and lock points
@@ -227,27 +325,17 @@ bool action_points_action::TrySwingOverlap(std::vector<const route *> &remove_ov
 	target->SetPointsFlagsMasked(index, PTF::LOCKED | (setting_reverse ? PTF::REV : PTF::ZERO),
 			PTF::REV | PTF::LOCKED);
 
-	const route *best_new_overlap = nullptr;
-	int best_overlap_score = INT_MIN;
-	start->EnumerateAvailableOverlaps([&](const route *rt, int score) {
-		if (score > best_overlap_score) {
-			best_new_overlap = rt;
-			best_overlap_score = score;
-		}
-	}, RRF::IGNORE_OWN_OVERLAP);
+	overlap_conflict_resolution result;
+	bool ok = CheckOverlapConflict(std::move(found_overlaps), nullptr, route_class::ID::NONE, result);
 
 	// move and unlock back
 	target->SetPointsFlagsMasked(index, saved_pflags, ~generic_points::PTF::ZERO);
 
-	bool result = false;
-
-	if (best_new_overlap && best_new_overlap != foundoverlap) {
-		remove_overlaps.push_back(foundoverlap);
-		add_overlaps.push_back(best_new_overlap);
-		result = true;
+	if (ok) {
+		result.Execute(*this);
 	}
 
-	return result;
+	return ok;
 }
 
 void action_points_action::Deserialise(const deserialiser_input &di, error_collection &ec) {
@@ -375,40 +463,11 @@ void future_reserve_track_base::Serialise(serialiser_output &so, error_collectio
 	SerialiseValueJson(rflags, so, "rflags");
 }
 
-const route *action_reserve_track_base::TestSwingOverlapAndReserve(const route *target_route, std::string *fail_reason_key) const {
-	generic_signal *gs = FastSignalCast(target_route->start.track, target_route->start.direction);
-	if (!gs) {
-		return nullptr;
-	}
-	if (!target_route->RouteReservation(RRF::TRY_RESERVE | RRF::IGNORE_OWN_OVERLAP).IsSuccess()) {
-		return nullptr;    //can't reserve even when ignoring the overlap
-	}
-
-	if (!gs->IsOverlapSwingPermitted(fail_reason_key)) {
-		return nullptr;
-	}
-
-	std::vector<std::pair<int, const route *> > candidates;
-	gs->EnumerateAvailableOverlaps([&](const route *rt, int score) {
-		candidates.push_back(std::make_pair(-score, rt));
-	}, RRF::IGNORE_OWN_OVERLAP);
-	std::sort(candidates.begin(), candidates.end());
-
-	const route *result = nullptr;
-	for (auto &it : candidates) {
-		if (target_route->IsRouteSubSet(it.second)) {
-			result = it.second;
-			break;
-		}
-	}
-	return result;
-}
-
-//return true on success
+// return true on success
 bool action_reserve_track_base::TryReserveRoute(const route *rt, world_time action_time,
 		std::function<void(const std::shared_ptr<future> &f)> error_handler) const {
-	//disallow if non-overlap route already set from start point in given direction
-	//but silently accept if the set route is identical to the one trying to be set
+	// disallow if non-overlap route already set from start point in given direction
+	// but silently accept if the set route is identical to the one trying to be set
 	bool found_route = false;
 	bool route_conflict = false;
 	rt->start.track->ReservationEnumerationInDirection(rt->start.direction,
@@ -438,17 +497,36 @@ bool action_reserve_track_base::TryReserveRoute(const route *rt, world_time acti
 		}
 	}
 
-	const route *swing_this_overlap = nullptr;
-	const route *remove_prev_overlap = nullptr;
+	overlap_conflict_resolution route_overlap_result;
+	bool resolve_overlap = false;
 	std::string tryreservation_fail_reason_key = "generic/failurereason";
-	bool success = rt->RouteReservation(RRF::TRY_RESERVE, &tryreservation_fail_reason_key).IsSuccess();
+	auto result = rt->RouteReservation(RRF::TRY_RESERVE, &tryreservation_fail_reason_key);
+	bool success = result.IsSuccess();
 	if (!success) {
-		swing_this_overlap = TestSwingOverlapAndReserve(rt, &tryreservation_fail_reason_key);
-		if (swing_this_overlap) {
-			success = true;
-			generic_signal *sig = FastSignalCast(rt->start.track, rt->start.direction);
-			if (sig) {
-				remove_prev_overlap = sig->GetCurrentForwardOverlap();
+		bool ok = true;
+		if (result.flags & (RSRVRF::INVALID_OP | RSRVRF::POINTS_LOCKED)) {
+			ok = false;
+		}
+		if (result.conflicts.empty()) ok = false;
+		std::vector<const route *> conflict_overlaps;
+		for (auto &it : result.conflicts) {
+			if (it.conflict_flags & RSRVRIF::SWINGABLE_OVERLAP) {
+				conflict_overlaps.push_back(it.conflict_route);
+			} else {
+				ok = false;
+			}
+		}
+		if (ok) {
+			track_reservation_state_backup_guard guard;
+			if (rt->RouteReservation(RRF::RESERVE | RRF::IGNORE_EXISTING, nullptr, &guard).IsSuccess()) {
+				generic_signal *new_overlap_start = nullptr;
+				if (rt->overlap_type != route_class::ID::NONE) {
+					new_overlap_start = FastSignalCast(rt->end.track, rt->end.direction);
+				}
+				if (CheckOverlapConflict(std::move(conflict_overlaps), new_overlap_start, rt->overlap_type, route_overlap_result)) {
+					success = true;
+					resolve_overlap = true;
+				}
 			}
 		}
 	}
@@ -459,44 +537,34 @@ bool action_reserve_track_base::TryReserveRoute(const route *rt, world_time acti
 		return false;
 	}
 
-	const route *best_overlap = nullptr;
-	if (rt->overlap_type != route_class::ID::NONE) {
-		//need an overlap too
-		best_overlap = rt->end.track->FindBestOverlap(route_class::Flag(rt->overlap_type));
-		if (!best_overlap) {
+	if (!resolve_overlap && rt->overlap_type != route_class::ID::NONE) {
+		// need an overlap too
+		track_reservation_state_backup_guard guard;
+		rt->RouteReservation(RRF::RESERVE | RRF::IGNORE_EXISTING, nullptr, &guard);
+		if (CheckOverlapConflict(std::vector<const route *>(), FastSignalCast(rt->end.track, rt->end.direction), rt->overlap_type, route_overlap_result)) {
+			resolve_overlap = true;
+		} else {
 			error_handler(std::make_shared<future_generic_user_message_reason>(w, action_time + 1, &w,
 					"track/reservation/fail", "track/reservation/overlap/noneavailable"));
 			return false;
 		}
 	}
 
-	//route is OK, now reserve it
+	// route is OK, now reserve it
 
 	auto action_callback = [&](action &&reservation_act) {
-		action_points_action *apa = dynamic_cast<action_points_action*>(&reservation_act);
-		if (apa) {
-			apa->SetFlagsMasked(action_points_action::APAF::IGNORE_RESERVATION, action_points_action::APAF::IGNORE_RESERVATION);
-		}
 		reservation_act.Execute();
 	};
 
-	if (remove_prev_overlap) {
-		remove_prev_overlap->RouteReservationActions(RRF::UNRESERVE, action_callback);
-		ActionRegisterFuture(std::make_shared<future_unreserve_track>(*rt->start.track, action_time + 1, remove_prev_overlap));
+	if (resolve_overlap) {
+		route_overlap_result.Execute(*this, [&]() {
+			rt->RouteReservationActions(RRF::RESERVE, action_callback);
+		});
+	} else {
+		rt->RouteReservationActions(RRF::RESERVE, action_callback);
 	}
-	if (swing_this_overlap) {
-		swing_this_overlap->RouteReservationActions(RRF::RESERVE, action_callback);
-		ActionRegisterFuture(std::make_shared<future_reserve_track>(*rt->start.track, action_time + 1, swing_this_overlap));
-		swing_this_overlap->RouteReservation(RRF::PROVISIONAL_RESERVE | RRF::IGNORE_OWN_OVERLAP);
-	}
-	rt->RouteReservationActions(RRF::RESERVE, action_callback);
 	ActionRegisterFuture(std::make_shared<future_reserve_track>(*rt->start.track, action_time + 1, rt));
 	rt->RouteReservation(RRF::PROVISIONAL_RESERVE);
-	if (best_overlap) {
-		best_overlap->RouteReservationActions(RRF::RESERVE, action_callback);
-		ActionRegisterFuture(std::make_shared<future_reserve_track>(*rt->start.track, action_time + 1, best_overlap));
-		best_overlap->RouteReservation(RRF::PROVISIONAL_RESERVE);
-	}
 	return true;
 }
 
@@ -635,7 +703,7 @@ void action_reserve_track::ExecuteAction() const {
 
 action_reserve_path::action_reserve_path(world &w_, const routing_point *start_, const routing_point *end_)
 		: action_reserve_track_base(w_), start(start_), end(end_), allowed_route_types(route_class::AllNonOverlaps()),
-				gmr_flags(GMRF::DYNAMIC_PRIORITY), extra_flags(RRF::IGNORE_OWN_OVERLAP) { }
+				gmr_flags(GMRF::DYNAMIC_PRIORITY), extra_flags(RRF::ZERO) { }
 
 action_reserve_path &action_reserve_path::SetGmrFlags(GMRF gmr_flags_) {
 	gmr_flags = gmr_flags_;

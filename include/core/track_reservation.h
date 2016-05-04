@@ -44,10 +44,11 @@ enum class RRF : unsigned int {
 
 	PROVISIONAL_RESERVE     = 1<<8,       //for generic_track::RouteReservation, to prevent action/future race condition
 	STOP_ON_OCCUPIED_TC     = 1<<9,       //for track dereservations, stop upon reaching an occupied track circuit
-	IGNORE_OWN_OVERLAP      = 1<<10,      //for overlap swinging checks
-	IGNORE_EXISTING         = 1<<11,      //for overlap swinging
+	IGNORE_EXISTING         = 1<<10,      //for overlap swinging
 
 	SAVEMASK                = AUTO_ROUTE | START_PIECE | END_PIECE | RESERVE | PROVISIONAL_RESERVE,
+	RESERVE_MASK            = RESERVE | PROVISIONAL_RESERVE | TRY_RESERVE,
+	UNRESERVE_MASK          = UNRESERVE | TRY_UNRESERVE,
 };
 template<> struct enum_traits< RRF > { static constexpr bool flags = true; };
 

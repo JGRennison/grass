@@ -67,13 +67,10 @@ reservation_result track_reservation_state::Reservation(const reservation_reques
 	};
 
 	reservation_result res;
-	if (req.rr_flags & (RRF::RESERVE | RRF::TRY_RESERVE | RRF::PROVISIONAL_RESERVE)) {
+	if (req.rr_flags & RRF::RESERVE_MASK) {
 		for (auto &it : itrss) {
 			if (!(req.rr_flags & RRF::IGNORE_EXISTING) && it.rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {    //track already reserved
-				if (req.rr_flags & RRF::IGNORE_OWN_OVERLAP && it.reserved_route && it.reserved_route->start == req.res_route->start
-						&& route_class::IsOverlap(it.reserved_route->type)) {
-					//do nothing, own overlap is being ignored
-				} else if (it.direction != req.direction || it.index != req.index) {
+				if (it.direction != req.direction || it.index != req.index) {
 					if (req.fail_reason_key) {
 						*(req.fail_reason_key) = "track/reservation/conflict";
 					}
@@ -104,7 +101,7 @@ reservation_result track_reservation_state::Reservation(const reservation_reques
 			itrs.reserved_route = req.res_route;
 		}
 		return res;
-	} else if (req.rr_flags & (RRF::UNRESERVE | RRF::TRY_UNRESERVE)) {
+	} else if (req.rr_flags & RRF::UNRESERVE_MASK) {
 		for (auto it = itrss.begin(); it != itrss.end(); ++it) {
 			if (it->rr_flags & RRF::RESERVE && it->direction == req.direction && it->index == req.index && it->reserved_route == req.res_route) {
 				if (req.rr_flags & RRF::UNRESERVE) {

@@ -60,10 +60,9 @@ class action_points_action : public action {
 	public:
 	enum class APAF {
 		ZERO                     = 0,
-		IGNORE_RESERVATION       = 1<<0,
-		NO_OVERLAP_SWING         = 1<<1,
-		NO_POINTS_NORMALISE      = 1<<2,
-		IS_POINTS_NORMALISE      = 1<<3,
+		NO_OVERLAP_SWING         = 1<<0,
+		NO_POINTS_NORMALISE      = 1<<1,
+		IS_POINTS_NORMALISE      = 1<<2,
 	};
 
 	private:
@@ -76,8 +75,7 @@ class action_points_action : public action {
 	private:
 	void CancelFutures(unsigned int index, generic_points::PTF setmask, generic_points::PTF clearmask) const;
 	world_time GetPointsMovementCompletionTime() const;
-	bool TrySwingOverlap(std::vector<const route *> &remove_overlaps, std::vector<const route *> &add_overlaps,
-			bool setting_reverse, std::string *fail_reason_key = nullptr) const;
+	bool TrySwingOverlap(bool setting_reverse, std::string *fail_reason_key = nullptr) const;
 
 	public:
 	action_points_action(world &w_) : action(w_), target(nullptr) { }
@@ -174,7 +172,6 @@ class action_reserve_track_base : public action {
 	bool TryReserveRoute(const route *rt, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
 	bool TryUnreserveRoute(routing_point *startsig, world_time action_time, std::function<void(const std::shared_ptr<future> &f)> error_handler) const;
 	bool GenericRouteUnreservation(const route *targrt, routing_point *targsig, RRF extra_flags) const;
-	const route *TestSwingOverlapAndReserve(const route *target_route, std::string *fail_reason_key = nullptr) const;
 };
 
 class action_reserve_track_routeop : public action_reserve_track_base {
@@ -213,7 +210,6 @@ class action_reserve_path : public action_reserve_track_base {
 	GMRF gmr_flags;
 	RRF extra_flags;
 	via_list vias;
-
 
 	public:
 	action_reserve_path(world &w_) : action_reserve_track_base(w_) { }

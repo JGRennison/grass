@@ -549,3 +549,127 @@ TEST_CASE( "track/ops/reservation/overset", "Test overset track reservation and 
 		CHECK(tenv.s2->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) { }, RRF::RESERVE) == 2);
 	});
 }
+
+std::string overlap_ops_test_str_2 =
+R"({ "content" : [ )"
+	R"({ "type" : "typedef", "new_type" : "4aspectauto", "base_type" : "auto_signal", "content" : { "max_aspect" : 3 } }, )"
+	R"({ "type" : "typedef", "new_type" : "4aspectroute", "base_type" : "route_signal", "content" : { "max_aspect" : 3, "route_signal" : true } }, )"
+
+	R"({ "type" : "start_of_line", "name" : "A" }, )"
+	R"({ "type" : "4aspectauto", "name" : "S1" }, )"
+	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S1ovlp" }, )"
+	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T2" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S2", "overlap_swingable" : true }, )"
+	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S2ovlp" }, )"
+	R"({ "type" : "points", "name" : "P1" }, )"
+	R"({ "type" : "points", "name" : "P4", "reverse_auto_connection" : true  }, )"
+	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "P1ovlp_norm" }, )"
+	R"({ "type" : "routing_marker", "name" : "B", "overlap_end" : true }, )"
+	R"({ "type" : "end_of_line", "name" : "G" }, )"
+
+	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "P1ovlp_common", "connect" : { "to" : "P1" } }, )"
+	R"({ "type" : "points", "name" : "P2", "reverse_auto_connection" : true }, )"
+	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "P1ovlp_common" }, )"
+	R"({ "type" : "routing_marker", "name" : "C", "overlap_end" : true }, )"
+	R"({ "type" : "end_of_line", "name" : "F" }, )"
+
+	R"({ "type" : "start_of_line", "name" : "D" }, )"
+	R"({ "type" : "4aspectauto", "name" : "S3" }, )"
+	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S3ovlp" }, )"
+	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T4" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S4", "overlap_swingable" : true }, )"
+	R"({ "type" : "track_seg", "length" : 20000, "track_circuit" : "S4ovlp" }, )"
+	R"({ "type" : "points", "name" : "P3", "connect" : { "to" : "P2" }, "reverse" : true }, )"
+	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "P2ovlp_norm" }, )"
+	R"({ "type" : "routing_marker", "name" : "E", "overlap_end" : true }, )"
+	R"({ "type" : "end_of_line" }, )"
+
+	R"({ "type" : "start_of_line" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S5" }, )"
+	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T5" }, )"
+	R"({ "type" : "4aspectroute", "name" : "S6" }, )"
+	R"({ "type" : "track_seg", "length" : 30000, "track_circuit" : "T6", "connect" : { "to" : "P4" }  } )"
+"] }";
+
+TEST_CASE( "track/ops/reservation/overlap/dualswing", "Test points movement overlap dual swinging" ) {
+	test_fixture_world_init_checked env(overlap_ops_test_str_2);
+	points *p1 = PTR_CHECK(env.w->FindTrackByNameCast<points>("P1"));
+	points *p3 = PTR_CHECK(env.w->FindTrackByNameCast<points>("P3"));
+	route_signal *s2 = PTR_CHECK(env.w->FindTrackByNameCast<route_signal>("S2"));
+	route_signal *s4 = PTR_CHECK(env.w->FindTrackByNameCast<route_signal>("S4"));
+	route_signal *s5 = PTR_CHECK(env.w->FindTrackByNameCast<route_signal>("S5"));
+	route_signal *s6 = PTR_CHECK(env.w->FindTrackByNameCast<route_signal>("S6"));
+	routing_point *b = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("B"));
+	routing_point *c = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("C"));
+	routing_point *e = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("E"));
+	routing_point *f = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("F"));
+	routing_point *g = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("G"));
+
+	CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->end.track == b);
+	CHECK(PTR_CHECK(s4->GetCurrentForwardOverlap())->end.track == c);
+
+	auto check_swung = [&]() {
+		env.w->GameStep(100);
+		CHECK(p1->GetPointsFlags(0) == (generic_points::PTF::OOC | generic_points::PTF::REV));
+		CHECK(p3->GetPointsFlags(0) == generic_points::PTF::OOC);
+		CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->end.track == c);
+		CHECK(PTR_CHECK(s4->GetCurrentForwardOverlap())->end.track == e);
+		CHECK(env.w->GetLogText() == "");
+	};
+	auto check_swing_failed = [&]() {
+		env.w->GameStep(100);
+		CHECK(p1->GetPointsFlags(0) == generic_points::PTF::ZERO);
+		CHECK(p3->GetPointsFlags(0) == (generic_points::PTF::REV | generic_points::PTF::LOCKED));
+		CHECK(PTR_CHECK(s2->GetCurrentForwardOverlap())->end.track == b);
+		CHECK(PTR_CHECK(s4->GetCurrentForwardOverlap())->end.track == c);
+		CHECK(env.w->GetLogText() != "");
+	};
+
+	SECTION("Swing") {
+		env.w->SubmitAction(action_points_action(*(env.w), *p1, 0, generic_points::PTF::REV, generic_points::PTF::REV));
+		check_swung();
+	}
+	SECTION("Route") {
+		env.w->SubmitAction(action_reserve_path(*(env.w), s2, f));
+		check_swung();
+	}
+	SECTION("Route reserve") {
+		env.w->SubmitAction(action_reserve_path(*(env.w), s6, g));
+		check_swung();
+		CHECK(PTR_CHECK(s6->GetCurrentForwardRoute())->end.track == g);
+	}
+	SECTION("Overlap reserve") {
+		env.w->SubmitAction(action_reserve_path(*(env.w), s5, s6));
+		check_swung();
+		CHECK(PTR_CHECK(s5->GetCurrentForwardRoute())->end.track == s6);
+		CHECK(PTR_CHECK(s6->GetCurrentForwardOverlap())->end.track == b);
+	}
+	SECTION("Swing: Failed") {
+		env.w->SubmitAction(action_points_action(*(env.w), *p3, 0, generic_points::PTF::LOCKED, generic_points::PTF::LOCKED));
+		env.w->GameStep(100);
+		env.w->SubmitAction(action_points_action(*(env.w), *p1, 0, generic_points::PTF::REV, generic_points::PTF::REV));
+		env.w->GameStep(100);
+		check_swing_failed();
+	}
+	SECTION("Route: Failed") {
+		env.w->SubmitAction(action_points_action(*(env.w), *p3, 0, generic_points::PTF::LOCKED, generic_points::PTF::LOCKED));
+		env.w->GameStep(100);
+		env.w->SubmitAction(action_reserve_path(*(env.w), s2, f));
+		check_swing_failed();
+	}
+	SECTION("Route reserve: Failed") {
+		env.w->SubmitAction(action_points_action(*(env.w), *p3, 0, generic_points::PTF::LOCKED, generic_points::PTF::LOCKED));
+		env.w->GameStep(100);
+		env.w->SubmitAction(action_reserve_path(*(env.w), s6, g));
+		check_swing_failed();
+		CHECK(s6->GetCurrentForwardRoute() == nullptr);
+	}
+	SECTION("Overlap reserve: Failed") {
+		env.w->SubmitAction(action_points_action(*(env.w), *p3, 0, generic_points::PTF::LOCKED, generic_points::PTF::LOCKED));
+		env.w->GameStep(100);
+		env.w->SubmitAction(action_reserve_path(*(env.w), s5, s6));
+		check_swing_failed();
+		CHECK(s5->GetCurrentForwardRoute() == nullptr);
+		CHECK(s6->GetCurrentForwardOverlap() == nullptr);
+	}
+}
