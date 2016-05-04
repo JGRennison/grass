@@ -81,8 +81,6 @@ void action_points_action::ExecuteAction() const {
 	generic_points::PTF immediate_action_bits = generic_points::PTF::ZERO;
 	generic_points::PTF immediate_action_mask = generic_points::PTF::ZERO;
 
-	std::function<void()> overlap_callback;
-
 	if (change_flags & generic_points::PTF::REV) {
 		if (old_pflags & generic_points::PTF::LOCKED) {
 			ActionSendReplyFuture(std::make_shared<future_generic_user_message_reason>(*target, action_time+1, &w,
@@ -94,9 +92,12 @@ void action_points_action::ExecuteAction() const {
 					"track_ops/pointsunmovable", "points/reminderset"));
 			return;
 		}
+
+		std::vector<const route *> remove_overlaps;
+		std::vector<const route *> add_overlaps;
 		if (!(aflags & APAF::IGNORE_RESERVATION) && target->GetFlags(target->GetDefaultValidDirecton()) & GTF::ROUTE_SET) {
 			std::string failreason = "track/reserved";
-			if (!TrySwingOverlap(overlap_callback, !!(bits & generic_points::PTF::REV), &failreason)) {
+			if (!TrySwingOverlap(remove_overlaps, add_overlaps, !!(bits & generic_points::PTF::REV), &failreason)) {
 				ActionSendReplyFuture(std::make_shared<future_generic_user_message_reason>(*target, action_time+1, &w,
 						"track_ops/pointsunmovable", failreason));
 				return;
@@ -109,6 +110,31 @@ void action_points_action::ExecuteAction() const {
 
 		//code for random failures goes here
 
+		{
+			track_reservation_state_backup_guard guard;
+			// This guard is so that the reservation actions are executed with the old overlaps removed,
+			// as otherwise the points movement to the new position is blocked by the old reservations.
+
+			auto ovlp_action_callback = [&](action &&reservation_act) {
+				reservation_act.Execute();
+			};
+			for (auto &it : remove_overlaps) {
+				auto result = it->RouteReservation(RRF::UNRESERVE, nullptr, &guard);
+				assert(result.IsSuccess());
+				it->RouteReservationActions(RRF::UNRESERVE, ovlp_action_callback);
+				ActionRegisterFuture(std::make_shared<future_unreserve_track>(*(it->start.track), action_time + 1, it));
+			}
+			for (auto &it : add_overlaps) {
+				it->RouteReservationActions(RRF::RESERVE, ovlp_action_callback);
+				ActionRegisterFuture(std::make_shared<future_reserve_track>(*(it->start.track), action_time + 1, it));
+			}
+		}
+		for (auto &it : add_overlaps) {
+			// Use ignore-existing as the old overlap reservations still exist at this point.
+			auto result = it->RouteReservation(RRF::PROVISIONAL_RESERVE | RRF::IGNORE_EXISTING);
+			assert(result.IsSuccess());
+		}
+
 		ActionRegisterFuture(std::make_shared<future_points_action>(*target, GetPointsMovementCompletionTime(), index,
 				generic_points::PTF::ZERO, generic_points::PTF::OOC));
 	}
@@ -117,10 +143,6 @@ void action_points_action::ExecuteAction() const {
 	immediate_action_bits |= bits & immediate_change_flags;
 
 	ActionRegisterFuture(std::make_shared<future_points_action>(*target, action_time + 1, index, immediate_action_bits, immediate_action_mask));
-
-	if (overlap_callback) {
-		overlap_callback();
-	}
 
 	if (old_pflags & generic_points::PTF::AUTO_NORMALISE) {
 		if (!(aflags & APAF::NO_POINTS_NORMALISE) && target->ShouldAutoNormalise(index, change_flags)) {
@@ -169,7 +191,10 @@ void action_points_action::CancelFutures(unsigned int index, generic_points::PTF
 	}
 }
 
-bool action_points_action::TrySwingOverlap(std::function<void()> &overlap_callback, bool setting_reverse, std::string *fail_reason_key) const {
+bool action_points_action::TrySwingOverlap(std::vector<const route *> &remove_overlaps, std::vector<const route *> &add_overlaps,
+		bool setting_reverse, std::string *fail_reason_key) const {
+	using PTF = generic_points::PTF;
+
 	if (aflags & APAF::NO_OVERLAP_SWING) return false;
 
 	const route *foundoverlap = nullptr;
@@ -197,9 +222,10 @@ bool action_points_action::TrySwingOverlap(std::function<void()> &overlap_callba
 		return false;
 	}
 
-	//temporarily "move" points
-	generic_points::PTF saved_pflags = target->SetPointsFlagsMasked(index, setting_reverse ? generic_points::PTF::REV : generic_points::PTF::ZERO,
-			generic_points::PTF::REV);
+	// temporarily move and lock points
+	PTF saved_pflags = target->GetPointsFlags(index);
+	target->SetPointsFlagsMasked(index, PTF::LOCKED | (setting_reverse ? PTF::REV : PTF::ZERO),
+			PTF::REV | PTF::LOCKED);
 
 	const route *best_new_overlap = nullptr;
 	int best_overlap_score = INT_MIN;
@@ -210,26 +236,14 @@ bool action_points_action::TrySwingOverlap(std::function<void()> &overlap_callba
 		}
 	}, RRF::IGNORE_OWN_OVERLAP);
 
-	//move back
+	// move and unlock back
 	target->SetPointsFlagsMasked(index, saved_pflags, ~generic_points::PTF::ZERO);
 
 	bool result = false;
 
 	if (best_new_overlap && best_new_overlap != foundoverlap) {
-		overlap_callback = [=]() {
-			auto action_callback = [&](action &&reservation_act) {
-				reservation_act.Execute();
-			};
-			if (foundoverlap) {
-				foundoverlap->RouteReservationActions(RRF::UNRESERVE, action_callback);
-				ActionRegisterFuture(std::make_shared<future_unreserve_track>(*start, action_time + 1, foundoverlap));
-			}
-			if (best_new_overlap) {
-				best_new_overlap->RouteReservationActions(RRF::RESERVE, action_callback);
-				ActionRegisterFuture(std::make_shared<future_reserve_track>(*start, action_time + 1, best_new_overlap));
-				best_new_overlap->RouteReservation(RRF::PROVISIONAL_RESERVE | RRF::IGNORE_OWN_OVERLAP);
-			}
-		};
+		remove_overlaps.push_back(foundoverlap);
+		add_overlaps.push_back(best_new_overlap);
 		result = true;
 	}
 

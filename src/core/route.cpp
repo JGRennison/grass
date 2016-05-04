@@ -74,42 +74,43 @@ void route_common::ApplyTo(route_common &target) const {
 }
 
 //returns an unsuccessful result on failure/partial completion
-reservation_result route::RouteReservation(RRF reserve_flags, std::string *fail_reason_key) const {
+reservation_result route::RouteReservation(RRF reserve_flags, std::string *fail_reason_key, track_reservation_state_backup_guard *guard) const {
 	reservation_result res;
 	reservation_request_res start_req(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key);
-	res.MergeFrom(start.track->Reservation(start_req));
+	res.MergeFrom(start.track->Reservation(start_req.SetBackupGuard(guard)));
 	if (!res.IsSuccess()) return res;
 
 	for (auto &it : pieces) {
 		reservation_request_res piece_req(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key);
-		res.MergeFrom(it.location.track->Reservation(piece_req));
+		res.MergeFrom(it.location.track->Reservation(piece_req.SetBackupGuard(guard)));
 		if (!res.IsSuccess()) return res;
 	}
 
 	reservation_request_res end_req(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key);
-	res.MergeFrom(end.track->Reservation(end_req));
+	res.MergeFrom(end.track->Reservation(end_req.SetBackupGuard(guard)));
 	return res;
 }
 
 //returns an unsuccessful result on failure/partial completion
-reservation_result route::PartialRouteReservationWithActions(RRF reserve_flags, std::string *fail_reason_key, RRF action_reserve_flags, std::function<void(action &&reservation_act)> action_callback) const {
+reservation_result route::PartialRouteReservationWithActions(RRF reserve_flags, std::string *fail_reason_key,
+		RRF action_reserve_flags, std::function<void(action &&reservation_act)> action_callback, track_reservation_state_backup_guard *guard) const {
 	reservation_result res;
 	reservation_request_res start_req(start.direction, 0, reserve_flags | RRF::START_PIECE, this, fail_reason_key);
-	res.MergeFrom(start.track->Reservation(start_req));
+	res.MergeFrom(start.track->Reservation(start_req.SetBackupGuard(guard)));
 	if (!res.IsSuccess()) return res;
 	reservation_request_action start_action(start.direction, 0, action_reserve_flags | RRF::START_PIECE, this, action_callback);
 	start.track->ReservationActions(start_action);
 
 	for (auto &it : pieces) {
 		reservation_request_res piece_req(it.location.direction, it.connection_index, reserve_flags, this, fail_reason_key);
-		res.MergeFrom(it.location.track->Reservation(piece_req));
+		res.MergeFrom(it.location.track->Reservation(piece_req.SetBackupGuard(guard)));
 		if (!res.IsSuccess()) return res;
 		reservation_request_action piece_action(it.location.direction, it.connection_index, action_reserve_flags, this, action_callback);
 		it.location.track->ReservationActions(piece_action);
 	}
 
 	reservation_request_res end_req(end.direction, 0, reserve_flags | RRF::END_PIECE, this, fail_reason_key);
-	res.MergeFrom(end.track->Reservation(end_req));
+	res.MergeFrom(end.track->Reservation(end_req.SetBackupGuard(guard)));
 	if (!res.IsSuccess()) return res;
 	reservation_request_action end_action(end.direction, 0, action_reserve_flags | RRF::END_PIECE, this, action_callback);
 	end.track->ReservationActions(end_action);

@@ -29,6 +29,8 @@
 
 class route;
 struct action;
+class track_reservation_state_backup_guard;
+class track_reservation_state;
 
 enum class RRF : unsigned int {
 	ZERO                    = 0,
@@ -43,12 +45,11 @@ enum class RRF : unsigned int {
 	PROVISIONAL_RESERVE     = 1<<8,       //for generic_track::RouteReservation, to prevent action/future race condition
 	STOP_ON_OCCUPIED_TC     = 1<<9,       //for track dereservations, stop upon reaching an occupied track circuit
 	IGNORE_OWN_OVERLAP      = 1<<10,      //for overlap swinging checks
+	IGNORE_EXISTING         = 1<<11,      //for overlap swinging
 
 	SAVEMASK                = AUTO_ROUTE | START_PIECE | END_PIECE | RESERVE | PROVISIONAL_RESERVE,
 };
 template<> struct enum_traits< RRF > { static constexpr bool flags = true; };
-
-class track_reservation_state;
 
 class inner_track_reservation_state {
 	friend track_reservation_state;
@@ -102,11 +103,17 @@ struct reservation_request_base {
 
 struct reservation_request_res : public reservation_request_base {
 	std::string* fail_reason_key;
+	track_reservation_state_backup_guard *backup_guard = nullptr;
 
 	reservation_request_res(EDGE direction_, unsigned int index_, RRF rr_flags_, const route *res_route_, std::string* fail_reason_key_ = nullptr)
 			: reservation_request_base(direction_, index_, rr_flags_, res_route_), fail_reason_key(fail_reason_key_) { }
 	reservation_request_res(const reservation_request_base &base, std::string* fail_reason_key_)
 			: reservation_request_base(base), fail_reason_key(fail_reason_key_) { }
+
+	reservation_request_res &SetBackupGuard(track_reservation_state_backup_guard *guard) {
+		backup_guard = guard;
+		return *this;
+	}
 };
 
 struct reservation_request_action : public reservation_request_base {
@@ -116,6 +123,15 @@ struct reservation_request_action : public reservation_request_base {
 			: reservation_request_base(direction_, index_, rr_flags_, res_route_), submit_action(std::move(submit_action_)) { }
 	reservation_request_action(const reservation_request_base &base, std::function<void(action &&reservation_act)> submit_action_)
 			: reservation_request_base(base), submit_action(std::move(submit_action_)) { }
+};
+
+class track_reservation_state_backup_guard {
+	friend track_reservation_state;
+
+	std::map<track_reservation_state *, std::vector<inner_track_reservation_state>> backups;
+
+	public:
+	~track_reservation_state_backup_guard();
 };
 
 struct reservation_result {
@@ -136,6 +152,8 @@ struct reservation_result {
 };
 
 class track_reservation_state : public serialisable_obj {
+	friend track_reservation_state_backup_guard;
+
 	std::vector<inner_track_reservation_state> itrss;
 
 	public:

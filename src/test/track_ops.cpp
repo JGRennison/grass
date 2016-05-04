@@ -441,39 +441,69 @@ TEST_CASE( "track/ops/overlap/reservationswing", "Test track reservation overlap
 }
 
 TEST_CASE( "track/ops/overlap/pointsswing", "Test points movement overlap swinging" ) {
+	using PTF = generic_points::PTF;
 	OverlapOpsRoundTripMultiTest([](test_fixture_world_init_checked &env, overlap_ops_test_class_1 &tenv, std::function<void()> RoundTrip) {
 		env.w->GameStep(1);
 		tenv.checksignal(tenv.s1, 1, route_class::ID::ROUTE, tenv.s2, tenv.s2, 0);
 		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.bovlp);
 
 		REQUIRE(tenv.p1 != 0);
-		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, generic_points::PTF::REV, generic_points::PTF::REV));
+		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, PTF::REV, PTF::REV));
 		RoundTrip();
 		env.w->GameStep(1);
 
 		CHECK(env.w->GetLogText() == "");
-		CHECK(tenv.p1->GetPointsFlags(0) == (generic_points::PTF::OOC | generic_points::PTF::REV));
+		CHECK(tenv.p1->GetPointsFlags(0) == (PTF::OOC | PTF::REV));
 		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.covlp);
 
+		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, PTF::LOCKED, PTF::LOCKED));
+		RoundTrip();
+		env.w->GameStep(1);
+
 		REQUIRE(tenv.p2 != 0);
-		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p2, 0, generic_points::PTF::REV, generic_points::PTF::REV));
+		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p2, 0, PTF::REV, PTF::REV));
 		RoundTrip();
 		env.w->GameStep(1);
 
 		CHECK(env.w->GetLogText() != "");
-		CHECK(tenv.p1->GetPointsFlags(0) == (generic_points::PTF::OOC | generic_points::PTF::REV));
+		CHECK(tenv.p1->GetPointsFlags(0) == (PTF::LOCKED | PTF::OOC | PTF::REV));
+		CHECK(tenv.p2->GetPointsFlags(0) == PTF::ZERO);
 		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.covlp);
 		env.w->ResetLogText();
 
-		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, generic_points::PTF::ZERO, generic_points::PTF::REV));
+		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, PTF::ZERO, PTF::LOCKED));
+		RoundTrip();
 		env.w->GameStep(1);
-		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p2, 0, generic_points::PTF::REV | generic_points::PTF::REMINDER, generic_points::PTF::REV | generic_points::PTF::REMINDER));
+
+		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p2, 0, PTF::REV, PTF::REV));
+		RoundTrip();
+		env.w->GameStep(1);
+
+		CHECK(env.w->GetLogText() == "");
+		CHECK(tenv.p1->GetPointsFlags(0) == PTF::OOC);
+		CHECK(tenv.p2->GetPointsFlags(0) == (PTF::OOC | PTF::REV));
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.bovlp);
+		env.w->ResetLogText();
+
+		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, PTF::REV, PTF::REV));
+		RoundTrip();
+		env.w->GameStep(1);
+
+		CHECK(env.w->GetLogText() == "");
+		CHECK(tenv.p1->GetPointsFlags(0) == (PTF::OOC | PTF::REV));
+		CHECK(tenv.p2->GetPointsFlags(0) == PTF::OOC);
+		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.covlp);
+		env.w->ResetLogText();
+
+		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, PTF::ZERO, PTF::REV));
+		env.w->GameStep(1);
+		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p2, 0, PTF::REV | PTF::REMINDER, PTF::REV | PTF::REMINDER));
 		env.w->GameStep(1);
 		RoundTrip();
 		CHECK(env.w->GetLogText() == "");
 		tenv.checksignal(tenv.s2, 0, route_class::ID::NONE, 0, 0, tenv.bovlp);
 
-		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, generic_points::PTF::REV, generic_points::PTF::REV));
+		env.w->SubmitAction(action_points_action(*(env.w), *tenv.p1, 0, PTF::REV, PTF::REV));
 		RoundTrip();
 		env.w->GameStep(1);
 		CHECK(env.w->GetLogText() != "");

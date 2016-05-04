@@ -52,11 +52,24 @@ reservation_result &reservation_result::MergeFrom(const reservation_result &othe
 	return *this;
 }
 
+track_reservation_state_backup_guard::~track_reservation_state_backup_guard() {
+	for (auto &it : backups) {
+		it.first->itrss = std::move(it.second);
+	}
+}
+
 reservation_result track_reservation_state::Reservation(const reservation_request_res &req) {
+	auto check_preserve = [&]() {
+		if (!req.backup_guard) return;
+
+		// this does nothing if the backup already contains this track_reservation_state
+		req.backup_guard->backups.emplace(this, itrss);
+	};
+
 	reservation_result res;
 	if (req.rr_flags & (RRF::RESERVE | RRF::TRY_RESERVE | RRF::PROVISIONAL_RESERVE)) {
 		for (auto &it : itrss) {
-			if (it.rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {    //track already reserved
+			if (!(req.rr_flags & RRF::IGNORE_EXISTING) && it.rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {    //track already reserved
 				if (req.rr_flags & RRF::IGNORE_OWN_OVERLAP && it.reserved_route && it.reserved_route->start == req.res_route->start
 						&& route_class::IsOverlap(it.reserved_route->type)) {
 					//do nothing, own overlap is being ignored
@@ -72,6 +85,7 @@ reservation_result track_reservation_state::Reservation(const reservation_reques
 				if (it.reserved_route == req.res_route && (req.rr_flags & RRF::SAVEMASK & ~RRF::RESERVE)
 						== (it.rr_flags & RRF::SAVEMASK & ~RRF::PROVISIONAL_RESERVE)) {
 					//we are now properly reserving what we already preliminarily reserved, reuse inner_track_reservation_state
+					check_preserve();
 					it.rr_flags |= RRF::RESERVE;
 					it.rr_flags &= ~RRF::PROVISIONAL_RESERVE;
 					return res;
@@ -80,6 +94,7 @@ reservation_result track_reservation_state::Reservation(const reservation_reques
 		}
 		if (!res.IsSuccess()) return res;
 		if (req.rr_flags & (RRF::RESERVE | RRF::PROVISIONAL_RESERVE)) {
+			check_preserve();
 			itrss.emplace_back();
 			inner_track_reservation_state &itrs = itrss.back();
 
@@ -93,6 +108,7 @@ reservation_result track_reservation_state::Reservation(const reservation_reques
 		for (auto it = itrss.begin(); it != itrss.end(); ++it) {
 			if (it->rr_flags & RRF::RESERVE && it->direction == req.direction && it->index == req.index && it->reserved_route == req.res_route) {
 				if (req.rr_flags & RRF::UNRESERVE) {
+					check_preserve();
 					itrss.erase(it);
 				}
 				return res;

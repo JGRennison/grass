@@ -76,7 +76,8 @@ class action_points_action : public action {
 	private:
 	void CancelFutures(unsigned int index, generic_points::PTF setmask, generic_points::PTF clearmask) const;
 	world_time GetPointsMovementCompletionTime() const;
-	bool TrySwingOverlap(std::function<void()> &overlap_callback, bool setting_reverse, std::string *fail_reason_key = nullptr) const;
+	bool TrySwingOverlap(std::vector<const route *> &remove_overlaps, std::vector<const route *> &add_overlaps,
+			bool setting_reverse, std::string *fail_reason_key = nullptr) const;
 
 	public:
 	action_points_action(world &w_) : action(w_), target(nullptr) { }
