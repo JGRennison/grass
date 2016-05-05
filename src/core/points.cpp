@@ -697,8 +697,10 @@ reservation_result double_slip::ReservationV(const reservation_request_res &req)
 			return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);    //points locked in wrong direction
 		}
 	}
-
-	return trs.Reservation(req);
+	auto res = trs.Reservation(req);
+	CoupledPointsReservationCheck(req, GetPointsIndexByEdge(req.direction), isrev, res);
+	CoupledPointsReservationCheck(req, GetPointsIndexByEdge(exitdirection), exitpointsrev, res);
+	return res;
 }
 
 void double_slip::ReservationActionsV(const reservation_request_action &req) {
@@ -725,6 +727,27 @@ void double_slip::ReservationActionsV(const reservation_request_action &req) {
 
 	CommonReservationAction(entranceindex, req);
 	CommonReservationAction(exitindex, req);
+}
+
+bool double_slip::IsMovementAllowedByOwnReservationState(unsigned int points_index, bool is_rev, reservation_result *conflicts_out) {
+	bool ok = true;
+	ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
+		unsigned int entranceindex = GetPointsIndexByEdge(direction);
+		PTF entrancepf = GetCurrentPointFlags(direction);
+		bool isentrancerev = (entrancepf & PTF::FIXED) ? static_cast<bool>(entrancepf & PTF::REV) : index != 0;
+
+		EDGE exitdirection = GetConnectingPointDirection(direction, isentrancerev);
+		unsigned int exitindex = GetPointsIndexByEdge(exitdirection);
+		bool isexitrev = (GetConnectingPointDirection(exitdirection, true) == direction);
+
+		if ((points_index == entranceindex && isentrancerev != is_rev) || (points_index == exitindex && isexitrev != is_rev)) {
+			ok = false;
+			if (conflicts_out) {
+				conflicts_out->AddConflict(reserved_route);
+			}
+		}
+	}, RRF::RESERVE | RRF::PROVISIONAL_RESERVE);
+	return ok;
 }
 
 void double_slip::GetListOfEdges(std::vector<edgelistitem> &output_list) const {

@@ -372,6 +372,82 @@ TEST_CASE( "track/ops/points/coupling/contradictory-reservation", "Test contradi
 	}
 }
 
+std::string points_coupled_reserve_test_str2 =
+R"({ "content" : [ )"
+	R"({ "type" : "couple_points", "points" : [ { "name" : "DS1", "edge" : "left_front" }, { "name" : "DS2", "edge" : "%s" } ] }, )"
+
+	R"({ "type" : "double_slip", "name" : "DS1" }, )"
+	R"({ "type" : "start_of_line", "name" : "A" }, )"
+	R"({ "type" : "route_signal", "route_signal" : true, "name" : "S1", "connect" : { "from_direction" : "back", "to" : "DS1", "to_direction" : "left_front" } }, )"
+	R"({ "type" : "start_of_line", "connect" : { "to" : "DS1", "to_direction" : "right_front" } }, )"
+	R"({ "type" : "end_of_line", "name" : "B", "connect" : { "to" : "DS1", "to_direction" : "left_back" } }, )"
+	R"({ "type" : "end_of_line", "name" : "C", "connect" : { "to" : "DS1", "to_direction" : "right_back" } }, )"
+
+	R"({ "type" : "double_slip", "name" : "DS2" }, )"
+	R"({ "type" : "start_of_line", "name" : "D" }, )"
+	R"({ "type" : "route_signal", "route_signal" : true, "name" : "S2", "connect" : { "from_direction" : "back", "to" : "DS2", "to_direction" : "left_front" } }, )"
+	R"({ "type" : "start_of_line", "connect" : { "to" : "DS2", "to_direction" : "right_front" } }, )"
+	R"({ "type" : "end_of_line", "name" : "E", "connect" : { "to" : "DS2", "to_direction" : "left_back" } }, )"
+	R"({ "type" : "end_of_line", "name" : "F", "connect" : { "to" : "DS2", "to_direction" : "right_back" } } )"
+"] }";
+
+TEST_CASE( "track/ops/points/coupling/contradictory-reservation/double-slip", "Test contradictory reservation over coupled double-slips" ) {
+	std::function<void()> setup;
+	double_slip *ds1;
+	route_signal *s1;
+	routing_point *c;
+	double_slip *ds2;
+	route_signal *s2;
+	routing_point *f;
+	auto setup_test = [&](test_fixture_world_init_checked &env) {
+		setup = [&]() {
+			ds1 = PTR_CHECK(env.w->FindTrackByNameCast<double_slip>("DS1"));
+			s1 = PTR_CHECK(env.w->FindTrackByNameCast<route_signal>("S1"));
+			c = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("C"));
+			ds2 = PTR_CHECK(env.w->FindTrackByNameCast<double_slip>("DS2"));
+			s2 = PTR_CHECK(env.w->FindTrackByNameCast<route_signal>("S2"));
+			f = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("F"));
+		};
+	};
+
+	SECTION("Normal") {
+		test_fixture_world_init_checked env(string_format(points_coupled_reserve_test_str2.c_str(), "left_front"));
+		setup_test(env);
+		auto test = [&](std::function<void()> RoundTrip) {
+			env.w->SubmitAction(action_reserve_path(*(env.w), s1, c));
+			env.w->SubmitAction(action_reserve_path(*(env.w), s2, f));
+			env.w->GameStep(501);
+			RoundTrip();
+			CHECK(s1->GetCurrentForwardRoute() != nullptr);
+			CHECK(s2->GetCurrentForwardRoute() != nullptr);
+			env.w->GameStep(4500);
+			RoundTrip();
+			CHECK(ds1->GetConnectingPiece(EDGE::DS_FL).track == c);
+			CHECK(ds2->GetConnectingPiece(EDGE::DS_FL).track == f);
+			CHECK(env.w->GetLogText() == "");
+		};
+		ExecTestFixtureWorldWithRoundTrip(env, setup, test);
+	}
+
+	SECTION("Reverse") {
+		test_fixture_world_init_checked env(string_format(points_coupled_reserve_test_str2.c_str(), "right_front"));
+		setup_test(env);
+		auto test = [&](std::function<void()> RoundTrip) {
+			env.w->SubmitAction(action_reserve_path(*(env.w), s1, c));
+			env.w->SubmitAction(action_reserve_path(*(env.w), s2, f));
+			env.w->GameStep(501);
+			CHECK_CONTAINS(env.w->GetLogText(), "Cannot reserve route: Conflicts with existing route");
+			CHECK(s1->GetCurrentForwardRoute() != nullptr);
+			CHECK(s2->GetCurrentForwardRoute() == nullptr);
+			env.w->GameStep(4500);
+			RoundTrip();
+			CHECK(ds1->GetConnectingPiece(EDGE::DS_FL).track == c);
+			CHECK(ds2->GetConnectingPiece(EDGE::DS_FL).track != f);
+		};
+		ExecTestFixtureWorldWithRoundTrip(env, setup, test);
+	}
+}
+
 std::string overlap_ops_test_str_1 =
 R"({ "content" : [ )"
 	R"({ "type" : "typedef", "new_type" : "4aspectauto", "base_type" : "auto_signal", "content" : { "max_aspect" : 3 } }, )"

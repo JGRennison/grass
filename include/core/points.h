@@ -378,6 +378,8 @@ class double_slip : public generic_points {
 	virtual void CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) override;
 	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) override { return &couplings[index]; }
 
+	virtual bool IsMovementAllowedByOwnReservationState(unsigned int points_index, bool is_rev, reservation_result *conflicts_out) override;
+
 	protected:
 	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const  override{ return EDGE::INVALID; }
 	virtual void GetListOfEdges(std::vector<edgelistitem> &output_list) const override;
