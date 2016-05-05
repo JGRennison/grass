@@ -22,6 +22,8 @@
 #include "core/track.h"
 #include "core/track_reservation.h"
 
+struct reservation_result;
+
 class generic_points : public generic_zlen_track {
 	protected:
 	track_reservation_state trs;
@@ -89,6 +91,12 @@ class generic_points : public generic_zlen_track {
 		return IsFlagsImmovable(GetPointsFlags(points_index));
 	}
 
+	virtual bool IsMovementAllowedByOwnReservationState(unsigned int points_index, bool is_rev, reservation_result *conflicts_out = nullptr) { return true; }
+	bool IsMovementAllowedByReservationState(unsigned int points_index, bool is_rev, reservation_result *conflicts_out = nullptr);
+	bool IsMovementAllowedByCoupledReservationState(unsigned int points_index, bool is_rev, reservation_result *conflicts_out = nullptr);
+
+	void CoupledPointsReservationCheck(const reservation_request_res &req, unsigned int points_index, bool is_rev, reservation_result &res);
+
 	virtual unsigned int GetTRSList(std::vector<track_reservation_state *> &output_list) override { output_list.push_back(&trs); return 1; }
 	virtual GTF GetFlags(EDGE direction) const override;
 };
@@ -143,6 +151,8 @@ class points : public generic_points {
 	virtual void GetCouplingPointsFlagsByEdge(EDGE direction, std::vector<points_coupling> &output) override;
 	virtual void CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) override;
 	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) override { return &couplings; }
+
+	virtual bool IsMovementAllowedByOwnReservationState(unsigned int points_index, bool is_rev, reservation_result *conflicts_out) override;
 
 	protected:
 	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;

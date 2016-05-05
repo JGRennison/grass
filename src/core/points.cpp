@@ -230,6 +230,32 @@ bool generic_points::PostLayoutInit(error_collection &ec) {
 	return true;
 }
 
+bool generic_points::IsMovementAllowedByCoupledReservationState(unsigned int points_index, bool is_rev, reservation_result *conflicts_out) {
+	std::vector<generic_points::points_coupling> *couplings = GetCouplingVector(points_index);
+	bool ok = true;
+	if (couplings) {
+		for (auto &it : *couplings) {
+			bool rev = is_rev;
+			if (it.xormask & PTF::REV) rev = !rev;
+			if (!it.targ->IsMovementAllowedByOwnReservationState(it.index, rev, conflicts_out)) ok = false;
+		}
+	}
+	return ok;
+}
+
+bool generic_points::IsMovementAllowedByReservationState(unsigned int points_index, bool is_rev, reservation_result *conflicts_out) {
+	return IsMovementAllowedByOwnReservationState(points_index, is_rev, conflicts_out)
+			&& IsMovementAllowedByCoupledReservationState(points_index, is_rev, conflicts_out);
+}
+
+void generic_points::CoupledPointsReservationCheck(const reservation_request_res &req, unsigned int points_index, bool is_rev, reservation_result &res) {
+	if (req.rr_flags & RRF::RESERVE_MASK) {
+		if (!IsMovementAllowedByCoupledReservationState(points_index, is_rev, &res)) {
+			if (req.fail_reason_key) *req.fail_reason_key = "track/reservation/conflict";
+		}
+	}
+}
+
 void GetReservationFailureReason(generic_points::PTF pflags, std::string *fail_reason_key) {
 	if (fail_reason_key && pflags & generic_points::PTF::LOCKED) {
 		*fail_reason_key = "points/locked";
@@ -263,7 +289,9 @@ reservation_result points::ReservationV(const reservation_request_res &req) {
 			return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);
 		}
 	}
-	return trs.Reservation(req);
+	auto res = trs.Reservation(req);
+	CoupledPointsReservationCheck(req, 0, IsPointsRoutingDirAndIndexRev(req.direction, req.index), res);
+	return res;
 }
 
 void points::ReservationActionsV(const reservation_request_action &req) {
@@ -276,6 +304,19 @@ void points::ReservationActionsV(const reservation_request_action &req) {
 		}
 	}
 	CommonReservationAction(0, req);
+}
+
+bool points::IsMovementAllowedByOwnReservationState(unsigned int points_index, bool is_rev, reservation_result *conflicts_out) {
+	bool ok = true;
+	ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
+		if (IsPointsRoutingDirAndIndexRev(direction, index) != is_rev) {
+			ok = false;
+			if (conflicts_out) {
+				conflicts_out->AddConflict(reserved_route);
+			}
+		}
+	}, RRF::RESERVE | RRF::PROVISIONAL_RESERVE);
+	return ok;
 }
 
 EDGE points::GetAvailableAutoConnectionDirection(bool forward_connection) const {

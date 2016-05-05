@@ -221,7 +221,8 @@ void action_points_action::ExecuteAction() const {
 			return;
 		}
 
-		if (target->GetFlags(target->GetDefaultValidDirecton()) & GTF::ROUTE_SET) {
+		if (target->GetFlags(target->GetDefaultValidDirecton()) & GTF::ROUTE_SET ||
+				!target->IsMovementAllowedByReservationState(index, (old_pflags ^ bits) & generic_points::PTF::REV)) {
 			std::string failreason = "track/reserved";
 			if (!TrySwingOverlap(!!(bits & generic_points::PTF::REV), &failreason)) {
 				ActionSendReplyFuture(std::make_shared<future_generic_user_message_reason>(*target, action_time+1, &w,
@@ -299,13 +300,22 @@ bool action_points_action::TrySwingOverlap(bool setting_reverse, std::string *fa
 
 	std::vector<const route *> found_overlaps;
 	bool failed = false;
-	target->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
-		if (!route_class::IsOverlap(reserved_route->type)) {
-			failed = true;
-			return;
+	auto handle_points = [&](generic_points *p) {
+		p->ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
+			if (!route_class::IsOverlap(reserved_route->type)) {
+				failed = true;
+				return;
+			}
+			found_overlaps.push_back(reserved_route);
+		}, RRF::RESERVE | RRF::PROVISIONAL_RESERVE);
+	};
+	handle_points(target);
+	std::vector<generic_points::points_coupling> *couplings = target->GetCouplingVector(index);
+	if (couplings) {
+		for (auto &it : *couplings) {
+			handle_points(it.targ);
 		}
-		found_overlaps.push_back(reserved_route);
-	}, RRF::RESERVE | RRF::PROVISIONAL_RESERVE);
+	}
 	if (failed || found_overlaps.empty()) {
 		return false;
 	}
@@ -329,7 +339,7 @@ bool action_points_action::TrySwingOverlap(bool setting_reverse, std::string *fa
 	bool ok = CheckOverlapConflict(std::move(found_overlaps), nullptr, route_class::ID::NONE, result);
 
 	// move and unlock back
-	target->SetPointsFlagsMasked(index, saved_pflags, ~generic_points::PTF::ZERO);
+	target->SetPointsFlagsMasked(index, saved_pflags, PTF::LOCKED | PTF::REV);
 
 	if (ok) {
 		result.Execute(*this);
