@@ -92,7 +92,7 @@ bool generic_track::FullConnect(EDGE this_entrance_direction, const track_target
 }
 
 bool generic_track::HalfConnect(EDGE this_entrance_direction, const track_target_ptr &target_entrance) {
-	if (!IsEdgeValid(this_entrance_direction)) {
+	if (!IsEdgeValid(this_entrance_direction) || ConnectionIsEdgeReserved(this_entrance_direction)) {
 		return false;
 	}
 	return TryConnectPiece(GetEdgeConnectingPiece(this_entrance_direction), target_entrance);
@@ -109,7 +109,8 @@ bool generic_track::AutoConnections(error_collection &ec) {
 	if (prev_track) {
 		EDGE prevedge = prev_track->GetAvailableAutoConnectionDirection(!(prev_track->gt_privflags & GTPRIVF::REVERSE_AUTO_CONN));
 		EDGE thisedge = GetAvailableAutoConnectionDirection(gt_privflags & GTPRIVF::REVERSE_AUTO_CONN);
-		if (prevedge != EDGE::INVALID && thisedge != EDGE::INVALID) {
+		if (prevedge != EDGE::INVALID && !(prev_track->ConnectionIsEdgeReserved(prevedge)) &&
+				thisedge != EDGE::INVALID && !(ConnectionIsEdgeReserved(thisedge))) {
 			if (!FullConnect(thisedge, track_target_ptr(prev_track, prevedge), ec)) {
 				return false;
 			}

@@ -87,17 +87,35 @@ void generic_track::Deserialise(const deserialiser_input &di, error_collection &
 				EDGE this_entrance_direction = EDGE::INVALID;
 				EDGE target_entrance_direction = EDGE::INVALID;
 				std::string target_name;
-				bool have_directions;
-				have_directions = CheckTransJsonValue(this_entrance_direction, funcdi, "from_direction", ec);
-				have_directions &= CheckTransJsonValue(target_entrance_direction, funcdi, "to_direction", ec);
+				bool have_from_direction = CheckTransJsonValue(this_entrance_direction, funcdi, "from_direction", ec);
+				bool have_to_direction = CheckTransJsonValue(target_entrance_direction, funcdi, "to_direction", ec);
 				ok = CheckTransJsonValue(target_name, funcdi, "to", ec);
 
 				if (ok) {
-					if (have_directions) {
+					if (!have_from_direction) {
+						std::vector<edgelistitem> edges;
+						GetListOfEdges(edges);
+						if (edges.size() == 1) {
+							this_entrance_direction = edges[0].edge;
+							have_from_direction = true;
+						}
+					}
+					if (have_from_direction && have_to_direction) {
 						di.w->ConnectTrack(this, this_entrance_direction, target_name, target_entrance_direction, ec);
 					} else {
+						if (this_entrance_direction != EDGE::INVALID) {
+							if (ConnectionIsEdgeReserved(this_entrance_direction)) {
+								ec.RegisterNewError<error_deserialisation>(funcdi, string_format("Track connection cannot re-use previously used edge: %s", SerialiseDirectionName(this_entrance_direction)));
+								return;
+							}
+							ConnectionReserveEdge(this_entrance_direction);
+						}
 						world *w = di.w;
 						auto resolveconnection = [w, this, this_entrance_direction, target_entrance_direction, target_name](error_collection &ec) mutable {
+							if (this_entrance_direction != EDGE::INVALID) {
+								ConnectionUnreserveEdge(this_entrance_direction);
+							}
+
 							auto checkconnection = [&](generic_track *gt, EDGE &dir) {
 								if (dir != EDGE::INVALID) {
 									return;

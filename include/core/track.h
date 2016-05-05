@@ -95,6 +95,8 @@ class generic_track : public world_obj {
 
 	std::unique_ptr<track_berth> berth;
 
+	unsigned int connection_reserved_edge_mask = 0;
+
 	friend world_deserialisation;
 	void SetPreviousTrackPiece(generic_track *prev) { prev_track = prev; }
 	void SetNextTrackPiece(generic_track *next) { next_track = next; }
@@ -143,6 +145,18 @@ class generic_track : public world_obj {
 	virtual reservation_result ReservationV(const reservation_request_res &req) = 0;
 	virtual void ReservationActionsV(const reservation_request_action &req) { }
 	void DeserialiseReservationState(track_reservation_state &trs, const deserialiser_input &di, const char *name, error_collection &ec);
+
+	inline bool ConnectionIsEdgeReserved(EDGE edge) const {
+		return connection_reserved_edge_mask & (1 << static_cast<unsigned int>(edge));
+	}
+
+	private:
+	inline void ConnectionReserveEdge(EDGE edge) {
+		connection_reserved_edge_mask |= (1 << static_cast<unsigned int>(edge));
+	}
+	inline void ConnectionUnreserveEdge(EDGE edge) {
+		connection_reserved_edge_mask &= ~(1 << static_cast<unsigned int>(edge));
+	}
 
 	public:
 	void UpdateTrackCircuitReservationState();

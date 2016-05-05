@@ -431,6 +431,36 @@ TEST_CASE( "track/deserialisation/partialconnection", "Test partial track connec
 	REQUIRE(p2->GetEdgeConnectingPiece(EDGE::PTS_REVERSE) == track_target_ptr(t3, EDGE::FRONT));
 }
 
+TEST_CASE( "track/deserialisation/partialconnection/2", "Test partial track connection declaration deserialisation: 2" ) {
+	std::string track_test_str =
+	R"({ "content" : [ )"
+		R"({ "type" : "double_slip", "name" : "DS1", "connect" : { "to" : "C", "from_direction" : "right_back" } }, )"
+		R"({ "type" : "start_of_line" }, )"
+		R"({ "type" : "route_signal", "route_signal" : true, "name" : "S1", "connect" : { "from_direction" : "back", "to" : "DS1", "to_direction" : "left_front" } }, )"
+		R"({ "type" : "start_of_line", "name" : "A", "connect" : { "to" : "DS1", "to_direction" : "right_front" } }, )"
+		R"({ "type" : "end_of_line", "name" : "B", "connect" : { "to" : "DS1", "to_direction" : "left_back" } }, )"
+		R"({ "type" : "end_of_line", "name" : "C" } )"
+	"] }";
+
+	test_fixture_world env(track_test_str);
+
+	env.w->LayoutInit(env.ec);
+
+	if (env.ec.GetErrorCount()) { WARN("Error Collection: " << env.ec); }
+	REQUIRE(env.ec.GetErrorCount() == 0);
+
+	double_slip *ds1 = PTR_CHECK(env.w->FindTrackByNameCast<double_slip>("DS1"));
+	generic_track *a = PTR_CHECK(env.w->FindTrackByName("A"));
+	generic_track *b = PTR_CHECK(env.w->FindTrackByName("B"));
+	generic_track *c = PTR_CHECK(env.w->FindTrackByName("C"));
+	generic_track *s1 = PTR_CHECK(env.w->FindTrackByName("S1"));
+
+	REQUIRE(ds1->GetEdgeConnectingPiece(EDGE::DS_FL) == track_target_ptr(s1, EDGE::BACK));
+	REQUIRE(ds1->GetEdgeConnectingPiece(EDGE::DS_FR) == track_target_ptr(a, EDGE::FRONT));
+	REQUIRE(ds1->GetEdgeConnectingPiece(EDGE::DS_BL) == track_target_ptr(b, EDGE::FRONT));
+	REQUIRE(ds1->GetEdgeConnectingPiece(EDGE::DS_BR) == track_target_ptr(c, EDGE::FRONT));
+}
+
 TEST_CASE( "track/deserialisation/ambiguouspartialconnection/1", "Test handling of ambiguous partial track connection declaration deserialisation" ) {
 	std::string track_test_str =
 	R"({ "content" : [ )"
