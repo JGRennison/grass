@@ -123,7 +123,7 @@ void serialisable_futurable_obj::DeserialiseFutures(const deserialiser_input &di
 			if (subdi.json.IsObject()) {
 				subdi.seenprops.reserve(subdi.json.GetMemberCount());
 
-				future_id_type fid;
+				future_id_type fid {};
 				world_time ftime;
 				if (CheckTransJsonValue(fid, subdi, "fid", ec, true) && CheckTransJsonValue(ftime, subdi, "ftime", ec, true)
 						&& CheckTransJsonValue(subdi.type, subdi, "ftype", ec, true)) {

@@ -89,7 +89,7 @@ void ParseAspectMaskString(aspect_mask_type &aspect_mask, const std::string &asp
 
 //returns true if value set
 bool DeserialiseAspectProps(aspect_mask_type &aspect_mask, const deserialiser_input &di, error_collection &ec) {
-	unsigned int max_aspect;
+	unsigned int max_aspect {};
 	std::string aspect_string;
 	if (CheckTransJsonValue(max_aspect, di, "max_aspect", ec)) {
 		if (max_aspect > ASPECT_MAX) {

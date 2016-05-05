@@ -76,7 +76,7 @@ void track_routing_point::Deserialise(const deserialiser_input &di, error_collec
 	route_class::DeserialiseGroupProp(available_route_types_forward.through, di, "through", ec, de->conflictcheck_through);
 	route_class::DeserialiseGroupProp(available_route_types_reverse.through, di, "through_rev", ec, de->conflictcheck_through_rev);
 
-	bool val;
+	bool val {};
 	if (CheckTransJsonValue<bool>(val, di, "overlap_end", ec)) {
 		de->conflictcheck_end.RegisterAndProcessFlags(available_route_types_forward.end, val, route_class::Flag(route_class::ID::OVERLAP), di, "", ec);
 	}
@@ -144,7 +144,7 @@ void std_signal::Deserialise(const deserialiser_input &di, error_collection &ec)
 	route_class::DeserialiseGroupProp(available_route_types_reverse.end, di, "end_rev", ec, de->conflictcheck_end_rev);
 
 	auto docompoundflag = [&](const char *prop, route_class::set start_flags, route_class::set end_flags) {
-		bool val;
+		bool val {};
 		if (CheckTransJsonValue<bool>(val, di, prop, ec)) {
 			de->conflictcheck_start.RegisterAndProcessFlags(available_route_types_forward.start, val, start_flags, di, prop, ec);
 			de->conflictcheck_end.RegisterAndProcessFlags(available_route_types_forward.end, val, end_flags, di, prop, ec);
@@ -239,7 +239,7 @@ void repeater_signal::Deserialise(const deserialiser_input &di, error_collection
 
 	track_routing_point_deserialisation_extras *de = static_cast<track_routing_point_deserialisation_extras*>(trp_de.get());
 	auto docompoundflag = [&](const char *prop, route_class::set through_flags) {
-		bool val;
+		bool val {};
 		if (CheckTransJsonValue<bool>(val, di, prop, ec)) {
 			de->conflictcheck_through.RegisterAndProcessFlags(available_route_types_forward.through, val, through_flags, di, prop, ec);
 		}

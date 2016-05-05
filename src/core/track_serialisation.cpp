@@ -44,7 +44,7 @@ void generic_track::Deserialise(const deserialiser_input &di, error_collection &
 			bool ok = false;
 
 			if (funcdi.json.IsObject()) {
-				EDGE dir;
+				EDGE dir {};
 				unsigned int distance;
 				if (CheckTransJsonValue(dir, funcdi, "direction", ec) && CheckTransJsonValueProc(distance, funcdi, "distance", ec, dsconv::Length)) {
 					for (auto &it : sighting_distances) {
