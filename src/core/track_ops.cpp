@@ -413,7 +413,7 @@ world_time action_points_auto_normalise::GetNormalisationStartTime() const {
 	return action_time + 2000;
 }
 
-bool action_points_auto_normalise::HandleFuturesGeneric(generic_points *target, unsigned int index, bool cancel) {
+bool action_points_auto_normalise::HandleFuturesGeneric(generic_points *target, unsigned int index, bool cancel, bool recurse) {
 	bool found = false;
 	target->EnumerateFutures([&](future &f) {
 		future_action_wrapper *faw = dynamic_cast<future_action_wrapper *>(&f);
@@ -436,6 +436,14 @@ bool action_points_auto_normalise::HandleFuturesGeneric(generic_points *target, 
 			apan->ActionCancelFuture(f);
 		}
 	});
+	if (recurse) {
+		std::vector<generic_points::points_coupling> *coupling = target->GetCouplingVector(index);
+		if (coupling) {
+			for (auto &it : *coupling) {
+				found |= HandleFuturesGeneric(it.targ, it.index, cancel, false);
+			}
+		}
+	}
 	return found;
 }
 

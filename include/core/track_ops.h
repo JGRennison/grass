@@ -122,7 +122,7 @@ class action_points_auto_normalise : public action {
 	static bool HasFutures(generic_points *target, unsigned int index);
 
 	private:
-	static bool HandleFuturesGeneric(generic_points *target, unsigned int index, bool cancel);
+	static bool HandleFuturesGeneric(generic_points *target, unsigned int index, bool cancel, bool recurse = true);
 };
 
 class action_reserve_track_base;

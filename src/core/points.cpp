@@ -85,7 +85,8 @@ bool generic_points::ShouldAutoNormalise(unsigned int index, generic_points::PTF
 
 void generic_points::CommonReservationAction(unsigned int points_index, const reservation_request_action &req) {
 	PTF pflags = GetPointsFlags(points_index);
-	if (pflags & PTF::AUTO_NORMALISE && req.rr_flags & RRF::UNRESERVE && trs.GetReservationCount() == 1 && !IsFlagsImmovable(pflags)) {
+	if (pflags & PTF::AUTO_NORMALISE && req.rr_flags & RRF::UNRESERVE && trs.GetReservationCount() == 1 && !IsFlagsImmovable(pflags) &&
+			IsMovementAllowedByCoupledReservationState(points_index, false)) {
 		req.submit_action(action_points_auto_normalise(GetWorld(), *this, points_index));
 	}
 }
@@ -222,8 +223,15 @@ bool generic_points::PostLayoutInit(error_collection &ec) {
 		std::vector<points_coupling> *couplings = GetCouplingVector(i);
 		if (couplings && !couplings->empty()) {
 			if (GetPointsFlags(i) & PTF::AUTO_NORMALISE) {
-				ec.RegisterNewError<generic_error_obj>("Coupled points cannot be auto-normalised: " + GetName());
-				return false;
+				bool ok = true;
+				for (auto &it : *couplings) {
+					if (!(it.targ->GetPointsFlags(it.index) & PTF::AUTO_NORMALISE)) ok = false;
+					if (it.xormask & PTF::REV) ok = false;
+				}
+				if (!ok) {
+					ec.RegisterNewError<generic_error_obj>("Coupled points are inconsistently auto-normalised: " + GetName());
+					return false;
+				}
 			}
 		}
 	}

@@ -87,19 +87,20 @@ TEST_CASE( "track/ops/points/movement", "Test basic points movement future" ) {
 	ExecTestFixtureWorldWithRoundTrip(env, setup, test);
 }
 
-void AutoNormaliseExpectReversalTest(test_fixture_world &env, std::function<generic_points *()> RoundTrip) {
+void AutoNormaliseExpectReversalTest(test_fixture_world &env, std::function<generic_points *()> RoundTrip,
+		generic_points::PTF extraflags = generic_points::PTF::ZERO) {
 	generic_points *p = RoundTrip();
 	REQUIRE(action_points_auto_normalise::HasFutures(p, 0) == true);
 	env.w->GameStep(1950);
 	p = RoundTrip();
-	REQUIRE(p->GetPointsFlags(0) == (generic_points::PTF::AUTO_NORMALISE | generic_points::PTF::REV));
+	REQUIRE(p->GetPointsFlags(0) == (generic_points::PTF::AUTO_NORMALISE | generic_points::PTF::REV | extraflags));
 	env.w->GameStep(100);
 	env.w->GameStep(1); // additional step for points action future
 	p = RoundTrip();
-	REQUIRE(p->GetPointsFlags(0) == (generic_points::PTF::AUTO_NORMALISE | generic_points::PTF::ZERO | generic_points::PTF::OOC));
+	REQUIRE(p->GetPointsFlags(0) == (generic_points::PTF::AUTO_NORMALISE | generic_points::PTF::ZERO | generic_points::PTF::OOC | extraflags));
 	env.w->GameStep(5000);
 	p = RoundTrip();
-	REQUIRE(p->GetPointsFlags(0) == (generic_points::PTF::AUTO_NORMALISE | generic_points::PTF::ZERO));
+	REQUIRE(p->GetPointsFlags(0) == (generic_points::PTF::AUTO_NORMALISE | generic_points::PTF::ZERO | extraflags));
 }
 
 std::string catchpoints_ops_test_str_1 =
@@ -503,7 +504,7 @@ R"({ "content" : [ )"
 	R"({ "type" : "end_of_line", "name" : "E" } )"
 "] }";
 
-TEST_CASE( "track/ops/points/coupling/contradictory-reservation/catch-points", "Test contradictory reservation over coupled catch-points" ) {
+TEST_CASE( "track/ops/points/coupling/catch-points", "Test reservation over coupled catch-points" ) {
 	using PTF = generic_points::PTF;
 
 	std::function<void()> setup;
@@ -570,6 +571,89 @@ TEST_CASE( "track/ops/points/coupling/contradictory-reservation/catch-points", "
 			RoundTrip();
 			CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::REV));
 			CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO));
+		};
+		ExecTestFixtureWorldWithRoundTrip(env, setup, test);
+	}
+
+	auto expect_auto_reverse = [&](test_fixture_world &env, catchpoints *&p, std::function<void()> &RoundTrip) {
+		AutoNormaliseExpectReversalTest(env, [&]() -> generic_points* {
+			RoundTrip();
+			return p;
+		}, PTF::COUPLED);
+	};
+
+	SECTION("Auto-normalise: 1") {
+		test_fixture_world_init_checked env(string_format(points_coupled_reserve_test_str3.c_str(), "normal", "true", "true"));
+		setup_test(env);
+		auto test = [&](std::function<void()> RoundTrip) {
+			env.w->SubmitAction(action_reserve_path(*(env.w), s1, b));
+			env.w->SubmitAction(action_reserve_path(*(env.w), s2, e));
+
+			RoundTrip();
+			env.w->GameStep(501);
+			CHECK(s1->GetCurrentForwardRoute() != nullptr);
+			CHECK(s2->GetCurrentForwardRoute() != nullptr);
+			RoundTrip();
+			env.w->GameStep(4500);
+			RoundTrip();
+			CHECK(p1->GetPointsFlags(0) == (PTF::AUTO_NORMALISE | PTF::COUPLED | PTF::REV));
+			CHECK(p2->GetPointsFlags(0) == (PTF::AUTO_NORMALISE | PTF::COUPLED | PTF::REV));
+
+			env.w->SubmitAction(action_unreserve_track(*(env.w), *s1));
+			RoundTrip();
+			env.w->GameStep(501);
+			RoundTrip();
+			env.w->GameStep(4500);
+			RoundTrip();
+			CHECK(p1->GetPointsFlags(0) == (PTF::AUTO_NORMALISE | PTF::COUPLED | PTF::REV));
+			CHECK(p2->GetPointsFlags(0) == (PTF::AUTO_NORMALISE | PTF::COUPLED | PTF::REV));
+
+			env.w->SubmitAction(action_unreserve_track(*(env.w), *s2));
+			SECTION("1") {
+				expect_auto_reverse(env, p1, RoundTrip);
+			}
+			SECTION("2") {
+				expect_auto_reverse(env, p2, RoundTrip);
+			}
+			CHECK(env.w->GetLogText() == "");
+		};
+		ExecTestFixtureWorldWithRoundTrip(env, setup, test);
+	}
+
+	SECTION("Auto-normalise: 2") {
+		test_fixture_world_init_checked env(string_format(points_coupled_reserve_test_str3.c_str(), "normal", "true", "true"));
+		setup_test(env);
+		auto test = [&](std::function<void()> RoundTrip) {
+			env.w->SubmitAction(action_reserve_path(*(env.w), s1, b));
+
+			RoundTrip();
+			env.w->GameStep(5000);
+			RoundTrip();
+			CHECK(p1->GetPointsFlags(0) == (PTF::AUTO_NORMALISE | PTF::COUPLED | PTF::REV));
+			CHECK(p2->GetPointsFlags(0) == (PTF::AUTO_NORMALISE | PTF::COUPLED | PTF::REV));
+
+			env.w->SubmitAction(action_unreserve_track(*(env.w), *s1));
+			RoundTrip();
+			env.w->GameStep(501);
+			RoundTrip();
+			env.w->SubmitAction(action_reserve_path(*(env.w), s2, e));
+			RoundTrip();
+			env.w->GameStep(501);
+			CHECK(p1->GetPointsFlags(0) == (PTF::AUTO_NORMALISE | PTF::COUPLED | PTF::REV));
+			CHECK(p2->GetPointsFlags(0) == (PTF::AUTO_NORMALISE | PTF::COUPLED | PTF::REV));
+			env.w->GameStep(4500);
+			RoundTrip();
+			CHECK(p1->GetPointsFlags(0) == (PTF::AUTO_NORMALISE | PTF::COUPLED | PTF::REV));
+			CHECK(p2->GetPointsFlags(0) == (PTF::AUTO_NORMALISE | PTF::COUPLED | PTF::REV));
+
+			env.w->SubmitAction(action_unreserve_track(*(env.w), *s2));
+			SECTION("1") {
+				expect_auto_reverse(env, p1, RoundTrip);
+			}
+			SECTION("2") {
+				expect_auto_reverse(env, p2, RoundTrip);
+			}
+			CHECK(env.w->GetLogText() == "");
 		};
 		ExecTestFixtureWorldWithRoundTrip(env, setup, test);
 	}
