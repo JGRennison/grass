@@ -448,6 +448,93 @@ TEST_CASE( "track/ops/points/coupling/contradictory-reservation/double-slip", "T
 	}
 }
 
+std::string points_coupled_reserve_test_str3 =
+R"({ "content" : [ )"
+	R"({ "type" : "couple_points", "points" : [ { "name" : "P1", "edge" : "normal" }, { "name" : "P2", "edge" : "%s" } ] }, )"
+
+	R"({ "type" : "start_of_line", "name" : "A" }, )"
+	R"({ "type" : "route_signal", "route_signal" : true, "name" : "S1" }, )"
+	R"({ "type" : "catchpoints", "name" : "P1", "auto_normalise" : %s }, )"
+	R"({ "type" : "end_of_line", "name" : "B" }, )"
+
+	R"({ "type" : "start_of_line", "name" : "D" }, )"
+	R"({ "type" : "route_signal", "route_signal" : true, "name" : "S2" }, )"
+	R"({ "type" : "catchpoints", "name" : "P2", "auto_normalise" : %s }, )"
+	R"({ "type" : "end_of_line", "name" : "E" } )"
+"] }";
+
+TEST_CASE( "track/ops/points/coupling/contradictory-reservation/catch-points", "Test contradictory reservation over coupled catch-points" ) {
+	using PTF = generic_points::PTF;
+
+	std::function<void()> setup;
+	catchpoints *p1;
+	route_signal *s1;
+	routing_point *b;
+	catchpoints *p2;
+	route_signal *s2;
+	routing_point *e;
+	auto setup_test = [&](test_fixture_world_init_checked &env) {
+		setup = [&]() {
+			p1 = PTR_CHECK(env.w->FindTrackByNameCast<catchpoints>("P1"));
+			s1 = PTR_CHECK(env.w->FindTrackByNameCast<route_signal>("S1"));
+			b = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("B"));
+			p2 = PTR_CHECK(env.w->FindTrackByNameCast<catchpoints>("P2"));
+			s2 = PTR_CHECK(env.w->FindTrackByNameCast<route_signal>("S2"));
+			e = PTR_CHECK(env.w->FindTrackByNameCast<routing_point>("E"));
+		};
+	};
+
+	SECTION("Normal") {
+		test_fixture_world_init_checked env(string_format(points_coupled_reserve_test_str3.c_str(), "normal", "false", "false"));
+		setup_test(env);
+		auto test = [&](std::function<void()> RoundTrip) {
+			env.w->SubmitAction(action_reserve_path(*(env.w), s1, b));
+			env.w->SubmitAction(action_reserve_path(*(env.w), s2, e));
+
+			RoundTrip();
+			CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO));
+			CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO));
+			env.w->GameStep(501);
+			RoundTrip();
+			CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::REV | PTF::OOC));
+			CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::REV | PTF::OOC));
+			CHECK(s1->GetCurrentForwardRoute() != nullptr);
+			CHECK(s2->GetCurrentForwardRoute() != nullptr);
+			env.w->GameStep(4500);
+			RoundTrip();
+			CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::REV));
+			CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::REV));
+			CHECK(env.w->GetLogText() == "");
+		};
+		ExecTestFixtureWorldWithRoundTrip(env, setup, test);
+	}
+
+	SECTION("Reverse") {
+		test_fixture_world_init_checked env(string_format(points_coupled_reserve_test_str3.c_str(), "reverse", "false", "false"));
+		setup_test(env);
+		auto test = [&](std::function<void()> RoundTrip) {
+			env.w->SubmitAction(action_reserve_path(*(env.w), s1, b));
+			env.w->SubmitAction(action_reserve_path(*(env.w), s2, e));
+
+			RoundTrip();
+			CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO));
+			CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::REV));
+			env.w->GameStep(501);
+			CHECK_CONTAINS(env.w->GetLogText(), "Cannot reserve route: Conflicts with existing route");
+			RoundTrip();
+			CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::REV | PTF::OOC));
+			CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO | PTF::OOC));
+			CHECK(s1->GetCurrentForwardRoute() != nullptr);
+			CHECK(s2->GetCurrentForwardRoute() == nullptr);
+			env.w->GameStep(4500);
+			RoundTrip();
+			CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::REV));
+			CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO));
+		};
+		ExecTestFixtureWorldWithRoundTrip(env, setup, test);
+	}
+}
+
 std::string overlap_ops_test_str_1 =
 R"({ "content" : [ )"
 	R"({ "type" : "typedef", "new_type" : "4aspectauto", "base_type" : "auto_signal", "content" : { "max_aspect" : 3 } }, )"

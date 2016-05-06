@@ -460,7 +460,9 @@ reservation_result catchpoints::ReservationV(const reservation_request_res &req)
 		GetReservationFailureReason(pflags, req.fail_reason_key);
 		return reservation_result(RSRVRF::FAILED | RSRVRF::POINTS_LOCKED);
 	}
-	return trs.Reservation(req);
+	auto res = trs.Reservation(req);
+	CoupledPointsReservationCheck(req, 0, true, res);
+	return res;
 }
 
 void catchpoints::ReservationActionsV(const reservation_request_action &req) {
@@ -469,6 +471,19 @@ void catchpoints::ReservationActionsV(const reservation_request_action &req) {
 				action_points_action::APAF::NO_OVERLAP_SWING | action_points_action::APAF::NO_POINTS_NORMALISE));
 	}
 	CommonReservationAction(0, req);
+}
+
+bool catchpoints::IsMovementAllowedByOwnReservationState(unsigned int points_index, bool is_rev, reservation_result *conflicts_out) {
+	if (is_rev) return true;
+
+	bool ok = true;
+	ReservationEnumeration([&](const route *reserved_route, EDGE direction, unsigned int index, RRF rr_flags) {
+		ok = false;
+		if (conflicts_out) {
+			conflicts_out->AddConflict(reserved_route);
+		}
+	}, RRF::RESERVE | RRF::PROVISIONAL_RESERVE);
+	return ok;
 }
 
 EDGE catchpoints::GetAvailableAutoConnectionDirection(bool forward_connection) const {
@@ -483,6 +498,19 @@ EDGE catchpoints::GetAvailableAutoConnectionDirection(bool forward_connection) c
 
 void catchpoints::GetListOfEdges(std::vector<edgelistitem> &output_list) const {
 	output_list.insert(output_list.end(), { edgelistitem(EDGE::BACK, next), edgelistitem(EDGE::FRONT, prev) });
+}
+
+bool catchpoints::IsCoupleable(EDGE direction) const {
+	return (direction == EDGE::PTS_NORMAL || direction == EDGE::PTS_REVERSE) && !(pflags & PTF::COUPLED);
+}
+
+void catchpoints::GetCouplingPointsFlagsByEdge(EDGE direction, std::vector<points_coupling> &output) {
+	output.emplace_back(&pflags, (direction == EDGE::PTS_REVERSE) ? PTF::REV : PTF::ZERO, this, 0);
+}
+
+void catchpoints::CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) {
+	couplings.push_back(pc);
+	pflags |= PTF::COUPLED;
 }
 
 void catchpoints::InitSightingDistances() {

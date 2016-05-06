@@ -75,6 +75,8 @@ class generic_points : public generic_zlen_track {
 
 	virtual bool PostLayoutInit(error_collection &ec) override;
 
+	virtual bool IsTrackAlwaysPassable() const override { return false; }
+
 	protected:
 	void CommonReservationAction(unsigned int points_index, const reservation_request_action &req);
 
@@ -145,8 +147,6 @@ class points : public generic_points {
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
 
-	virtual bool IsTrackAlwaysPassable() const override { return false; }
-
 	virtual bool IsCoupleable(EDGE direction) const override;
 	virtual void GetCouplingPointsFlagsByEdge(EDGE direction, std::vector<points_coupling> &output) override;
 	virtual void CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) override;
@@ -165,6 +165,7 @@ class catchpoints : public generic_points {
 	track_target_ptr prev;
 	track_target_ptr next;
 	PTF pflags;
+	std::vector<points_coupling> couplings;
 
 	void InitSightingDistances();
 
@@ -189,6 +190,13 @@ class catchpoints : public generic_points {
 	virtual std::string GetTypeSerialisationName() const override { return GetTypeSerialisationNameStatic(); }
 	virtual void Deserialise(const deserialiser_input &di, error_collection &ec) override;
 	virtual void Serialise(serialiser_output &so, error_collection &ec) const override;
+
+	virtual bool IsCoupleable(EDGE direction) const override;
+	virtual void GetCouplingPointsFlagsByEdge(EDGE direction, std::vector<points_coupling> &output) override;
+	virtual void CouplePointsFlagsAtIndexTo(unsigned int index, const points_coupling &pc) override;
+	virtual std::vector<points_coupling> *GetCouplingVector(unsigned int index) override { return &couplings; }
+
+	virtual bool IsMovementAllowedByOwnReservationState(unsigned int points_index, bool is_rev, reservation_result *conflicts_out) override;
 
 	protected:
 	virtual EDGE GetAvailableAutoConnectionDirection(bool forward_connection) const override;
