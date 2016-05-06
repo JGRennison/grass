@@ -372,6 +372,46 @@ TEST_CASE( "track/ops/points/coupling/contradictory-reservation", "Test contradi
 	}
 }
 
+TEST_CASE( "track/ops/points/coupling/ooc-time", "Test OOC times over coupled points" ) {
+	using PTF = generic_points::PTF;
+
+	test_fixture_world_init_checked env(string_format(points_coupled_reserve_test_str1.c_str(), "normal"));
+	points *p1;
+	points *p2;
+	auto setup = [&]() {
+		p1 = PTR_CHECK(env.w->FindTrackByNameCast<points>("P1"));
+		p2 = PTR_CHECK(env.w->FindTrackByNameCast<points>("P2"));
+	};
+
+	auto test = [&](std::function<void()> RoundTrip) {
+		env.w->SubmitAction(action_points_action(*(env.w), *p1, 0, generic_points::PTF::REV, generic_points::PTF::REV));
+		RoundTrip();
+		CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO));
+		CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO));
+		env.w->GameStep(501);
+		RoundTrip();
+		CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::REV | PTF::OOC));
+		CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::REV | PTF::OOC));
+		env.w->GameStep(4000);
+		RoundTrip();
+		env.w->SubmitAction(action_points_action(*(env.w), *p2, 0, generic_points::PTF::ZERO, generic_points::PTF::REV));
+		env.w->GameStep(501);
+		RoundTrip();
+		CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO | PTF::OOC));
+		CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO | PTF::OOC));
+		env.w->GameStep(2000);
+		RoundTrip();
+		CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO | PTF::OOC));
+		CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO | PTF::OOC));
+		env.w->GameStep(2500);
+		RoundTrip();
+		CHECK(p1->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO));
+		CHECK(p2->GetPointsFlags(0) == (PTF::COUPLED | PTF::ZERO));
+		CHECK(env.w->GetLogText() == "");
+	};
+	ExecTestFixtureWorldWithRoundTrip(env, setup, test);
+}
+
 std::string points_coupled_reserve_test_str2 =
 R"({ "content" : [ )"
 	R"({ "type" : "couple_points", "points" : [ { "name" : "DS1", "edge" : "left_front" }, { "name" : "DS2", "edge" : "%s" } ] }, )"
