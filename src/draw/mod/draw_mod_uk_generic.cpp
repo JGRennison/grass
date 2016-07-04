@@ -42,6 +42,8 @@ IMG_EXTERN(shunt_png, shunt)
 IMG_EXTERN(blank_png, blank)
 IMG_EXTERN(tc_gap_r_png, tc_gap_r)
 IMG_EXTERN(tc_gap_d_png, tc_gap_d)
+IMG_EXTERN(arrow_r_png, arrow_r)
+IMG_EXTERN(arrow_u_png, arrow_u)
 
 #define TEXTLEVEL 9
 #define BERTHLEVEL 10
@@ -63,6 +65,7 @@ namespace {
 		SID_signal_post_bar = 17,
 		SID_tc_gap_r        = 24,
 		SID_tc_gap_d        = 25,
+		SID_arrow           = 26,
 
 		SID_dir_mask        = 0xF00,
 		SID_dir_shift       = 8,
@@ -189,6 +192,31 @@ namespace draw {
 
 			case LAYOUT_DIR::RU:
 				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::LU, sr));
+				sp.Mirror(MIRROR::HORIZ);
+				return true;
+
+			default:
+				return false;
+		}
+	}
+
+	// This converts non-diag direction into either U or R.
+	// Returns true if handled
+	bool dir_relative_non_diag(LAYOUT_DIR dir, draw::sprite_obj &sp, draw::sprite_ref sr) {
+		switch (dir) {
+			case LAYOUT_DIR::U:
+				return false;
+
+			case LAYOUT_DIR::D:
+				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::U, sr));
+				sp.Mirror(MIRROR::VERT);
+				return true;
+
+			case LAYOUT_DIR::R:
+				return false;
+
+			case LAYOUT_DIR::L:
+				sp.LoadFromSprite(change_spriteid_layoutdir(LAYOUT_DIR::R, sr));
 				sp.Mirror(MIRROR::HORIZ);
 				return true;
 
@@ -515,6 +543,19 @@ namespace draw {
 			};
 		}
 
+		const start_of_line *sol = dynamic_cast<const start_of_line *>(gt);
+		if (sol) {
+			if (obj->GetLength() != 1) {
+				return get_draw_error_func(0x7FFF7F, 0x800080);
+			}
+			bool reverse = dynamic_cast<const end_of_line *>(sol) != nullptr;
+			LAYOUT_DIR dir = reverse ? obj->GetLayoutDirection() : ReverseLayoutDirection(obj->GetLayoutDirection());
+			draw::sprite_ref sprite = change_spriteid_layoutdir(dir, SID_arrow | SID_shunt_grey);
+			return [x, y, sprite, obj](const draw_engine &eng, gui_layout::world_layout &layout) {
+				layout.SetSprite(x, y, sprite, obj, 0);
+			};
+		}
+
 		//default:
 		return get_draw_error_func(0xFFFF00, 0x0000FF);
 	}
@@ -571,6 +612,10 @@ namespace draw {
 
 		auto dir_relative_diag = [&](LAYOUT_DIR dir) -> bool {
 			return draw::dir_relative_diag(dir, sp, sr);
+		};
+
+		auto dir_relative_non_diag = [&](LAYOUT_DIR dir) -> bool {
+			return draw::dir_relative_non_diag(dir, sp, sr);
 		};
 
 		if (sr & SID_raw_img) {
@@ -653,6 +698,20 @@ namespace draw {
 					sp.LoadFromFileDataFallback("tc_gap_d.png", GetImageData_tc_gap_d());
 					return;
 
+				case SID_arrow:
+					if (dir_relative_non_diag(dir)) {
+						return;
+					}
+					if (dir == LAYOUT_DIR::U) {
+						sp.LoadFromFileDataFallback("arrow_u.png", GetImageData_arrow_u());
+						return;
+					}
+					if (dir == LAYOUT_DIR::R) {
+						sp.LoadFromFileDataFallback("arrow_r.png", GetImageData_arrow_r());
+						return;
+					}
+					return;
+
 				default:
 					break;
 			}
@@ -704,6 +763,7 @@ namespace draw {
 					return;
 
 				case SID_signal_shunt:
+				case SID_arrow:
 					sp.LoadFromSprite((sr & (SID_type_mask | SID_dir_mask)) | SID_raw_img);
 					if (sr & SID_shunt_red) {
 						sp.ReplaceColour(0xFFFFFF, 0xFF0000);
