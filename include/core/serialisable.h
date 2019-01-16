@@ -21,6 +21,7 @@
 
 #include "util/error.h"
 #include <map>
+#include <functional>
 
 struct deserialiser_input;
 struct serialiser_output;

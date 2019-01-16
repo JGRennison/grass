@@ -21,6 +21,8 @@
 
 #include <memory>
 #include <vector>
+#include <string>
+#include <functional>
 #include <wx/grid.h>
 #include <wx/frame.h>
 #include <wx/timer.h>
