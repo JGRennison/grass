@@ -840,15 +840,15 @@ bool auto_signal::PostLayoutInit(error_collection &ec) {
 
 			generic_signal *end_signal = FastSignalCast(signal_route.end.track, signal_route.end.direction);
 			if (end_signal && ! (end_signal->GetSignalFlags() & GSF::NO_OVERLAP)) {    //reserve an overlap beyond the end signal too if needed
-				end_signal->PostLayoutInit(ec);    //make sure that the end piece is inited
-				const route *best_overlap = end_signal->FindBestOverlap(route_class::Flag(route_class::ID::OVERLAP));
-				if (best_overlap && best_overlap->RouteReservation(RRF::AUTO_ROUTE | RRF::TRY_RESERVE).IsSuccess()) {
-					best_overlap->RouteReservation(RRF::AUTO_ROUTE | RRF::RESERVE);
-					signal_route.overlap_type = route_class::ID::OVERLAP;
-				} else {
-					ec.RegisterNewError<error_signalinit>(*this, "Autosignal route cannot reserve overlap");
-					return false;
-				}
+				GetWorld().post_layout_init_final_fixups.AddFixup([end_signal, this](error_collection &ec) {
+					const route *best_overlap = end_signal->FindBestOverlap(route_class::Flag(route_class::ID::OVERLAP));
+					if (best_overlap && best_overlap->RouteReservation(RRF::AUTO_ROUTE | RRF::TRY_RESERVE).IsSuccess()) {
+						best_overlap->RouteReservation(RRF::AUTO_ROUTE | RRF::RESERVE);
+						this->signal_route.overlap_type = route_class::ID::OVERLAP;
+					} else {
+						ec.RegisterNewError<error_signalinit>(*this, "Autosignal route cannot reserve overlap");
+					}
+				});
 			}
 		} else {
 			ec.RegisterNewError<error_signalinit>(*this, "Autosignal crosses reserved route");
