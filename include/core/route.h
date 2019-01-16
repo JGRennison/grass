@@ -55,7 +55,7 @@ inline bool is_higher_aspect_in_mask(aspect_mask_type mask, unsigned int aspect)
 	if (aspect >= ASPECT_MAX) {
 		return false;
 	} else {
-		return mask & ((~1) << aspect);
+		return mask & ((aspect_mask_type)(~1) << aspect);
 	}
 }
 
